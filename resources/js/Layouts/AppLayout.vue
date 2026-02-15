@@ -180,6 +180,7 @@ const navigation = [
             { name: 'Delivery Orders', href: '/sales/deliveries', icon: ClipboardDocumentCheckIcon, permission: 'sales_crm.delivery_orders.view' },
             { name: 'Sales Invoices', href: '/sales/invoices', icon: BanknotesIcon, permission: 'sales_crm.invoices.view' },
             { name: 'Sales Returns', href: '/sales/returns', icon: ArrowUturnLeftIcon, permission: 'sales_crm.sales_returns.view' },
+            { name: 'Items Report', href: '/sales/orders/items', icon: ClipboardDocumentListIcon },
             { name: 'Information', href: '/sales/information', icon: InformationCircleIcon, permission: 'sales_crm.view' },
             { name: 'PO Tracking', href: '/sales/po-tracking', icon: MapPinIcon, permission: 'sales_crm.view' },
             { name: 'AI PO Extractor', href: '/sales/po-extractor', icon: SparklesIcon, permission: 'sales_crm.ai_po_extractor.view' },

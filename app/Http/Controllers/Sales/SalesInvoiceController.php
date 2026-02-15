@@ -188,7 +188,8 @@ class SalesInvoiceController extends Controller
                 foreach ($salesInvoice->items as $item) {
                     $soItem = $item->salesOrderItem;
                     if ($soItem) {
-                        $soItem->qty_invoiced -= $item->qty;
+                        // Prevent negative value if data was previously corrupted
+                        $soItem->qty_invoiced = max(0, $soItem->qty_invoiced - $item->qty);
                         $soItem->save();
                     }
 
@@ -198,7 +199,8 @@ class SalesInvoiceController extends Controller
                             ->first();
 
                         if ($doItem) {
-                            $doItem->qty_invoiced -= $item->qty;
+                            // Prevent negative value
+                            $doItem->qty_invoiced = max(0, $doItem->qty_invoiced - $item->qty);
                             $doItem->save();
                         }
                     }

@@ -70,6 +70,18 @@ class SalesOrderItem extends Model
         return $this->hasMany(DeliveryOrderItem::class);
     }
 
+    public function returnItems()
+    {
+        return $this->hasManyThrough(
+            SalesReturnItem::class,
+            SalesReturn::class,
+            'sales_order_id', // Foreign key on SalesReturn table...
+            'sales_return_id', // Foreign key on SalesReturnItem table...
+            'sales_order_id', // Local key on SalesOrderItem table...
+            'id' // Local key on SalesReturn table...
+        )->where('sales_return_items.product_id', $this->product_id);
+    }
+
     public function getReservedQtyAttribute(): float
     {
         // Optimization: Use loaded relationship if available to prevent N+1 queries

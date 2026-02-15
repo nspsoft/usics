@@ -372,6 +372,11 @@ class SalesOrderController extends Controller
             return back()->with('error', 'No delivered items are available for invoicing. They may have already been invoiced.');
         }
 
+        // Prevent invoicing if Waiting PO (Direct DO case)
+        if ($order->status === \App\Models\SalesOrder::STATUS_WAITING_PO) {
+            return back()->with('error', "Gagal membuat Invoice. Order ini masih berstatus 'Waiting PO'. Harap revisi Sales Order terlebih dahulu untuk memasukkan Nomor PO resmi.");
+        }
+
         \Log::info("Found " . $itemsToInvoice->count() . " items to invoice for SO: {$order->so_number}");
 
         try {

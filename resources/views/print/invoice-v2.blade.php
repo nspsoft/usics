@@ -253,20 +253,41 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($invoice->items as $index => $item)
+                @php
+                    // Group items by Sales Order Item ID to consolidate partial deliveries
+                    $groupedItems = $invoice->items->groupBy(function ($item) {
+                         return $item->sales_order_item_id ?? 'manual-' . $item->id; 
+                    });
+                    $counter = 1;
+                @endphp
+
+                @foreach($groupedItems as $groupId => $items)
+                    @php
+                        $firstItem = $items->first();
+                        $totalQty = $items->sum('qty');
+                        $totalSubtotal = $items->sum('subtotal');
+                        
+                        // Collect DO Numbers
+                        $doNumbers = $items->map(fn($i) => $i->deliveryOrder?->do_number)
+                            ->filter()
+                            ->unique()
+                            ->values();
+                    @endphp
                 <tr>
-                    <td class="text-center">{{ $index + 1 }}</td>
+                    <td class="text-center">{{ $counter++ }}</td>
                     <td>
-                        <div class="font-bold">{{ $item->product->name }}</div>
-                        <div style="font-size: 8pt; color: #555;">{{ $item->product->description }}</div>
-                        @if($item->deliveryOrder)
-                        <div style="font-size: 7.5pt; color: #003680; margin-top: 2px;">Ref. DO: {{ $item->deliveryOrder->do_number }}</div>
+                        <div class="font-bold">{{ $firstItem->product->name }}</div>
+                        <div style="font-size: 8pt; color: #555;">{{ $firstItem->product->description }}</div>
+                        @if($doNumbers->isNotEmpty())
+                        <div style="font-size: 7.5pt; color: #003680; margin-top: 2px;">
+                            Ref. DO: {{ $doNumbers->join(', ') }}
+                        </div>
                         @endif
                     </td>
-                    <td class="text-center">{{ number_format($item->qty, 0, ',', '.') }}</td>
-                    <td class="text-center uppercase">{{ $item->unit->code ?? 'PCS' }}</td>
-                    <td class="text-right">{{ number_format($item->unit_price, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($item->subtotal, 0, ',', '.') }}</td>
+                    <td class="text-center">{{ number_format($totalQty, 0, ',', '.') }}</td>
+                    <td class="text-center uppercase">{{ $firstItem->unit->code ?? 'PCS' }}</td>
+                    <td class="text-right">{{ number_format($firstItem->unit_price, 0, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($totalSubtotal, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
 

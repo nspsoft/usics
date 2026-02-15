@@ -193,6 +193,10 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::get('/customers-contacts-export', [CustomerController::class, 'exportContacts'])->name('customers.contacts.export');
     Route::post('/customers-contacts-import', [CustomerController::class, 'importContacts'])->name('customers.contacts.import');
     Route::get('/customers-template', [CustomerController::class, 'template'])->name('customers.template');
+    // Sales Order Items Report
+    Route::get('/orders/items', [App\Http\Controllers\Sales\SalesOrderItemController::class, 'index'])->name('orders.items');
+    Route::get('/orders/items/export', [App\Http\Controllers\Sales\SalesOrderItemController::class, 'export'])->name('orders.items.export');
+
     Route::get('/customers-contacts-template', [CustomerController::class, 'templateContacts'])->name('customers.contacts.template');
     Route::resource('orders', SalesOrderController::class);
     Route::post('/orders/{order}/confirm', [SalesOrderController::class, 'confirm'])->name('orders.confirm');
@@ -259,6 +263,8 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::post('/deliveries/bulk-invoice', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'bulkInvoice'])->name('deliveries.bulk-invoice');
     Route::post('/deliveries/bulk-invoice-preview', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'bulkInvoicePreview'])->name('deliveries.bulk-invoice-preview');
     Route::get('/deliveries-export', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'export'])->name('deliveries.export');
+
+
     Route::post('/deliveries-import', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'import'])->name('deliveries.import');
     Route::get('/deliveries-template', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'template'])->name('deliveries.template');
     Route::get('/invoices', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'index'])->name('invoices.index');
