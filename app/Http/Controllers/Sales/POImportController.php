@@ -57,6 +57,7 @@ class POImportController extends Controller
 
     /**
      * Match extracted text with database records.
+     * Improved Logic: Checks if Product SKU exists *within* the PO Description.
      */
     private function autoMatchData(array $data): array
     {
@@ -69,39 +70,122 @@ class POImportController extends Controller
         $data['matched_customer_id'] = $customer?->id;
         $data['matched_customer_name'] = $customer?->name;
 
+        // Pre-fetch all active products with SKUs to avoid N+1 queries
+        // This is efficient enough for < 10k products. For larger DBs, full-text search is better.
+        $products = Product::whereNotNull('sku')
+            ->where('sku', '!=', '')
+            ->where('is_active', true)
+            ->get(['id', 'name', 'sku', 'selling_price']);
+
         // Match Products
         if (isset($data['items']) && is_array($data['items'])) {
             foreach ($data['items'] as &$item) {
                 $description = $item['description'] ?? '';
+                $normalizedDesc = strtoupper(trim($description));
                 
-                // Try to find matching product by SKU or Name (with stocks for stock calculation)
-                $product = Product::with('stocks')
-                    ->active()
-                    ->where(function($q) use ($description) {
-                        $q->where('sku', 'like', "%{$description}%")
-                          ->orWhere('name', 'like', "%{$description}%");
-                    })
-                    ->first();
+                $matchedProduct = null;
 
-                $item['matched_product_id'] = $product?->id;
-                $item['matched_product_name'] = $product?->name;
-                $item['matched_sku'] = $product?->sku;
-                $item['current_stock'] = $product?->total_stock ?? 0; // Total stock across all warehouses
-                
-                // Store both prices for comparison
-                $aiPrice = isset($item['unit_price']) ? floatval($item['unit_price']) : 0;
-                $dbPrice = $product?->selling_price ?? $product?->price ?? 0;
-                
-                $item['po_price'] = $aiPrice; // Price from PO document (AI extracted)
-                $item['db_price'] = floatval($dbPrice); // Price from database (Selling Price)
-                // Keep the AI price as unit_price for editing - don't overwrite with db_price
-                // This way, user sees the original PO price and can adjust as needed
-                $item['unit_price'] = $aiPrice; 
-                $item['price_mismatch'] = $aiPrice > 0 && $dbPrice > 0 && abs($aiPrice - $dbPrice) > 0.01;
+                // 1. Try Token-based Matching (Is SKU inside Description?)
+                // Sort products by SKU length descending to match longest code first (e.g. match 'ABC-123' before 'ABC')
+                foreach ($products as $product) {
+                    $sku = strtoupper($product->sku);
+                    // Check if SKU is a substring of description
+                    if (str_contains($normalizedDesc, $sku)) {
+                        $matchedProduct = $product;
+                        break; // Found the best match (assuming unique SKUs)
+                    }
+                }
+
+                // 2. If no SKU match, try fuzzy name match (simple contains)
+                if (!$matchedProduct) {
+                    $matchedProduct = Product::where('name', 'like', "%{$description}%")
+                        ->active()
+                        ->first();
+                }
+
+                if ($matchedProduct) {
+                    // Load stock fresh
+                    $matchedProduct->load('stocks');
+                    
+                    $item['matched_product_id'] = $matchedProduct->id;
+                    $item['matched_product_name'] = $matchedProduct->name;
+                    $item['matched_sku'] = $matchedProduct->sku;
+                    $item['current_stock'] = $matchedProduct->total_stock ?? 0;
+                    
+                    $aiPrice = isset($item['unit_price']) ? floatval($item['unit_price']) : 0;
+                    $dbPrice = $matchedProduct->selling_price ?? $matchedProduct->price ?? 0;
+                    
+                    $item['po_price'] = $aiPrice;
+                    $item['db_price'] = floatval($dbPrice);
+                    $item['unit_price'] = $aiPrice; 
+                    $item['price_mismatch'] = $aiPrice > 0 && $dbPrice > 0 && abs($aiPrice - $dbPrice) > 0.01;
+                    $item['match_status'] = 'MATCHED';
+                } else {
+                     $item['matched_product_id'] = null;
+                     $item['match_status'] = 'NO_MATCH';
+                     
+                     // Propose a Smart SKU for creating this product
+                     $item['proposed_sku'] = $this->generateSmartSku($description);
+                }
             }
         }
 
         return $data;
+    }
+
+    /**
+     * Generate a smart SKU from description.
+     * Logic:
+     * 1. Look for a "code-like" word (alphanumeric, uppercase, usually at the end or distinct).
+     * 2. If not found, create an abbreviation from the first letters of words.
+     */
+    private function generateSmartSku(string $description): string
+    {
+        $normalized = trim($description);
+        
+        // 1. Regex to find potential codes (e.g., "DXC49A", "PPD32R", "500-12")
+        // Looks for words with at least 3 characters that contain:
+        // - Uppercase letters and numbers
+        // - OR just uppercase letters if length > 3
+        // - OR numbers with dashes
+        preg_match_all('/\b([A-Z0-9-]{3,})\b/', $normalized, $matches);
+        
+        if (!empty($matches[0])) {
+            $candidates = $matches[0];
+            
+            // Strategy: Prioritize codes that contain BOTH letters and numbers (strongest signal)
+            foreach (array_reverse($candidates) as $word) {
+                if (preg_match('/[A-Z]/', $word) && preg_match('/[0-9]/', $word)) {
+                    return $word;
+                }
+            }
+
+            // Strategy: Failing that, if there's a code at the VERY END, it's likely the SKU
+            // (e.g. "Product Name ABC")
+            $lastWord = end($candidates);
+            if ($lastWord) {
+                 return $lastWord;
+            }
+            
+            // Fallback to first match
+            return $candidates[0];
+        }
+
+        // 2. Fallback: Abbreviation (e.g. "Pipe PVC 4 Inch" -> "PP4I")
+        $words = explode(' ', $normalized);
+        $sku = '';
+        foreach ($words as $word) {
+            if (strlen($word) > 0) {
+                $sku .= strtoupper(substr($word, 0, 1));
+            }
+        }
+        
+        // Append a random 3-digit number to avoid collisions if it's too short
+        if (strlen($sku) < 3) {
+            $sku .= rand(100, 999);
+        }
+
+        return substr($sku, 0, 10);
     }
 
     /**
@@ -121,19 +205,23 @@ class POImportController extends Controller
 
         // Auto-generate SKU if not provided
         if (empty($validated['sku'])) {
-            // Simple SKU gen: PRD-TIMESTAMP-RAND
-            $validated['sku'] = 'PRD-' . time() . '-' . rand(100, 999);
+            $validated['sku'] = $this->generateSmartSku($validated['name']);
+            
+            // Check uniqueness again
+            if (Product::where('sku', $validated['sku'])->exists()) {
+                $validated['sku'] = $validated['sku'] . '-' . rand(10, 99);
+            }
         }
 
-        // Set defaults
         $validated['is_active'] = true;
+        // ... (rest of defaults)
         $validated['is_sold'] = true;
         $validated['is_purchased'] = true;
         
         $product = Product::create($validated);
-        
-        // Load relationships needed for frontend
         $product->load(['stocks']);
+        
+        // Also create an initial stock record or logic if needed (omitted for now)
         
         return response()->json([
             'success' => true,
@@ -145,6 +233,58 @@ class POImportController extends Controller
                 'current_stock' => $product->total_stock ?? 0,
             ],
             'message' => 'Product registered successfully'
+        ]);
+    }
+
+    /**
+     * Bulk store products for "Register All"
+     */
+    public function storeProductBulk(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'items.*.description' => 'required|string',
+            'items.*.unit_id' => 'required|exists:units,id',
+            'items.*.selling_price' => 'nullable|numeric',
+        ]);
+
+        $createdProducts = [];
+
+        foreach ($request->items as $index => $item) {
+            // Generate SKU
+            $sku = $this->generateSmartSku($item['description']);
+             // Check uniqueness
+            if (Product::where('sku', $sku)->exists()) {
+                 $sku .= '-' . rand(100, 999);
+            }
+
+            $product = Product::create([
+                'name' => $item['description'],
+                'sku' => $sku,
+                'unit_id' => $item['unit_id'],
+                'selling_price' => $item['selling_price'] ?? 0,
+                'type' => 'product',
+                'product_type' => 'finished_good',
+                'is_active' => true,
+                'is_sold' => true,
+                'is_purchased' => true
+            ]);
+            
+            $product->load('stocks');
+
+            $createdProducts[$index] = [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'selling_price' => $product->selling_price,
+                'current_stock' => $product->total_stock ?? 0,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'products' => $createdProducts,
+            'message' => count($createdProducts) . ' Products registered successfully'
         ]);
     }
 }

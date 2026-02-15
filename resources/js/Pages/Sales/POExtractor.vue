@@ -114,6 +114,89 @@ const registerProduct = async () => {
     }
 };
 
+const isBulkRegistering = ref(false);
+
+const generateSmartSku = (description) => {
+    const normalized = description.trim().toUpperCase();
+    // 1. Regex to find potential codes
+    const matches = normalized.match(/\b([A-Z0-9-]{3,})\b/g);
+    if (matches && matches.length > 0) {
+        // Find match with numbers
+        for (let i = matches.length - 1; i >= 0; i--) {
+            if (/[0-9]/.test(matches[i]) && /[A-Z]/.test(matches[i])) {
+                return matches[i];
+            }
+        }
+        // Fallback to last match (often code is at end)
+        return matches[matches.length - 1];
+    }
+    
+    // 2. Abbreviation Fallback
+    const words = normalized.split(/\s+/);
+    let sku = '';
+    words.forEach(word => {
+        if (word.length > 0) sku += word[0];
+    });
+    if (sku.length < 3) sku += Math.floor(Math.random() * 900 + 100);
+    return sku.substring(0, 10);
+};
+
+const registerAllNoMatch = async () => {
+    // Filter for UNMATCHED items
+    const noMatchItems = editableData.value.items.filter(item => !item.matched_product_id);
+    
+    if (noMatchItems.length === 0) {
+        alert('No unmatched items to register.');
+        return;
+    }
+
+    if (!confirm(`Are you sure you want to register ${noMatchItems.length} new products? SKUs will be auto-generated.`)) {
+        return;
+    }
+    
+    // Map items for backend
+    const itemsToRegister = noMatchItems.map(item => ({
+        description: item.description,
+        unit_id: item.unit ? (props.units.find(u => u.name.toLowerCase() === item.unit.toLowerCase())?.id || props.units[0]?.id) : props.units[0]?.id,
+        selling_price: item.unit_price || 0
+    }));
+
+    isBulkRegistering.value = true;
+    try {
+        const response = await axios.post(route('sales.po-extractor.store-product-bulk'), {
+            items: itemsToRegister
+        });
+
+        if (response.data.success) {
+            const createdProducts = response.data.products;
+            
+            // Update items with new product details
+            // We assume the order is preserved 1:1 with the sent array
+            let createdIndex = 0;
+            editableData.value.items.forEach(item => {
+                if (!item.matched_product_id) {
+                    if (createdProducts[createdIndex]) {
+                            const newProd = createdProducts[createdIndex];
+                            item.matched_product_id = newProd.id;
+                            item.matched_product_name = newProd.name;
+                            item.matched_sku = newProd.sku;
+                            item.db_price = newProd.selling_price;
+                            item.current_stock = newProd.current_stock;
+                            item.match_status = 'MATCHED';
+                    }
+                    createdIndex++;
+                }
+            });
+            alert(response.data.message);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Failed to bulk register: ' + (err.response?.data?.message || err.message));
+    } finally {
+        isBulkRegistering.value = false;
+    }
+};
+
 const file = ref(null);
 const fileInput = ref(null);
 const filePreviewUrl = ref(null);
@@ -758,6 +841,16 @@ const exportToExcel = async () => {
                                 class="py-3 px-6 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-200 transition-all"
                             >
                                 Try Again
+                            </button>
+                            <button 
+                                v-if="editableData.items.some(i => !i.matched_product_id)"
+                                @click="registerAllNoMatch"
+                                :disabled="isBulkRegistering"
+                                class="py-3 px-6 rounded-2xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-500/25 hover:bg-purple-500 transition-all flex items-center justify-center gap-2"
+                            >
+                                <SparklesIcon v-if="!isBulkRegistering" class="h-5 w-5" />
+                                <ArrowPathIcon v-else class="h-5 w-5 animate-spin" />
+                                {{ isBulkRegistering ? 'Registering...' : 'Register All No Match' }}
                             </button>
                             <button 
                                 @click="exportToExcel"
