@@ -221,15 +221,16 @@ class DeliveryOrderController extends Controller
         }
 
         $pendingSalesOrders = SalesOrder::whereIn('status', ['confirmed', 'processing', 'partial'])
+            ->whereHas('items', function($q) {
+                // Optimization: Filter at DB level.
+                // We use the cached 'qty_delivered' column which we have now secured with robust logic.
+                // qty > qty_delivered means there is remaining quantity.
+                $q->whereRaw('qty > qty_delivered');
+            })
             ->with(['customer', 'items.deliveryOrderItems.deliveryOrder'])
             ->orderByDesc('id')
-            ->get()
-            ->filter(function($so) {
-                // Only show SOs that have at least one item with remaining_qty > 0
-                return $so->items->some(fn($item) => $item->remaining_qty > 0);
-            })
-            ->take(100)
-            ->values();
+            ->limit(100) // Use limit instead of take for DB query
+            ->get();
 
         return Inertia::render('Sales/Deliveries/Create', [
             'salesOrder' => $salesOrder,
@@ -364,9 +365,24 @@ class DeliveryOrderController extends Controller
                         // Logic with Existing SO
                         $soItem = SalesOrderItem::findOrFail($itemData['sales_order_item_id']);
                         
-                        // Cross-check allowable again in backend
-                        $allowable = $soItem->remaining_qty;
-                        if ($itemData['qty_delivered'] > $allowable) {
+                        // Cross-check allowable again in backend using REAL-TIME AGGREGATION
+                        // 1. Calculate Real Delivered Total (Other DOs)
+                        $realDelivered = \App\Models\DeliveryOrderItem::where('sales_order_item_id', $soItem->id)
+                            ->whereHas('deliveryOrder', function($q) {
+                                $q->where('status', '!=', 'cancelled');
+                            })
+                            ->sum('qty_delivered');
+                        
+                        // 2. Calculate Returned Qty
+                        $qtyReturned = $soItem->returnItems()->sum('qty');
+                        
+                        // 3. Net Delivered (Real)
+                        $netDelivered = $realDelivered - $qtyReturned;
+                        
+                        // 4. Calculate Real Remaining
+                        $allowable = $soItem->qty - $netDelivered;
+                        
+                        if ($itemData['qty_delivered'] > ($allowable + 0.0001)) { // Float tolerance
                             throw new \Exception("Kuantitas untuk [{$soItem->product->name}] melebihi sisa pesanan (Maks: {$allowable}).");
                         }
                     } else {
@@ -498,13 +514,22 @@ class DeliveryOrderController extends Controller
 
         DB::transaction(function () use ($deliveryOrder, $newStatus, $oldStatus, $deductedStatuses, $notDeductedStatuses) {
             
-            // CASE 1: Moving from Not Deducted -> Deducted (e.g. Packed -> Shipped)
-            if (in_array($oldStatus, $notDeductedStatuses) && in_array($newStatus, $deductedStatuses)) {
+            // ROBUST LOGIC: Always enforce state based on New Status
+            
+            // 1. If New Status requires Deduction (Shipped, Delivered, Completed)
+            if (in_array($newStatus, $deductedStatuses)) {
+                // This method is now idempotent: it will only deduct if not already deducted.
+                // This covers: 
+                // - Normal flow (Draft -> Shipped)
+                // - Re-ship flow (Packed -> Shipped)
+                // - Repair flow (Black Hole Shipped -> Delivered)
                 $this->deductStock($deliveryOrder);
             }
             
-            // CASE 2: Moving from Deducted -> Not Deducted (e.g. Shipped -> Packed [Revert])
-            elseif (in_array($oldStatus, $deductedStatuses) && in_array($newStatus, $notDeductedStatuses)) {
+            // 2. If New Status requires NO Deduction (Draft, Picking, Packed)
+            // AND the Old Status WAS Deducted
+            elseif (in_array($newStatus, $notDeductedStatuses) && in_array($oldStatus, $deductedStatuses)) {
+                // Only restore if we are moving back from a deducted state
                 $this->restoreStock($deliveryOrder);
             }
 
@@ -594,31 +619,38 @@ class DeliveryOrderController extends Controller
             $newQty = $itemData['qty_delivered'];
             $qtyDiff = $newQty - $oldQty;
             
-            // Validation: Cannot deliver more than SO Qty (Need to re-check if increasing qty)
+            // Validation: Cannot deliver more than SO Qty (ROBUST CHECK)
+            // We verify against REAL database aggregation, not the cached 'qty_delivered' column on SO Item
+            // because the cached column might be out of sync (the "Black Hole" bug).
+            
             if ($qtyDiff > 0) {
                  $soItem = $item->salesOrderItem;
-                 // Total Net Delivered (Status: Delivered - status: Returned)
-                 $deliveredNet = $soItem->qty_delivered - $soItem->qty_returned;
-                 // Total Reserved by OTHER active DOs
-                 $reservedByOthers = (float) $soItem->deliveryOrderItems()
-                    ->whereHas('deliveryOrder', function ($query) use ($deliveryOrder) {
-                        $query->whereNotIn('status', ['delivered', 'cancelled'])
-                              ->where('id', '!=', $deliveryOrder->id);
+                 
+                 // 1. Calculate Real Delivered Total (Excluding current DO Item being edited)
+                 // We sum all DO Items linked to this SO Item that are NOT Cancelled.
+                 // We exclude the current DO Item ID because we will add the NEW qty later.
+                 $realDeliveredOther = \App\Models\DeliveryOrderItem::where('sales_order_item_id', $soItem->id)
+                    ->where('id', '!=', $item->id)
+                    ->whereHas('deliveryOrder', function($q) {
+                        $q->where('status', '!=', 'cancelled');
                     })
                     ->sum('qty_delivered');
                  
-                 // If revision, we are already delivered, so we shouldn't count ourselves in "reservedByOthers" logic simply.
-                 // Actually, if we are Delivered, our qty is already in $deliveredNet.
-                 // So "allowable" = (Total SO Qty) - (Others' Delivered) - (Others' Reserved) - (Our OLD Delivered)
-                 // Wait, $deliveredNet INCLUDES our old qty.
-                 // So Remaining = Total - DeliveredNet.
-                 // But we want to increase by $qtyDiff.
-                 // Allowable Increase = Total - DeliveredNet - ReservedByOthers.
+                 // 2. Calculate Returned Qty
+                 $qtyReturned = $soItem->returnItems()->sum('qty');
                  
-                 $remaining = $soItem->qty - $deliveredNet - $reservedByOthers;
+                 // 3. Gross Delivered (Others + New Proposal)
+                 $grossDeliveredProposed = $realDeliveredOther + $newQty;
                  
-                 if ($qtyDiff > $remaining) {
-                     return back()->with('error', "Gagal: Penambahan jumlah untuk [{$item->product->name}] melebihi sisa pesanan (Sisa: {$remaining}).");
+                 // 4. Net Delivered (Gross - Returned)
+                 $netDeliveredProposed = $grossDeliveredProposed - $qtyReturned;
+                 
+                 // 5. Remaining after Proposal
+                 $remainingAfter = $soItem->qty - $netDeliveredProposed;
+                 
+                 if ($remainingAfter < -0.0001) { // Float tolerance
+                     $maxAllowed = $soItem->qty - ($realDeliveredOther - $qtyReturned);
+                     return back()->with('error', "Gagal: Penambahan jumlah untuk [{$item->product->name}] melebihi pesanan. Qty Order: {$soItem->qty}, Sudah Dikirim (Real): {$realDeliveredOther}, Sisa Maksimum: {$maxAllowed}.");
                  }
             }
 
@@ -891,17 +923,7 @@ class DeliveryOrderController extends Controller
 
         try {
             DB::transaction(function () use ($groups, &$invoiceCount, &$processedDOs, &$lastInvoiceId, $deliveryOrders) {
-                // Determine starting sequence
-                $prefix = "INV-" . date('Ym') . "-";
-                $lastInvoice = \App\Models\SalesInvoice::where('invoice_number', 'like', "{$prefix}%")
-                    ->orderBy('invoice_number', 'desc')
-                    ->lockForUpdate()
-                    ->first();
-                
-                $nextSequence = 1;
-                if ($lastInvoice) {
-                    $nextSequence = (int) substr($lastInvoice->invoice_number, -4) + 1;
-                }
+                // Old sequence logic removed. Using SalesInvoice::generateInvoiceNumber() inside loop.
 
                 foreach ($groups as $soId => $dos) {
                     $groupedItems = [];
@@ -912,7 +934,8 @@ class DeliveryOrderController extends Controller
                         foreach ($do->items as $item) {
                             $unitPrice = (float) ($item->salesOrderItem->unit_price ?? 0);
                             $discountPercent = (float) ($item->salesOrderItem->discount_percent ?? 0);
-                            $key = $item->product_id . '_' . round($unitPrice, 2) . '_' . round($discountPercent, 2);
+                            // Include DO Number in key to prevent merging items from different DOs
+                            $key = $item->product_id . '_' . round($unitPrice, 2) . '_' . round($discountPercent, 2) . '_' . $do->do_number;
                             
                             if (!isset($groupedItems[$key])) {
                                 $groupedItems[$key] = [
@@ -946,7 +969,7 @@ class DeliveryOrderController extends Controller
 
                     if (empty($groupedItems)) continue;
 
-                    $invoiceNumber = $prefix . str_pad($nextSequence++, 4, '0', STR_PAD_LEFT);
+                    $invoiceNumber = \App\Models\SalesInvoice::generateInvoiceNumber($so->customer);
                     $invoice = \App\Models\SalesInvoice::create([
                         'company_id' => $so->company_id,
                         'invoice_number' => $invoiceNumber,
@@ -1037,13 +1060,20 @@ class DeliveryOrderController extends Controller
      */
     private function deductStock(DeliveryOrder $deliveryOrder)
     {
-        // Check if already deducted
-        $wasDeducted = \App\Models\StockMovement::where('reference_type', get_class($deliveryOrder))
+        // Check if already deducted AND not reverted
+        $deductionCount = \App\Models\StockMovement::where('reference_type', get_class($deliveryOrder))
             ->where('reference_id', $deliveryOrder->id)
             ->where('type', \App\Models\StockMovement::TYPE_SO_DELIVERY)
-            ->exists();
+            ->count();
 
-        if ($wasDeducted) return;
+        $reversalCount = \App\Models\StockMovement::where('reference_type', get_class($deliveryOrder))
+            ->where('reference_id', $deliveryOrder->id)
+            ->whereIn('type', [\App\Models\StockMovement::TYPE_CORRECTION, \App\Models\StockMovement::TYPE_ADJUSTMENT]) // Assuming Revert uses Correction
+            ->where('notes', 'like', "Revert DO #{$deliveryOrder->do_number}%") // Safer check
+            ->count();
+
+        // If net deductions > reversals, it means it's currently deducted.
+        if ($deductionCount > $reversalCount) return;
 
         foreach ($deliveryOrder->items as $item) {
             // Update SO item delivered qty ATOMICALLY
@@ -1075,28 +1105,36 @@ class DeliveryOrderController extends Controller
      */
     private function restoreStock(DeliveryOrder $deliveryOrder)
     {
-        // Check if was deducted in StockMovement (for physical stock history)
-        $hasDeductionRecord = \App\Models\StockMovement::where('reference_type', get_class($deliveryOrder))
+        // Check if was deducted (to reverse physical stock)
+        // Also check if ALREADY REVERTED to prevent double reversal
+        $deductionCount = \App\Models\StockMovement::where('reference_type', get_class($deliveryOrder))
             ->where('reference_id', $deliveryOrder->id)
             ->where('type', \App\Models\StockMovement::TYPE_SO_DELIVERY)
-            ->exists();
+            ->count();
+
+        $reversalCount = \App\Models\StockMovement::where('reference_type', get_class($deliveryOrder))
+            ->where('reference_id', $deliveryOrder->id)
+            ->whereIn('type', [\App\Models\StockMovement::TYPE_CORRECTION, \App\Models\StockMovement::TYPE_ADJUSTMENT]) 
+            ->where('notes', 'like', "Revert DO #{$deliveryOrder->do_number}%")
+            ->count();
+
+        // Only restore if Net Deducted (Deductions > Reversals)
+        if ($deductionCount <= $reversalCount) return;
 
         foreach ($deliveryOrder->items as $item) {
-            // 1. Restore Physical Stock (Only if we have the record to reverse)
-            if ($hasDeductionRecord) {
-                $stock = \App\Models\ProductStock::where('product_id', $item->product_id)
-                    ->where('warehouse_id', $deliveryOrder->warehouse_id)
-                    ->first();
+            // 1. Restore Physical Stock
+            $stock = \App\Models\ProductStock::where('product_id', $item->product_id)
+                ->where('warehouse_id', $deliveryOrder->warehouse_id)
+                ->first();
 
-                if ($stock) {
-                    $stock->adjustStock(
-                        (float) $item->qty_delivered,
-                        null,
-                        \App\Models\StockMovement::TYPE_CORRECTION,
-                        $deliveryOrder,
-                        "Revert DO #{$deliveryOrder->do_number}"
-                    );
-                }
+            if ($stock) {
+                $stock->adjustStock(
+                    (float) $item->qty_delivered,
+                    null,
+                    \App\Models\StockMovement::TYPE_CORRECTION,
+                    $deliveryOrder,
+                    "Revert DO #{$deliveryOrder->do_number}"
+                );
             }
 
             // 2. Decrement Sales Order Item Delivered Qty ATOMICALLY
@@ -1106,6 +1144,32 @@ class DeliveryOrderController extends Controller
                 // Given logic, it should be fine.
                 $item->salesOrderItem->decrement('qty_delivered', $item->qty_delivered);
             }
+        }
+    }
+
+    public function destroy(DeliveryOrder $deliveryOrder)
+    {
+        if ($deliveryOrder->status !== 'draft') {
+            return back()->with('error', 'Hanya Delivery Order berstatus Draft yang dapat dihapus.');
+        }
+        
+        try {
+            DB::transaction(function () use ($deliveryOrder) {
+                // 1. Delete all items
+                $deliveryOrder->items()->delete();
+                
+                // 2. Delete the DO itself
+                $deliveryOrder->delete();
+                
+                // Note: We do NOT delete the Sales Order even if it was a Direct DO.
+                // The Sales Order remains as "Waiting PO" (if applicable) or just an empty SO.
+                // Users can delete the SO separately if they want.
+            });
+            
+            return redirect()->route('sales.deliveries.index')->with('success', 'Delivery Order berhasil dihapus.');
+            
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menghapus DO: ' . $e->getMessage());
         }
     }
 }

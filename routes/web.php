@@ -269,6 +269,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::get('/deliveries-template', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'template'])->name('deliveries.template');
     Route::get('/invoices', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/{sales_invoice}', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'show'])->name('invoices.show');
+    Route::delete('/invoices/{sales_invoice}', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'destroy'])->name('invoices.destroy');
     Route::post('/invoices/{sales_invoice}/confirm', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'confirm'])->name('invoices.confirm');
     Route::post('/invoices/{sales_invoice}/update-tax', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'updateTaxAmount'])->name('invoices.update-tax');
     Route::post('/invoices/{sales_invoice}/revise', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'revise'])->name('invoices.revise');

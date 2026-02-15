@@ -1,0 +1,18 @@
+﻿Psy Shell v0.12.18 (PHP 8.5.0 — cli) by Justin Hileman
+New PHP manual is available (latest: 3.0.0). Update with `doc --update-manual`
+Testing Item: KARDUS (700x290x310) Outer DEM
+Initial State:
+  Qty: 42
+  Qty Delivered (Stored): 15.0000
+  Reserved Qty (Attribute): 5
+  Remaining Qty (Attribute): 22
+
+After Creating Draft DO (Qty=5):
+  Qty: 42
+  Qty Delivered (Stored): 15.0000
+  Reserved Qty (Attribute): 10
+  Remaining Qty (Attribute): 17
+  -> RESULT: FAIL. Not reduced.
+
+Rolled back dummy data.
+

@@ -22,6 +22,96 @@ class SalesInvoice extends Model
             ->dontSubmitEmptyLogs();
     }
 
+    /**
+     * Generate custom invoice number: XXXX/INV/JRI-{CUST}/{ROMAN}/{YY}
+     * Resets sequence every year.
+     */
+    public static function generateInvoiceNumber($customer, $date = null)
+    {
+        $targetDate = $date ? \Carbon\Carbon::parse($date) : now();
+        $year = $targetDate->format('y'); // 26
+        $fullYear = $targetDate->format('Y'); // 2026
+        $month = $targetDate->format('n'); // 1-12
+
+        // Roman Numerals for months
+        $romans = [
+            1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI',
+            7 => 'VII', 8 => 'VIII', 9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'
+        ];
+        $romanMonth = $romans[$month];
+
+        // Customer Code (Default to 'GEN' if empty)
+        $custCode = $customer->code ?? 'GEN';
+
+        // Find max sequence for this year
+        // We look for invoices created in this YEAR
+        $lastInvoice = self::whereYear('created_at', $fullYear)
+            ->where('invoice_number', 'LIKE', '%/INV/JRI-%') // Filter for this format
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $nextSequence = 1;
+
+        if ($lastInvoice) {
+            // Try to parse the sequence from the start of the string
+            // Format: 1247/INV/JRI-...
+            $parts = explode('/', $lastInvoice->invoice_number);
+            if (is_numeric($parts[0])) {
+                $nextSequence = (int)$parts[0] + 1;
+            }
+        }
+
+        $sequenceStr = str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+
+        return "{$sequenceStr}/INV/JRI-{$custCode}/{$romanMonth}/{$year}";
+    }  
+
+    protected static function booted(): void
+    {
+        static::saving(function (SalesInvoice $invoice) {
+            $invoice->calculateTotals();
+        });
+    }
+
+    /**
+     * Get smart formatted DO numbers (e.g. "001, 002 /DO/JRI/...")
+     */
+    public function getFormattedDoNumbersAttribute(): string
+    {
+        // Get all unique DO numbers from items
+        $doNumbers = $this->items->map(fn($item) => $item->deliveryOrder?->do_number)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($doNumbers->isEmpty()) {
+            return 'See Appendix';
+        }
+
+        // Group by suffix (everything after the first slash)
+        $grouped = $doNumbers->groupBy(function ($doNum) {
+            $parts = explode('/', $doNum, 2);
+            return count($parts) > 1 ? '/' . $parts[1] : 'other';
+        });
+
+        $results = [];
+
+        foreach ($grouped as $suffix => $numbers) {
+            if ($suffix === 'other') {
+                foreach ($numbers as $num) $results[] = $num;
+            } else {
+                // Extract prefixes (e.g. "010", "011")
+                $prefixes = $numbers->map(function ($num) {
+                    return explode('/', $num)[0];
+                })->join(', ');
+                
+                $results[] = $prefixes . $suffix;
+            }
+        }
+
+        return implode(', ', $results);
+    }
+
     protected $fillable = [
         'company_id',
         'invoice_number',
@@ -83,33 +173,7 @@ class SalesInvoice extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public static function generateInvoiceNumber($customerId, $date = null): string
-    {
-        $targetDate = $date ? (is_string($date) ? new \DateTime($date) : $date) : new \DateTime();
-        
-        $customer = Customer::find($customerId);
-        $custCode = $customer ? ($customer->code ?? 'GEN') : 'GEN';
-        $monthRoman = static::getRomanMonth((int)$targetDate->format('n'));
-        $yearShort = $targetDate->format('y');
-        
-        // Format: {RUN}/INV/JRI-{CUST}/{MONTH_ROMAN}/{YEAR_2DIGIT}
-        $suffix = "/INV/JRI-{$custCode}/{$monthRoman}/{$yearShort}";
-        
-        // Find last running number for invoices using REGEXP to catch {number}/INV/JRI-
-        $last = static::where('invoice_number', 'REGEXP', '^[0-9]+/INV/JRI-')
-            ->orderByRaw('CAST(SUBSTRING_INDEX(invoice_number, "/", 1) AS UNSIGNED) DESC')
-            ->first();
 
-        if ($last) {
-            $parts = explode('/', $last->invoice_number);
-            $lastNumber = is_numeric($parts[0]) ? (int)$parts[0] : 0;
-            $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-        } else {
-            $newNumber = '001';
-        }
-
-        return $newNumber . $suffix;
-    }
 
     private static function getRomanMonth($month): string
     {
@@ -128,7 +192,6 @@ class SalesInvoice extends Model
         $this->tax_amount = $this->subtotal * ($taxPercent / 100);
         $this->total = $this->subtotal + $this->tax_amount - $this->discount_amount;
         $this->balance = $this->total - $this->paid_amount;
-        $this->save();
     }
 
     public function addPayment(float $amount): void

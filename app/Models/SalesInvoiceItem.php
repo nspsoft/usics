@@ -68,7 +68,8 @@ class SalesInvoiceItem extends Model
         });
 
         static::saved(function (SalesInvoiceItem $item) {
-            $item->salesInvoice->calculateTotals();
+            // Trigger saving on invoice, which will call calculateTotals via its own saving event
+            $item->salesInvoice->save();
         });
     }
 }

@@ -184,6 +184,8 @@ class SalesInvoiceController extends Controller
 
         try {
             \DB::transaction(function () use ($salesInvoice) {
+                $affectedDeliveryOrderIds = [];
+
                 // Return invoiced qty to SO items
                 foreach ($salesInvoice->items as $item) {
                     $soItem = $item->salesOrderItem;
@@ -202,10 +204,20 @@ class SalesInvoiceController extends Controller
                             // Prevent negative value
                             $doItem->qty_invoiced = max(0, $doItem->qty_invoiced - $item->qty);
                             $doItem->save();
+                            
+                            $affectedDeliveryOrderIds[$item->delivery_order_id] = true;
                         }
                     }
                 }
                 $salesInvoice->delete();
+
+                // Refresh Invoice Status for all affected DOs
+                if (!empty($affectedDeliveryOrderIds)) {
+                    $dos = \App\Models\DeliveryOrder::whereIn('id', array_keys($affectedDeliveryOrderIds))->get();
+                    foreach ($dos as $do) {
+                        $do->refreshInvoiceStatus();
+                    }
+                }
             });
 
             return back()->with('success', 'Invoice deleted successfully.');
