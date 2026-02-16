@@ -753,7 +753,7 @@ const toggleTheme = () => {
         <!-- Main content -->
         <div class="transition-all duration-300" :class="collapsed ? 'lg:pl-20' : 'lg:pl-64'">
             <!-- Top bar -->
-            <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-300 px-4 shadow-sm dark:shadow-lg sm:gap-x-6 sm:px-6 lg:px-8 relative overflow-hidden">
+            <div class="sticky top-0 z-40 lg:z-[60] flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-300 px-4 shadow-sm dark:shadow-lg sm:gap-x-6 sm:px-6 lg:px-8 relative pointer-events-auto">
                 <!-- Futuristic Background Animation -->
                 <TechnoHeaderBg />
                 
@@ -795,7 +795,8 @@ const toggleTheme = () => {
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-x-4 lg:gap-x-6 ml-auto">
+                <!-- Right Side Actions (Notifications & Profile) -->
+                <div class="flex items-center gap-x-4 lg:gap-x-6 ml-auto relative z-50">
                         <!-- PWA Install Button -->
                         <button 
                             v-if="canInstall && !isInstalled"
@@ -941,44 +942,8 @@ const toggleTheme = () => {
             </div>
 
             <!-- Page content -->
-            <main class="py-8 px-4 sm:px-6 lg:px-8 relative">
-                <!-- Global Flash Notifications -->
-                <Transition
-                    enter-active-class="transform ease-out duration-300 transition"
-                    enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-                    enter-to-class="translate-y-0 opacity-100 sm:translate-x-0"
-                    leave-active-class="transition ease-in duration-100"
-                    leave-from-class="opacity-100"
-                    leave-to-class="opacity-0"
-                >
-                    <div v-if="showFlash" class="fixed top-20 right-4 z-[100] w-full max-w-sm overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl ring-1 ring-black ring-opacity-5 pointer-events-auto border border-slate-200 dark:border-slate-800">
-                        <div class="p-4">
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0">
-                                    <CheckBadgeIcon v-if="flashSuccess" class="h-6 w-6 text-emerald-500" />
-                                    <ShieldExclamationIcon v-if="flashError" class="h-6 w-6 text-red-500" />
-                                </div>
-                                <div class="ml-3 w-0 flex-1 pt-0.5">
-                                    <p class="text-sm font-bold" :class="flashSuccess ? 'text-emerald-500' : 'text-red-500'">
-                                        {{ flashSuccess ? 'Success' : 'Attention Needed' }}
-                                    </p>
-                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                        {{ flashSuccess || flashError }}
-                                    </p>
-                                </div>
-                                <div class="ml-4 flex flex-shrink-0">
-                                    <button @click="showFlash = false" class="inline-flex rounded-md text-slate-400 hover:text-slate-500 focus:outline-none">
-                                        <XMarkIcon class="h-5 w-5" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Progress bar for auto-close -->
-                        <div class="h-1 w-full bg-slate-100 dark:bg-slate-800">
-                            <div class="h-full bg-blue-500 animate-[progress_5s_linear_forwards]"></div>
-                        </div>
-                    </div>
-                </Transition>
+            <div class="py-8 px-4 sm:px-6 lg:px-8 relative">
+
 
             <!-- Page header -->
             <div v-if="renderHeader" class="mb-8">
@@ -1022,4 +987,5 @@ const toggleTheme = () => {
             </div>
         </div>
     </div>
+</div>
 </template>
