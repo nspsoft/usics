@@ -191,6 +191,20 @@ class VehicleController extends Controller
         try {
             \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\Logistics\VehicleImport, $request->file('file'));
             return redirect()->back()->with('success', 'Vehicles imported successfully.');
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errorMessages = [];
+            foreach ($failures as $failure) {
+                // Collect limited errors to avoid toaster overflow
+                if (count($errorMessages) < 5) {
+                    $errorMessages[] = "Row {$failure->row()}: " . implode(', ', $failure->errors());
+                }
+            }
+            if (count($failures) > 5) {
+                $errorMessages[] = "... and " . (count($failures) - 5) . " more errors.";
+            }
+            
+            return redirect()->back()->with('error', 'Import Validation Issues: ' . implode(' | ', $errorMessages));
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error importing file: ' . $e->getMessage());
         }
