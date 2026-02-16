@@ -41,6 +41,7 @@ const showImportModal = ref(false);
 const importFile = ref(null);
 const importing = ref(false);
 const overwriteExisting = ref(false);
+const includeProductData = ref(false);
 
 const applyFilters = debounce(() => {
     router.get('/inventory/products', {
@@ -80,6 +81,45 @@ const deleteProduct = (product) => {
     if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
         router.delete(`/inventory/products/${product.id}`);
     }
+};
+
+const showAliasImportModal = ref(false);
+const showImportDropdown = ref(false);
+const aliasImportFile = ref(null);
+const includeData = ref(false);
+const aliasImporting = ref(false);
+
+const openAliasImport = () => {
+    showImportDropdown.value = false;
+    showAliasImportModal.value = true;
+};
+
+const openProductImport = () => {
+    showImportDropdown.value = false;
+    showImportModal.value = true;
+};
+
+const onAliasFileChange = (e) => {
+    aliasImportFile.value = e.target.files[0];
+};
+
+const handleAliasImport = () => {
+    if (!aliasImportFile.value) return;
+    
+    aliasImporting.value = true;
+    router.post(route('inventory.product-aliases.import'), {
+        file: aliasImportFile.value,
+    }, {
+        onSuccess: () => {
+            showAliasImportModal.value = false;
+            aliasImportFile.value = null;
+            aliasImporting.value = false;
+        },
+        onError: () => {
+            aliasImporting.value = false;
+        },
+        forceFormData: true,
+    });
 };
 
 const handleImport = () => {
@@ -183,6 +223,7 @@ const closeUsageModal = () => {
             </div>
             
             <div class="flex items-center gap-3">
+                <!-- Export -->
                 <a
                     href="/inventory/products-export"
                     class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors"
@@ -190,13 +231,43 @@ const closeUsageModal = () => {
                     <ArrowDownTrayIcon class="h-5 w-5" />
                     Export
                 </a>
-                <button
-                    @click="showImportModal = true"
-                    class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors"
-                >
-                    <ArrowUpTrayIcon class="h-5 w-5" />
-                    Import
-                </button>
+
+                <!-- Import Actions Dropdown -->
+                <div class="relative">
+                     <button
+                        @click="showImportDropdown = !showImportDropdown"
+                        class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors"
+                    >
+                        <ArrowUpTrayIcon class="h-5 w-5" />
+                        Import
+                        <ChevronDownIcon class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': showImportDropdown }" />
+                    </button>
+                    
+                    <Transition
+                        enter-active-class="transition duration-100 ease-out"
+                        enter-from-class="transform scale-95 opacity-0"
+                        enter-to-class="transform scale-100 opacity-100"
+                        leave-active-class="transition duration-75 ease-in"
+                        leave-from-class="transform scale-100 opacity-100"
+                        leave-to-class="transform scale-95 opacity-0"
+                    >
+                        <div v-if="showImportDropdown" class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden z-50">
+                            <button
+                                @click="openProductImport"
+                                class="w-full text-left px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                Import Products
+                            </button>
+                            <button
+                                @click="openAliasImport"
+                                class="w-full text-left px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                Import Aliases
+                            </button>
+                        </div>
+                    </Transition>
+                </div>
+
                 <Link
                     href="/inventory/products/create"
                     class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all"
@@ -208,141 +279,232 @@ const closeUsageModal = () => {
         </div>
 
         <!-- Usage Summary Modal -->
-        <Transition
-            enter-active-class="transition duration-200 ease-out"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
-            leave-active-class="transition duration-150 ease-in"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-        >
-            <div v-if="showUsageModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-slate-950/80 backdrop-blur-sm">
-                <div class="glass-card rounded-2xl w-full max-w-md p-6 shadow-2xl">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Product Usage</h3>
-                        <button @click="closeUsageModal" class="text-slate-500 hover:text-slate-900 dark:text-white transition-colors">
-                            <XMarkIcon class="h-6 w-6" />
-                        </button>
-                    </div>
-                    
-                    <div v-if="usageLoading" class="min-h-[150px] flex items-center justify-center">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    </div>
-
-                    <div v-else>
-                        <div class="mb-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800">
-                            <p class="text-sm text-blue-800 dark:text-blue-200">
-                                <span class="font-bold">{{ selectedProduct?.name }}</span> cannot be deleted because it is used in the following records:
-                            </p>
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition duration-150 ease-in"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div v-if="showUsageModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-slate-950/80 backdrop-blur-sm">
+                    <div class="glass-card rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Product Usage</h3>
+                            <button @click="closeUsageModal" class="text-slate-500 hover:text-slate-900 dark:text-white transition-colors">
+                                <XMarkIcon class="h-6 w-6" />
+                            </button>
+                        </div>
+                        
+                        <div v-if="usageLoading" class="min-h-[150px] flex items-center justify-center">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                         </div>
 
-                        <div class="space-y-2 max-h-[300px] overflow-y-auto">
-                             <div v-if="selectedProduct?.total_stock > 0" class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Remaining Stock</span>
-                                <span class="text-sm font-bold text-slate-900 dark:text-white">{{ formatNumber(selectedProduct.total_stock) }} {{ selectedProduct.unit?.symbol }}</span>
+                        <div v-else>
+                            <div class="mb-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800">
+                                <p class="text-sm text-blue-800 dark:text-blue-200">
+                                    <span class="font-bold">{{ selectedProduct?.name }}</span> cannot be deleted because it is used in the following records:
+                                </p>
                             </div>
-                            <div v-for="(item, index) in usageData" :key="index" class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ item.type }}</span>
-                                <span class="text-sm font-bold text-slate-900 dark:text-white">{{ item.count }} records</span>
+
+                            <div class="space-y-2 max-h-[300px] overflow-y-auto">
+                                 <div v-if="selectedProduct?.total_stock > 0" class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Remaining Stock</span>
+                                    <span class="text-sm font-bold text-slate-900 dark:text-white">{{ formatNumber(selectedProduct.total_stock) }} {{ selectedProduct.unit?.symbol }}</span>
+                                </div>
+                                <div v-for="(item, index) in usageData" :key="index" class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ item.type }}</span>
+                                    <span class="text-sm font-bold text-slate-900 dark:text-white">{{ item.count }} records</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 flex justify-end">
+                                <button 
+                                    @click="closeUsageModal"
+                                    class="rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
+
+        <!-- Import Modal -->
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition duration-150 ease-in"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div v-if="showImportModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-slate-950/80 backdrop-blur-sm">
+                    <div class="glass-card rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Import Products</h3>
+                            <button @click="showImportModal = false" class="text-slate-500 hover:text-slate-900 dark:text-white transition-colors">
+                                <XMarkIcon class="h-6 w-6" />
+                            </button>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Excel/CSV File</label>
+                            <div class="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 hover:border-blue-500/50 transition-colors relative">
+                                <input 
+                                    type="file" 
+                                    @change="onFileChange"
+                                    class="absolute inset-0 opacity-0 cursor-pointer"
+                                    accept=".xlsx,.xls,.csv"
+                                />
+                                <ArrowUpTrayIcon class="h-10 w-10 text-slate-600 mb-2" />
+                                <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                                    {{ importFile ? importFile.name : 'Click or drag file to upload' }}
+                                </p>
+                                <p class="text-xs text-slate-600 mt-1">Maximum size: 2MB</p>
+                                <div class="mt-4 z-10 relative flex flex-col items-center gap-2">
+                                    <a 
+                                        :href="route('inventory.products.template', { with_data: includeProductData ? 1 : 0 })"
+                                        class="text-xs text-blue-400 hover:text-blue-300 underline"
+                                    >
+                                        Download Template
+                                    </a>
+                                    
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            id="include_product_data"
+                                            type="checkbox"
+                                            v-model="includeProductData"
+                                            class="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-slate-700 dark:border-slate-600"
+                                        />
+                                        <label for="include_product_data" class="text-xs text-slate-500 dark:text-slate-400 cursor-pointer select-none">
+                                            Include Existing Data
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mt-6 flex justify-end">
+                        <div class="mb-6">
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors">
+                                <div class="flex items-center h-5">
+                                    <input 
+                                        v-model="overwriteExisting" 
+                                        type="checkbox" 
+                                        class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-blue-500/50 focus:ring-offset-0"
+                                    />
+                                </div>
+                                <div class="flex-1">
+                                    <span class="block text-sm font-medium text-slate-600 dark:text-slate-300">Overwrite Existing Data</span>
+                                    <p class="text-xs text-slate-500 mt-1">
+                                        If checked, products with matching SKU will be updated with data from the file.
+                                    </p>
+                                    <div v-if="overwriteExisting" class="mt-2 flex items-start gap-2 text-xs text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                                        <ExclamationTriangleIcon class="h-4 w-4 shrink-0" />
+                                        <span>Warning: This will replace existing product details.</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center gap-3">
                             <button 
-                                @click="closeUsageModal"
-                                class="rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
+                                @click="handleImport"
+                                :disabled="!importFile || importing"
+                                class="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
-                                Close
+                                {{ importing ? 'Importing...' : 'Start Import' }}
+                            </button>
+                            <button 
+                                @click="showImportModal = false"
+                                class="flex-1 rounded-xl bg-slate-50 dark:bg-slate-800 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-700 transition-all"
+                            >
+                                Cancel
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
-        </Transition>
+            </Transition>
+        </Teleport>
 
-        <!-- Import Modal -->
-        <Transition
-            enter-active-class="transition duration-200 ease-out"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
-            leave-active-class="transition duration-150 ease-in"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-        >
-            <div v-if="showImportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-slate-950/80 backdrop-blur-sm">
-                <div class="glass-card rounded-2xl w-full max-w-md p-6 shadow-2xl">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Import Products</h3>
-                        <button @click="showImportModal = false" class="text-slate-500 hover:text-slate-900 dark:text-white transition-colors">
-                            <XMarkIcon class="h-6 w-6" />
-                        </button>
-                    </div>
-                    
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Excel/CSV File</label>
-                        <div class="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 hover:border-blue-500/50 transition-colors relative">
-                            <input 
-                                type="file" 
-                                @change="onFileChange"
-                                class="absolute inset-0 opacity-0 cursor-pointer"
-                                accept=".xlsx,.xls,.csv"
-                            />
-                            <ArrowUpTrayIcon class="h-10 w-10 text-slate-600 mb-2" />
-                            <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                                {{ importFile ? importFile.name : 'Click or drag file to upload' }}
-                            </p>
-                            <p class="text-xs text-slate-600 mt-1">Maximum size: 2MB</p>
-                            <div class="mt-4 z-10 relative">
-                                <a 
-                                    href="/inventory/products-template"
-                                    class="text-xs text-blue-400 hover:text-blue-300 underline"
-                                >
-                                    Download Template
-                                </a>
+        <!-- Alias Import Modal -->
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition duration-150 ease-in"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div v-if="showAliasImportModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-slate-950/80 backdrop-blur-sm">
+                    <div class="glass-card rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Import Partner Aliases</h3>
+                            <button @click="showAliasImportModal = false" class="text-slate-500 hover:text-slate-900 dark:text-white transition-colors">
+                                <XMarkIcon class="h-6 w-6" />
+                            </button>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Excel/CSV File</label>
+                            <div class="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 hover:border-blue-500/50 transition-colors relative">
+                                <input 
+                                    type="file" 
+                                    @change="onAliasFileChange"
+                                    class="absolute inset-0 opacity-0 cursor-pointer"
+                                    accept=".xlsx,.xls,.csv"
+                                />
+                                <ArrowUpTrayIcon class="h-10 w-10 text-slate-600 mb-2" />
+                                <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                                    {{ aliasImportFile ? aliasImportFile.name : 'Click or drag file to upload' }}
+                                </p>
+                                <p class="text-xs text-slate-600 mt-1">Maximum size: 2MB</p>
+                                <div class="mt-4 z-10 relative flex flex-col items-center gap-2">
+                                    <a
+                                        :href="route('inventory.product-aliases.template', { with_data: includeData ? 1 : 0 })"
+                                        class="text-xs text-blue-400 hover:text-blue-300 underline"
+                                    >
+                                        Download Template
+                                    </a>
+                                    
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            id="include_data"
+                                            type="checkbox"
+                                            v-model="includeData"
+                                            class="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-slate-700 dark:border-slate-600"
+                                        />
+                                        <label for="include_data" class="text-xs text-slate-500 dark:text-slate-400 cursor-pointer select-none">
+                                            Include Existing Data
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mt-4 z-10 relative flex items-center gap-3 w-full">
+                                    <button 
+                                        @click="handleAliasImport"
+                                :disabled="!aliasImportFile || aliasImporting"
+                                class="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                {{ aliasImporting ? 'Importing...' : 'Start Import' }}
+                            </button>
+                            <button 
+                                @click="showAliasImportModal = false"
+                                class="flex-1 rounded-xl bg-slate-50 dark:bg-slate-800 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-700 transition-all"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                             </div>
                         </div>
                     </div>
-
-                    <div class="mb-6">
-                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors">
-                            <div class="flex items-center h-5">
-                                <input 
-                                    v-model="overwriteExisting" 
-                                    type="checkbox" 
-                                    class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-blue-500/50 focus:ring-offset-0"
-                                />
-                            </div>
-                            <div class="flex-1">
-                                <span class="block text-sm font-medium text-slate-600 dark:text-slate-300">Overwrite Existing Data</span>
-                                <p class="text-xs text-slate-500 mt-1">
-                                    If checked, products with matching SKU will be updated with data from the file.
-                                </p>
-                                <div v-if="overwriteExisting" class="mt-2 flex items-start gap-2 text-xs text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
-                                    <ExclamationTriangleIcon class="h-4 w-4 shrink-0" />
-                                    <span>Warning: This will replace existing product details.</span>
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                        <button 
-                            @click="handleImport"
-                            :disabled="!importFile || importing"
-                            class="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            {{ importing ? 'Importing...' : 'Start Import' }}
-                        </button>
-                        <button 
-                            @click="showImportModal = false"
-                            class="flex-1 rounded-xl bg-slate-50 dark:bg-slate-800 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-700 transition-all"
-                        >
-                            Cancel
-                        </button>
-                    </div>
                 </div>
-            </div>
-        </Transition>
+            </Transition>
+        </Teleport>
 
         <!-- Filters Panel -->
         <Transition

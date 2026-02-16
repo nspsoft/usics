@@ -7,6 +7,8 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Unit;
 use App\Models\Warehouse;
+use App\Models\Customer;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -137,10 +139,12 @@ class ProductController extends Controller
      */
     public function show(Product $product): Response
     {
-        $product->load(['category', 'unit', 'stocks.warehouse', 'stocks.location']);
+        $product->load(['category', 'unit', 'stocks.warehouse', 'stocks.location', 'partners.partner']);
 
         return Inertia::render('Inventory/Products/Show', [
             'product' => $product,
+            'customers' => Customer::active()->orderBy('name')->get(['id', 'name']),
+            'suppliers' => Supplier::active()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -227,9 +231,12 @@ class ProductController extends Controller
         return back()->with('success', 'Products imported successfully.');
     }
 
-    public function template()
+    public function template(Request $request)
     {
-        return Excel::download(new ProductTemplateExport, 'products_template.xlsx');
+        if ($request->boolean('with_data')) {
+            return Excel::download(new \App\Exports\ProductDataExport, 'products_data_' . now()->format('Y-m-d') . '.xlsx');
+        }
+        return Excel::download(new \App\Exports\Template\ProductTemplateExport, 'products_template.xlsx');
     }
 
     public function usage(Product $product)
