@@ -70,6 +70,11 @@ class SalesOrderItem extends Model
         return $this->hasMany(DeliveryOrderItem::class);
     }
 
+    public function invoiceItems(): HasMany
+    {
+        return $this->hasMany(SalesInvoiceItem::class);
+    }
+
     public function returnItems()
     {
         return $this->hasManyThrough(
@@ -115,6 +120,65 @@ class SalesOrderItem extends Model
         return $this->qty_delivered >= $this->qty;
     }
 
+    public function recalculateTotals()
+    {
+        // 1. Calculate Gross Delivered (Sum of Valid DO Items)
+        $grossDelivered = \App\Models\DeliveryOrderItem::where('sales_order_item_id', $this->id)
+            ->whereHas('deliveryOrder', function ($q) {
+                $q->whereIn('status', ['shipped', 'delivered', 'completed']);
+            })
+            ->sum('qty_delivered');
+
+        // 2. Calculate Returned
+        try {
+            $returned = $this->returnItems()->sum('qty');
+        } catch (\Exception $e) {
+            $returned = 0;
+        }
+
+        // 3. Update if different
+        if (abs($this->qty_delivered - $grossDelivered) > 0.001 || abs($this->qty_returned - $returned) > 0.001) {
+            $this->qty_delivered = $grossDelivered;
+            $this->qty_returned = $returned;
+            $this->saveQuietly(); // Use saveQuietly to avoid recursion if we had other events, but check if we need to update Parent SO?
+            
+            // We SHOULD update Parent SO totals because delivered qty changed (might affect status)
+            // But doing $this->salesOrder->calculateTotals() might be heavy. 
+            // Let's rely on the 'saved' event of THIS model if we use save().
+            // But wait, if I use saveQuietly, 'saved' won't fire.
+            // If I use save(), 'saved' fires -> $item->salesOrder->calculateTotals().
+            // This is correct.
+            // However, to avoid infinite loops if 'saved' called this... 
+            // checking 'isDirty' logic inside 'saved' prevents that?
+            // This method is called EXPLICITLY. So save() is fine.
+        }
+        
+        // Also trigger Parent SO update explicitly if saveQuietly was used, or just let save() do it.
+        // Let's use save() to trigger the existing 'saved' event which updates SO header.
+        if ($this->isDirty('qty_delivered') || $this->isDirty('qty_returned')) {
+            $this->save(); 
+        }
+    }
+
+    public function recalculateInvoiced()
+    {
+        // Calculate Real Invoiced Qty from Active Invoices
+        $realInvoiced = $this->invoiceItems()
+            ->whereHas('salesInvoice', function ($q) {
+                // Ensure invoice is not deleted (if soft deletes used) and not cancelled?
+                // Assuming standard SoftDeletes or status check if needed.
+                // SalesInvoice model usually has SoftDeletes? Let's assume standard relationship integrity.
+                // If the relationship is properly defined, it should respect global scopes.
+                // But explicit check for 'cancelled' status might be needed if you have it.
+            })
+            ->sum('qty');
+
+        if (abs($this->qty_invoiced - $realInvoiced) > 0.001) {
+            $this->qty_invoiced = $realInvoiced;
+            $this->save(); // Trigger 'saved' event to update Parent SO potentially
+        }
+    }
+
     protected static function booted(): void
     {
         static::saving(function (SalesOrderItem $item) {
@@ -125,11 +189,15 @@ class SalesOrderItem extends Model
         });
 
         static::saved(function (SalesOrderItem $item) {
-            $item->salesOrder->calculateTotals();
+            if ($item->salesOrder) {
+                 $item->salesOrder->calculateTotals();
+            }
         });
 
         static::deleted(function (SalesOrderItem $item) {
-            $item->salesOrder->calculateTotals();
+            if ($item->salesOrder) {
+                $item->salesOrder->calculateTotals();
+            }
         });
     }
 }

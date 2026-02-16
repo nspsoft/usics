@@ -227,7 +227,7 @@ class DeliveryOrderController extends Controller
                 // qty > qty_delivered means there is remaining quantity.
                 $q->whereRaw('qty > qty_delivered');
             })
-            ->with(['customer', 'items.deliveryOrderItems.deliveryOrder'])
+            ->with(['customer'])
             ->orderByDesc('id')
             ->limit(100) // Use limit instead of take for DB query
             ->get();
@@ -550,6 +550,14 @@ class DeliveryOrderController extends Controller
 
             $deliveryOrder->save();
              
+            // Force Recalculate Sales Order Items because DO Status change affects qty_delivered totals
+            // (e.g. moving from Packed -> Shipped adds to qty_delivered)
+            foreach ($deliveryOrder->items as $item) {
+                if ($item->salesOrderItem) {
+                    $item->salesOrderItem->recalculateTotals();
+                }
+            }
+             
              // Update SO Status if needed
              // If reverting from Delivered/Completed to something else, check SO.
              if ($deliveryOrder->salesOrder && $deliveryOrder->salesOrder->status === \App\Models\SalesOrder::STATUS_DELIVERED) {
@@ -679,8 +687,7 @@ class DeliveryOrderController extends Controller
 
                 // Update Sales Order Item Delivered Qty
                 if ($item->salesOrderItem) {
-                    $item->salesOrderItem->qty_delivered += $qtyDiff;
-                    $item->salesOrderItem->save();
+                    $item->salesOrderItem->recalculateTotals();
                 }
             }
         }
@@ -757,12 +764,12 @@ class DeliveryOrderController extends Controller
                     $subtotal += $lineTotal;
 
                     // Update DO item invoiced qty
-                    $item->qty_invoiced += $item->qty_delivered;
-                    $item->save();
+                    $item->recalculateInvoiced();
 
                     // Update SO item invoiced qty
-                    $soItem->qty_invoiced += $item->qty_delivered;
-                    $soItem->save();
+                    if ($soItem) { 
+                        $soItem->recalculateInvoiced();
+                    }
                 }
 
                 $deliveryOrder->refreshInvoiceStatus();
@@ -955,12 +962,10 @@ class DeliveryOrderController extends Controller
                                 $groupedItems[$key]['do_numbers'][] = $do->do_number;
                             }
 
-                            $item->qty_invoiced += (float) $item->qty_delivered;
-                            $item->save();
+                            $item->recalculateInvoiced();
 
                             if ($item->salesOrderItem) {
-                                $item->salesOrderItem->qty_invoiced += (float) $item->qty_delivered;
-                                $item->salesOrderItem->save();
+                                $item->salesOrderItem->recalculateInvoiced();
                             }
                         }
                         $processedDOs++;
@@ -1079,8 +1084,8 @@ class DeliveryOrderController extends Controller
             // Update SO item delivered qty ATOMICALLY
             $soItem = $item->salesOrderItem;
             if ($soItem) {
-                // Use increment to prevent race conditions
-                $soItem->increment('qty_delivered', $item->qty_delivered);
+                // Use recalculateTotals to ensure consistency with actual DO statuses
+                $soItem->recalculateTotals();
             }
 
             // Reduce product stock
@@ -1137,12 +1142,10 @@ class DeliveryOrderController extends Controller
                 );
             }
 
-            // 2. Decrement Sales Order Item Delivered Qty ATOMICALLY
+            // 2. Recalculate Sales Order Item Delivered Qty
             if ($item->salesOrderItem) {
-                // Prevent negative values with DB check if possible, but for now decrement is safer than read-modify-write
-                // However, decrement doesn't check for < 0.
-                // Given logic, it should be fine.
-                $item->salesOrderItem->decrement('qty_delivered', $item->qty_delivered);
+                // Use recalculateTotals to ensure consistency
+                $item->salesOrderItem->recalculateTotals();
             }
         }
     }

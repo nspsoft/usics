@@ -90,7 +90,7 @@ const getRemainingBeforeThis = (item) => {
     // Effective Delivered = Total Delivered - Total Returned
     const effectiveDelivered = totalDeliveredSoItem - totalReturnedSoItem;
 
-    if (props.deliveryOrder.status === 'delivered') {
+    if (['delivered', 'completed'].includes(props.deliveryOrder.status)) {
         // If already delivered, totalDelivered includes THIS item.
         // Reserved doesn't include delivered items.
         return soQty - (effectiveDelivered - parseFloat(item.qty_delivered));

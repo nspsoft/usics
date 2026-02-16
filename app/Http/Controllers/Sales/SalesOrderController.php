@@ -428,12 +428,10 @@ class SalesOrderController extends Controller
                         ]);
 
                         // Update DO item tracking
-                        $doItem->qty_invoiced += $take;
-                        $doItem->save();
+                        $doItem->recalculateInvoiced();
 
                         // Update SO item tracking
-                        $soItem->qty_invoiced += $take;
-                        $soItem->save();
+                        $soItem->recalculateInvoiced();
 
                         $uninvoicedQty -= $take;
                     }

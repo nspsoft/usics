@@ -184,36 +184,46 @@ class SalesInvoiceController extends Controller
 
         try {
             \DB::transaction(function () use ($salesInvoice) {
-                $affectedDeliveryOrderIds = [];
-
-                // Return invoiced qty to SO items
+                // 1. Capture items data for recalculation BEFORE deleting (in case of cascade)
+                $recalcTargets = [];
                 foreach ($salesInvoice->items as $item) {
-                    $soItem = $item->salesOrderItem;
-                    if ($soItem) {
-                        // Prevent negative value if data was previously corrupted
-                        $soItem->qty_invoiced = max(0, $soItem->qty_invoiced - $item->qty);
-                        $soItem->save();
+                    $recalcTargets[] = [
+                        'so_item_id' => $item->sales_order_item_id,
+                        'do_id' => $item->delivery_order_id,
+                        'do_item_id' => null, // We don't have direct link, logic uses do_id + so_item_id
+                    ];
+                }
+
+                // 2. Delete the Invoice (Soft or Hard)
+                // This effectively removes these items from the "Active Invoiced" sum
+                $salesInvoice->delete();
+
+                // 3. Trigger Recalculation
+                foreach ($recalcTargets as $target) {
+                    // Update Sales Order Item
+                    if ($target['so_item_id']) {
+                        $soItem = \App\Models\SalesOrderItem::find($target['so_item_id']);
+                        if ($soItem) {
+                            $soItem->recalculateInvoiced();
+                        }
                     }
 
-                    if ($item->delivery_order_id && $item->sales_order_item_id) {
-                        $doItem = \App\Models\DeliveryOrderItem::where('delivery_order_id', $item->delivery_order_id)
-                            ->where('sales_order_item_id', $item->sales_order_item_id)
+                    // Update Delivery Order Item
+                    if ($target['do_id'] && $target['so_item_id']) {
+                        $doItem = \App\Models\DeliveryOrderItem::where('delivery_order_id', $target['do_id'])
+                            ->where('sales_order_item_id', $target['so_item_id'])
                             ->first();
 
                         if ($doItem) {
-                            // Prevent negative value
-                            $doItem->qty_invoiced = max(0, $doItem->qty_invoiced - $item->qty);
-                            $doItem->save();
-                            
-                            $affectedDeliveryOrderIds[$item->delivery_order_id] = true;
+                            $doItem->recalculateInvoiced();
                         }
                     }
                 }
-                $salesInvoice->delete();
 
-                // Refresh Invoice Status for all affected DOs
-                if (!empty($affectedDeliveryOrderIds)) {
-                    $dos = \App\Models\DeliveryOrder::whereIn('id', array_keys($affectedDeliveryOrderIds))->get();
+                // 4. Refresh Invoice Status for all affected DOs
+                $affectedDoIds = array_filter(array_unique(array_column($recalcTargets, 'do_id')));
+                if (!empty($affectedDoIds)) {
+                    $dos = \App\Models\DeliveryOrder::whereIn('id', $affectedDoIds)->get();
                     foreach ($dos as $do) {
                         $do->refreshInvoiceStatus();
                     }

@@ -21,57 +21,38 @@ class RecalculateSalesItems extends Command
         $updatedCount = 0;
 
         foreach ($items as $item) {
-            // 1. Calculate Gross Delivered (Sum of Valid DO Items)
-            $grossDelivered = DeliveryOrderItem::where('sales_order_item_id', $item->id)
-                ->whereHas('deliveryOrder', function ($q) {
-                    $q->where('status', '!=', 'cancelled');
-                })
-                ->sum('qty_delivered');
+            if ($item->id == 111) {
+                // Pre-debug state
+                $this->info("DEBUG ITEM 111 BEFORE: Delivered: {$item->qty_delivered}");
+            }
 
-            // 2. Calculate Returned
-            $returned = 0;
-            try {
-                // Use the relationship if it works, otherwise assume 0 for now to be safe or use direct query if relation is complex
-                // The relation definition:
-                // return $this->hasManyThrough(SalesReturnItem::class, SalesReturn::class, ...
+            // Use the model's standardized method to recalculate (it handles saving if dirty)
+            // But we want to count updates.
+            // recalculateTotals() uses saveQuietly() or save() inside. 
+            // We can check isDirty AFTER calling it? No, because it saves inside.
+            // So we should check if values changed by capturing before/after.
+            
+            $oldDelivered = $item->qty_delivered;
+            $oldReturned = $item->qty_returned;
+            $oldInvoiced = $item->qty_invoiced;
+            
+            $item->recalculateTotals();
+            
+            // Reload to get fresh values if needed, or rely on object references if save() updates them (it should)
+            // Actually, let's just assume if recalculateTotals did its job, it saved.
+            
+            if (abs($item->qty_delivered - $oldDelivered) > 0.001 || 
+                abs($item->qty_returned - $oldReturned) > 0.001 || 
+                abs($item->qty_invoiced - $oldInvoiced) > 0.001) {
                 
-                // Let's try to use the relation. If it fails, we catch it.
-                // Actually, for robustness in this script, let's use a direct Join if possible, 
-                // but sticking to Eloquent relationship is standard.
-                $returned = $item->returnItems()->sum('qty');
-            } catch (\Exception $e) {
-                // $this->warn("Could not calc returns for Item ID {$item->id}: " . $e->getMessage());
-            }
-
-            // 3. Calculate Invoiced
-            // Assuming direct relationship or we can leave it if not critical to this bug.
-            // But let's try to fix it too.
-            // Invoice items usually link to sales_order_item_id.
-            $invoiced = \App\Models\SalesInvoiceItem::where('sales_order_item_id', $item->id)
-                ->whereHas('salesInvoice', function ($q) {
-                    $q->where('status', '!=', 'cancelled'); // Assuming invoice has status
-                })
-                ->sum('qty');
-
-            // Update if different
-            // We use float comparison
-            $isDirty = false;
-            if (abs($item->qty_delivered - $grossDelivered) > 0.001) {
-                $item->qty_delivered = $grossDelivered;
-                $isDirty = true;
-            }
-            if (abs($item->qty_returned - $returned) > 0.001) {
-                $item->qty_returned = $returned;
-                $isDirty = true;
-            }
-            if (abs($item->qty_invoiced - $invoiced) > 0.001) {
-                $item->qty_invoiced = $invoiced;
-                $isDirty = true;
-            }
-
-            if ($isDirty) {
-                $item->saveQuietly(); // Avoid triggering events like 'saved' that might recalc totals excessively
                 $updatedCount++;
+                if ($item->id == 111) {
+                     $this->info("DEBUG ITEM 111 AFTER: Delivered: {$item->qty_delivered} (Updated!)");
+                }
+            } else {
+                 if ($item->id == 111) {
+                     $this->info("DEBUG ITEM 111 NO CHANGE: Delivered: {$item->qty_delivered}");
+                 }
             }
             
             $bar->advance();

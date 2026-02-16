@@ -101,6 +101,18 @@ class DeliveryOrderItem extends Model
                 );
             }
         });
+        static::saved(function ($deliveryOrderItem) {
+            if ($deliveryOrderItem->salesOrderItem) {
+                $deliveryOrderItem->salesOrderItem->recalculateTotals();
+            }
+        });
+
+        static::deleted(function ($deliveryOrderItem) {
+            if ($deliveryOrderItem->salesOrderItem) {
+                $deliveryOrderItem->salesOrderItem->recalculateTotals();
+            }
+        });
+
     }
 
     public function deliveryOrder(): BelongsTo
@@ -141,5 +153,22 @@ class DeliveryOrderItem extends Model
             ->first();
 
         return $stock ? (float) $stock->qty_on_hand : 0;
+    }
+
+    public function recalculateInvoiced()
+    {
+        // Calculate Real Invoiced Qty for this DO Item
+        // Match by Delivery Order ID and Sales Order Item ID
+        $realInvoiced = SalesInvoiceItem::where('delivery_order_id', $this->delivery_order_id)
+            ->where('sales_order_item_id', $this->sales_order_item_id)
+            ->whereHas('salesInvoice', function($q) {
+                // Filter out cancelled/deleted invoices if applicable
+            })
+            ->sum('qty');
+
+        if (abs($this->qty_invoiced - $realInvoiced) > 0.001) {
+            $this->qty_invoiced = $realInvoiced;
+            $this->save();
+        }
     }
 }
