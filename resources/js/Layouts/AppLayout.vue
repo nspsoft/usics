@@ -980,14 +980,46 @@ const toggleTheme = () => {
                     </div>
                 </Transition>
 
-                <!-- Page header -->
-                <div v-if="renderHeader" class="mb-8">
-                    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ title }}</h1>
-                </div>
+            <!-- Page header -->
+            <div v-if="renderHeader" class="mb-8">
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ title }}</h1>
+            </div>
 
-                <!-- Main slot -->
+            <!-- Page Content -->
+            <main>
                 <slot />
             </main>
+
+            <!-- Flash Notifications -->
+            <div 
+                v-if="showFlash" 
+                class="fixed bottom-4 right-4 z-[100] max-w-sm w-full bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden transform transition-all duration-300 ease-in-out"
+                :class="showFlash ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'"
+            >
+                <div class="p-4 flex items-start gap-3">
+                    <div class="flex-shrink-0">
+                        <CheckCircleIcon v-if="flashSuccess" class="h-6 w-6 text-emerald-500" />
+                        <ShieldExclamationIcon v-if="flashError" class="h-6 w-6 text-red-500" />
+                    </div>
+                    <div class="flex-1 pt-0.5">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+                            {{ flashSuccess ? 'Berhasil' : 'Perhatian' }}
+                        </h3>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                            {{ flashSuccess || flashError }}
+                        </p>
+                    </div>
+                    <button @click="showFlash = false" class="flex-shrink-0 text-slate-400 hover:text-slate-500 dark:hover:text-slate-300">
+                        <XMarkIcon class="h-5 w-5" />
+                    </button>
+                </div>
+                <div class="h-1 w-full bg-slate-100 dark:bg-slate-700">
+                    <div 
+                        class="h-full transition-all duration-[5000ms] ease-linear w-0"
+                        :class="[flashSuccess ? 'bg-emerald-500' : 'bg-red-500', showFlash ? 'w-full' : 'w-0']"
+                    ></div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
