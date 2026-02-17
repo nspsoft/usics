@@ -20,7 +20,7 @@ class WhatsappSettingController extends Controller
             'wablas_api_token' => AppSetting::get('wablas_api_token', ''),
             'wablas_device' => AppSetting::get('wablas_device', ''),
             'wablas_server_url' => AppSetting::get('wablas_server_url', 'https://pati.wablas.com'),
-            'whatsapp_bot_instruction' => (string) AppSetting::get('whatsapp_bot_instruction', 'Anda adalah Customer Service Jidoka AI yang ramah. Tugas Anda adalah melayani Customer dan Staff PT JIDOKA dengan sopan, ceria, dan membantu.'),
+            'whatsapp_bot_instruction' => (string) AppSetting::get('whatsapp_bot_instruction', 'Anda adalah Customer Service PT SPINDO yang ramah. Tugas Anda adalah melayani Customer dengan sopan, informatif, dan membantu terkait produk pipa baja dan status pesanan.'),
         ];
 
         return Inertia::render('Settings/WhatsappSettings', [
