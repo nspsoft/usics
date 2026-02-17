@@ -9,34 +9,37 @@ use App\Models\AppSetting;
 
 class GeminiService
 {
-    protected string $driver;
-    protected string $apiKey;
-    protected string $model;
-    protected string $baseUrl;
-    
-    // Ollama specific
-    protected string $ollamaUrl;
-    protected string $ollamaModel;
-
-    protected string $customBotInstruction;
+    protected bool $isConfigured = false;
 
     public function __construct()
     {
-        $company = \App\Models\Company::first();
-        $aiSettings = $company?->settings['ai'] ?? [];
+        // Defer configuration to ensureConfigured()
+    }
 
-        $this->driver = $aiSettings['ai_driver'] ?? 'gemini';
-        
-        // Gemini Config
-        $this->apiKey = $aiSettings['gemini_api_key'] ?? config('services.gemini.key');
-        $this->model = $aiSettings['gemini_model'] ?? 'gemini-1.5-flash';
-        $this->baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent";
+    protected function ensureConfigured()
+    {
+        if ($this->isConfigured) return;
 
-        // Ollama Config
-        $this->ollamaUrl = $aiSettings['ollama_url'] ?? 'http://localhost:11434';
-        $this->ollamaModel = $aiSettings['ollama_model'] ?? 'llama3';
+        try {
+            $company = \App\Models\Company::first();
+            $aiSettings = $company?->settings['ai'] ?? [];
 
-        $this->customBotInstruction = (string) AppSetting::get('whatsapp_bot_instruction', '');
+            $this->driver = $aiSettings['ai_driver'] ?? 'gemini';
+            
+            // Gemini Config
+            $this->apiKey = $aiSettings['gemini_api_key'] ?? config('services.gemini.key');
+            $this->model = $aiSettings['gemini_model'] ?? 'gemini-1.5-flash';
+            $this->baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent";
+
+            // Ollama Config
+            $this->ollamaUrl = $aiSettings['ollama_url'] ?? 'http://localhost:11434';
+            $this->ollamaModel = $aiSettings['ollama_model'] ?? 'llama3';
+
+            $this->customBotInstruction = (string) AppSetting::get('whatsapp_bot_instruction', '');
+            $this->isConfigured = true;
+        } catch (\Exception $e) {
+            Log::error('GeminiService configuration failed: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -48,6 +51,7 @@ class GeminiService
      */
     public function extractPOData(string $filePath, string $mimeType): ?array
     {
+        $this->ensureConfigured();
         if ($this->driver === 'ollama') {
             return $this->extractPODataOllama($filePath, $mimeType);
         }
@@ -235,6 +239,7 @@ class GeminiService
      */
     public function extractDeliveryNoteData(string $filePath, string $mimeType): ?array
     {
+        $this->ensureConfigured();
         if ($this->driver === 'ollama') {
              if ($mimeType === 'application/pdf') {
                 try {
@@ -314,6 +319,7 @@ class GeminiService
      */
     public function analyzeCustomerIntent(string $message, ?array $customerContext = null): array
     {
+        $this->ensureConfigured();
         $contextInfo = $customerContext ? "Customer Name: {$customerContext['name']}" : "Unknown customer";
         
         $systemInstruction = $this->customBotInstruction 
@@ -362,6 +368,7 @@ Return JSON strictly: { \"intent\": \"...\", \"parameters\": { \"order_number\":
      */
     public function generateFAQResponse(string $question): string
     {
+        $this->ensureConfigured();
         $systemInstruction = $this->customBotInstruction 
             ? "Personality & Context: {$this->customBotInstruction}"
             : "You are a helpful customer service assistant for PT JIDOKA.";
@@ -404,6 +411,7 @@ Question: \"{$question}\"";
      */
     public function analyzeEmailContent(string $body): array
     {
+        $this->ensureConfigured();
         $prompt = "Analyze this incoming email and provide a structured classification.
         
         EMAIL CONTENT:
@@ -465,6 +473,7 @@ Question: \"{$question}\"";
      */
     public function analyzeForecastAccuracy(array $forecastData): string
     {
+        $this->ensureConfigured();
         // Build data table for the prompt
         $dataRows = '';
         foreach ($forecastData as $row) {
