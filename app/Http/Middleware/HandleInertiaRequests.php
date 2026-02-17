@@ -51,6 +51,7 @@ class HandleInertiaRequests extends Middleware
                 'name' => 'JICOS ERP',
                 'logo' => '/images/jicos.png',
             ],
+            'csrf_token' => csrf_token(),
         ];
     }
 }

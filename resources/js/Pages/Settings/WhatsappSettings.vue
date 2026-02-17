@@ -89,20 +89,22 @@ const testConnection = async () => {
     testResult.value = null;
     
     try {
-        const response = await fetch(route('settings.whatsapp.test'), {
-            method: 'POST',
+        const token = usePage().props.csrf_token;
+        
+        const response = await axios.post(route('settings.whatsapp.test'), {
+            phone: testPhone.value
+        }, {
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({ phone: testPhone.value }),
+                'X-CSRF-TOKEN': token
+            }
         });
         
-        const data = await response.json();
-        testResult.value = data;
+        testResult.value = response.data;
     } catch (error) {
-        testResult.value = { success: false, message: 'Terjadi error: ' + error.message };
+        testResult.value = { 
+            success: false, 
+            message: error.response?.data?.message || 'Terjadi error: ' + error.message 
+        };
     } finally {
         testLoading.value = false;
     }
