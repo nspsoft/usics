@@ -14,7 +14,8 @@ class WablasService
     public function __construct()
     {
         // Try to get from database first, fallback to .env config
-        $this->apiToken = AppSetting::get('wablas_api_token') ?: config('services.wablas.token', '');
+        $this->apiToken = (string) (AppSetting::get('wablas_api_token') ?: config('services.wablas.token', ''));
+        $this->baseUrl = AppSetting::get('wablas_server_url') ?: config('services.wablas.url', 'https://pati.wablas.com');
     }
 
     /**

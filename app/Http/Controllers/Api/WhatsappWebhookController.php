@@ -23,9 +23,14 @@ class WhatsappWebhookController extends Controller
     {
         Log::info('Fonnte Webhook Received', $request->all());
 
-        // Fonnte sends: device, sender, message, url (if media)
-        $sender = $request->input('sender');
+        // Check for Wablas format (phone) or Fonnte format (sender)
+        $sender = $request->input('sender') ?: $request->input('phone');
         $message = $request->input('message');
+        
+        if (!$sender || !$message) {
+            return response()->json(['status' => 'ignored', 'reason' => 'invalid_payload']);
+        }
+
         $isGroup = str_contains($sender, '@g.us');
 
         // Ignore group messages
@@ -33,13 +38,8 @@ class WhatsappWebhookController extends Controller
             return response()->json(['status' => 'ignored', 'reason' => 'group_message']);
         }
 
-        // Ignore empty messages
-        if (empty($message)) {
-            return response()->json(['status' => 'ignored', 'reason' => 'empty_message']);
-        }
-
-        // Extract phone number (remove @s.whatsapp.net)
-        $phone = str_replace('@s.whatsapp.net', '', $sender);
+        // Extract phone number (remove @s.whatsapp.net if present)
+        $phone = str_replace(['@s.whatsapp.net', '@c.us'], '', $sender);
 
         try {
             // Process message and get response

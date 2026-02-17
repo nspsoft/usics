@@ -57,6 +57,7 @@ const form = useForm({
     fonnte_device: props.settings?.fonnte_device || '',
     wablas_api_token: props.settings?.wablas_api_token || '',
     wablas_device: props.settings?.wablas_device || '',
+    wablas_server_url: props.settings?.wablas_server_url || 'https://pati.wablas.com',
 });
 
 const selectedProvider = computed(() => providers.find(p => p.id === form.whatsapp_provider));
@@ -282,6 +283,22 @@ const testConnection = async () => {
                                 class="form-input" 
                                 placeholder="e.g. 6281234567890" 
                             />
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                <GlobeAltIcon class="h-3 w-3" />
+                                Wablas Server URL
+                            </label>
+                            <input 
+                                v-model="form.wablas_server_url" 
+                                type="text" 
+                                class="form-input" 
+                                placeholder="e.g. https://pati.wablas.com" 
+                            />
+                            <p class="text-[10px] text-slate-500 mt-2 px-1">
+                                Default: <code>https://pati.wablas.com</code>. Check your Wablas dashboard for the correct domain.
+                            </p>
                         </div>
                     </div>
                 </div>
