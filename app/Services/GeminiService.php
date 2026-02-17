@@ -308,7 +308,7 @@ class GeminiService
         
         $systemInstruction = $this->customBotInstruction 
             ? "Personality & Context: {$this->customBotInstruction}"
-            : "You are a friendly and professional customer service assistant for PT SPINDO, an Indonesian steel pipe manufacturer.";
+            : "You are a friendly and professional customer service assistant for PT JIDOKA.";
 
         $prompt = "{$systemInstruction}
 Analyze this message and classify the intent precisely.
@@ -354,11 +354,13 @@ Return JSON strictly: { \"intent\": \"...\", \"parameters\": { \"order_number\":
     {
         $systemInstruction = $this->customBotInstruction 
             ? "Personality & Context: {$this->customBotInstruction}"
-            : "You are a helpful customer service assistant for PT SPINDO.";
+            : "You are a helpful customer service assistant for PT JIDOKA.";
 
         $prompt = "{$systemInstruction}
 Answer this customer question in Indonesian, friendly and concise (max 200 chars):
 Question: \"{$question}\"";
+
+        Log::info("Gemini System Instruction Used: " . $systemInstruction);
 
         if ($this->driver === 'ollama') {
             try {
