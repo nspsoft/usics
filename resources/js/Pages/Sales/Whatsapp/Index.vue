@@ -1,5 +1,5 @@
 <script setup>
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { 
@@ -34,6 +34,7 @@ const form = useForm({
     phone: '',
     message: '',
     file: null,
+    _token: usePage().props.csrf_token,
 });
 
 const fileInput = ref(null);
