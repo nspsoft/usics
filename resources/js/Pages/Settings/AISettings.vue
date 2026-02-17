@@ -9,11 +9,16 @@ import {
     EyeSlashIcon,
     CheckBadgeIcon,
     ArrowLeftIcon,
-    ExclamationTriangleIcon
+    ExclamationTriangleIcon,
+    ChatBubbleLeftRightIcon,
+    CpuChipIcon,
+    InformationCircleIcon,
+    GlobeAltIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    settings: Object
+    settings: Object,
+    whatsapp_bot_instruction: String
 });
 
 const showKey = ref(false);
@@ -24,6 +29,7 @@ const form = useForm({
     gemini_model: props.settings?.gemini_model || 'gemini-1.5-flash',
     ollama_url: props.settings?.ollama_url || 'http://localhost:11434',
     ollama_model: props.settings?.ollama_model || 'llama3',
+    whatsapp_bot_instruction: props.whatsapp_bot_instruction || '',
 });
 
 const submit = () => {
@@ -190,9 +196,37 @@ const aiDrivers = [
                                 </p>
                             </div>
                         </div>
-                    </div>
-                </div>
 
+                        <!-- WHATSAPP BOT PERSONALITY (INTEGRATED) -->
+                        <div class="pt-8 border-t border-slate-200 dark:border-slate-800 space-y-6">
+                            <div class="flex items-center gap-3 text-emerald-400">
+                                <ChatBubbleLeftRightIcon class="h-6 w-6" />
+                                <h4 class="text-sm font-black uppercase tracking-widest">WhatsApp Bot Personality</h4>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="bg-emerald-500/5 rounded-2xl p-4 border border-emerald-500/10 flex gap-3">
+                                    <InformationCircleIcon class="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                        Instruksi ini akan menjadi dasar bagi AI (Gemini) dalam merespon setiap pesan WhatsApp. 
+                                        Anda bisa menentukan nada bicara, gaya bahasa, dan informasi penting.
+                                    </p>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                        <SparklesIcon class="h-3 w-3" />
+                                        Custom Bot Instructions / Prompt
+                                    </label>
+                                    <textarea 
+                                        v-model="form.whatsapp_bot_instruction" 
+                                        class="form-input min-h-[150px] resize-none focus:ring-emerald-500/50 focus:border-emerald-500" 
+                                        placeholder="Contoh: Gunakan bahasa Indonesia yang santai tapi sopan..."
+                                    ></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Guidance Info -->

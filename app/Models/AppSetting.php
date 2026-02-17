@@ -35,7 +35,7 @@ class AppSetting extends Model
         $val = $setting->value;
         
         // If value is stored as array with single 'value' key, extract it
-        if (is_array($val) && isset($val['value'])) {
+        if (is_array($val) && array_key_exists('value', $val)) {
             return $val['value'];
         }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\AppSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -69,8 +70,11 @@ class CompanyController extends Controller
             'ollama_model' => 'llama3',
         ];
 
+        $defaultInstruction = "Anda adalah Customer Service Jidoka AI yang ramah. Tugas Anda adalah melayani Customer dan Staff PT JIDOKA dengan sopan, ceria, dan membantu.";
+
         return Inertia::render('Settings/AISettings', [
-            'settings' => array_merge($defaultSettings, $company->settings['ai'] ?? [])
+            'settings' => array_merge($defaultSettings, $company->settings['ai'] ?? []),
+            'whatsapp_bot_instruction' => (string) AppSetting::get('whatsapp_bot_instruction', $defaultInstruction)
         ]);
     }
 
@@ -82,6 +86,7 @@ class CompanyController extends Controller
             'gemini_model' => 'nullable|required_if:ai_driver,gemini|string',
             'ollama_url' => 'nullable|required_if:ai_driver,ollama|url',
             'ollama_model' => 'nullable|required_if:ai_driver,ollama|string',
+            'whatsapp_bot_instruction' => 'nullable|string',
         ]);
 
         $company = Company::first();
@@ -98,6 +103,10 @@ class CompanyController extends Controller
 
         $company->settings = $settings;
         $company->save();
+
+        if ($request->has('whatsapp_bot_instruction')) {
+            AppSetting::set('whatsapp_bot_instruction', $request->whatsapp_bot_instruction, 'whatsapp', 'WhatsApp Bot Personality');
+        }
 
         return redirect()->back()->with('success', 'AI Configuration updated successfully.');
     }
