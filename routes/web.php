@@ -60,6 +60,9 @@ Route::post('/register', [App\Http\Controllers\Auth\AuthController::class, 'regi
 Route::get('/', [App\Http\Controllers\WelcomeController::class, 'index'])->name('welcome');
 Route::view('/features', 'features')->name('features');
 
+// Public WhatsApp Webhook (Exempt from CSRF in bootstrap/app.php)
+Route::post('/whatsapp/webhook', [App\Http\Controllers\Api\WhatsappWebhookController::class, 'handle'])->name('whatsapp.webhook');
+
 use App\Http\Controllers\BlueprintController;
 
 // Dashboard (Protected)
