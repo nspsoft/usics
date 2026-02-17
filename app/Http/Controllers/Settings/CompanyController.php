@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\AppSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class CompanyController extends Controller
