@@ -13,11 +13,13 @@ class WhatsappBotService
 {
     protected $gateway;
     protected GeminiService $gemini;
+    protected QuotationBotService $quotationService;
     protected string $provider;
 
-    public function __construct(GeminiService $gemini)
+    public function __construct(GeminiService $gemini, QuotationBotService $quotationService)
     {
         $this->gemini = $gemini;
+        $this->quotationService = $quotationService;
         
         // Get provider from settings
         $this->provider = AppSetting::get('whatsapp_provider', 'fonnte');
@@ -243,25 +245,41 @@ class WhatsappBotService
     protected function handleRequestQuotation(?Customer $customer, array $params): string
     {
         $productName = $params['product_name'] ?? null;
-        $quantity = $params['quantity'] ?? null;
+        $quantity = $params['quantity'] ?? 1;
 
         if (!$productName) {
             return "Untuk meminta penawaran, silakan sebutkan nama produk dan jumlahnya.\nContoh: \"Minta penawaran Pipa Besi 100 batang\"";
         }
 
-        // Log potential lead / RFQ (Simplified for now)
-        $customerName = $customer ? $customer->name : 'Calon Customer (via WA)';
-        $phone = $customer ? $customer->phone : 'Unknown';
-        
-        Log::info("New RFQ from WhatsApp", [
-            'customer' => $customerName,
-            'product' => $productName,
-            'qty' => $quantity
-        ]);
+        if (!$customer) {
+            return "Maaf, untuk pembuatan penawaran resmi, nomor Anda harus terdaftar terlebih dahulu.\nSilakan hubungi Sales kami.";
+        }
 
-        // In real implementation, create RFQ record in database here
-        
-        return "✅ Permintaan penawaran untuk *{$productName}* " . ($quantity ? "({$quantity})" : "") . " telah kami terima.\n\nTim sales kami akan segera menghubungi Anda dengan penawaran resmi.\n\nTerima kasih!";
+        // 1. Generate PDF Draft
+        try {
+            $pdfUrl = $this->quotationService->generateQuotation($customer, [
+                ['product_name' => $productName, 'quantity' => $quantity]
+            ]);
+
+            if (empty($pdfUrl)) {
+                return "Maaf, produk *\"{$productName}\"* tidak ditemukan di database kami untuk dibuatkan penawaran otomatis.";
+            }
+
+            // 2. Send PDF to Customer
+            if ($this->provider === 'wablas') {
+                $this->gateway->sendFile($customer->phone, $pdfUrl, "Draft Penawaran - {$productName}");
+            } else {
+                // Fonnte fallback (send as link or file if supported)
+                // For now, send link
+                return "✅ Draft Penawaran Anda siap!\n\nSilakan unduh di sini:\n{$pdfUrl}\n\n*Catatan:* Ini adalah draft otomatis. Hubungi sales untuk negosiasi lebih lanjut.";
+            }
+
+            return "✅ Draft Penawaran untuk *{$productName}* ({$quantity}) telah kami kirimkan dalam format PDF. Silakan cek dokumen di atas 👆";
+
+        } catch (\Exception $e) {
+            Log::error("Failed to generate quotation PDF: " . $e->getMessage());
+            return "Maaf, terjadi kesalahan saat membuat penawaran otomatis. Tim sales kami akan segera menghubungi Anda manual.";
+        }
     }
 
     /**

@@ -83,6 +83,34 @@ class WablasService
     }
 
     /**
+     * Send a file/document
+     */
+    public function sendFile(string $phone, string $fileUrl, string $caption = ''): array
+    {
+        if (empty($this->apiToken)) {
+            return ['success' => false, 'error' => 'API Token not configured'];
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => $this->apiToken,
+            ])->post("{$this->baseUrl}/api/send-document", [
+                'phone' => $this->formatPhone($phone),
+                'document' => $fileUrl,
+                'caption' => $caption,
+            ]);
+
+            return [
+                'success' => ($response->json()['status'] ?? false) === true,
+                'data' => $response->json(),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Wablas Send File Error: ' . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Format phone number to international format
      */
     protected function formatPhone(string $phone): string
