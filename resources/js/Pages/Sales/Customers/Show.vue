@@ -15,7 +15,8 @@ import {
     CalendarIcon,
     ClockIcon,
     DocumentTextIcon,
-    ShoppingBagIcon
+    ShoppingBagIcon,
+    UserIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -64,6 +65,15 @@ const getStatusBadge = (status) => {
                     <Link :href="route('sales.customers.index')" class="p-2 rounded-xl glass-card text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">
                         <ArrowLeftIcon class="h-5 w-5" />
                     </Link>
+                    
+                    <!-- Profile Photo -->
+                    <div class="h-16 w-16 rounded-3xl overflow-hidden border-2 border-white dark:border-slate-800 shadow-xl">
+                        <img v-if="customer.profile_photo_url" :src="customer.profile_photo_url" class="h-full w-full object-cover" />
+                        <div v-else class="h-full w-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                            <UserIcon class="h-8 w-8" />
+                        </div>
+                    </div>
+
                     <div>
                         <div class="flex items-center gap-3">
                             <h2 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{{ customer.name }}</h2>

@@ -22,7 +22,7 @@ class Customer extends Model
             ->dontSubmitEmptyLogs();
     }
 
-    protected $appends = ['full_address'];
+    protected $appends = ['full_address', 'profile_photo_url'];
 
     protected $fillable = [
         'company_id',
@@ -45,6 +45,7 @@ class Customer extends Model
         'customer_type',
         'notes',
         'is_active',
+        'profile_photo_path',
     ];
 
     protected $casts = [
@@ -92,6 +93,15 @@ class Customer extends Model
             $this->postal_code,
         ]);
         return implode(', ', $parts);
+    }
+
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        if (!$this->profile_photo_path) {
+            return null;
+        }
+
+        return asset('storage/' . $this->profile_photo_path);
     }
 
     public function scopeActive($query)

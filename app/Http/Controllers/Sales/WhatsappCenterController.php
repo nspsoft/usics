@@ -22,7 +22,7 @@ class WhatsappCenterController extends Controller
             ->selectRaw('(SELECT intent FROM whatsapp_messages wm WHERE wm.phone = whatsapp_messages.phone ORDER BY created_at DESC LIMIT 1) as last_intent')
             ->groupBy('phone', 'customer_id')
             ->orderByDesc('last_activity')
-            ->with('customer:id,name') // Eager load customer name
+            ->with('customer:id,name,contact_person,profile_photo_path') // Eager load customer details
             ->get();
 
         return Inertia::render('Sales/Whatsapp/Index', [

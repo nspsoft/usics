@@ -14,6 +14,8 @@ use App\Exports\Template\CustomerTemplateExport;
 use App\Exports\CustomerContactExport;
 use App\Imports\CustomerContactImport;
 use App\Exports\Template\CustomerContactTemplateExport;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class CustomerController extends Controller
 {
@@ -59,6 +61,7 @@ class CustomerController extends Controller
             'code' => 'required|string|max:20|unique:customers,code',
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
+            'photo' => 'nullable|image|max:10240',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:30',
@@ -74,6 +77,34 @@ class CustomerController extends Controller
             'contacts.*.email' => 'nullable|email|max:255',
             'contacts.*.position' => 'nullable|string|max:100',
         ]);
+
+        if ($request->hasFile('photo')) {
+            $file = $request->file('photo');
+            $filename = hash_file('sha256', $file->getRealPath()) . '.jpg';
+            $path = 'customer-photos/' . $filename;
+
+            // Compress and Resize
+            $sourceImage = imagecreatefromstring(file_get_contents($file));
+            $width = imagesx($sourceImage);
+            $height = imagesy($sourceImage);
+            
+            $maxWidth = 800;
+            if ($width > $maxWidth) {
+                $newWidth = $maxWidth;
+                $newHeight = floor($height * ($maxWidth / $width));
+                $tempImage = imagescale($sourceImage, $newWidth, $newHeight);
+                imagedestroy($sourceImage);
+                $sourceImage = $tempImage;
+            }
+
+            ob_start();
+            imagejpeg($sourceImage, null, 75);
+            $imageContents = ob_get_clean();
+            imagedestroy($sourceImage);
+
+            Storage::disk('public')->put($path, $imageContents);
+            $validated['profile_photo_path'] = $path;
+        }
 
         $customer = Customer::create($validated);
 
@@ -111,6 +142,7 @@ class CustomerController extends Controller
             'code' => 'required|string|max:20|unique:customers,code,' . $customer->id,
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
+            'photo' => 'nullable|image|max:10240',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:30',
@@ -126,6 +158,39 @@ class CustomerController extends Controller
             'contacts.*.email' => 'nullable|email|max:255',
             'contacts.*.position' => 'nullable|string|max:100',
         ]);
+
+        if ($request->hasFile('photo')) {
+            // Delete old photo
+            if ($customer->profile_photo_path) {
+                Storage::disk('public')->delete($customer->profile_photo_path);
+            }
+
+            $file = $request->file('photo');
+            $filename = hash_file('sha256', $file->getRealPath()) . '.jpg';
+            $path = 'customer-photos/' . $filename;
+
+            // Compress and Resize
+            $sourceImage = imagecreatefromstring(file_get_contents($file));
+            $width = imagesx($sourceImage);
+            $height = imagesy($sourceImage);
+            
+            $maxWidth = 800;
+            if ($width > $maxWidth) {
+                $newWidth = $maxWidth;
+                $newHeight = floor($height * ($maxWidth / $width));
+                $tempImage = imagescale($sourceImage, $newWidth, $newHeight);
+                imagedestroy($sourceImage);
+                $sourceImage = $tempImage;
+            }
+
+            ob_start();
+            imagejpeg($sourceImage, null, 75);
+            $imageContents = ob_get_clean();
+            imagedestroy($sourceImage);
+
+            Storage::disk('public')->put($path, $imageContents);
+            $validated['profile_photo_path'] = $path;
+        }
 
         $customer->update($validated);
 

@@ -13,7 +13,9 @@ import {
     StarIcon,
     TrashIcon,
     QuestionMarkCircleIcon,
-    MapIcon
+    MapIcon,
+    PlusIcon,
+    ArrowPathIcon
 } from '@heroicons/vue/24/outline';
 import MapPicker from '@/Components/MapPicker.vue';
 import { ref } from 'vue';
@@ -41,7 +43,29 @@ const form = useForm({
     payment_days: props.customer?.payment_days ?? 30,
     is_active: props.customer?.is_active ?? true,
     contacts: props.customer?.contacts ?? [],
+    photo: null,
+    _method: isEditing ? 'put' : 'post',
 });
+
+const photoPreview = ref(props.customer?.profile_photo_url || null);
+const photoInput = ref(null);
+
+const selectPhoto = () => {
+    photoInput.value.click();
+};
+
+const updatePhotoPreview = () => {
+    const photo = photoInput.value.files[0];
+    if (!photo) return;
+    
+    form.photo = photo;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        photoPreview.value = e.target.result;
+    };
+    reader.readAsDataURL(photo);
+};
 
 const addContact = () => {
     form.contacts.push({
@@ -71,8 +95,12 @@ const onMapConfirm = (location) => {
 };
 
 const submit = () => {
+    // We use post to handle multipart/form-data even for updates (legacy Inertia/Laravel behavior)
+    // although newer Inertia supports patch/put with files, using _method spoofing is safer.
     if (isEditing) {
-        form.put(route('sales.customers.update', props.customer.id));
+        form.post(route('sales.customers.update', props.customer.id), {
+            forceFormData: true,
+        });
     } else {
         form.post(route('sales.customers.store'));
     }
@@ -95,6 +123,26 @@ const submit = () => {
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">
+                <!-- Profile Photo -->
+                <div class="rounded-3xl glass-card shadow-xl">
+                    <div class="p-6 flex flex-col items-center gap-4">
+                        <input type="file" class="hidden" ref="photoInput" @change="updatePhotoPreview">
+                        <div class="relative group cursor-pointer" @click="selectPhoto">
+                            <div class="h-28 w-28 rounded-3xl overflow-hidden border-2 border-dashed border-slate-300 dark:border-slate-700 group-hover:border-blue-500 transition-all flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 shadow-inner">
+                                <img v-if="photoPreview" :src="photoPreview" class="h-full w-full object-cover" />
+                                <UserIcon v-else class="h-10 w-10 text-slate-400 group-hover:text-blue-400 transition-colors" />
+                            </div>
+                            <div class="absolute -bottom-2 -right-2 p-2 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                                <ArrowPathIcon class="h-4 w-4" />
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Customer Profile Photo</p>
+                            <p class="text-[10px] text-slate-400 mt-1">PNG, JPG up to 10MB</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Basic Info -->
                 <div class="rounded-3xl glass-card shadow-xl">
                     <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20">
@@ -395,7 +443,7 @@ const submit = () => {
                                 <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
                                     :class="form.is_active ? 'translate-x-5' : 'translate-x-0'"></span>
                             </button>
-                            <span class="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide cursor-help title='Uncheck untuk menonaktifkan customer'">Customer Active</span>
+                            <span class="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide cursor-help" title="Uncheck untuk menonaktifkan customer">Customer Active</span>
                             <p class="text-xs text-slate-500 ml-2">(Uncheck to Disable)</p>
                         </div>
                     </div>

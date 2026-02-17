@@ -36,7 +36,8 @@ const filteredContacts = computed(() => {
     if (!search.value) return props.contacts;
     return props.contacts.filter(c => 
         c.phone.includes(search.value) || 
-        (c.customer?.name || '').toLowerCase().includes(search.value.toLowerCase())
+        (c.customer?.name || '').toLowerCase().includes(search.value.toLowerCase()) ||
+        (c.customer?.contact_person || '').toLowerCase().includes(search.value.toLowerCase())
     );
 });
 
@@ -175,13 +176,28 @@ const confirmDeleteHistory = () => {
                         <!-- Glow Effect -->
                         <div v-if="activeContact?.phone === contact.phone" class="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent opacity-50"></div>
 
-                        <div class="relative flex justify-between items-start mb-1">
-                            <h3 class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                                {{ contact.customer?.name || contact.phone }}
-                            </h3>
-                            <span class="text-[10px] text-slate-500 font-mono mt-1">
-                                {{ formatDate(contact.last_activity) }}
-                            </span>
+                        <div class="relative flex items-center gap-3 mb-1">
+                            <!-- Avatar -->
+                            <div class="flex-shrink-0">
+                                <img v-if="contact.customer?.profile_photo_url" :src="contact.customer.profile_photo_url" class="h-10 w-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shadow-sm" />
+                                <div v-else class="h-10 w-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold text-xs shadow-inner">
+                                    {{ (contact.customer?.name || contact.phone).charAt(0) }}
+                                </div>
+                            </div>
+                            
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors truncate">
+                                        {{ contact.customer?.name || contact.phone }}
+                                    </h3>
+                                    <span class="text-[10px] text-slate-500 font-mono mt-1 whitespace-nowrap ml-2">
+                                        {{ formatDate(contact.last_activity) }}
+                                    </span>
+                                </div>
+                                <div v-if="contact.customer?.contact_person" class="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest truncate">
+                                    {{ contact.customer.contact_person }}
+                                </div>
+                            </div>
                         </div>
                         
                         <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-1 group-hover:text-cyan-700 dark:group-hover:text-cyan-200/70 transition-colors">
@@ -210,7 +226,8 @@ const confirmDeleteHistory = () => {
                         <!-- Header -->
                         <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 flex justify-between items-center backdrop-blur-md z-10">
                             <div class="flex items-center gap-3">
-                                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-cyan-500/20">
+                                <img v-if="activeContact.customer?.profile_photo_url" :src="activeContact.customer.profile_photo_url" class="h-10 w-10 rounded-full object-cover border-2 border-white dark:border-slate-800 shadow-lg" />
+                                <div v-else class="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-cyan-500/20">
                                     {{ (activeContact.customer?.name || activeContact.phone).charAt(0) }}
                                 </div>
                                 <div>
@@ -301,7 +318,14 @@ const confirmDeleteHistory = () => {
                                 <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">
                                     {{ activeContact.customer?.name || 'Unregistered' }}
                                 </h3>
+                                <div v-if="activeContact.customer?.contact_person" class="text-xs font-bold text-cyan-600 dark:text-cyan-400 mt-1 uppercase tracking-widest">
+                                    {{ activeContact.customer.contact_person }}
+                                </div>
                             </div>
+                        </div>
+                        
+                        <div v-if="activeContact.customer?.profile_photo_url" class="mb-6 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-inner">
+                            <img :src="activeContact.customer.profile_photo_url" class="w-full aspect-square object-cover" />
                         </div>
 
                         <div class="space-y-4">
