@@ -55,7 +55,7 @@ class WhatsappBotService
         $response = match ($intent['intent'] ?? 'unknown') {
             'order_status' => $this->handleOrderStatus($customer, $intent['parameters'] ?? []),
             'invoice_check' => $this->handleInvoiceCheck($customer),
-            'product_catalog' => $this->handleProductCatalog($intent['parameters'] ?? []),
+            'product_catalog' => $this->handleProductCatalog($intent['parameters'] ?? [], $phone),
             'request_quotation' => $this->handleRequestQuotation($customer, $intent['parameters'] ?? []),
             'greeting' => $this->handleGreeting($customer, $message),
             'casual_chat' => $this->handleCasualChat($customer, $message),
@@ -185,7 +185,7 @@ class WhatsappBotService
     /**
      * Handle product catalog inquiry
      */
-    protected function handleProductCatalog(array $params): string
+    protected function handleProductCatalog(array $params, string $phone = ''): string
     {
         $search = $params['product_name'] ?? null;
 
@@ -208,6 +208,20 @@ class WhatsappBotService
         $response = "🔧 *Hasil Pencarian: \"{$search}\"*\n\n";
 
         foreach ($products as $product) {
+            // Send image if available
+            if ($product->image && $phone) {
+                try {
+                    $imageUrl = $product->image;
+                    if (!str_starts_with($imageUrl, 'http')) {
+                        $imageUrl = config('app.url') . '/storage/' . $imageUrl;
+                    }
+                    
+                    $this->gateway->sendImage($phone, $imageUrl, $product->name);
+                } catch (\Exception $e) {
+                    Log::error("Failed to send product image: " . $e->getMessage());
+                }
+            }
+
             $stock = $product->available_stock; 
             $price = $product->selling_price > 0 
                 ? "Rp " . number_format($product->selling_price, 0, ',', '.') 
