@@ -39,6 +39,7 @@ class EmailService
                 'imap.accounts.default.host' => $settings['imap_host'],
                 'imap.accounts.default.port' => (int) $settings['imap_port'],
                 'imap.accounts.default.encryption' => $settings['imap_encryption'],
+                'imap.accounts.default.validate_cert' => false, // Disable for IP/Subdomain usage
                 'imap.accounts.default.username' => $settings['imap_username'],
                 'imap.accounts.default.password' => $settings['imap_password'],
             ]);
@@ -46,11 +47,15 @@ class EmailService
             $client = Client::account('default');
             $client->connect();
 
-            $folders = $client->getFolders();
             $inbox = $client->getFolder('INBOX');
+            
+            // Log total messages to debug
+            $allMessagesCount = $inbox->messages()->all()->get()->count();
+            Log::info("IMAP Sync: Found {$allMessagesCount} total messages in INBOX.");
 
             // Fetch unread messages
             $messages = $inbox->messages()->unseen()->get();
+            Log::info("IMAP Sync: Found {$messages->count()} unread messages.");
 
             $processedCount = 0;
 

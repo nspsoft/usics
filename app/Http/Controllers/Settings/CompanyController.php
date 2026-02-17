@@ -94,11 +94,14 @@ class CompanyController extends Controller
             'ollama_url' => 'nullable|required_if:ai_driver,ollama|url',
             'ollama_model' => 'nullable|required_if:ai_driver,ollama|string',
             'whatsapp_bot_instruction' => 'nullable|string',
+            'email_settings' => 'nullable|array',
         ]);
 
         $company = Company::first();
         $settings = $company->settings ?? [];
         
+        Log::info('Updating AI Settings. Request has email_settings: ' . ($request->has('email_settings') ? 'Yes' : 'No'));
+
         // Preserve existing structure but update AI settings
         $settings['ai'] = [
             'ai_driver' => $request->ai_driver,
@@ -111,6 +114,7 @@ class CompanyController extends Controller
         // Handle Email Settings if present in request
         if ($request->has('email_settings')) {
             $settings['email'] = $request->email_settings;
+            Log::info('Email Settings updated in DB.');
         }
 
         $company->settings = $settings;
