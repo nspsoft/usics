@@ -40,15 +40,15 @@ class WablasService
             
             Log::info('Wablas Send Response', [
                 'phone' => $phone,
-                'status' => $result['status'] ?? 'unknown',
+                'status' => is_array($result) ? ($result['status'] ?? 'unknown') : 'non-json-response',
             ]);
 
             return [
-                'success' => ($result['status'] ?? false) === true,
+                'success' => is_array($result) && ($result['status'] ?? false) === true,
                 'data' => $result,
-                'error' => ($result['status'] ?? false) === true ? null : ($result['message'] ?? 'Wablas API Error'),
+                'error' => (is_array($result) && ($result['status'] ?? false) === true) ? null : (is_array($result) ? ($result['message'] ?? 'Wablas API Error') : 'Invalid Response Format'),
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Wablas Send Error: ' . $e->getMessage());
             return ['success' => false, 'error' => $e->getMessage()];
         }
@@ -100,11 +100,13 @@ class WablasService
                 'caption' => $caption,
             ]);
 
+            $result = $response->json();
+
             return [
-                'success' => ($response->json()['status'] ?? false) === true,
-                'data' => $response->json(),
+                'success' => is_array($result) && ($result['status'] ?? false) === true,
+                'data' => $result,
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Wablas Send File Error: ' . $e->getMessage());
             return ['success' => false, 'error' => $e->getMessage()];
         }

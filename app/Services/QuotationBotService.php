@@ -19,9 +19,17 @@ class QuotationBotService
         $totalAmount = 0;
 
         foreach ($requestedItems as $req) {
-            $product = Product::where('name', 'like', "%{$req['product_name']}%")
-                ->orWhere('sku', 'like', "%{$req['product_name']}%")
-                ->where('is_active', true)
+            $searchName = trim($req['product_name'] ?? '');
+            // Strip markdown asterisks or quotes if present
+            $searchName = str_replace(['*', '"', "'"], '', $searchName);
+
+            if (empty($searchName)) continue;
+
+            $product = Product::where('is_active', true)
+                ->where(function ($q) use ($searchName) {
+                    $q->where('name', 'like', "%{$searchName}%")
+                      ->orWhere('sku', 'like', "%{$searchName}%");
+                })
                 ->first();
 
             if ($product) {

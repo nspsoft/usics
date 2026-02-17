@@ -169,15 +169,25 @@ class GeminiService
     protected function parseResponse($response)
     {
         if ($response->successful()) {
-            $result = $response->json();
-            $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? null;
-            
-            Log::info('Gemini API Raw Response: ' . substr($text ?? 'NULL', 0, 500));
-            
-            if ($text) {
-                // Clean markdown code blocks if present
-                $text = preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($text));
-                return json_decode($text, true);
+            try {
+                $result = $response->json();
+                $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                
+                Log::info('Gemini API Raw Response: ' . substr($text ?? 'NULL', 0, 500));
+                
+                if ($text) {
+                    // Extract JSON if there is leading/trailing text
+                    if (preg_match('/\{.*\}/s', $text, $matches)) {
+                        $json = $matches[0];
+                        return json_decode($json, true);
+                    }
+                    
+                    // Fallback to previous cleaning logic
+                    $text = preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($text));
+                    return json_decode($text, true);
+                }
+            } catch (\Throwable $e) {
+                Log::error('Gemini Parse Error: ' . $e->getMessage());
             }
         } else {
             Log::error('Gemini API Error: ' . $response->body());
