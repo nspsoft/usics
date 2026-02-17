@@ -32,7 +32,7 @@ class WhatsappBotService
     /**
      * Handle incoming WhatsApp message
      */
-    public function handleIncomingMessage(string $phone, string $message): string
+    public function handleIncomingMessage(string $phone, string $message, ?string $pushName = null): string
     {
         // Find customer by phone
         $customer = $this->findCustomerByPhone($phone);
@@ -40,11 +40,14 @@ class WhatsappBotService
         // Log incoming message
         $this->logMessage($phone, $message, 'incoming', $customer?->id);
 
+        $customerContext = [
+            'name' => $customer ? $customer->name : ($pushName ?? 'Guest'),
+            'is_registered' => (bool) $customer,
+            'has_orders' => $customer ? $customer->salesOrders()->exists() : false,
+        ];
+
         // Analyze intent using Gemini
-        $intent = $this->gemini->analyzeCustomerIntent($message, $customer ? [
-            'name' => $customer->name,
-            'has_orders' => $customer->salesOrders()->exists(),
-        ] : null);
+        $intent = $this->gemini->analyzeCustomerIntent($message, $customerContext);
 
         Log::info('WhatsApp Bot Intent', ['phone' => $phone, 'intent' => $intent]);
 
@@ -285,7 +288,7 @@ class WhatsappBotService
             return "Maaf, saya tidak mengerti pertanyaan Anda.\n\nSaya bisa membantu untuk:\n• Cek status pesanan (ketik: status SO-xxx)\n• Cek tagihan (ketik: cek tagihan)\n• Jam operasional dan info umum\n\nAtau hubungi CS kami di 021-xxx-xxxx.";
         }
         
-        return $aiResponse;
+        return "[DEBUG DB:" . \Illuminate\Support\Facades\DB::connection()->getDatabaseName() . "] " . $aiResponse;
     }
 
     /**

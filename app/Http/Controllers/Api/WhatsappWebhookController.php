@@ -21,37 +21,36 @@ class WhatsappWebhookController extends Controller
      */
     public function handle(Request $request)
     {
-        Log::build([
-            'driver' => 'single',
-            'path' => storage_path('logs/whatsapp.log'),
-        ])->info('Webhook Payload:', [
+        Log::info('Webhook Payload:', [
             'headers' => $request->headers->all(),
             'body' => $request->all(),
             'json' => $request->json()->all(),
         ]);
         // Log::info('Webhook Payload', $request->all());
 
-        // Check for Wablas format (phone) or Fonnte format (sender)
-        $sender = $request->input('sender') ?: $request->input('phone');
+        // Wablas uses 'phone' for sender, Fonnte uses 'sender'
+        // Prioritize 'phone' as it's more likely to be the user in hybrid scenarios
+        $phone = $request->input('phone') ?: $request->input('sender');
         $message = $request->input('message');
+        $pushName = $request->input('pushName'); // Wablas specific
         
-        if (!$sender || !$message) {
+        if (!$phone || !$message) {
             return response()->json(['status' => 'ignored', 'reason' => 'invalid_payload']);
         }
 
-        $isGroup = str_contains($sender, '@g.us');
+        $isGroup = str_contains($phone, '@g.us') || $request->input('isGroup');
 
         // Ignore group messages
         if ($isGroup) {
             return response()->json(['status' => 'ignored', 'reason' => 'group_message']);
         }
 
-        // Extract phone number (remove @s.whatsapp.net if present)
-        $phone = str_replace(['@s.whatsapp.net', '@c.us'], '', $sender);
+        // Clean phone number
+        $phone = str_replace(['@s.whatsapp.net', '@c.us'], '', $phone);
 
         try {
             // Process message and get response
-            $response = $this->botService->handleIncomingMessage($phone, $message);
+            $response = $this->botService->handleIncomingMessage($phone, $message, $pushName);
 
             return response()->json([
                 'status' => 'success',
