@@ -84,30 +84,39 @@ class WhatsappCenterController extends Controller
                 $attachmentMeta['type'] = 'document';
             }
             
-            // Log with attachment info
-            if ($result['success']) {
-                $logMessage = $message ?: "[File: {$file->getClientOriginalName()}]";
-            }
+            $logMessage = $message ?: "[File: {$file->getClientOriginalName()}]";
         } elseif (!empty($message)) {
             $result = $activeService->sendMessage($phone, $message);
             $logMessage = $message;
         }
 
-        if ($result['success']) {
-            // Log manually sent message
+        // Always log the attempt if we had content
+        if (isset($logMessage)) {
             WhatsappMessage::create([
                 'phone' => $phone,
                 'direction' => 'outgoing',
-                'message' => $logMessage ?? $message,
+                'message' => $logMessage,
                 'intent' => 'manual_reply',
-                'metadata' => $attachmentMeta ?? null,
+                'metadata' => array_merge($attachmentMeta ?? [], [
+                    'delivery_success' => $result['success'],
+                    'delivery_error' => $result['error'] ?? null
+                ]),
                 'customer_id' => \App\Models\Customer::where('phone', $phone)->orWhere('mobile', $phone)->value('id'),
             ]);
+        }
 
+        if ($result['success']) {
             return back()->with('success', 'Message sent successfully');
         }
 
-        return back()->with('error', 'Failed to send message: ' . ($result['error'] ?? 'Unknown error'));
+        $errorMessage = $result['error'] ?? 'Unknown error';
+        
+        // Add helpful hint for local environments
+        if (str_contains(request()->getHost(), '.test') || str_contains(request()->getHost(), 'localhost')) {
+            $errorMessage .= ". Note: File sending often fails on local environments لأن provider (Wablas/Fonnte) tidak bisa mengakses URL lokal Bapak. Fitur ini akan lancar setelah di-deploy ke server online.";
+        }
+
+        return back()->with('error', 'Failed to send: ' . $errorMessage);
     }
 
     /**
