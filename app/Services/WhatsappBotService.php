@@ -75,6 +75,20 @@ class WhatsappBotService
     }
 
     /**
+     * Send a proactive notification (System Initiated)
+     */
+    public function sendNotification(string $phone, string $message): bool
+    {
+        // Log notification intent
+        $this->logMessage($phone, $message, 'notification');
+
+        // Send via gateway
+        $result = $this->gateway->sendMessage($phone, $message);
+        
+        return $result['success'] ?? false;
+    }
+
+    /**
      * Find customer by phone number
      */
     protected function findCustomerByPhone(string $phone): ?Customer

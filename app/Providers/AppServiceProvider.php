@@ -28,8 +28,11 @@ class AppServiceProvider extends ServiceProvider
         if (\Illuminate\Support\Facades\Request::server('HTTP_X_FORWARDED_PROTO') === 'https' || 
             \Illuminate\Support\Facades\Request::server('HTTP_HOST') === 'erp.nsp.my.id' ||
             \Illuminate\Support\Facades\Request::server('HTTP_HOST') === 'jicos.jidoka.co.id') {
-             \Illuminate\Support\Facades\URL::forceScheme('https');
+            \Illuminate\Support\Facades\URL::forceScheme('https');
         }
+
+        // Observers
+        \App\Models\SalesOrder::observe(\App\Observers\OrderStatusObserver::class);
 
         Event::listen(Login::class, function ($event) {
             activity('auth')
