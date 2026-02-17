@@ -85,8 +85,7 @@ class WhatsappBotService
 
         return Customer::where(function ($q) use ($variations) {
             foreach ($variations as $p) {
-                $q->orWhere('phone', 'like', "%{$p}%")
-                  ->orWhere('mobile', 'like', "%{$p}%");
+                $q->orWhere('phone', 'like', "%{$p}%");
             }
         })->first();
     }
