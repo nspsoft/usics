@@ -54,9 +54,10 @@ class WhatsappBotService
             'invoice_check' => $this->handleInvoiceCheck($customer),
             'product_catalog' => $this->handleProductCatalog($intent['parameters'] ?? []),
             'request_quotation' => $this->handleRequestQuotation($customer, $intent['parameters'] ?? []),
-            'greeting' => $this->handleGreeting($customer),
+            'greeting' => $this->handleGreeting($customer, $message),
+            'casual_chat' => $this->handleCasualChat($customer, $message),
             'faq' => $this->handleFAQ($message),
-            default => $this->handleUnknown($customer),
+            default => $this->handleUnknown($customer, $message),
         };
 
         // Log outgoing message
@@ -249,11 +250,18 @@ class WhatsappBotService
     /**
      * Handle greeting
      */
-    protected function handleGreeting(?Customer $customer): string
+    protected function handleGreeting(?Customer $customer, string $message): string
     {
-        $name = $customer ? $customer->name : 'Bapak/Ibu';
-        
-        return "Halo {$name}! 👋\n\nSelamat datang di layanan WhatsApp *PT SPINDO*.\n\nSaya bisa membantu Anda untuk:\n• Cek status pesanan\n• Cek tagihan/invoice\n• Informasi produk\n\nSilakan ketik pertanyaan Anda.";
+        // Use Gemini to generate a friendly, human-like greeting in Indonesian
+        return $this->gemini->generateFAQResponse("Sapa saya dengan ramah sebagai CS PT SPINDO. Pesan saya: \"{$message}\"");
+    }
+
+    /**
+     * Handle casual chat (small talk)
+     */
+    protected function handleCasualChat(?Customer $customer, string $message): string
+    {
+        return $this->gemini->generateFAQResponse($message);
     }
 
     /**
@@ -268,9 +276,16 @@ class WhatsappBotService
     /**
      * Handle unknown intent
      */
-    protected function handleUnknown(?Customer $customer): string
+    protected function handleUnknown(?Customer $customer, string $message): string
     {
-        return "Maaf, saya tidak mengerti pertanyaan Anda.\n\nSaya bisa membantu untuk:\n• Cek status pesanan (ketik: status SO-xxx)\n• Cek tagihan (ketik: cek tagihan)\n• Jam operasional dan info umum\n\nAtau hubungi CS kami di 021-xxx-xxxx.";
+        // Try to let AI handle it as a general query first
+        $aiResponse = $this->gemini->generateFAQResponse($message);
+        
+        if (str_contains($aiResponse, "Maaf") && str_contains($aiResponse, "tidak mengerti")) {
+            return "Maaf, saya tidak mengerti pertanyaan Anda.\n\nSaya bisa membantu untuk:\n• Cek status pesanan (ketik: status SO-xxx)\n• Cek tagihan (ketik: cek tagihan)\n• Jam operasional dan info umum\n\nAtau hubungi CS kami di 021-xxx-xxxx.";
+        }
+        
+        return $aiResponse;
     }
 
     /**

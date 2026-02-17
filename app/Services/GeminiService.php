@@ -300,13 +300,23 @@ class GeminiService
     public function analyzeCustomerIntent(string $message, ?array $customerContext = null): array
     {
         $contextInfo = $customerContext ? "Customer Name: {$customerContext['name']}" : "Unknown customer";
-        $prompt = "You are a customer service intent classifier for PT SPINDO.
-Analyze this message and classify intent.
+        $prompt = "You are a friendly and professional customer service assistant for PT SPINDO, an Indonesian steel pipe manufacturer.
+Analyze this message and classify the intent precisely.
+
 Context: {$contextInfo}
 Message: \"{$message}\"
 
-Intents: greeting, order_status, invoice_check, product_catalog, request_quotation, faq, unknown
-Return JSON: { \"intent\": \"...\", \"parameters\": { \"order_number\": \"...\", \"product_name\": \"...\", \"quantity\": \"...\" }, \"confidence\": 0.9 }";
+Intents:
+- greeting: Sapaan awal (Halo, Selamat siang, Pagi, etc.)
+- casual_chat: Percakapan santai non-teknis (tanya kabar, terima kasih, ok, siap, etc.)
+- order_status: Tanya status pesanan/pengiriman (status SO, nomor DO, dll)
+- invoice_check: Tanya tagihan/piutang/invoice
+- product_catalog: Tanya katalog produk/harga/pipa
+- request_quotation: Minta penawaran harga
+- faq: Pertanyaan umum tentang perusahaan
+- unknown: Tidak bisa diklasifikasikan
+
+Return JSON strictly: { \"intent\": \"...\", \"parameters\": { \"order_number\": \"...\", \"product_name\": \"...\" }, \"confidence\": 0.9 }";
 
         if ($this->driver === 'ollama') {
             $result = $this->callOllama($prompt, true);
