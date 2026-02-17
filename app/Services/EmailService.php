@@ -49,8 +49,8 @@ class EmailService
 
             $inbox = $client->getFolder('INBOX');
             
-            // Log total messages to debug
-            $allMessagesCount = $inbox->messages()->all()->get()->count();
+            // Log total messages to debug (Optimized to avoid memory issues)
+            $allMessagesCount = $inbox->messages()->all()->count();
             Log::info("IMAP Sync: Found {$allMessagesCount} total messages in INBOX.");
 
             // Fetch unread messages
