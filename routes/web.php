@@ -19,6 +19,7 @@ Route::get('/v/inv/{uuid}', [App\Http\Controllers\Sales\SalesInvoiceController::
 Route::get('/v/do/{uuid}', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'publicValidate'])->name('sales.deliveries.public-validate');
 Route::get('/v/ret/{uuid}', [App\Http\Controllers\Sales\SalesReturnController::class, 'publicValidate'])->name('sales.returns.public-validate');
 use App\Http\Controllers\HR\EmployeeController;
+use App\Http\Controllers\Inventory\ProductPartnerController;
 use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\WarehouseController;
 use App\Http\Controllers\Manufacturing\BomController;
@@ -71,10 +72,16 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::resource('categories', App\Http\Controllers\Inventory\CategoryController::class);
     Route::get('/stocks', [App\Http\Controllers\Inventory\CurrentStockController::class, 'index'])->name('stocks.index');
     Route::resource('products', ProductController::class);
+    Route::post('/products/{product}/partners', [App\Http\Controllers\Inventory\ProductPartnerController::class, 'store'])->name('products.partners.store');
+    Route::delete('/products/partners/{partner}', [App\Http\Controllers\Inventory\ProductPartnerController::class, 'destroy'])->name('products.partners.destroy');
     Route::get('/products/{product}/usage', [ProductController::class, 'usage'])->name('products.usage');
     Route::resource('projects', ProjectController::class);
     Route::resource('units', App\Http\Controllers\Inventory\UnitController::class);
     Route::get('/products-export', [ProductController::class, 'export'])->name('products.export');
+    // Product Partner Aliases Import
+    Route::get('/product-aliases/template', [ProductPartnerController::class, 'template'])->name('product-aliases.template');
+    Route::post('/product-aliases/import', [ProductPartnerController::class, 'import'])->name('product-aliases.import');
+
     Route::post('/products-import', [ProductController::class, 'import'])->name('products.import');
     Route::get('/products-template', [ProductController::class, 'template'])->name('products.template');
     Route::resource('warehouses', WarehouseController::class);

@@ -296,7 +296,10 @@
                 <tr>
                     <td class="text-center">{{ $counter++ }}</td>
                     <td>
-                        <div class="font-bold">{{ $firstItem->product->name }}</div>
+                        <div class="font-bold">{{ $firstItem->product_alias_name ?? $firstItem->product->name }}</div>
+                        @if($firstItem->product_alias_sku)
+                            <div style="font-size: 8pt; font-family: monospace;">{{ $firstItem->product_alias_sku }}</div>
+                        @endif
                         <div style="font-size: 8.5pt; color: #444;">{{ $firstItem->product->description }}</div>
                     </td>
                     <td class="text-center">{{ number_format($totalQty, 0, ',', '.') }}</td>
@@ -428,8 +431,10 @@
                         @endif
 
                         <td style="padding: 5px; border: 1pt solid #ddd;">
-                            <div style="font-weight: bold;">{{ $item->product->name }}</div>
-                            {{-- SKU removed as requested --}}
+                            <div style="font-weight: bold;">{{ $item->product_alias_name ?? $item->product->name }}</div>
+                            @if($item->product_alias_sku)
+                                <div style="font-size: 8pt; font-family: monospace;">{{ $item->product_alias_sku }}</div>
+                            @endif
                         </td>
                         <td style="padding: 5px; border: 1pt solid #ddd; text-align: center;">
                             {{ number_format($item->qty, 0, ',', '.') }}

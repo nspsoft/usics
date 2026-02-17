@@ -78,6 +78,11 @@ class Customer extends Model
         return $this->hasMany(CustomerContact::class);
     }
 
+    public function productAliases(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(\App\Models\Inventory\ProductPartner::class, 'partner');
+    }
+
     public function getFullAddressAttribute(): string
     {
         $parts = array_filter([

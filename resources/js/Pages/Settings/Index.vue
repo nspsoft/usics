@@ -7,6 +7,7 @@ import {
     GlobeAltIcon,
     BellIcon,
     ShieldCheckIcon,
+    SparklesIcon,
 } from '@heroicons/vue/24/outline';
 
 const settingsSections = [

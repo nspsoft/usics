@@ -267,7 +267,10 @@
             <tr class="item-row">
                 <td class="text-center" style="padding-top: 10px;">{{ $index + 1 }}</td>
                 <td style="padding-top: 10px;">
-                    <div class="font-bold">{{ $item->product->name ?? '-' }}</div>
+                    <div class="font-bold">{{ $item->product_alias_name ?? $item->product->name ?? '-' }}</div>
+                    @if($item->product_alias_sku)
+                        <div style="font-size: 8pt; font-family: monospace;">{{ $item->product_alias_sku }}</div>
+                    @endif
                     <div style="font-size: 8pt; color: #333;">{{ $item->description ?? $item->product->description ?? ' ' }}</div>
                 </td>
                 <td class="text-center" style="padding-top: 10px;">{{ number_format($item->qty, 0, ',', '.') }}</td>

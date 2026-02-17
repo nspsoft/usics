@@ -35,7 +35,7 @@ class GeminiService
         $this->ollamaUrl = $aiSettings['ollama_url'] ?? 'http://localhost:11434';
         $this->ollamaModel = $aiSettings['ollama_model'] ?? 'llama3';
 
-        $this->customBotInstruction = $aiSettings['whatsapp_bot_instruction'] ?? '';
+        $this->customBotInstruction = AppSetting::get('whatsapp_bot_instruction', '');
     }
 
     /**

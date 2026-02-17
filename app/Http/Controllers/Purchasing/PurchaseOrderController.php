@@ -206,11 +206,18 @@ class PurchaseOrderController extends Controller
      */
     public function print(PurchaseOrder $order)
     {
-        $order->load(['supplier', 'warehouse', 'items.product.unit', 'items.unit', 'createdBy', 'approvedBy']);
+        $order->load(['supplier', 'warehouse', 'items.product.partners', 'items.unit', 'createdBy', 'approvedBy']);
 
-        return view('print.purchase-order', [
-            'purchaseOrder' => $order,
-        ]);
+        // Inject aliases
+        foreach ($order->items as $item) {
+            if ($item->product) {
+                $alias = $item->product->getAliasFor($order->supplier);
+                $item->product_alias_name = $alias?->alias_name;
+                $item->product_alias_sku = $alias?->alias_sku;
+            }
+        }
+
+        return view('print.purchase-order', ['purchaseOrder' => $order]);
     }
 
     /**

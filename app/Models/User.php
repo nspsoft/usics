@@ -33,6 +33,7 @@ class User extends Authenticatable
         'email',
         'password',
         'supplier_id',
+        'profile_photo_path',
     ];
 
     public function supplier()

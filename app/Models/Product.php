@@ -132,6 +132,22 @@ class Product extends Model
         return $this->hasMany(QcMasterPoint::class);
     }
 
+    public function partners(): HasMany
+    {
+        return $this->hasMany(\App\Models\Inventory\ProductPartner::class);
+    }
+
+    /**
+     * Get alias for specific partner
+     */
+    public function getAliasFor(Model $partner): ?\App\Models\Inventory\ProductPartner
+    {
+        return $this->partners()
+            ->where('partner_type', $partner->getMorphClass())
+            ->where('partner_id', $partner->id)
+            ->first();
+    }
+
     /**
      * Get total stock across all warehouses
      */

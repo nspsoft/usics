@@ -738,7 +738,13 @@ const toggleTheme = () => {
                 </nav>
                 <div class="border-t border-white/5 p-4" :class="collapsed ? 'flex justify-center' : ''">
                     <div class="flex items-center gap-3 rounded-xl bg-slate-900 border border-white/5 p-3 transition-all duration-300 shadow-sm" :class="collapsed ? 'justify-center px-0 bg-transparent border-0 shadow-none' : ''">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 border border-white/10 shadow-lg">
+                        <img 
+                            v-if="$page.props.auth.user?.profile_photo_path" 
+                            :src="'/storage/' + $page.props.auth.user.profile_photo_path" 
+                            alt="User" 
+                            class="w-10 h-10 rounded-full object-cover border border-white/10 shadow-lg"
+                        />
+                        <div v-else class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 border border-white/10 shadow-lg">
                             <span class="text-sm font-bold text-white">{{ $page.props.auth.user?.name?.charAt(0).toUpperCase() || 'U' }}</span>
                         </div>
                         <div v-if="!collapsed" class="flex-1 min-w-0 transition-opacity duration-200">
@@ -900,7 +906,13 @@ const toggleTheme = () => {
                                 @click="userMenuOpen = !userMenuOpen"
                                 class="flex items-center gap-3 rounded-xl p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
                             >
-                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                                <img 
+                                    v-if="$page.props.auth.user?.profile_photo_path" 
+                                    :src="'/storage/' + $page.props.auth.user.profile_photo_path" 
+                                    alt="User" 
+                                    class="w-8 h-8 rounded-full object-cover"
+                                />
+                                <div v-else class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                                     <span class="text-xs font-bold text-white">{{ $page.props.auth.user?.name?.charAt(0).toUpperCase() || 'U' }}</span>
                                 </div>
                                 <span class="hidden lg:block text-sm font-medium text-slate-700 dark:text-white">{{ $page.props.auth.user?.name || 'User' }}</span>

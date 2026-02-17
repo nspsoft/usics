@@ -7,9 +7,15 @@ import {
     CubeIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
+import ProductPartnerManager from './Partials/ProductPartnerManager.vue';
+import { ref } from 'vue';
+
+const activeTab = ref('details');
 
 const props = defineProps({
     product: Object,
+    customers: Array,
+    suppliers: Array,
 });
 
 
@@ -64,84 +70,124 @@ const getItemTypeLabel = (type) => {
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Main Content -->
                 <div class="lg:col-span-2 space-y-6">
-                    <!-- Basic Information -->
-                    <div class="rounded-2xl glass-card overflow-hidden">
-                        <div class="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
-                            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Basic Information</h2>
+                    <!-- Tabs -->
+                    <div class="flex items-center space-x-1 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
+                        <button
+                            @click="activeTab = 'details'"
+                            :class="[
+                                activeTab === 'details'
+                                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300',
+                                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors'
+                            ]"
+                        >
+                            Details
+                        </button>
+                        <button
+                            @click="activeTab = 'stock'"
+                            :class="[
+                                activeTab === 'stock'
+                                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300',
+                                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors'
+                            ]"
+                        >
+                            Stock Levels
+                        </button>
+                         <button
+                            @click="activeTab = 'aliases'"
+                            :class="[
+                                activeTab === 'aliases'
+                                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300',
+                                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors'
+                            ]"
+                        >
+                            Partner Aliases
+                        </button>
+                    </div>
+
+                    <!-- Details Tab -->
+                    <div v-show="activeTab === 'details'" class="space-y-6">
+                        <!-- Basic Information -->
+                        <div class="rounded-2xl glass-card overflow-hidden">
+                            <div class="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
+                                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Basic Information</h2>
+                            </div>
+                            <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">SKU</label>
+                                    <p class="text-slate-900 dark:text-white font-mono">{{ product.sku }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Barcode</label>
+                                    <p class="text-slate-900 dark:text-white font-mono">{{ product.barcode || '-' }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Category</label>
+                                    <p class="text-slate-900 dark:text-white">{{ product.category?.name || '-' }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Unit</label>
+                                    <p class="text-slate-900 dark:text-white">{{ product.unit?.name }} ({{ product.unit?.symbol }})</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Item Type</label>
+                                    <p class="text-slate-900 dark:text-white">{{ getItemTypeLabel(product.type) }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Product Type</label>
+                                    <span class="inline-flex items-center rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 text-sm font-medium text-slate-600 dark:text-slate-300">
+                                        {{ getProductTypeLabel(product.product_type) }}
+                                    </span>
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Description</label>
+                                    <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{{ product.description || '-' }}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">SKU</label>
-                                <p class="text-slate-900 dark:text-white font-mono">{{ product.sku }}</p>
+
+                        <!-- Pricing & Inventory Settings -->
+                        <div class="rounded-2xl glass-card overflow-hidden">
+                            <div class="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
+                                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Pricing & Inventory</h2>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Barcode</label>
-                                <p class="text-slate-900 dark:text-white font-mono">{{ product.barcode || '-' }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Category</label>
-                                <p class="text-slate-900 dark:text-white">{{ product.category?.name || '-' }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Unit</label>
-                                <p class="text-slate-900 dark:text-white">{{ product.unit?.name }} ({{ product.unit?.symbol }})</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Item Type</label>
-                                <p class="text-slate-900 dark:text-white">{{ getItemTypeLabel(product.type) }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Product Type</label>
-                                <span class="inline-flex items-center rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 text-sm font-medium text-slate-600 dark:text-slate-300">
-                                    {{ getProductTypeLabel(product.product_type) }}
-                                </span>
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Description</label>
-                                <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{{ product.description || '-' }}</p>
+                            <div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Cost Price</label>
+                                    <p class="text-slate-900 dark:text-white font-mono">{{ formatCurrency(product.cost_price) }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Selling Price</label>
+                                    <p class="text-slate-900 dark:text-white font-mono">{{ formatCurrency(product.selling_price) }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Margin</label>
+                                    <p class="text-emerald-400 font-mono" v-if="product.selling_price > 0">
+                                        {{ ((product.selling_price - product.cost_price) / product.selling_price * 100).toFixed(1) }}%
+                                    </p>
+                                    <p class="text-slate-500" v-else>-</p>
+                                </div>
+                                <div class="border-t border-slate-200 dark:border-slate-800 sm:col-span-2 lg:col-span-3 my-2"></div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Min. Stock</label>
+                                    <p class="text-slate-900 dark:text-white">{{ formatNumber(product.min_stock) }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Reorder Point</label>
+                                    <p class="text-slate-900 dark:text-white">{{ formatNumber(product.reorder_point) }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-500 mb-1">Reorder Qty</label>
+                                    <p class="text-slate-900 dark:text-white">{{ formatNumber(product.reorder_qty) }}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Pricing & Inventory Settings -->
-                    <div class="rounded-2xl glass-card overflow-hidden">
-                        <div class="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
-                            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Pricing & Inventory</h2>
-                        </div>
-                        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Cost Price</label>
-                                <p class="text-slate-900 dark:text-white font-mono">{{ formatCurrency(product.cost_price) }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Selling Price</label>
-                                <p class="text-slate-900 dark:text-white font-mono">{{ formatCurrency(product.selling_price) }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Margin</label>
-                                <p class="text-emerald-400 font-mono" v-if="product.selling_price > 0">
-                                    {{ ((product.selling_price - product.cost_price) / product.selling_price * 100).toFixed(1) }}%
-                                </p>
-                                <p class="text-slate-500" v-else>-</p>
-                            </div>
-                            <div class="border-t border-slate-200 dark:border-slate-800 sm:col-span-2 lg:col-span-3 my-2"></div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Min. Stock</label>
-                                <p class="text-slate-900 dark:text-white">{{ formatNumber(product.min_stock) }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Reorder Point</label>
-                                <p class="text-slate-900 dark:text-white">{{ formatNumber(product.reorder_point) }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-500 mb-1">Reorder Qty</label>
-                                <p class="text-slate-900 dark:text-white">{{ formatNumber(product.reorder_qty) }}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Stock Levels -->
-                    <div class="rounded-2xl glass-card overflow-hidden">
+                    <!-- Stock Tab -->
+                    <div v-show="activeTab === 'stock'" class="rounded-2xl glass-card overflow-hidden">
                         <div class="border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
                             <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Stock Levels</h2>
                             <div class="text-sm">
@@ -187,6 +233,15 @@ const getItemTypeLabel = (type) => {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+
+                    <!-- Partner Aliases Tab -->
+                    <div v-show="activeTab === 'aliases'">
+                        <ProductPartnerManager 
+                            :product="product"
+                            :customers="customers"
+                            :suppliers="suppliers"
+                        />
                     </div>
                 </div>
 

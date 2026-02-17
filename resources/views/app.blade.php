@@ -4,6 +4,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#0f172a">
         <meta name="description" content="ERP Manufacturing - Enterprise Resource Planning for Manufacturing Industry">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title inertia>{{ config('app.name', 'ERP Manufacturing') }}</title>
 

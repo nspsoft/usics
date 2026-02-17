@@ -205,6 +205,23 @@ class SalesOrderController extends Controller
             'products' => Product::active()->where('is_sold', true)->with('unit')->orderBy('name')->get(),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
         ]);
+
+    }
+
+    public function print(SalesOrder $order)
+    {
+        $order->load(['customer', 'items.product.partners', 'items.unit', 'createdBy', 'confirmedBy']);
+
+        // Inject aliases
+        foreach ($order->items as $item) {
+            if ($item->product) {
+                $alias = $item->product->getAliasFor($order->customer);
+                $item->product_alias_name = $alias?->alias_name;
+                $item->product_alias_sku = $alias?->alias_sku;
+            }
+        }
+
+        return view('print.sales-order', ['salesOrder' => $order]);
     }
 
     public function update(Request $request, SalesOrder $order)

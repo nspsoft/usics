@@ -78,6 +78,11 @@ class Supplier extends Model
         return $this->hasMany(SupplierContact::class);
     }
 
+    public function productAliases(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(\App\Models\Inventory\ProductPartner::class, 'partner');
+    }
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);

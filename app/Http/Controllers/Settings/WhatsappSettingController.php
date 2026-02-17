@@ -20,6 +20,7 @@ class WhatsappSettingController extends Controller
             'wablas_api_token' => AppSetting::get('wablas_api_token', ''),
             'wablas_device' => AppSetting::get('wablas_device', ''),
             'wablas_server_url' => AppSetting::get('wablas_server_url', 'https://pati.wablas.com'),
+            'whatsapp_bot_instruction' => AppSetting::get('whatsapp_bot_instruction', ''),
         ];
 
         return Inertia::render('Settings/WhatsappSettings', [
@@ -37,6 +38,7 @@ class WhatsappSettingController extends Controller
             'wablas_api_token' => 'nullable|string|max:500',
             'wablas_device' => 'nullable|string|max:20',
             'wablas_server_url' => 'nullable|url|max:255',
+            'whatsapp_bot_instruction' => 'nullable|string',
         ]);
 
         // Save provider selection
@@ -60,6 +62,9 @@ class WhatsappSettingController extends Controller
         if ($request->wablas_server_url) {
             AppSetting::set('wablas_server_url', $request->wablas_server_url, 'whatsapp', 'Wablas Server URL');
         }
+
+        // Save AI Bot Instructions
+        AppSetting::set('whatsapp_bot_instruction', $request->whatsapp_bot_instruction, 'whatsapp', 'WhatsApp Bot Personality');
 
         return redirect()->back()->with('success', 'WhatsApp configuration saved successfully!');
     }

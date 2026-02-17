@@ -70,25 +70,44 @@ class SalesInvoiceController extends Controller
 
     public function print(SalesInvoice $salesInvoice)
     {
-        $salesInvoice->load(['salesOrder.customer', 'items.product', 'items.unit']);
+        $salesInvoice->load(['salesOrder.customer', 'items.product.partners', 'items.unit', 'customer']);
+        $this->injectProductAliases($salesInvoice);
 
         return view('print.invoice', ['invoice' => $salesInvoice]);
     }
 
     public function printV2(SalesInvoice $salesInvoice)
     {
-        $salesInvoice->load(['salesOrder.customer', 'items.product', 'items.unit']);
+        $salesInvoice->load(['salesOrder.customer', 'items.product.partners', 'items.unit', 'customer']);
+        $this->injectProductAliases($salesInvoice);
 
         return view('print.invoice-v2', ['invoice' => $salesInvoice]);
     }
 
     public function publicValidate($uuid)
     {
-        $invoice = SalesInvoice::with(['salesOrder.customer', 'items.product', 'items.unit'])
+        $invoice = SalesInvoice::with(['salesOrder.customer', 'items.product.partners', 'items.unit', 'customer'])
             ->where('id', $uuid)
             ->firstOrFail();
 
+        $this->injectProductAliases($invoice);
+
         return view('print.public-invoice-validation', ['invoice' => $invoice]);
+    }
+
+    private function injectProductAliases(SalesInvoice $invoice)
+    {
+        $customer = $invoice->customer ?? $invoice->salesOrder->customer;
+        
+        if (!$customer) return;
+
+        foreach ($invoice->items as $item) {
+            if ($item->product) {
+                $alias = $item->product->getAliasFor($customer);
+                $item->product_alias_name = $alias?->alias_name;
+                $item->product_alias_sku = $alias?->alias_sku;
+            }
+        }
     }
 
     public function confirm(SalesInvoice $salesInvoice)

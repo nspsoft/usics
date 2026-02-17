@@ -14,7 +14,7 @@ class FonnteService
     public function __construct()
     {
         // Try to get from database first, fallback to .env config
-        $this->apiToken = AppSetting::get('fonnte_api_token') ?: config('services.fonnte.token', '');
+        $this->apiToken = (string) (AppSetting::get('fonnte_api_token') ?: config('services.fonnte.token', ''));
     }
 
     /**

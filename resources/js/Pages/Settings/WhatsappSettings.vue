@@ -16,7 +16,8 @@ import {
     StarIcon,
     PaperAirplaneIcon,
     SignalIcon,
-    BookOpenIcon
+    BookOpenIcon,
+    SparklesIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -58,6 +59,7 @@ const form = useForm({
     wablas_api_token: props.settings?.wablas_api_token || '',
     wablas_device: props.settings?.wablas_device || '',
     wablas_server_url: props.settings?.wablas_server_url || 'https://pati.wablas.com',
+    whatsapp_bot_instruction: props.settings?.whatsapp_bot_instruction || '',
 });
 
 const selectedProvider = computed(() => providers.find(p => p.id === form.whatsapp_provider));
@@ -303,7 +305,38 @@ const testConnection = async () => {
                     </div>
                 </div>
 
-                <!-- Webhook URL Info -->
+                <div class="glass-card rounded-2xl p-8 border border-white/5 shadow-2xl">
+            <div class="flex items-center gap-3 text-emerald-400 mb-8 border-b border-slate-200 dark:border-slate-800 pb-4">
+                <SparklesIcon class="h-6 w-6" />
+                <h4 class="text-sm font-black uppercase tracking-widest">WhatsApp Bot Personality</h4>
+            </div>
+
+            <div class="space-y-6">
+                <div class="space-y-4">
+                    <div class="bg-emerald-500/5 rounded-2xl p-4 border border-emerald-500/10 flex gap-3">
+                        <InformationCircleIcon class="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Instruksi ini akan menjadi dasar bagi AI (Gemini) dalam merespon setiap pesan WhatsApp. 
+                            Anda bisa menentukan nada bicara, gaya bahasa (formal/santai), dan informasi penting yang harus selalu disampaikan.
+                        </p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                            <BookOpenIcon class="h-3 w-3" />
+                            Custom Bot Instructions / Prompt
+                        </label>
+                        <textarea 
+                            v-model="form.whatsapp_bot_instruction" 
+                            class="form-input min-h-[120px] resize-none" 
+                            placeholder="Contoh: Gunakan bahasa Indonesia yang ramah dan santai. Selalu sapa dengan 'Halo kak'. Jika pelanggan bertanya tentang stok pipa, arahkan untuk cek status pesanan..."
+                        ></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Webhook URL Info -->
                 <div class="bg-white dark:bg-white/5 rounded-2xl p-8 border border-slate-200 dark:border-white/5 shadow-lg dark:shadow-2xl">
                     <div class="flex items-center gap-3 text-cyan-600 dark:text-cyan-400 mb-6 border-b border-slate-200 dark:border-slate-800 pb-4">
                         <GlobeAltIcon class="h-6 w-6" />
