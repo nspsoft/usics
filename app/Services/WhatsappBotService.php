@@ -288,7 +288,7 @@ class WhatsappBotService
             return "Maaf, saya tidak mengerti pertanyaan Anda.\n\nSaya bisa membantu untuk:\n• Cek status pesanan (ketik: status SO-xxx)\n• Cek tagihan (ketik: cek tagihan)\n• Jam operasional dan info umum\n\nAtau hubungi CS kami di 021-xxx-xxxx.";
         }
         
-        return "[DEBUG DB:" . \Illuminate\Support\Facades\DB::connection()->getDatabaseName() . "] " . $aiResponse;
+        return $aiResponse;
     }
 
     /**

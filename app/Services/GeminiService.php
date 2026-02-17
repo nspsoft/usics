@@ -378,11 +378,13 @@ Question: \"{$question}\"";
             if ($response->successful()) {
                 return $response->json()['candidates'][0]['content']['parts'][0]['text'] ?? "Maaf, saya tidak mengerti.";
             }
+            
+            return "AI Error (" . $response->status() . "): " . substr($response->body(), 0, 200);
         } catch (\Exception $e) {
             return "Maaf, terjadi kesalahan sistem AI: " . $e->getMessage();
         }
 
-        return "Terima kasih atas pertanyaan Anda. Silakan hubungi CS kami (AI No Response).";
+        return "Terima kasih atas pertanyaan Anda. Silakan hubungi CS kami (AI No Response / Null).";
     }
 
     /**
