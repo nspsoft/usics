@@ -20,7 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
-        $middleware->validateCsrfToken(except: [
+        $middleware->validateCsrfTokens(except: [
             'whatsapp/webhook',
             'api/*',
         ]);
