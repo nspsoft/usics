@@ -21,7 +21,15 @@ class WhatsappWebhookController extends Controller
      */
     public function handle(Request $request)
     {
-        Log::info('Fonnte Webhook Received', $request->all());
+        Log::build([
+            'driver' => 'single',
+            'path' => storage_path('logs/whatsapp.log'),
+        ])->info('Webhook Payload:', [
+            'headers' => $request->headers->all(),
+            'body' => $request->all(),
+            'json' => $request->json()->all(),
+        ]);
+        // Log::info('Webhook Payload', $request->all());
 
         // Check for Wablas format (phone) or Fonnte format (sender)
         $sender = $request->input('sender') ?: $request->input('phone');

@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Smalot\PdfParser\Parser;
+use App\Models\AppSetting;
 
 class GeminiService
 {
@@ -35,7 +36,7 @@ class GeminiService
         $this->ollamaUrl = $aiSettings['ollama_url'] ?? 'http://localhost:11434';
         $this->ollamaModel = $aiSettings['ollama_model'] ?? 'llama3';
 
-        $this->customBotInstruction = AppSetting::get('whatsapp_bot_instruction', '');
+        $this->customBotInstruction = (string) AppSetting::get('whatsapp_bot_instruction', '');
     }
 
     /**
