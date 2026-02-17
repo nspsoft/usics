@@ -72,6 +72,16 @@ class WhatsappCenterController extends Controller
             return back()->with('success', 'Message sent successfully');
         }
 
-        return back()->with('error', 'Failed to send message: ' . ($result['error'] ?? 'Unknown error'));
+            return back()->with('error', 'Failed to send message: ' . ($result['error'] ?? 'Unknown error'));
+    }
+
+    /**
+     * Delete chat history for a specific phone number.
+     */
+    public function destroy(string $phone)
+    {
+        WhatsappMessage::where('phone', $phone)->delete();
+
+        return back()->with('success', 'Chat history deleted successfully.');
     }
 }

@@ -295,6 +295,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     // WhatsApp Center
     Route::get('/whatsapp', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'index'])->name('whatsapp.index');
     Route::get('/whatsapp/history/{phone}', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'history'])->name('whatsapp.history');
+    Route::delete('/whatsapp/history/{phone}', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'destroy'])->name('whatsapp.destroy');
     Route::post('/whatsapp/send', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'send'])->name('whatsapp.send');
 });
 

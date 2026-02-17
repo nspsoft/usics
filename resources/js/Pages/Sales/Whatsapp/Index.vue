@@ -11,7 +11,9 @@ import {
     ClockIcon,
     ArrowPathIcon,
     BookOpenIcon,
-    ArrowTopRightOnSquareIcon
+    BookOpenIcon,
+    ArrowTopRightOnSquareIcon,
+    TrashIcon
 } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 
@@ -108,7 +110,23 @@ onMounted(() => {
                 });
         }
     }, 10000);
+    }, 10000);
 });
+
+// Delete history
+const confirmDeleteHistory = () => {
+    if (!activeContact.value) return;
+    
+    if (confirm('Are you sure you want to delete this chat history? This action cannot be undone.')) {
+        router.delete(route('sales.whatsapp.destroy', activeContact.value.phone), {
+            onSuccess: () => {
+                messages.value = [];
+                // Optional: You might want to remove the contact from the list or clear the active contact
+                // activeContact.value = null; // Uncomment if you want to deselect
+            }
+        });
+    }
+};
 
 </script>
 
@@ -318,6 +336,10 @@ onMounted(() => {
                             <button class="w-full text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-sm text-slate-700 dark:text-slate-300 transition-all flex items-center justify-between group">
                                 View Profile
                                 <ArrowPathIcon class="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </button>
+                            <button @click="confirmDeleteHistory" class="w-full text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800 text-sm text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 transition-all flex items-center justify-between group">
+                                Clear Chat History
+                                <TrashIcon class="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </button>
                         </div>
                     </div>
