@@ -12,7 +12,11 @@ import {
     ArrowPathIcon,
     BookOpenIcon,
     ArrowTopRightOnSquareIcon,
-    TrashIcon
+    TrashIcon,
+    PaperClipIcon,
+    XMarkIcon,
+    DocumentIcon,
+    ArrowDownTrayIcon
 } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 
@@ -29,7 +33,39 @@ const chatContainer = ref(null);
 const form = useForm({
     phone: '',
     message: '',
+    file: null,
 });
+
+const fileInput = ref(null);
+const filePreview = ref(null);
+
+const triggerFileSelect = () => {
+    fileInput.value.click();
+};
+
+const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    form.file = file;
+    
+    // Create preview if it's an image
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            filePreview.value = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        filePreview.value = 'document'; // Placeholder for non-image files
+    }
+};
+
+const clearFile = () => {
+    form.file = null;
+    filePreview.value = null;
+    if (fileInput.value) fileInput.value.value = '';
+};
 
 // Filter contacts
 const filteredContacts = computed(() => {
@@ -45,10 +81,13 @@ const filteredContacts = computed(() => {
 const selectContact = async (contact) => {
     activeContact.value = contact;
     form.phone = contact.phone;
+    fetchMessages(contact.phone);
+};
+
+const fetchMessages = async (phone) => {
     isLoadingMessages.value = true;
-    
     try {
-        const response = await axios.get(route('sales.whatsapp.history', contact.phone));
+        const response = await axios.get(route('sales.whatsapp.history', phone));
         messages.value = response.data;
         scrollToBottom();
     } catch (error) {
@@ -58,22 +97,36 @@ const selectContact = async (contact) => {
     }
 };
 
-// Send message
 const sendMessage = () => {
-    if (!form.message.trim()) return;
-
+    if (!activeContact.value) return;
+    if (!form.message.trim() && !form.file) return;
+    
+    form.phone = activeContact.value.phone;
     form.post(route('sales.whatsapp.send'), {
         preserveScroll: true,
+        forceFormData: true,
         onSuccess: () => {
             // Optimistic update
             messages.value.push({
                 direction: 'outgoing',
-                message: form.message,
+                message: form.message || (form.file ? `[File: ${form.file.name}]` : ''),
                 created_at: new Date().toISOString(),
-                intent: 'manual_reply'
+                intent: 'manual_reply',
+                metadata: form.file ? {
+                    type: form.file.type.startsWith('image/') ? 'image' : 'document',
+                    name: form.file.name,
+                    url: filePreview.value !== 'document' ? filePreview.value : null, // Temp preview URL
+                    size: form.file.size
+                } : null
             });
             form.message = '';
+            clearFile();
             scrollToBottom();
+            
+            // Re-fetch to get actual server URLs
+            setTimeout(() => {
+                fetchMessages(activeContact.value.phone);
+            }, 1000);
         }
     });
 };
@@ -254,7 +307,28 @@ const confirmDeleteHistory = () => {
                                         ? 'bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-tr-sm shadow-[0_5px_15px_rgba(8,145,178,0.2)]' 
                                         : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-tl-sm shadow-lg'"
                                 >
-                                    <p class="whitespace-pre-wrap leading-relaxed">{{ msg.message }}</p>
+                                    <!-- Attachment Rendering -->
+                                    <div v-if="msg.metadata?.url" class="mb-2">
+                                        <!-- Image -->
+                                        <div v-if="msg.metadata.type === 'image'" class="rounded-lg overflow-hidden border border-white/20 dark:border-slate-700 shadow-sm cursor-pointer" @click="window.open(msg.metadata.url, '_blank')">
+                                            <img :src="msg.metadata.url" class="max-w-full h-auto object-cover hover:scale-105 transition-transform duration-500" />
+                                        </div>
+                                        <!-- Document -->
+                                        <div v-else class="flex items-center gap-3 p-3 bg-white/10 dark:bg-slate-900/50 rounded-xl border border-white/20 dark:border-slate-700">
+                                            <div class="p-2 rounded-lg bg-white/20 dark:bg-slate-800">
+                                                <DocumentIcon class="h-6 w-6" />
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-xs font-bold truncate">{{ msg.metadata.name || 'document' }}</p>
+                                                <p class="text-[10px] opacity-70">{{ (msg.metadata.size / 1024).toFixed(1) }} KB</p>
+                                            </div>
+                                            <a :href="msg.metadata.url" target="_blank" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                                                <ArrowDownTrayIcon class="h-4 w-4" />
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <p v-if="msg.message && !msg.message.startsWith('[File:')" class="whitespace-pre-wrap leading-relaxed">{{ msg.message }}</p>
                                     
                                     <div class="mt-2 flex items-center justify-end gap-2 opacity-70">
                                         <span class="text-[10px] font-mono">{{ formatDate(msg.created_at) }}</span>
@@ -274,16 +348,42 @@ const confirmDeleteHistory = () => {
                         <!-- Input -->
                         <div class="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800 backdrop-blur-md">
                             <form @submit.prevent="sendMessage" class="relative">
+                                <!-- File Preview Area -->
+                                <div v-if="form.file" class="absolute bottom-full left-0 mb-4 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    <div class="h-12 w-12 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                        <img v-if="filePreview !== 'document'" :src="filePreview" class="h-full w-full object-cover" />
+                                        <DocumentIcon v-else class="h-6 w-6 text-slate-400" />
+                                    </div>
+                                    <div class="flex-1 min-w-0 pr-8">
+                                        <p class="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{{ form.file.name }}</p>
+                                        <p class="text-[10px] text-slate-500">{{ (form.file.size / 1024).toFixed(1) }} KB</p>
+                                    </div>
+                                    <button type="button" @click="clearFile" class="absolute top-2 right-2 p-1 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-lg text-slate-400 hover:text-red-500 transition-colors">
+                                        <XMarkIcon class="h-4 w-4" />
+                                    </button>
+                                </div>
+
+                                <input type="file" ref="fileInput" class="hidden" @change="handleFileSelect" />
+                                
+                                <button 
+                                    type="button" 
+                                    @click="triggerFileSelect"
+                                    class="absolute left-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-cyan-500 transition-colors"
+                                    :disabled="form.processing"
+                                >
+                                    <PaperClipIcon class="h-5 w-5" />
+                                </button>
+
                                 <input 
                                     v-model="form.message"
                                     type="text" 
                                     placeholder="Type a message to reply manually..." 
-                                    class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-0 rounded-xl py-4 pl-4 pr-14 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-2 focus:ring-cyan-500/50 shadow-inner"
+                                    class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-0 rounded-xl py-4 pl-12 pr-14 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-2 focus:ring-cyan-500/50 shadow-inner"
                                     :disabled="form.processing"
                                 />
                                 <button 
                                     type="submit" 
-                                    :disabled="form.processing || !form.message.trim()"
+                                    :disabled="form.processing || (!form.message.trim() && !form.file)"
                                     class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-cyan-500 hover:bg-cyan-400 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/20"
                                 >
                                     <PaperAirplaneIcon class="h-5 w-5" />

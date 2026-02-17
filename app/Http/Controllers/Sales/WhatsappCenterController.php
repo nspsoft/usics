@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppSetting;
 use App\Models\WhatsappMessage;
 use App\Services\FonnteService;
+use App\Services\WablasService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class WhatsappCenterController extends Controller
@@ -45,34 +48,66 @@ class WhatsappCenterController extends Controller
     /**
      * Send a manual message to a customer.
      */
-    public function send(Request $request, FonnteService $fonnte)
+    public function send(Request $request, FonnteService $fonnte, WablasService $wablas)
     {
         $request->validate([
             'phone' => 'required',
-            'message' => 'required|string',
+            'message' => 'nullable|string',
+            'file' => 'nullable|file|max:10240', // Max 10MB
         ]);
 
         $phone = $request->phone;
-        $message = $request->message;
+        $message = $request->message ?? '';
+        $provider = AppSetting::get('whatsapp_provider') ?: 'fonnte';
+        $activeService = ($provider === 'wablas') ? $wablas : $fonnte;
 
-        // Send via Fonnte
-        $result = $fonnte->sendMessage($phone, $message);
+        $result = ['success' => false, 'error' => 'No content to send'];
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $mime = $file->getMimeType();
+            $path = $file->store('whatsapp-attachments', 'public');
+            $url = asset('storage/' . $path);
+
+            $attachmentMeta = [
+                'url' => $url,
+                'mime' => $mime,
+                'name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+            ];
+
+            if (str_starts_with($mime, 'image/')) {
+                $result = $activeService->sendImage($phone, $url, $message);
+                $attachmentMeta['type'] = 'image';
+            } else {
+                $result = $activeService->sendFile($phone, $url, $message);
+                $attachmentMeta['type'] = 'document';
+            }
+            
+            // Log with attachment info
+            if ($result['success']) {
+                $logMessage = $message ?: "[File: {$file->getClientOriginalName()}]";
+            }
+        } elseif (!empty($message)) {
+            $result = $activeService->sendMessage($phone, $message);
+            $logMessage = $message;
+        }
 
         if ($result['success']) {
             // Log manually sent message
             WhatsappMessage::create([
                 'phone' => $phone,
                 'direction' => 'outgoing',
-                'message' => $message,
-                'intent' => 'manual_reply', 
-                // We should also link customer_id if possible, but for now it's okay
+                'message' => $logMessage ?? $message,
+                'intent' => 'manual_reply',
+                'metadata' => $attachmentMeta ?? null,
                 'customer_id' => \App\Models\Customer::where('phone', $phone)->orWhere('mobile', $phone)->value('id'),
             ]);
 
             return back()->with('success', 'Message sent successfully');
         }
 
-            return back()->with('error', 'Failed to send message: ' . ($result['error'] ?? 'Unknown error'));
+        return back()->with('error', 'Failed to send message: ' . ($result['error'] ?? 'Unknown error'));
     }
 
     /**
