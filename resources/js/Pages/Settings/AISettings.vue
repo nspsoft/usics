@@ -11,7 +11,8 @@ import {
     CpuChipIcon,
     InformationCircleIcon,
     ArrowLeftIcon,
-    ExclamationTriangleIcon
+    ExclamationTriangleIcon,
+    ChatBubbleLeftRightIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -26,6 +27,7 @@ const form = useForm({
     gemini_model: props.settings?.gemini_model || 'gemini-1.5-flash',
     ollama_url: props.settings?.ollama_url || 'http://localhost:11434',
     ollama_model: props.settings?.ollama_model || 'llama3',
+    whatsapp_bot_instruction: props.settings?.whatsapp_bot_instruction || '',
 });
 
 const submit = () => {
@@ -191,6 +193,32 @@ const aiDrivers = [
                                     Select a recommended model or type your own (must be pulled locally via <code>ollama pull</code>).
                                 </p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WHATSAPP BOT PERSONALITY -->
+                <div class="glass-card rounded-2xl p-8 border border-white/5 shadow-2xl">
+                    <div class="flex items-center gap-3 text-emerald-400 mb-8 border-b border-slate-200 dark:border-slate-800 pb-4">
+                        <ChatBubbleLeftRightIcon class="h-6 w-6" />
+                        <h4 class="text-sm font-black uppercase tracking-widest">WhatsApp Bot Personality</h4>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                <SparklesIcon class="h-3 w-3" />
+                                Custom Bot Instructions / Prompt
+                            </label>
+                            <textarea 
+                                v-model="form.whatsapp_bot_instruction" 
+                                class="form-input min-h-[150px] resize-none" 
+                                placeholder="Example: Gunakan bahasa Indonesia yang santai tapi sopan. Selalu sapa Customer dengan ramah. Jika bertanya tentang pipa, jelaskan bahwa kita adalah produsen terbaik di Indonesia..."
+                            ></textarea>
+                            <p class="text-[10px] text-slate-500 mt-2 px-1 leading-relaxed">
+                                Instruksi ini akan menjadi dasar bagi AI (Gemini) dalam merespon setiap pesan WhatsApp. 
+                                Anda bisa menentukan nada bicara, gaya bahasa, dan informasi penting yang harus selalu disampaikan.
+                            </p>
                         </div>
                     </div>
                 </div>

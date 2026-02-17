@@ -17,6 +17,8 @@ class GeminiService
     protected string $ollamaUrl;
     protected string $ollamaModel;
 
+    protected string $customBotInstruction;
+
     public function __construct()
     {
         $company = \App\Models\Company::first();
@@ -32,6 +34,8 @@ class GeminiService
         // Ollama Config
         $this->ollamaUrl = $aiSettings['ollama_url'] ?? 'http://localhost:11434';
         $this->ollamaModel = $aiSettings['ollama_model'] ?? 'llama3';
+
+        $this->customBotInstruction = $aiSettings['whatsapp_bot_instruction'] ?? '';
     }
 
     /**
@@ -300,7 +304,12 @@ class GeminiService
     public function analyzeCustomerIntent(string $message, ?array $customerContext = null): array
     {
         $contextInfo = $customerContext ? "Customer Name: {$customerContext['name']}" : "Unknown customer";
-        $prompt = "You are a friendly and professional customer service assistant for PT SPINDO, an Indonesian steel pipe manufacturer.
+        
+        $systemInstruction = $this->customBotInstruction 
+            ? "Personality & Context: {$this->customBotInstruction}"
+            : "You are a friendly and professional customer service assistant for PT SPINDO, an Indonesian steel pipe manufacturer.";
+
+        $prompt = "{$systemInstruction}
 Analyze this message and classify the intent precisely.
 
 Context: {$contextInfo}
@@ -342,7 +351,11 @@ Return JSON strictly: { \"intent\": \"...\", \"parameters\": { \"order_number\":
      */
     public function generateFAQResponse(string $question): string
     {
-        $prompt = "You are a helpful customer service assistant for PT SPINDO.
+        $systemInstruction = $this->customBotInstruction 
+            ? "Personality & Context: {$this->customBotInstruction}"
+            : "You are a helpful customer service assistant for PT SPINDO.";
+
+        $prompt = "{$systemInstruction}
 Answer this customer question in Indonesian, friendly and concise (max 200 chars):
 Question: \"{$question}\"";
 

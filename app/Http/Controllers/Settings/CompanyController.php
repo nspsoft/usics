@@ -67,6 +67,7 @@ class CompanyController extends Controller
             'gemini_model' => 'gemini-2.5-flash', // Updated default
             'ollama_url' => 'http://localhost:11434',
             'ollama_model' => 'llama3',
+            'whatsapp_bot_instruction' => '',
         ];
 
         return Inertia::render('Settings/AISettings', [
@@ -82,6 +83,7 @@ class CompanyController extends Controller
             'gemini_model' => 'nullable|required_if:ai_driver,gemini|string',
             'ollama_url' => 'nullable|required_if:ai_driver,ollama|url',
             'ollama_model' => 'nullable|required_if:ai_driver,ollama|string',
+            'whatsapp_bot_instruction' => 'nullable|string',
         ]);
 
         $company = Company::first();
@@ -94,6 +96,7 @@ class CompanyController extends Controller
             'gemini_model' => $request->gemini_model,
             'ollama_url' => $request->ollama_url,
             'ollama_model' => $request->ollama_model,
+            'whatsapp_bot_instruction' => $request->whatsapp_bot_instruction,
         ];
 
         $company->settings = $settings;
