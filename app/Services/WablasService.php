@@ -46,6 +46,7 @@ class WablasService
             return [
                 'success' => ($result['status'] ?? false) === true,
                 'data' => $result,
+                'error' => ($result['status'] ?? false) === true ? null : ($result['message'] ?? 'Wablas API Error'),
             ];
         } catch (\Exception $e) {
             Log::error('Wablas Send Error: ' . $e->getMessage());
