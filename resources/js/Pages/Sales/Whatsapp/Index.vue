@@ -11,7 +11,6 @@ import {
     ClockIcon,
     ArrowPathIcon,
     BookOpenIcon,
-    BookOpenIcon,
     ArrowTopRightOnSquareIcon,
     TrashIcon
 } from '@heroicons/vue/24/outline';
@@ -109,7 +108,6 @@ onMounted(() => {
                     }
                 });
         }
-    }, 10000);
     }, 10000);
 });
 
