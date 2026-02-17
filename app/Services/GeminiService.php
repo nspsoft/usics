@@ -400,6 +400,64 @@ Question: \"{$question}\"";
     }
 
     /**
+     * Analyze email content for intent, sentiment, and urgency.
+     */
+    public function analyzeEmailContent(string $body): array
+    {
+        $prompt = "Analyze this incoming email and provide a structured classification.
+        
+        EMAIL CONTENT:
+        \"{$body}\"
+        
+        Classify the following:
+        1. intent: The primary purpose of the email. Choose from: 
+           - 'order_status' (checking status of an order)
+           - 'request_quotation' (asking for price/quote)
+           - 'purchase_order' (sending a formal order)
+           - 'complaint' (problem with product/service)
+           - 'payment_info' (payment confirmation/invoice inquiry)
+           - 'general_inquiry' (asking about company/catalog)
+           - 'casual' (greetings, thank you)
+           - 'unknown'
+        
+        2. sentiment: Tone of the email. Choose from: 'positive', 'neutral', 'frustrated', 'urgent'.
+        
+        3. urgency: A score from 0.0 to 1.0 (1.0 being critical/emergency).
+        
+        4. summary: A very brief (max 100 characters) summary of the request.
+        
+        5. suggest_reply: A professional draft response in Indonesian based on typical customer service norms.
+        
+        Return strictly JSON:
+        {
+            \"intent\": \"...\",
+            \"sentiment\": \"...\",
+            \"urgency\": 0.8,
+            \"summary\": \"...\",
+            \"suggest_reply\": \"...\"
+        }";
+
+        if ($this->driver === 'ollama') {
+            $result = $this->callOllama($prompt, true);
+            return $result ?? ['intent' => 'unknown', 'sentiment' => 'neutral', 'urgency' => 0];
+        }
+
+        try {
+            $response = Http::timeout(60)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [['parts' => [['text' => $prompt]]]],
+                'generationConfig' => ['response_mime_type' => 'application/json'],
+            ]);
+            
+            $result = $this->parseResponse($response);
+            return $result ?? ['intent' => 'unknown', 'sentiment' => 'neutral', 'urgency' => 0];
+        } catch (\Exception $e) {
+            Log::error('Email Analysis Error: ' . $e->getMessage());
+        }
+
+        return ['intent' => 'unknown', 'sentiment' => 'neutral', 'urgency' => 0];
+    }
+
+    /**
      * Analyze forecast accuracy and provide AI-powered recommendations.
      *
      * @param array $forecastData Array of forecast rows with keys: customer, product, period, forecast, actual, accuracy

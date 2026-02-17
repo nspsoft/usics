@@ -300,6 +300,12 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::get('/whatsapp/history/{phone}', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'history'])->name('whatsapp.history');
     Route::delete('/whatsapp/history/{phone}', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'destroy'])->name('whatsapp.destroy');
     Route::post('/whatsapp/send', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'send'])->name('whatsapp.send');
+
+    // AI Email Inbox
+    Route::get('/emails', [App\Http\Controllers\Sales\EmailInboxController::class, 'index'])->name('emails.index');
+    Route::get('/emails/sync', [App\Http\Controllers\Sales\EmailInboxController::class, 'sync'])->name('emails.sync');
+    Route::get('/emails/{email}', [App\Http\Controllers\Sales\EmailInboxController::class, 'show'])->name('emails.show');
+    Route::delete('/emails/{email}', [App\Http\Controllers\Sales\EmailInboxController::class, 'destroy'])->name('emails.destroy');
 });
 
 // Manufacturing Module

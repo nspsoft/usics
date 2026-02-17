@@ -1,0 +1,34 @@
+﻿
+> build
+> node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build
+
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[39m 2214 modules transformed.
+node.exe : [31m✗[39m Build failed in 4.00s
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\node
+js/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([31m✗[39m Bui 
+   ld failed in 4.00s:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[31merror during build:
+[31m[vite:load-fallback] Could not load /resources/js/Layout
+s/AuthenticatedLayout.vue (imported by resources/js/Pages/Sal
+es/Email/Show.vue): ENOENT: no such file or directory, open '
+C:\resources\js\Layouts\AuthenticatedLayout.vue'[31m
+    at async open (node:internal/fs/promises:641:25)
+    at async Object.readFile (node:internal/fs/promises:1279:
+14)
+    at async Object.handler (file:///C:/laragon/www/ERP/node_
+modules/vite/dist/node/chunks/config.js:33169:21)
+    at async PluginDriver.hookFirstAndGetPlugin (file:///C:/l
+aragon/www/ERP/node_modules/rollup/dist/es/shared/node-entry.
+js:22430:28)
+    at async file:///C:/laragon/www/ERP/node_modules/rollup/d
+ist/es/shared/node-entry.js:21422:33
+    at async Queue.work (file:///C:/laragon/www/ERP/node_modu
+les/rollup/dist/es/shared/node-entry.js:22658:32)[39m

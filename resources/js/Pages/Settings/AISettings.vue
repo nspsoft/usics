@@ -18,6 +18,7 @@ import {
 
 const props = defineProps({
     settings: Object,
+    email_settings: Object,
     whatsapp_bot_instruction: String
 });
 
@@ -30,6 +31,13 @@ const form = useForm({
     ollama_url: props.settings?.ollama_url || 'http://localhost:11434',
     ollama_model: props.settings?.ollama_model || 'llama3',
     whatsapp_bot_instruction: props.whatsapp_bot_instruction || '',
+    email_settings: {
+        imap_host: props.email_settings?.imap_host || '',
+        imap_port: props.email_settings?.imap_port || '993',
+        imap_encryption: props.email_settings?.imap_encryption || 'ssl',
+        imap_username: props.email_settings?.imap_username || '',
+        imap_password: props.email_settings?.imap_password || '',
+    }
 });
 
 const submit = () => {
@@ -195,6 +203,46 @@ const aiDrivers = [
                                     Select a recommended model or type your own (must be pulled locally via <code>ollama pull</code>).
                                 </p>
                             </div>
+                        </div>
+
+                        <!-- EMAIL CONNECTIVITY SETTINGS -->
+                        <div class="pt-8 border-t border-slate-200 dark:border-slate-800 space-y-6">
+                            <div class="flex items-center gap-3 text-indigo-400">
+                                <GlobeAltIcon class="h-6 w-6" />
+                                <h4 class="text-sm font-black uppercase tracking-widest">Email (IMAP) Connectivity</h4>
+                            </div>
+
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">IMAP Host</label>
+                                    <input v-model="form.email_settings.imap_host" type="text" class="form-input" placeholder="imap.gmail.com" />
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Port</label>
+                                        <input v-model="form.email_settings.imap_port" type="text" class="form-input" placeholder="993" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Encryption</label>
+                                        <select v-model="form.email_settings.imap_encryption" class="form-input bg-inherit">
+                                            <option value="ssl">SSL</option>
+                                            <option value="tls">TLS</option>
+                                            <option value="null">None</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Username</label>
+                                    <input v-model="form.email_settings.imap_username" type="text" class="form-input" placeholder="email@example.com" />
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Password</label>
+                                    <input v-model="form.email_settings.imap_password" type="password" class="form-input" placeholder="••••••••" />
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-slate-500 mt-2 px-1 italic">
+                                * Digunakan oleh AI Inbox untuk membaca email masuk secara otomatis.
+                            </p>
                         </div>
 
                         <!-- WHATSAPP BOT PERSONALITY (INTEGRATED) -->

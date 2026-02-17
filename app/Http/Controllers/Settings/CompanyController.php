@@ -74,6 +74,13 @@ class CompanyController extends Controller
 
         return Inertia::render('Settings/AISettings', [
             'settings' => array_merge($defaultSettings, $company->settings['ai'] ?? []),
+            'email_settings' => $company->settings['email'] ?? [
+                'imap_host' => '',
+                'imap_port' => '993',
+                'imap_encryption' => 'ssl',
+                'imap_username' => '',
+                'imap_password' => '',
+            ],
             'whatsapp_bot_instruction' => (string) AppSetting::get('whatsapp_bot_instruction', $defaultInstruction)
         ]);
     }
@@ -100,6 +107,11 @@ class CompanyController extends Controller
             'ollama_url' => $request->ollama_url,
             'ollama_model' => $request->ollama_model,
         ];
+
+        // Handle Email Settings if present in request
+        if ($request->has('email_settings')) {
+            $settings['email'] = $request->email_settings;
+        }
 
         $company->settings = $settings;
         $company->save();

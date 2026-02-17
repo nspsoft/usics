@@ -11,6 +11,7 @@ import {
     Bars3Icon,
     XMarkIcon,
     BellIcon,
+    InboxIcon,
     UserCircleIcon,
     ChevronDownIcon,
     ArrowRightStartOnRectangleIcon,
@@ -194,6 +195,7 @@ const navigation = [
         permission: 'sales_crm.view',
         children: [
             { name: 'WhatsApp Center', href: '/sales/whatsapp', icon: ChatBubbleLeftRightIcon },
+            { name: 'AI Email Inbox', href: '/sales/emails', icon: InboxIcon },
             { name: 'CRM Intelligence', href: '/crm/dashboard', icon: ChartBarIcon, permission: 'sales_crm.leads_management.view' },
             { name: 'Leads Management', href: '/crm/leads', icon: FunnelIcon, permission: 'sales_crm.leads_management.view' },
             { name: 'Opportunity Tracking', href: '/crm/opportunities', icon: FlagIcon, permission: 'sales_crm.opportunity_tracking.view' },
