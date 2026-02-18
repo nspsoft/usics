@@ -35,22 +35,12 @@ class SalesDashboardController extends Controller
         // Average Order Value (Current Month)
         $avgOrderValue = $orderCount > 0 ? $monthlyRevenue / $orderCount : 0;
 
-        // Check latest order date for debugging
-        $latestOrder = SalesOrder::latest('order_date')->first();
-        $latestOrderDate = $latestOrder ? $latestOrder->order_date->format('Y-m-d') : 'No Data';
-
         $stats = [
             'monthly_revenue' => $monthlyRevenue,
             'order_count' => $orderCount,
             'pending_quotations' => $pendingQuotations,
             'avg_order_value' => $avgOrderValue,
-            'debug_latest_order' => $latestOrderDate,
-            'debug_server_time' => now()->toDateTimeString(),
         ];
-
-        \Illuminate\Support\Facades\Log::info('--- SALES DASHBOARD DEBUG ---');
-        \Illuminate\Support\Facades\Log::info('Time:', ['now' => now()->toDateTimeString(), 'month' => now()->month, 'year' => now()->year]);
-        \Illuminate\Support\Facades\Log::info('Stats:', $stats);
 
         // 2. Sales Trend (Last 6 Months)
         $isSqlite = DB::connection()->getDriverName() === 'sqlite';

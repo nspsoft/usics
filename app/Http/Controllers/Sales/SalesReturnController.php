@@ -149,8 +149,17 @@ class SalesReturnController extends Controller
         ]);
 
         return DB::transaction(function() use ($request) {
-            $lastReturn = SalesReturn::orderBy('id', 'desc')->first();
-            $number = 'SRT/' . date('Ymd') . '/' . str_pad(($lastReturn->id ?? 0) + 1, 4, '0', STR_PAD_LEFT);
+            $lastReturn = SalesReturn::where('number', 'like', 'SRT/' . date('Ymd') . '/%')
+                ->orderBy('number', 'desc')
+                ->first();
+
+            $nextSeq = 1;
+            if ($lastReturn) {
+                $parts = explode('/', $lastReturn->number);
+                $lastSeq = (int) end($parts);
+                $nextSeq = $lastSeq + 1;
+            }
+            $number = 'SRT/' . date('Ymd') . '/' . str_pad($nextSeq, 4, '0', STR_PAD_LEFT);
 
             $salesReturn = SalesReturn::create([
                 'number' => $number,
@@ -213,14 +222,28 @@ class SalesReturnController extends Controller
                     "Sales Return: {$salesReturn->number}"
                 );
 
-                // Update SO Item qty_returned
-                $soItem = \App\Models\SalesOrderItem::where('sales_order_id', $salesReturn->sales_order_id)
-                    ->where('product_id', $item->product_id)
-                    ->first();
-                
-                if ($soItem) {
-                    $soItem->qty_returned += $item->qty;
-                    $soItem->save();
+                // Update SO Item qty_returned via recalculation (safe against race conditions)
+                if ($salesReturn->sales_order_id) {
+                    $soItem = \App\Models\SalesOrderItem::where('sales_order_id', $salesReturn->sales_order_id)
+                        ->where('product_id', $item->product_id)
+                        ->first();
+                    
+                    if ($soItem) {
+                        // Recalculate from ALL confirmed returns instead of +=
+                        $totalReturned = \App\Models\SalesReturn::where('sales_order_id', $salesReturn->sales_order_id)
+                            ->where('status', 'confirmed')
+                            ->whereHas('items', function ($q) use ($item) {
+                                $q->where('product_id', $item->product_id);
+                            })
+                            ->get()
+                            ->flatMap->items
+                            ->where('product_id', $item->product_id)
+                            ->sum('qty');
+                        
+                        // Also add current return's qty since it's not yet confirmed
+                        $soItem->qty_returned = $totalReturned + $item->qty;
+                        $soItem->save();
+                    }
                 }
             }
 

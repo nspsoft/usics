@@ -148,21 +148,22 @@ class DeliveryOrderController extends Controller
             // If DOs are from different SOs, we just pick the first one as "Master" SO or leave it if schema allows.
             // Let's assume same Customer is the constraint.
             
-            $invoice->invoice_number = \App\Models\SalesInvoice::generateInvoiceNumber($customer->id);
+            $invoice->invoice_number = \App\Models\SalesInvoice::generateInvoiceNumber($customer);
             $invoice->invoice_date = now();
             $invoice->due_date = now()->addDays(30); // Default term
             $invoice->status = 'draft';
             $invoice->tax_percent = $firstDO->salesOrder->tax_percent ?? 11;
             $invoice->notes = 'Consolidated Invoice from DOs: ' . $deliveryOrders->pluck('do_number')->implode(', ');
             $invoice->created_by = auth()->id();
-            $invoice->save();
 
-            // Validation: Check for Waiting PO status
+            // Validation: Check for Waiting PO status BEFORE saving
             foreach ($deliveryOrders as $do) {
                 if ($do->salesOrder && $do->salesOrder->status === SalesOrder::STATUS_WAITING_PO) {
                     return back()->with('error', "Gagal membuat Invoice. DO {$do->do_number} masih berstatus 'Waiting PO'. Harap revisi SO terlebih dahulu untuk memasukkan Nomor PO resmi.");
                 }
             }
+
+            $invoice->save();
 
             // Process Items
             foreach ($deliveryOrders as $do) {
@@ -726,7 +727,7 @@ class DeliveryOrderController extends Controller
                 
                 $invoice = \App\Models\SalesInvoice::create([
                     'company_id' => $deliveryOrder->company_id,
-                    'invoice_number' => \App\Models\SalesInvoice::generateInvoiceNumber($deliveryOrder->customer_id),
+                    'invoice_number' => \App\Models\SalesInvoice::generateInvoiceNumber($deliveryOrder->customer),
                     'sales_order_id' => $so->id,
                     'customer_id' => $deliveryOrder->customer_id,
                     'invoice_date' => now(),

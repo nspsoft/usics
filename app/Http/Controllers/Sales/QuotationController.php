@@ -238,6 +238,7 @@ class QuotationController extends Controller
                 'tax_percent' => 11,
                 'total' => $quotation->total,
                 'notes' => "Converted from Quotation #{$quotation->number}",
+                'created_by' => auth()->id(),
             ]);
 
             foreach ($quotation->items as $item) {

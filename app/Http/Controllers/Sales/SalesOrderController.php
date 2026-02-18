@@ -60,16 +60,16 @@ class SalesOrderController extends Controller
             $query->orderBy($sort, $direction);
         }
 
-        $salesOrders = $query->paginate(20)
-            ->withQueryString();
-
-        // Calculate stats based on the same query filters
+        // Calculate stats BEFORE paginate (clone must happen before query execution)
         $statsQuery = clone $query;
         $stats = [
             'total_qty' => (float) $statsQuery->sum(DB::raw('(select sum(qty) from sales_order_items where sales_order_id = sales_orders.id)')),
-            'total_delivered' => (float) $statsQuery->sum(DB::raw('(select sum(qty_delivered) from sales_order_items where sales_order_id = sales_orders.id)')),
-            'total_returned' => (float) $statsQuery->sum(DB::raw('(select sum(qty_returned) from sales_order_items where sales_order_id = sales_orders.id)')),
+            'total_delivered' => (float) (clone $query)->sum(DB::raw('(select sum(qty_delivered) from sales_order_items where sales_order_id = sales_orders.id)')),
+            'total_returned' => (float) (clone $query)->sum(DB::raw('(select sum(qty_returned) from sales_order_items where sales_order_id = sales_orders.id)')),
         ];
+
+        $salesOrders = $query->paginate(20)
+            ->withQueryString();
         $stats['total_balance'] = $stats['total_qty'] - ($stats['total_delivered'] - $stats['total_returned']);
 
         return Inertia::render('Sales/Orders/Index', [
@@ -162,6 +162,10 @@ class SalesOrderController extends Controller
                     'discount_percent' => $item['discount_percent'] ?? 0,
                 ]);
             }
+
+            // Recalculate totals after items are created
+            $so->refresh();
+            $so->calculateTotals();
         });
 
         return redirect()->route('sales.orders.index')
@@ -402,7 +406,7 @@ class SalesOrderController extends Controller
                 $invoice = $order->invoices()->create([
                     'company_id' => $order->company_id ?? 1,
                     'customer_id' => $order->customer_id,
-                    'invoice_number' => \App\Models\SalesInvoice::generateInvoiceNumber($order->customer_id),
+                    'invoice_number' => \App\Models\SalesInvoice::generateInvoiceNumber($order->customer),
                     'invoice_date' => now(),
                     'due_date' => now()->addDays($order->customer->payment_days ?? 30),
                     'status' => 'draft',

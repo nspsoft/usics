@@ -99,9 +99,13 @@ class DatabaseBackupService
             'leads',
             'opportunities',
             'sales_forecasts',
+            'whatsapp_messages',
+            'email_messages',
+            'email_attachments',
         ],
         'logistics' => [
             'vehicles',
+            'delivery_schedules',
         ],
         'maintenance' => [
             'maintenance_schedules',
