@@ -628,7 +628,7 @@ const closeDropdowns = () => {
                     </div>
 
                     <!-- Labels Section -->
-                    <div class="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 backdrop-blur-sm shadow-lg dark:shadow-none">
+                    <div class="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 backdrop-blur-sm shadow-lg dark:shadow-none relative z-10">
                         <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                             <TagIcon class="h-4 w-4 text-cyan-500" />
                             Labels
