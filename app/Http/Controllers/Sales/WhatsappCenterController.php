@@ -27,35 +27,55 @@ class WhatsappCenterController extends Controller
             ->selectRaw('(SELECT intent FROM whatsapp_messages wm WHERE wm.phone = whatsapp_messages.phone ORDER BY created_at DESC LIMIT 1) as last_intent')
             ->groupBy('phone', 'customer_id')
             ->orderByDesc('last_activity')
-            ->with('customer:id,name,contact_person,profile_photo_path') // Eager load customer details
+            ->with('customer:id,name,contact_person,profile_photo_path')
             ->get();
 
-        // Add unread counts per contact
-        $unreadCounts = WhatsappMessage::unread()
-            ->selectRaw('phone, COUNT(*) as unread_count')
-            ->groupBy('phone')
-            ->pluck('unread_count', 'phone');
+        $totalUnread = 0;
+        $templates = collect();
+        $labelPresets = [];
 
-        $contacts->transform(function ($contact) use ($unreadCounts) {
-            $contact->unread_count = $unreadCounts[$contact->phone] ?? 0;
-            return $contact;
-        });
+        try {
+            // Add unread counts per contact (requires is_read column)
+            $unreadCounts = WhatsappMessage::unread()
+                ->selectRaw('phone, COUNT(*) as unread_count')
+                ->groupBy('phone')
+                ->pluck('unread_count', 'phone');
 
-        // Get labels grouped by phone
-        $allLabels = WhatsappContactLabel::all()->groupBy('phone');
-        $contacts->transform(function ($contact) use ($allLabels) {
-            $contact->labels = $allLabels[$contact->phone] ?? collect();
-            return $contact;
-        });
+            $contacts->transform(function ($contact) use ($unreadCounts) {
+                $contact->unread_count = $unreadCounts[$contact->phone] ?? 0;
+                return $contact;
+            });
 
-        // Total unread for badge
-        $totalUnread = WhatsappMessage::unread()->count();
+            $totalUnread = WhatsappMessage::unread()->count();
+        } catch (\Exception $e) {
+            // is_read column may not exist yet
+            $contacts->transform(function ($contact) {
+                $contact->unread_count = 0;
+                return $contact;
+            });
+        }
 
-        // Templates
-        $templates = WhatsappTemplate::active()->orderBy('sort_order')->get();
+        try {
+            // Get labels grouped by phone
+            $allLabels = WhatsappContactLabel::all()->groupBy('phone');
+            $contacts->transform(function ($contact) use ($allLabels) {
+                $contact->labels = $allLabels[$contact->phone] ?? collect();
+                return $contact;
+            });
+            $labelPresets = WhatsappContactLabel::presets();
+        } catch (\Exception $e) {
+            // Labels table may not exist yet
+            $contacts->transform(function ($contact) {
+                $contact->labels = collect();
+                return $contact;
+            });
+        }
 
-        // Label presets
-        $labelPresets = WhatsappContactLabel::presets();
+        try {
+            $templates = WhatsappTemplate::active()->orderBy('sort_order')->get();
+        } catch (\Exception $e) {
+            // Templates table may not exist yet
+        }
 
         return Inertia::render('Sales/Whatsapp/Index', [
             'contacts' => $contacts,
@@ -72,13 +92,17 @@ class WhatsappCenterController extends Controller
     public function history(string $phone)
     {
         // Mark all incoming messages for this phone as read
-        WhatsappMessage::where('phone', $phone)
-            ->where('direction', 'incoming')
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
+        try {
+            WhatsappMessage::where('phone', $phone)
+                ->where('direction', 'incoming')
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
+        } catch (\Exception $e) {
+            // is_read column may not exist yet
+        }
 
         $messages = WhatsappMessage::where('phone', $phone)
-            ->orderBy('created_at', 'asc') // Oldest first for chat bubble
+            ->orderBy('created_at', 'asc')
             ->get();
 
         return response()->json($messages);
@@ -248,8 +272,14 @@ class WhatsappCenterController extends Controller
      */
     public function unreadCount()
     {
+        try {
+            $total = WhatsappMessage::unread()->count();
+        } catch (\Exception $e) {
+            $total = 0;
+        }
+
         return response()->json([
-            'total' => WhatsappMessage::unread()->count(),
+            'total' => $total,
         ]);
     }
 }
