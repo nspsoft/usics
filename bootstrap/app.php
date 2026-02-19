@@ -24,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'whatsapp/webhook',
             'api/*',
         ]);
-        $middleware->trustProxies(at: '*');
+        // $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
