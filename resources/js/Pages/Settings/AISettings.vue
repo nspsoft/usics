@@ -37,6 +37,15 @@ const form = useForm({
         imap_encryption: props.email_settings?.imap_encryption || 'ssl',
         imap_username: props.email_settings?.imap_username || '',
         imap_password: props.email_settings?.imap_password || '',
+        
+        // SMTP Settings
+        smtp_host: props.email_settings?.smtp_host || '',
+        smtp_port: props.email_settings?.smtp_port || '587',
+        smtp_encryption: props.email_settings?.smtp_encryption || 'tls',
+        smtp_username: props.email_settings?.smtp_username || '',
+        smtp_password: props.email_settings?.smtp_password || '',
+        from_address: props.email_settings?.from_address || '',
+        from_name: props.email_settings?.from_name || '',
     }
 });
 
@@ -242,6 +251,54 @@ const aiDrivers = [
                             </div>
                             <p class="text-[10px] text-slate-500 mt-2 px-1 italic">
                                 * Digunakan oleh AI Inbox untuk membaca email masuk secara otomatis.
+                            </p>
+                        </div>
+
+                        <!-- SMTP SETTINGS -->
+                        <div class="pt-8 border-t border-slate-200 dark:border-slate-800 space-y-6">
+                            <div class="flex items-center gap-3 text-cyan-400">
+                                <GlobeAltIcon class="h-6 w-6" />
+                                <h4 class="text-sm font-black uppercase tracking-widest">Email Sending (SMTP)</h4>
+                            </div>
+
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">SMTP Host</label>
+                                    <input v-model="form.email_settings.smtp_host" type="text" class="form-input" placeholder="smtp.gmail.com" />
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Port</label>
+                                        <input v-model="form.email_settings.smtp_port" type="text" class="form-input" placeholder="587" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Encryption</label>
+                                        <select v-model="form.email_settings.smtp_encryption" class="form-input bg-inherit">
+                                            <option value="tls">TLS</option>
+                                            <option value="ssl">SSL</option>
+                                            <option value="null">None</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Username</label>
+                                    <input v-model="form.email_settings.smtp_username" type="text" class="form-input" placeholder="email@example.com" />
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Password</label>
+                                    <input v-model="form.email_settings.smtp_password" type="password" class="form-input" placeholder="••••••••" />
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">From Address</label>
+                                    <input v-model="form.email_settings.from_address" type="email" class="form-input" placeholder="admin@jidoka.co.id" />
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">From Name</label>
+                                    <input v-model="form.email_settings.from_name" type="text" class="form-input" placeholder="Jidoka Admin" />
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-slate-500 mt-2 px-1 italic">
+                                * Digunakan untuk mengirim email balasan dari sistem.
                             </p>
                         </div>
 

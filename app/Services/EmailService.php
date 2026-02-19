@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 use Webklex\IMAP\Facades\Client;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Mail;
 
 class EmailService
 {
@@ -130,36 +132,40 @@ class EmailService
      */
     public function analyzeEmail(EmailMessage $email)
     {
-        $body = $email->body_text ?: strip_tags($email->body_html);
-        
-        // 1. Analyze Intent/Sentiment/Urgency
-        $analysis = $this->gemini->analyzeEmailContent($body);
-        
-        $email->update([
-            'intent' => $analysis['intent'] ?? 'unknown',
-            'sentiment' => $analysis['sentiment'] ?? 'neutral',
-            'urgency_score' => $analysis['urgency'] ?? 0,
-            'ai_metadata' => $analysis,
-        ]);
+        try {
+            $body = $email->body_text ?: strip_tags($email->body_html);
+            
+            // 1. Analyze Intent/Sentiment/Urgency
+            $analysis = $this->gemini->analyzeEmailContent($body);
+            
+            $email->update([
+                'intent' => $analysis['intent'] ?? 'unknown',
+                'sentiment' => $analysis['sentiment'] ?? 'neutral',
+                'urgency_score' => $analysis['urgency'] ?? 0,
+                'ai_metadata' => $analysis,
+            ]);
 
-        // 2. If it's a PO, try to extract items from attachments
-        if ($email->intent === 'order_status' || $email->intent === 'request_quotation' || str_contains(strtolower($email->subject), 'po')) {
-            foreach ($email->attachments as $attachment) {
-                if ($this->isExtractable($attachment)) {
-                    $poData = $this->gemini->extractPOData(
-                        storage_path('app/public/' . $attachment->file_path),
-                        $attachment->mime_type
-                    );
+            // 2. If it's a PO, try to extract items from attachments
+            if ($email->intent === 'order_status' || $email->intent === 'request_quotation' || str_contains(strtolower($email->subject), 'po')) {
+                foreach ($email->attachments as $attachment) {
+                    if ($this->isExtractable($attachment)) {
+                        $poData = $this->gemini->extractPOData(
+                            storage_path('app/public/' . $attachment->file_path),
+                            $attachment->mime_type
+                        );
 
-                    if ($poData) {
-                        $attachment->update(['is_po' => true]);
-                        $email->update([
-                            'ai_metadata' => array_merge($email->ai_metadata ?? [], ['extracted_po' => $poData])
-                        ]);
-                        break; // Stop after first successful PO extraction
+                        if ($poData) {
+                            $attachment->update(['is_po' => true]);
+                            $email->update([
+                                'ai_metadata' => array_merge($email->ai_metadata ?? [], ['extracted_po' => $poData])
+                            ]);
+                            break; // Stop after first successful PO extraction
+                        }
                     }
                 }
             }
+        } catch (\Exception $e) {
+            Log::error('AI Email Analysis Failed for Email ID ' . $email->id . ': ' . $e->getMessage());
         }
     }
 
@@ -167,5 +173,56 @@ class EmailService
     {
         $allowedMimes = ['application/pdf', 'image/jpeg', 'image/png'];
         return in_array($attachment->mime_type, $allowedMimes);
+    }
+
+    /**
+     * Send an email using Company SMTP settings.
+     */
+    public function sendEmail($to, $subject, $body, $attachments = [])
+    {
+        $company = Company::first();
+        $settings = $company->settings['email'] ?? null;
+
+        if (!$settings || empty($settings['smtp_host'])) {
+            throw new \Exception('SMTP settings are not configured.');
+        }
+
+        // Dynamically configure SMTP
+        Config::set('mail.mailers.smtp_dynamic', [
+            'transport' => 'smtp',
+            'host' => $settings['smtp_host'],
+            'port' => $settings['smtp_port'],
+            'encryption' => $settings['smtp_encryption'],
+            'username' => $settings['smtp_username'],
+            'password' => $settings['smtp_password'],
+            'timeout' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN'),
+        ]);
+
+        Config::set('mail.from.address', $settings['from_address']);
+        Config::set('mail.from.name', $settings['from_name']);
+
+        // Send Email
+        Mail::mailer('smtp_dynamic')->send([], [], function ($message) use ($to, $subject, $body, $attachments, $settings) {
+            $message->to($to)
+                ->subject($subject)
+                ->html($body)
+                ->from($settings['from_address'], $settings['from_name']);
+
+            foreach ($attachments as $file) {
+                // Determine path - if uploaded file object or path string
+                if ($file instanceof \Illuminate\Http\UploadedFile) {
+                    $message->attach($file->getRealPath(), [
+                        'as' => $file->getClientOriginalName(),
+                        'mime' => $file->getMimeType(),
+                    ]);
+                }
+            }
+        });
+
+        // Save to Sent Folder (Optional - for now just return success)
+        // In a real app we would save this to 'email_messages' with status='sent' or folder='sent'
+        
+        return true;
     }
 }

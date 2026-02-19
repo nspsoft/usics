@@ -81,6 +81,13 @@ class CompanyController extends Controller
                 'imap_encryption' => 'ssl',
                 'imap_username' => '',
                 'imap_password' => '',
+                'smtp_host' => '',
+                'smtp_port' => '587',
+                'smtp_encryption' => 'tls',
+                'smtp_username' => '',
+                'smtp_password' => '',
+                'from_address' => '',
+                'from_name' => '',
             ],
             'whatsapp_bot_instruction' => (string) AppSetting::get('whatsapp_bot_instruction', $defaultInstruction)
         ]);
@@ -112,10 +119,24 @@ class CompanyController extends Controller
             'ollama_model' => $request->ollama_model,
         ];
 
-        // Handle Email Settings if present in request
+        // Handle Email Settings if present in request (Fix for persistence)
         if ($request->has('email_settings')) {
-            $settings['email'] = $request->email_settings;
-            Log::info('Email Settings updated in DB.');
+            $emailSettings = $request->email_settings;
+            // Ensure no null values for critical fields
+            $settings['email'] = [
+                'imap_host' => $emailSettings['imap_host'] ?? '',
+                'imap_port' => $emailSettings['imap_port'] ?? '993',
+                'imap_encryption' => $emailSettings['imap_encryption'] ?? 'ssl',
+                'imap_username' => $emailSettings['imap_username'] ?? '',
+                'imap_password' => $emailSettings['imap_password'] ?? '',
+                'smtp_host' => $emailSettings['smtp_host'] ?? '',
+                'smtp_port' => $emailSettings['smtp_port'] ?? '587',
+                'smtp_encryption' => $emailSettings['smtp_encryption'] ?? 'tls',
+                'smtp_username' => $emailSettings['smtp_username'] ?? '',
+                'smtp_password' => $emailSettings['smtp_password'] ?? '',
+                'from_address' => $emailSettings['from_address'] ?? '',
+                'from_name' => $emailSettings['from_name'] ?? '',
+            ];
         }
 
         $company->settings = $settings;
