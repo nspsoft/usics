@@ -19,6 +19,8 @@ import {
     ArrowDownTrayIcon,
     TagIcon,
     PlusIcon,
+    PlusCircleIcon,
+    PhoneIcon,
     DocumentDuplicateIcon,
     ChevronDownIcon,
 } from '@heroicons/vue/24/outline';
@@ -40,6 +42,8 @@ const showTemplateDropdown = ref(false);
 const templateSearch = ref('');
 const showLabelDropdown = ref(false);
 const filterLabel = ref('');
+const showNewChatModal = ref(false);
+const newChatPhone = ref('');
 
 const form = useForm({
     phone: '',
@@ -293,6 +297,34 @@ const closeDropdowns = () => {
     showLabelDropdown.value = false;
 };
 
+// New Chat - start conversation with new number
+const startNewChat = () => {
+    let phone = newChatPhone.value.trim();
+    if (!phone) return;
+    
+    // Normalize: remove +, spaces, dashes
+    phone = phone.replace(/[\s\-\+]/g, '');
+    // Convert 08xx to 628xx
+    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
+    
+    // Create a temporary contact object
+    const tempContact = {
+        phone: phone,
+        customer: null,
+        last_message: '',
+        last_activity: new Date().toISOString(),
+        last_intent: null,
+        unread_count: 0,
+        labels: [],
+    };
+    
+    activeContact.value = tempContact;
+    form.phone = phone;
+    messages.value = [];
+    showNewChatModal.value = false;
+    newChatPhone.value = '';
+};
+
 </script>
 
 <template>
@@ -303,15 +335,25 @@ const closeDropdowns = () => {
             
             <!-- Chat List (Left) -->
             <div class="w-1/3 flex flex-col gap-4">
-                <!-- Search -->
-                <div class="relative">
-                    <input 
-                        v-model="search"
-                        type="text" 
-                        placeholder="Search chats..." 
-                        class="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl py-3 pl-10 pr-4 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-cyan-500/50 font-sans"
-                    />
-                    <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-500" />
+                <!-- Search + New Chat Button -->
+                <div class="flex gap-2">
+                    <div class="relative flex-1">
+                        <input 
+                            v-model="search"
+                            type="text" 
+                            placeholder="Cari chat..." 
+                            class="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl py-3 pl-10 pr-4 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-cyan-500/50 font-sans"
+                        />
+                        <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-500" />
+                    </div>
+                    <button 
+                        @click="showNewChatModal = true"
+                        class="flex-shrink-0 px-4 py-3 bg-cyan-500 hover:bg-cyan-400 text-white rounded-xl transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 flex items-center gap-2 font-bold text-sm"
+                        title="Chat Baru"
+                    >
+                        <PlusCircleIcon class="h-5 w-5" />
+                        <span class="hidden 2xl:inline">Chat Baru</span>
+                    </button>
                 </div>
 
                 <!-- Label Filter -->
@@ -696,6 +738,58 @@ const closeDropdowns = () => {
                 </div>
             </div>
         </div>
+
+        <!-- New Chat Modal -->
+        <Teleport to="body">
+            <div v-if="showNewChatModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showNewChatModal = false">
+                <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+                <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden">
+                    <!-- Header -->
+                    <div class="p-6 pb-0">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <PhoneIcon class="h-5 w-5 text-cyan-500" />
+                                Chat Baru
+                            </h3>
+                            <button @click="showNewChatModal = false" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                                <XMarkIcon class="h-5 w-5 text-slate-500" />
+                            </button>
+                        </div>
+                        <p class="text-sm text-slate-500">Masukkan nomor WhatsApp tujuan untuk memulai percakapan baru.</p>
+                    </div>
+
+                    <!-- Body -->
+                    <form @submit.prevent="startNewChat" class="p-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nomor WhatsApp</label>
+                            <input 
+                                v-model="newChatPhone"
+                                type="text" 
+                                placeholder="Contoh: 08123456789 atau 628123456789"
+                                class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl py-3 px-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500"
+                                autofocus
+                            />
+                            <p class="text-xs text-slate-400 mt-2">Format 08xx akan otomatis dikonversi ke 628xx</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button 
+                                type="button"
+                                @click="showNewChatModal = false"
+                                class="flex-1 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-bold text-sm transition-all"
+                            >Batal</button>
+                            <button 
+                                type="submit"
+                                :disabled="!newChatPhone.trim()"
+                                class="flex-1 px-4 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold text-sm transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                <ChatBubbleLeftRightIcon class="h-4 w-4" />
+                                Mulai Chat
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </Teleport>
     </AppLayout>
 </template>
 
