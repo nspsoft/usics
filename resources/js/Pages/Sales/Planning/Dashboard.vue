@@ -16,6 +16,11 @@ import {
     DocumentTextIcon,
     UserGroupIcon,
     ChevronRightIcon,
+    LightBulbIcon,
+    CheckCircleIcon,
+    ExclamationCircleIcon,
+    ShieldExclamationIcon,
+    InformationCircleIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 import {
@@ -41,6 +46,7 @@ const props = defineProps({
     topCustomers: Array,
     bottomCustomers: Array,
     deliveryTimeline: Array,
+    analysis: Object,
 });
 
 const currentMonth = ref(props.month);
@@ -49,6 +55,9 @@ const detailsData = ref([]);
 const selectedCustomer = ref(null);
 const isLoadingDetails = ref(false);
 const animatedValues = ref({});
+const showDeliveryModal = ref(false);
+const selectedDeliveryDay = ref(null);
+const showInfoModal = ref(false);
 
 watch(currentMonth, (val) => {
     router.get(route('sales.planning.dashboard'), { month: val }, { preserveState: true, replace: true });
@@ -113,6 +122,17 @@ const openDetails = async (customer) => {
 const closeDetails = () => {
     showDetails.value = false;
     selectedCustomer.value = null;
+};
+
+const openDeliveryDetails = (day) => {
+    if (!day || !day.items.length) return;
+    selectedDeliveryDay.value = day;
+    showDeliveryModal.value = true;
+};
+
+const closeDeliveryDetails = () => {
+    showDeliveryModal.value = false;
+    selectedDeliveryDay.value = null;
 };
 
 const chartOptions = {
@@ -217,24 +237,29 @@ const getAchievementTextColor = (pct) => {
 <template>
     <Head title="Sales Planning Dashboard" />
 
-    <AppLayout title="Sales Planning Dashboard">
-        <template #header>
-            <div class="flex justify-between items-center">
-                <h2 class="font-semibold text-xl text-slate-800 dark:text-slate-200 leading-tight">
-                    Sales Planning Dashboard
-                </h2>
-                <div class="flex items-center gap-3">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Period</span>
+    <AppLayout title="Sales Planning Dashboard" :renderHeader="false">
+        <div class="p-6 bg-slate-50 dark:bg-slate-950 min-h-[calc(100vh-130px)]" v-if="stats">
+            <!-- ═══ CUSTOM PAGE HEADER ═══ -->
+            <div class="mb-8 flex justify-between items-end border-b border-slate-200 dark:border-slate-800 pb-6">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                        Sales Planning Dashboard
+                    </h1>
+                    <button @click="showInfoModal = true" class="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20 active:scale-95" title="Panduan Sumber Data">
+                        <DocumentTextIcon class="w-5 h-5" />
+                        <span class="text-sm font-bold">Data Info</span>
+                    </button>
+                </div>
+                <div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-2">Period</span>
                     <input 
                         v-model="currentMonth"
                         type="month" 
-                        class="rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 text-sm px-4 py-2"
+                        class="rounded-xl border border-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 text-sm px-4 py-2"
                     >
                 </div>
             </div>
-        </template>
 
-        <div class="p-6 bg-slate-50 dark:bg-slate-950 min-h-[calc(100vh-130px)]" v-if="stats">
             <div class="space-y-6">
                 
                 <!-- ═══ ROW 1: KPI CARDS ═══ -->
@@ -343,6 +368,80 @@ const getAchievementTextColor = (pct) => {
                         <div class="h-80 cursor-pointer">
                             <Bar :data="chartDataComputed" :options="chartOptions" />
                         </div>
+
+                        <!-- ═══ EXECUTIVE ANALYSIS & RECOMMENDATIONS ═══ -->
+                        <div v-if="analysis" class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <!-- Analysis Summary -->
+                                <div>
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <div class="p-1.5 bg-indigo-500/10 rounded-lg">
+                                            <ChartBarIcon class="w-4 h-4 text-indigo-500" />
+                                        </div>
+                                        <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Resume Analisa</h4>
+                                    </div>
+                                    <div class="space-y-4">
+                                        <div v-for="(insight, idx) in analysis.insights" :key="idx" class="flex gap-3">
+                                            <div class="mt-0.5">
+                                                <div class="w-1.5 h-1.5 rounded-full bg-slate-400 mt-1.5"></div>
+                                            </div>
+                                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                                                {{ insight }}
+                                            </p>
+                                        </div>
+                                        <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                                            <p class="text-[10px] text-slate-500 uppercase font-black mb-1">Gap Terbesar</p>
+                                            <p class="text-xs font-bold text-slate-900 dark:text-white">
+                                                <span class="text-indigo-500">{{ analysis.top_gap_customer }}</span> memiliki selisih forecast vs realisasi tertinggi bulan ini.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Actionable Recommendations -->
+                                <div>
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <div class="p-1.5 bg-amber-500/10 rounded-lg">
+                                            <LightBulbIcon class="w-4 h-4 text-amber-500" />
+                                        </div>
+                                        <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Rekomendasi Perbaikan</h4>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div v-for="(rec, idx) in analysis.recommendations" :key="idx" 
+                                            class="p-3 rounded-xl border transition-all hover:shadow-md"
+                                            :class="[
+                                                rec.type === 'danger' ? 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/20' : 
+                                                rec.type === 'warning' ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20' : 
+                                                rec.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/20' : 
+                                                'bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20'
+                                            ]">
+                                            <div class="flex items-start gap-3">
+                                                <component :is="
+                                                    rec.type === 'danger' ? ShieldExclamationIcon : 
+                                                    rec.type === 'warning' ? ExclamationCircleIcon : 
+                                                    rec.type === 'success' ? CheckCircleIcon : 
+                                                    InformationCircleIcon
+                                                " class="w-4 h-4 mt-0.5" :class="[
+                                                    rec.type === 'danger' ? 'text-red-600' : 
+                                                    rec.type === 'warning' ? 'text-amber-600' : 
+                                                    rec.type === 'success' ? 'text-emerald-600' : 
+                                                    'text-blue-600'
+                                                ]" />
+                                                <div>
+                                                    <p class="text-[11px] font-black uppercase tracking-tight" :class="[
+                                                        rec.type === 'danger' ? 'text-red-700 dark:text-red-400' : 
+                                                        rec.type === 'warning' ? 'text-amber-700 dark:text-amber-400' : 
+                                                        rec.type === 'success' ? 'text-emerald-700 dark:text-emerald-400' : 
+                                                        'text-blue-700 dark:text-blue-400'
+                                                    ]">{{ rec.title }}</p>
+                                                    <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed font-medium">{{ rec.text }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Top / Bottom Customers -->
@@ -402,25 +501,26 @@ const getAchievementTextColor = (pct) => {
                             <span class="px-2.5 py-1 bg-amber-500/10 rounded-lg text-[10px] font-bold text-amber-600">{{ stats.upcoming_schedules }} upcoming</span>
                         </div>
                         
-                        <div v-if="deliveryTimeline?.length" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                        <div v-if="deliveryTimeline?.length" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
                             <div v-for="day in deliveryTimeline" :key="day.date" 
-                                class="rounded-xl p-3 border transition-all duration-200 hover:shadow-md"
-                                :class="day.is_today ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'">
-                                <div class="text-center mb-2">
-                                    <p class="text-[10px] font-bold uppercase" :class="day.is_today ? 'text-indigo-600' : 'text-slate-400'">{{ day.day_label }}</p>
-                                    <p class="text-sm font-black" :class="day.is_today ? 'text-indigo-600' : 'text-slate-700 dark:text-slate-300'">{{ day.date_label }}</p>
+                                class="rounded-2xl p-5 border transition-all duration-300 hover:shadow-xl cursor-pointer group flex flex-col min-h-[180px]"
+                                :class="day.is_today ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'"
+                                @click="openDeliveryDetails(day)">
+                                <div class="text-center mb-3">
+                                    <p class="text-xs font-bold uppercase tracking-wider mb-0.5" :class="day.is_today ? 'text-indigo-600' : 'text-slate-400'">{{ day.day_label }}</p>
+                                    <p class="text-xl font-black" :class="day.is_today ? 'text-indigo-600' : 'text-slate-800 dark:text-slate-200'">{{ day.date_label }}</p>
                                 </div>
-                                <div class="text-center mb-2">
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold" 
+                                <div class="text-center mb-4">
+                                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold" 
                                         :class="day.is_today ? 'bg-indigo-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'">
                                         {{ day.count }} delivery
                                     </span>
                                 </div>
-                                <div class="space-y-1">
-                                    <div v-for="(item, idx) in day.items" :key="idx" class="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                                        <span class="font-semibold text-slate-600 dark:text-slate-300">{{ item.customer }}</span>
+                                <div class="space-y-1.5 flex-1">
+                                    <div v-for="(item, idx) in day.items.slice(0, 3)" :key="idx" class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                        <span class="font-semibold text-slate-700 dark:text-slate-300">{{ item.customer }}</span>
                                     </div>
-                                    <p v-if="day.count > 3" class="text-[9px] text-slate-400 italic">+{{ day.count - 3 }} more</p>
+                                    <p v-if="day.count > 3" class="text-[11px] text-indigo-500 font-bold italic group-hover:underline mt-1">+{{ day.count - 3 }} more</p>
                                 </div>
                             </div>
                         </div>
@@ -558,6 +658,154 @@ const getAchievementTextColor = (pct) => {
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ═══ DELIVERY TIMELINE MODAL ═══ -->
+        <div v-if="showDeliveryModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" @click="closeDeliveryDetails"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+
+                <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-slate-200 dark:border-slate-800">
+                    <div class="px-6 pt-6 pb-5">
+                        <div class="flex justify-between items-center mb-5">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <CalendarDaysIcon class="w-6 h-6 text-amber-500" />
+                                    Delivery Schedule: {{ selectedDeliveryDay?.date_label }}
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">
+                                    Total {{ selectedDeliveryDay?.count }} deliveries planned
+                                </p>
+                            </div>
+                            <button @click="closeDeliveryDetails" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                                <XMarkIcon class="w-5 h-5 text-slate-400" />
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                            <table class="w-full text-left text-sm text-slate-600 dark:text-slate-400">
+                                <thead class="bg-slate-50 dark:bg-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">
+                                    <tr>
+                                        <th class="px-4 py-3">Customer</th>
+                                        <th class="px-4 py-3">Product Item</th>
+                                        <th class="px-4 py-3 text-right">Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tr v-for="(item, idx) in selectedDeliveryDay?.items" :key="idx" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td class="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                                            {{ item.customer }}
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="font-medium text-slate-900 dark:text-white">{{ item.product }}</div>
+                                            <div class="text-[10px] text-slate-400 font-mono">{{ item.sku }}</div>
+                                        </td>
+                                        <td class="px-4 py-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                                            {{ fmtNum(item.qty) }} <span class="text-[10px] text-slate-400 font-normal ml-1">{{ item.unit }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ DATA SOURCE INFORMATION MODAL ═══ -->
+        <div v-if="showInfoModal" class="fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" @click="showInfoModal = false"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+
+                <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-slate-200 dark:border-slate-800">
+                    <div class="px-8 py-7">
+                        <div class="flex justify-between items-center mb-6">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-indigo-500/10 rounded-lg">
+                                    <DocumentTextIcon class="w-6 h-6 text-indigo-600" />
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Panduan Sumber Data & Formula</h3>
+                                    <p class="text-sm text-slate-500">Penjelasan asal angka dan perhitungan di dashboard ini</p>
+                                </div>
+                            </div>
+                            <button @click="showInfoModal = false" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                                <XMarkIcon class="w-5 h-5 text-slate-400" />
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Left Column -->
+                            <div class="space-y-6">
+                                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                    <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Achievement (%)
+                                    </h4>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                                        <code class="bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-bold text-indigo-600">(Total Actual / Total Forecast) x 100%</code>
+                                    </p>
+                                    <p class="text-xs text-slate-500 italic">Persentase pencapaian berdasarkan perbandingan antara Sales Order yang masuk dengan perencanaan Sales Forecast.</p>
+                                </div>
+
+                                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                    <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-violet-500"></div> Total Forecast
+                                    </h4>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400">
+                                        Total dari kolom <span class="font-bold">qty_forecast</span> pada tabel <code class="text-xs">sales_forecasts</code> untuk periode bulan yang dipilih.
+                                    </p>
+                                </div>
+
+                                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                    <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Total Actual (SO)
+                                    </h4>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400">
+                                        Total dari kolom <span class="font-bold">qty</span> pada tabel <code class="text-xs">sales_order_items</code> (hanya pesanan yang tidak dibatalkan).
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Right Column -->
+                            <div class="space-y-6">
+                                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                    <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div> Delivery (Chart)
+                                    </h4>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400">
+                                        Total kolom <span class="font-bold">qty_delivered</span> dari tabel <code class="text-xs">delivery_order_items</code> (berstatus Shipped/Delivered).
+                                    </p>
+                                </div>
+
+                                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                    <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-red-500"></div> Delayed
+                                    </h4>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400">
+                                        Jumlah jadwal pada tabel <code class="text-xs">delivery_schedules</code> yang sudah lewat tanggal kirimnya namun kuantitasnya belum terpenuhi.
+                                    </p>
+                                </div>
+
+                                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                    <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-teal-500"></div> Accounts Receivable
+                                    </h4>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400">
+                                        Total sisa piutang (<span class="font-bold">balance</span>) dari tabel <code class="text-xs">sales_invoices</code> untuk semua invoice berstatus Overdue/Partial/Sent.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                            <p class="text-xs text-slate-400 text-center flex items-center justify-center gap-2">
+                                <ExclamationTriangleIcon class="w-4 h-4" /> Data diperbarui secara otomatis setiap kali halaman dimuat berdasarkan catatan terbaru di database.
+                            </p>
                         </div>
                     </div>
                 </div>

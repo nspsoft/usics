@@ -67,12 +67,31 @@ class PurchaseOrderController extends Controller
 
         $purchaseOrders = $query->paginate(20)->withQueryString();
 
-        // Calculate stats based on the same query filters
-        $statsQuery = clone $query;
+        // Calculate stats from a fresh base query (Bug 7 fix: avoid cloning after join)
+        $statsBaseQuery = PurchaseOrder::query()
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($q) use ($search) {
+                    $q->where('po_number', 'like', "%{$search}%")
+                      ->orWhereHas('supplier', function ($sq) use ($search) {
+                          $sq->where('name', 'like', "%{$search}%");
+                      });
+                });
+            })
+            ->when($request->status, function ($q, $status) {
+                if ($status === 'outstanding') {
+                    $q->whereIn('status', ['ordered', 'partial']);
+                } else {
+                    $q->where('status', $status);
+                }
+            })
+            ->when($request->supplier, function ($q, $supplier) {
+                $q->where('supplier_id', $supplier);
+            });
+        
         $stats = [
-            'total_qty' => $statsQuery->sum(DB::raw('(select sum(qty) from purchase_order_items where purchase_order_id = purchase_orders.id)')),
-            'total_received' => $statsQuery->sum(DB::raw('(select sum(qty_received) from purchase_order_items where purchase_order_id = purchase_orders.id)')),
-            'total_returned' => $statsQuery->sum(DB::raw('(select sum(qty_returned) from purchase_order_items where purchase_order_id = purchase_orders.id)')),
+            'total_qty' => $statsBaseQuery->sum(DB::raw('(select sum(qty) from purchase_order_items where purchase_order_id = purchase_orders.id)')),
+            'total_received' => $statsBaseQuery->sum(DB::raw('(select sum(qty_received) from purchase_order_items where purchase_order_id = purchase_orders.id)')),
+            'total_returned' => $statsBaseQuery->sum(DB::raw('(select sum(qty_returned) from purchase_order_items where purchase_order_id = purchase_orders.id)')),
         ];
         $stats['total_balance'] = $stats['total_qty'] - ($stats['total_received'] - $stats['total_returned']);
 
@@ -94,9 +113,6 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for creating a new purchase order.
-     */
     /**
      * Show the form for creating a new purchase order.
      */
@@ -223,7 +239,7 @@ class PurchaseOrderController extends Controller
     /**
      * Show the form for editing the specified purchase order.
      */
-    public function edit(PurchaseOrder $order): Response
+    public function edit(PurchaseOrder $order)
     {
         if (!$order->isEditable()) {
             return redirect()->route('purchasing.orders.show', $order)
@@ -311,9 +327,8 @@ class PurchaseOrderController extends Controller
                 }
             }
 
-            // Recalculate totals
+            // Totals are auto-recalculated via PurchaseOrderItem::saved event
             $order->refresh();
-            $order->calculateTotals();
         });
 
         return redirect()->route('purchasing.orders.index')
@@ -373,6 +388,11 @@ class PurchaseOrderController extends Controller
     {
         if (in_array($order->status, ['received', 'cancelled'])) {
             return back()->with('error', 'This order cannot be cancelled.');
+        }
+
+        // Bug 3 fix: Check if any completed Goods Receipts exist
+        if ($order->goodsReceipts()->where('status', 'completed')->exists()) {
+            return back()->with('error', 'Cannot cancel: this order has completed goods receipts. Please process a Purchase Return instead.');
         }
 
         $order->update(['status' => 'cancelled']);

@@ -7,6 +7,7 @@ use App\Models\AppSetting;
 use App\Models\WhatsappMessage;
 use App\Models\WhatsappTemplate;
 use App\Models\WhatsappContactLabel;
+use App\Models\Customer;
 use App\Services\FonnteService;
 use App\Services\WablasService;
 use Illuminate\Http\Request;
@@ -77,11 +78,20 @@ class WhatsappCenterController extends Controller
             // Templates table may not exist yet
         }
 
+        // Customers for New Chat picker
+        $customers = Customer::active()
+            ->whereNotNull('phone')
+            ->where('phone', '!=', '')
+            ->select('id', 'name', 'contact_person', 'phone', 'profile_photo_path')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Sales/Whatsapp/Index', [
             'contacts' => $contacts,
             'totalUnread' => $totalUnread,
             'templates' => $templates,
             'labelPresets' => $labelPresets,
+            'customers' => $customers,
         ]);
     }
 

@@ -83,7 +83,7 @@ class ProductionDashboardController extends Controller
         // 4. Recent Production Logs
         $recentLogs = ProductionEntry::with(['workOrder.product'])
             ->latest()
-            ->limit(5)
+            ->limit(10)
             ->get()
             ->map(fn($e) => [
                 'id' => $e->id,

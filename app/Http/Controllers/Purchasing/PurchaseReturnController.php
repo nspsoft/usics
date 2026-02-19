@@ -84,7 +84,8 @@ class PurchaseReturnController extends Controller
         ]);
 
         return DB::transaction(function() use ($request) {
-            $lastReturn = PurchaseReturn::orderBy('id', 'desc')->first();
+            // Bug 5 fix: Use DB lock to prevent duplicate numbers under concurrency
+            $lastReturn = PurchaseReturn::lockForUpdate()->orderBy('id', 'desc')->first();
             $number = 'PRT/' . date('Ymd') . '/' . str_pad(($lastReturn->id ?? 0) + 1, 4, '0', STR_PAD_LEFT);
 
             $purchaseReturn = PurchaseReturn::create([
@@ -137,6 +138,15 @@ class PurchaseReturnController extends Controller
                 ], [
                     'qty_on_hand' => 0,
                 ]);
+
+                // Bug 4 fix: Warn if stock will go negative, but allow (soft block)
+                if ($stock->qty_on_hand < $item->qty) {
+                    \Illuminate\Support\Facades\Log::warning(
+                        "Negative stock warning: Product #{$item->product_id} in Warehouse #{$purchaseReturn->warehouse_id}. " .
+                        "Current: {$stock->qty_on_hand}, Returning: {$item->qty}. " .
+                        "Return: {$purchaseReturn->number}, User: " . auth()->id()
+                    );
+                }
 
                 // Reduce stock for purchase return
                 $stock->adjustStock(

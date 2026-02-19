@@ -20,10 +20,9 @@ class QcDashboardController extends Controller
         // 3. Open NCRs
         $openNcrs = \App\Models\NonConformanceReport::where('status', 'open')->count();
 
-        // 4. Recent Inspections
         $recentInspections = \App\Models\QcInspection::with(['inspector'])
             ->latest()
-            ->take(5)
+            ->take(10)
             ->get()
             ->map(function ($inspection) {
                 return [

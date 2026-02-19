@@ -48,7 +48,7 @@ class DashboardController extends Controller
         // Recent Sales Orders
         $recentSOs = SalesOrder::with(['customer'])
             ->orderByDesc('created_at')
-            ->limit(5)
+            ->limit(10)
             ->get()
             ->map(fn($so) => [
                 'id' => $so->id,

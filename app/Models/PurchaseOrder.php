@@ -55,7 +55,7 @@ class PurchaseOrder extends Model
         'discount_amount' => 'double',
         'tax_percent' => 'decimal:2',
         'tax_amount' => 'double',
-        'total_amount' => 'double',
+        'total' => 'double',
         'paid_amount' => 'double',
         'approved_at' => 'datetime',
     ];

@@ -128,9 +128,11 @@ class SalesPlanningController extends Controller
                     'is_today' => Carbon::parse($date)->isToday(),
                     'count' => $group->count(),
                     'total_qty' => $group->sum('qty_scheduled'),
-                    'items' => $group->take(3)->map(fn($s) => [
+                    'items' => $group->map(fn($s) => [
                         'customer' => $s->customer->name ?? '-',
                         'product' => $s->product->name ?? '-',
+                        'sku' => $s->product->sku ?? '-',
+                        'unit' => $s->product->unit->code ?? 'PCS',
                         'qty' => (float) $s->qty_scheduled,
                     ])->values(),
                 ];
@@ -211,6 +213,7 @@ class SalesPlanningController extends Controller
             'topCustomers' => $topCustomers,
             'bottomCustomers' => $bottomCustomers,
             'deliveryTimeline' => $deliveryTimeline,
+            'analysis' => $this->generateAnalysisData($chartData, $deliveryTimeline, $stats)
         ]);
     }
 
@@ -306,5 +309,72 @@ class SalesPlanningController extends Controller
         })->values();
 
         return response()->json($details);
+    }
+
+    private function generateAnalysisData($chartData, $deliveryTimeline, $stats)
+    {
+        $totalForecast = $stats['total_forecast_qty'] ?? 0;
+        $totalActual = $stats['total_actual_qty'] ?? 0;
+        
+        $accuracy = $totalForecast > 0 ? min(100, round(($totalActual / $totalForecast) * 100, 1)) : 0;
+        
+        // Find top gap customer
+        $topGapCustomer = collect($chartData)->sortByDesc(function($item) {
+            return $item['forecast'] - $item['actual'];
+        })->first();
+
+        $insights = [];
+        $recommendations = [];
+
+        // Dynamic Insights
+        if ($accuracy < 50) {
+            $insights[] = "Akurasi Forecast sangat rendah ($accuracy%). Terdapat gap besar antara perencanaan dan realisasi pesanan.";
+        } elseif ($accuracy < 85) {
+            $insights[] = "Pencapaian moderat ($accuracy%). Perlu pemantauan lebih ketat pada customer utama untuk mencapai target.";
+        } else {
+            $insights[] = "Performa sangat baik ($accuracy%). Akurasi perencanaan mendekati realisasi pasar.";
+        }
+
+        if (($stats['delayed_schedules'] ?? 0) > 10) {
+            $insights[] = "Tingkat keterlambatan pengiriman tinggi (" . $stats['delayed_schedules'] . " item). Berpotensi menurunkan kepuasan customer.";
+        }
+
+        // Dynamic Recommendations
+        if ($topGapCustomer && ($topGapCustomer['forecast'] - $topGapCustomer['actual'] > 0)) {
+            $recommendations[] = [
+                'type' => 'warning',
+                'title' => 'Follow-up Gap Forecast',
+                'text' => "Segera hubungi " . $topGapCustomer['customer'] . " karena terdapat gap " . number_format($topGapCustomer['forecast'] - $topGapCustomer['actual']) . " unit antara forecast dan SO."
+            ];
+        }
+
+        if (($stats['delayed_schedules'] ?? 0) > 0) {
+            $recommendations[] = [
+                'type' => 'danger',
+                'title' => 'Prioritaskan Delivery Delay',
+                'text' => "Alokasikan armada untuk menyelesaikan " . $stats['delayed_schedules'] . " jadwal pengiriman yang tertunda."
+            ];
+        }
+
+        if ($accuracy > 90) {
+            $recommendations[] = [
+                'type' => 'success',
+                'title' => 'Update Forecast Bulan Depan',
+                'text' => "Pertahankan performa ini dan mulai tinjau target untuk periode berikutnya berdasarkan tren positif saat ini."
+            ];
+        } else {
+            $recommendations[] = [
+                'type' => 'info',
+                'title' => 'Review Sales Pipeline',
+                'text' => "Lakukan review berkala terhadap pipeline penjualan untuk memastikan setiap forecast memiliki peluang closing yang valid."
+            ];
+        }
+
+        return [
+            'accuracy' => $accuracy,
+            'top_gap_customer' => $topGapCustomer['customer'] ?? '-',
+            'insights' => $insights,
+            'recommendations' => $recommendations
+        ];
     }
 }

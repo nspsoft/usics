@@ -66,7 +66,7 @@ class CrmDashboardController extends Controller
         // 4. Live Opportunity Feed (Recent 5)
         $recentDeals = Opportunity::with('lead')
             ->orderByDesc('updated_at')
-            ->take(5)
+            ->take(10)
             ->get()
             ->map(fn($opp) => [
                 'id' => $opp->id,

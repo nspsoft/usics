@@ -30,9 +30,21 @@ class PurchasingDashboardController extends Controller
         // Pending Approvals (PRs)
         $pendingApprovals = PurchaseRequest::where('status', 'draft')->count();
 
-        // Supplier Performance (Mocked for now, or based on 'on_time' flag in goods receipts)
-        // Let's use a hardcoded value slightly improved by randomness for realism if no data exists
-        $supplierPerf = 94.5;
+        // Bug 9 fix: Calculate supplier performance from actual GR on-time delivery rate
+        $supplierPerf = null;
+        $totalGR = \App\Models\GoodsReceipt::where('status', 'completed')
+            ->whereHas('purchaseOrder')
+            ->whereYear('created_at', now()->year)
+            ->count();
+        if ($totalGR > 0) {
+            $onTimeGR = \App\Models\GoodsReceipt::where('status', 'completed')
+                ->whereHas('purchaseOrder', function ($q) {
+                    $q->whereColumn('goods_receipts.receipt_date', '<=', 'purchase_orders.expected_date');
+                })
+                ->whereYear('goods_receipts.created_at', now()->year)
+                ->count();
+            $supplierPerf = round(($onTimeGR / $totalGR) * 100, 1);
+        }
 
         $stats = [
             'monthly_spend' => $monthlySpend,
@@ -74,7 +86,7 @@ class PurchasingDashboardController extends Controller
         // 5. Recent/Urgent Requests
         $recentRequests = PurchaseRequest::where('status', 'draft')
             ->orderByDesc('created_at')
-            ->limit(5)
+            ->limit(10)
             ->get()
             ->map(fn($r) => [
                 'id' => $r->id,
@@ -82,7 +94,8 @@ class PurchasingDashboardController extends Controller
                 'requester' => $r->requester, // requester is a string attribute
                 'description' => $r->notes ?? 'No description', // notes is the column name for description
                 'date' => $r->created_at->format('d M'),
-                'is_urgent' => rand(0, 1) === 1, // Mocking urgency if no column exists
+                // Bug 8 fix: Determine urgency based on age (>3 days old draft = urgent)
+                'is_urgent' => $r->created_at->diffInDays(now()) >= 3,
             ]);
 
         return Inertia::render('Purchasing/Dashboard', [

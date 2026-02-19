@@ -21,9 +21,9 @@ class StockOpnameItem extends Model
     ];
 
     protected $casts = [
-        'system_qty' => 'float',
-        'actual_qty' => 'float',
-        'difference_qty' => 'float',
+        'qty_system' => 'float',
+        'qty_physic' => 'float',
+        'qty_difference' => 'float',
     ];
 
     public function opname(): BelongsTo

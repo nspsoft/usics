@@ -77,6 +77,7 @@ import {
     QueueListIcon,
     AdjustmentsHorizontalIcon,
     CircleStackIcon,
+    TrophyIcon,
 } from '@heroicons/vue/24/outline';
 import TechnoHeaderBg from '@/Components/TechnoHeaderBg.vue';
 
@@ -213,6 +214,9 @@ const navigation = [
         permission: 'purchasing.view',
         children: [
             { name: 'Procurement Ops', href: '/purchasing/dashboard', icon: PresentationChartBarIcon, permission: 'purchasing.view' },
+            { name: 'Delivery Schedule', href: '/purchasing/delivery-schedule', icon: CalendarDaysIcon, permission: 'purchasing.view' },
+            { name: 'Procurement Forecast', href: '/purchasing/procurement-forecast', icon: ChartBarSquareIcon, permission: 'purchasing.view' },
+            { name: 'Supplier Scorecard', href: '/purchasing/supplier-scorecard', icon: TrophyIcon, permission: 'purchasing.view' },
             { name: 'Information', href: '/purchasing/information', icon: InformationCircleIcon, permission: 'purchasing.view' },
             { name: 'Suppliers', href: '/purchasing/suppliers', icon: BuildingOfficeIcon, permission: 'purchasing.suppliers.view' },
             { name: 'Purchase Requests', href: '/purchasing/requests', icon: DocumentPlusIcon, permission: 'purchasing.purchase_requests.view' },
@@ -307,15 +311,7 @@ const navigation = [
             { name: 'General Ledger', href: '/finance/ledger', icon: BookOpenIcon, permission: 'finance.general_ledger.view' },
             { name: 'Profit & Loss', href: '/finance/reports', icon: ChartBarSquareIcon, permission: 'finance.profit_&_loss.view' },
             { name: 'AP & AR Monitoring', href: '/finance/ap_&_ar_monitoring', icon: ArrowsRightLeftIcon, permission: 'finance.ap_&_ar_monitoring.view' },
-        ]
-    },
-    { 
-        name: 'Costing', 
-        href: '#', 
-        icon: ChartBarIcon, 
-        current: false,
-        permission: 'finance.view',
-        children: [
+            // Costing Modules merged here
             { name: 'Production Costing', href: '/costing/production', icon: CalculatorIcon, permission: 'finance.production_costing.view' },
             { name: 'Overhead Allocation', href: '/costing/overhead', icon: TableCellsIcon, permission: 'finance.overhead_allocation.view' },
             { name: 'Profitability Analytic', href: '/costing/profitability', icon: PresentationChartLineIcon, permission: 'finance.profitability_analytic.view' },

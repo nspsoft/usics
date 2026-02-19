@@ -1,5 +1,5 @@
 <script setup>
-import { Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline';
 

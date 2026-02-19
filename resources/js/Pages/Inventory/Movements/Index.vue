@@ -15,6 +15,7 @@ import {
     ClockIcon,
     ChevronUpIcon,
     ChevronDownIcon,
+    TrashIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 
@@ -31,6 +32,20 @@ const selectedWarehouse = ref(props.filters.warehouse_id || '');
 const sortField = ref(props.filters.sort || 'created_at');
 const sortDirection = ref(props.filters.direction || 'desc');
 const showFilters = ref(false);
+
+const resetMovements = () => {
+    const password = prompt("⚠️ DANGER ZONE ⚠️\n\nUntuk mereset SEMUA data stock movement dan mengenolkan inventory,\nmasukkan password Anda untuk konfirmasi:");
+    
+    if (password) {
+        if (confirm("ANDA YAKIN? \n\nTindakan ini akan:\n1. MENGHAPUS semua riwayat keluar masuk barang\n2. MENGUBAH stok semua barang menjadi 0\n3. Data Master (Produk/Gudang) TETAP ADA\n\nLanjutkan?")) {
+            router.delete('/inventory/movements/reset', {
+                data: { password },
+                onSuccess: () => alert('Reset berhasil. Semua stok kini 0.'),
+                onError: (err) => alert('Gagal: ' + (err.password || err.error || 'Terjadi kesalahan'))
+            });
+        }
+    }
+};
 
 const applyFilters = debounce(() => {
     router.get('/inventory/movements', {
@@ -103,6 +118,15 @@ const getTypeColor = (type, qty) => {
                         class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500/50 transition-all"
                     />
                 </div>
+                <!-- Reset Button -->
+                <button 
+                    @click="resetMovements"
+                    class="hidden sm:inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all"
+                    title="Reset Stock Movements & Zero Inventory"
+                >
+                    <TrashIcon class="h-5 w-5" />
+                    Reset Data
+                </button>
                 <button 
                     @click="showFilters = !showFilters"
                     class="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors"

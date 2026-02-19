@@ -188,6 +188,11 @@ class PurchaseRequestController extends Controller
      */
     public function destroy(PurchaseRequest $request)
     {
+        // Bug 6 fix: Only allow deleting draft PRs to protect audit trail
+        if ($request->status !== 'draft') {
+            return back()->with('error', 'Only draft purchase requests can be deleted.');
+        }
+
         $request->delete();
         
         return redirect()->route('purchasing.requests.index')

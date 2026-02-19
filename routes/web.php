@@ -91,6 +91,10 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
 
     Route::get('/movements', [App\Http\Controllers\Inventory\StockMovementController::class, 'index'])->name('movements.index');
 
+    // Stock Movements
+    Route::delete('/movements/reset', [App\Http\Controllers\Inventory\StockMovementController::class, 'reset'])->name('movements.reset');
+    Route::resource('movements', App\Http\Controllers\Inventory\StockMovementController::class);
+
     // Stock Adjustments
     Route::resource('adjustments', App\Http\Controllers\Inventory\StockAdjustmentController::class);
     Route::post('/adjustments/{adjustment}/complete', [App\Http\Controllers\Inventory\StockAdjustmentController::class, 'complete'])->name('adjustments.complete');
@@ -100,6 +104,7 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::resource('opname', App\Http\Controllers\Inventory\StockOpnameController::class);
     Route::post('/opname/{opname}/populate', [App\Http\Controllers\Inventory\StockOpnameController::class, 'populate'])->name('opname.populate');
     Route::put('/opname/{opname}/items', [App\Http\Controllers\Inventory\StockOpnameController::class, 'updateItems'])->name('opname.update-items');
+    Route::put('/opname/{opname}/item', [App\Http\Controllers\Inventory\StockOpnameController::class, 'updateSingleItem'])->name('opname.update-item');
     Route::post('/opname/{opname}/complete', [App\Http\Controllers\Inventory\StockOpnameController::class, 'complete'])->name('opname.complete');
     // Reports
     Route::get('/reports', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
@@ -122,6 +127,9 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
 // Purchasing Module
 Route::prefix('purchasing')->name('purchasing.')->middleware(['auth'])->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Purchasing\PurchasingDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/delivery-schedule', [App\Http\Controllers\Purchasing\DeliveryScheduleController::class, 'index'])->name('delivery-schedule');
+    Route::get('/procurement-forecast', [App\Http\Controllers\Purchasing\ProcurementForecastController::class, 'index'])->name('procurement-forecast');
+    Route::get('/supplier-scorecard', [App\Http\Controllers\Purchasing\SupplierScorecardController::class, 'index'])->name('supplier-scorecard');
     Route::resource('suppliers', SupplierController::class);
     Route::get('/suppliers-export', [SupplierController::class, 'export'])->name('suppliers.export');
     Route::post('/suppliers-import', [SupplierController::class, 'import'])->name('suppliers.import');
@@ -234,6 +242,8 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
         Route::get('/forecast/export', [App\Http\Controllers\Sales\Planning\SalesForecastController::class, 'export'])->name('forecast.export');
         Route::get('/forecast/chart-data', [App\Http\Controllers\Sales\Planning\SalesForecastController::class, 'forecastChart'])->name('forecast.chart-data');
         Route::post('/forecast/analyze', [App\Http\Controllers\Sales\Planning\SalesForecastController::class, 'analyzeAccuracy'])->name('forecast.analyze');
+        Route::delete('/forecast/{forecast}', [App\Http\Controllers\Sales\Planning\SalesForecastController::class, 'destroy'])->name('forecast.destroy');
+        Route::post('/forecast/bulk-delete', [App\Http\Controllers\Sales\Planning\SalesForecastController::class, 'bulkDelete'])->name('forecast.bulk-delete');
         Route::get('/schedule', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'index'])->name('schedule.index');
         Route::post('/schedule/import', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'import'])->name('schedule.import');
         Route::get('/schedule/template', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'template'])->name('schedule.template');

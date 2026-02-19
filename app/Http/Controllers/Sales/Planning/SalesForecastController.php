@@ -356,4 +356,38 @@ class SalesForecastController extends Controller
 
         return response()->json(['analysis' => $analysis]);
     }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(SalesForecast $forecast)
+    {
+        $forecast->delete();
+        return back()->with('success', 'Sales Forecast deleted successfully.');
+    }
+
+    /**
+     * Bulk delete records based on month or filters.
+     */
+    public function bulkDelete(Request $request)
+    {
+        $query = SalesForecast::query();
+
+        if ($request->month) {
+            $query->whereDate('period', $request->month.'-01');
+        }
+
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('customer', fn ($q2) => $q2->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('product', fn ($q2) => $q2->where('name', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"));
+            });
+        }
+
+        $count = $query->count();
+        $query->delete();
+
+        return back()->with('success', "Successfully deleted {$count} forecast records.");
+    }
 }

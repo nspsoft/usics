@@ -83,7 +83,7 @@ class InventoryDashboardController extends Controller
         // 5. Recent Movements
         $recentMovements = StockMovement::with(['product', 'warehouse'])
             ->orderByDesc('created_at')
-            ->limit(5)
+            ->limit(10)
             ->get()
             ->map(fn($m) => [
                 'id' => $m->id,

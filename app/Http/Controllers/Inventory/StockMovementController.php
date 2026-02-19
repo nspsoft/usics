@@ -10,8 +10,51 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+
 class StockMovementController extends Controller
 {
+    /**
+     * Reset stock movements and zero out inventory
+     */
+    public function reset(Request $request)
+    {
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            return back()->with('error', 'Invalid password. Cannot reset data.');
+        }
+
+        try {
+            DB::transaction(function () {
+                // 1. Truncate stock movements history
+                DB::table('inv_stock_movements')->truncate();
+
+                // 2. Reset all stock quantities to 0
+                // We update widely to ensure all warehouses/products are reset
+                DB::table('inv_product_stocks')->update([
+                    'qty_on_hand' => 0,
+                    'qty_reserved' => 0,
+                    'qty_incoming' => 0,
+                    'qty_outgoing' => 0,
+                    'avg_cost' => 0,
+                    'updated_at' => now(),
+                ]);
+            });
+
+            Log::warning('Stock Movements reset by user ' . auth()->id());
+
+            return back()->with('success', 'Stock transactions history cleared and inventory reset to 0.');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Reset failed: ' . $e->getMessage());
+        }
+    }
+
     public function index(Request $request): Response
     {
         $query = StockMovement::with(['product', 'warehouse', 'createdBy'])

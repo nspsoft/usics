@@ -14,6 +14,7 @@ import {
     TableCellsIcon,
     ArrowLeftCircleIcon,
     SparklesIcon,
+    TrashIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber } from '@/helpers';
 import {
@@ -188,6 +189,33 @@ const runAiAnalysis = async () => {
     }
 };
 
+// ─── Deletion Logic ───
+const deleteForecast = (forecast) => {
+    if (confirm(`Are you sure you want to delete forecast for ${forecast.customer?.name} - ${forecast.product?.name}?`)) {
+        router.delete(route('sales.planning.forecast.destroy', forecast.id), {
+            onSuccess: () => {
+                loadChartData();
+            }
+        });
+    }
+};
+
+const bulkDelete = () => {
+    const periodLabel = month.value ? formatMonth(month.value + '-01') : 'ALL PERIODS';
+    const searchLabel = search.value ? `matching "${search.value}"` : 'all matching data';
+    
+    if (confirm(`⚠️ WARNING: This will PERMANENTLY delete all forecast records for ${periodLabel} ${searchLabel}.\n\nAre you sure you want to continue?`)) {
+        router.post(route('sales.planning.forecast.bulk-delete'), {
+            month: month.value,
+            search: search.value,
+        }, {
+            onSuccess: () => {
+                loadChartData();
+            }
+        });
+    }
+};
+
 // Simple markdown to HTML converter
 const renderMarkdown = (text) => {
     if (!text) return '';
@@ -345,6 +373,14 @@ const formatDateShort = (date) => {
                                 <SparklesIcon class="w-4 h-4" :class="{ 'animate-spin': aiAnalyzing }" />
                                 {{ aiAnalyzing ? 'Analyzing...' : 'AI Analysis' }}
                             </button>
+                            <button 
+                                @click="bulkDelete"
+                                class="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-lg transition-all text-sm border border-red-200"
+                                title="Bulk delete based on current month/search filter"
+                            >
+                                <TrashIcon class="w-4 h-4" />
+                                Clear Data
+                            </button>
                         </div>
                     </div>
 
@@ -492,7 +528,9 @@ const formatDateShort = (date) => {
                                         <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-4 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Accuracy</th>
                                         <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Sales Name</th>
                                         <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Unit</th>
+                                        <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Unit</th>
                                         <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Notes</th>
+                                        <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-4 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -541,6 +579,11 @@ const formatDateShort = (date) => {
                                         </td>
                                         <td class="px-4 py-2 text-sm text-slate-500 font-mono">{{ forecast.product?.unit?.code }}</td>
                                         <td class="px-4 py-2 text-[11px] italic text-slate-500 dark:text-slate-400 line-clamp-1 truncate max-w-[150px]" :title="forecast.notes">{{ forecast.notes || '-' }}</td>
+                                        <td class="px-4 py-2 text-center">
+                                            <button @click="deleteForecast(forecast)" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all group">
+                                                <TrashIcon class="w-4 h-4" />
+                                            </button>
+                                        </td>
                                     </tr>
                                     <tr v-if="forecasts.data.length === 0">
                                         <td colspan="9" class="px-4 py-12 text-center text-slate-500 whitespace-nowrap">

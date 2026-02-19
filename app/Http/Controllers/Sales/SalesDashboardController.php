@@ -75,7 +75,7 @@ class SalesDashboardController extends Controller
         // 5. Recent Orders
         $recentOrders = SalesOrder::with('customer')
             ->orderByDesc('order_date')
-            ->limit(5)
+            ->limit(10)
             ->get()
             ->map(fn($o) => [
                 'id' => $o->id,

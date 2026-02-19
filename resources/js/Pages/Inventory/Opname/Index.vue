@@ -100,6 +100,15 @@ const deleteOpname = (opname) => {
                         {{ w.name }}
                     </option>
                 </select>
+                <select
+                    v-model="selectedStatus"
+                    class="rounded-xl border-0 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                >
+                    <option value="">All Statuses</option>
+                    <option v-for="s in statuses" :key="s.value" :value="s.value">
+                        {{ s.label }}
+                    </option>
+                </select>
             </div>
             
             <Link
@@ -250,18 +259,18 @@ const deleteOpname = (opname) => {
                             ? 'bg-blue-600 text-slate-900 dark:text-white' 
                             : link.url 
                                 ? 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 hover:text-slate-900 dark:text-white' 
-                                : 'text-white cursor-not-allowed'"
+                                : 'text-slate-600 cursor-not-allowed opacity-50'"
                         v-html="link.label"
                     />
                 </div>
             </div>
         </div>
 
-        <!-- Feature Guide -->
+        <!-- Panduan Stock Opname -->
         <div class="mt-12">
             <div class="flex items-center gap-2 mb-4 px-1">
                 <div class="h-px flex-1 bg-slate-50 dark:bg-slate-800"></div>
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Stock Taking Guide</span>
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Panduan Stock Opname</span>
                 <div class="h-px flex-1 bg-slate-50 dark:bg-slate-800"></div>
             </div>
             
@@ -271,10 +280,10 @@ const deleteOpname = (opname) => {
                         <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-400">
                             <ClockIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-200 text-sm">Opname Session</h4>
+                        <h4 class="font-bold text-slate-200 text-sm">Buat Sesi Baru</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Start a <strong>New Session</strong> for a specific warehouse. This creates a snapshot of system stock for verification against physical counts.
+                        Klik <strong>New Session</strong>, pilih gudang dan tanggal. Sistem akan membuat sesi opname baru untuk memverifikasi stok fisik.
                     </p>
                 </div>
 
@@ -283,10 +292,10 @@ const deleteOpname = (opname) => {
                         <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
                             <CheckBadgeIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-200 text-sm">Finalize Progress</h4>
+                        <h4 class="font-bold text-slate-200 text-sm">Hitung & Auto-Simpan</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Sessions move from <strong>Draft</strong> to <strong>In Progress</strong> as you count. Once <strong>Completed</strong>, stock adjustments are automatically posted.
+                        Gunakan tombol <strong>+/−</strong> atau ketik angka langsung. Setiap perubahan <strong>otomatis tersimpan</strong>. Bisa diakses lewat HP atau tablet.
                     </p>
                 </div>
 
@@ -295,10 +304,10 @@ const deleteOpname = (opname) => {
                         <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
                             <InformationCircleIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-200 text-sm">Discrepancy</h4>
+                        <h4 class="font-bold text-slate-200 text-sm">Selisih Otomatis</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        System calculates the difference between system qty and your physical count. Positive or negative adjustments will be made to align inventory.
+                        Sistem menghitung selisih antara stok sistem dan stok fisik secara otomatis. Gunakan filter <strong>Changed/Pending</strong> untuk fokus pada item tertentu.
                     </p>
                 </div>
                 
@@ -307,10 +316,10 @@ const deleteOpname = (opname) => {
                         <div class="p-2.5 rounded-xl bg-red-500/10 text-red-400">
                             <ExclamationCircleIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-200 text-sm">Irreversible</h4>
+                        <h4 class="font-bold text-slate-200 text-sm">Tidak Bisa Dibatalkan</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Once a session is marked as <strong>Completed</strong>, it cannot be edited or deleted. Ensure all counts are triple-checked before finalizing.
+                        Setelah sesi ditandai <strong>Complete</strong>, penyesuaian stok langsung diposting dan <strong>tidak bisa diedit atau dihapus</strong>. Pastikan semua sudah benar.
                     </p>
                 </div>
             </div>

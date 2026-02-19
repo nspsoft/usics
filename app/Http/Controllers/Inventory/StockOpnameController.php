@@ -92,7 +92,12 @@ class StockOpnameController extends Controller
         $opname->load(['warehouse', 'createdBy', 'items.product']);
 
         return Inertia::render('Inventory/Opname/Show', [
-            'opname' => $opname,
+            'opname' => array_merge($opname->toArray(), [
+                'created_by_user' => $opname->createdBy ? [
+                    'id' => $opname->createdBy->id,
+                    'name' => $opname->createdBy->name,
+                ] : null,
+            ]),
         ]);
     }
 
@@ -129,41 +134,86 @@ class StockOpnameController extends Controller
         return back()->with('success', 'Counts saved successfully.');
     }
 
+    /**
+     * Auto-save a single item count (for mobile UI)
+     */
+    public function updateSingleItem(Request $request, StockOpname $opname)
+    {
+        if ($opname->status === 'completed') {
+            return response()->json(['error' => 'Cannot update completed opname.'], 422);
+        }
+
+        $validated = $request->validate([
+            'item_id'    => 'required|exists:inv_stock_opname_items,id',
+            'qty_physic' => 'required|numeric|min:0',
+        ]);
+
+        $item = $opname->items()->find($validated['item_id']);
+        if (!$item) {
+            return response()->json(['error' => 'Item not found.'], 404);
+        }
+
+        $item->update([
+            'qty_physic'     => $validated['qty_physic'],
+            'qty_difference' => $validated['qty_physic'] - $item->qty_system,
+        ]);
+
+        if ($opname->status === 'draft') {
+            $opname->update(['status' => 'in_progress']);
+        }
+
+        // Return progress stats
+        $total   = $opname->items()->count();
+        $counted = $opname->items()->whereColumn('qty_physic', '!=', 'qty_system')->count();
+
+        return response()->json([
+            'success'    => true,
+            'difference' => $validated['qty_physic'] - $item->qty_system,
+            'progress'   => [
+                'total'   => $total,
+                'counted' => $counted,
+                'percent' => $total > 0 ? round(($counted / $total) * 100, 1) : 0,
+            ],
+        ]);
+    }
+
     public function populate(StockOpname $opname)
     {
         if ($opname->items()->exists()) {
             return back()->with('error', 'Items already populated.');
         }
 
-        // Fetch all active products
-        $products = Product::active()
+        $count = 0;
+
+        // Use chunking to avoid memory issues with large product catalogs
+        Product::active()
             ->stockManaged()
-            ->get();
+            ->select('id')
+            ->chunk(500, function ($products) use ($opname, &$count) {
+                $items = [];
+                foreach ($products as $product) {
+                    $qtySystem = ProductStock::where('product_id', $product->id)
+                        ->where('warehouse_id', $opname->warehouse_id)
+                        ->value('qty_on_hand') ?? 0;
 
-        $items = [];
-        foreach ($products as $product) {
-            $stock = ProductStock::where('product_id', $product->id)
-                ->where('warehouse_id', $opname->warehouse_id)
-                ->first();
-            
-            $qtySystem = $stock ? $stock->qty_on_hand : 0;
-            
-            $items[] = [
-                'stock_opname_id' => $opname->id,
-                'product_id' => $product->id,
-                'qty_system' => $qtySystem,
-                'qty_physic' => $qtySystem, // Default to system qty
-                'qty_difference' => 0,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
+                    $items[] = [
+                        'stock_opname_id' => $opname->id,
+                        'product_id' => $product->id,
+                        'qty_system' => $qtySystem,
+                        'qty_physic' => $qtySystem,
+                        'qty_difference' => 0,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
 
-        if (count($items) > 0) {
-            DB::table('inv_stock_opname_items')->insert($items);
-        }
+                if (count($items) > 0) {
+                    DB::table('inv_stock_opname_items')->insert($items);
+                    $count += count($items);
+                }
+            });
 
-        return back()->with('success', 'Populated ' . count($items) . ' items from system stock.');
+        return back()->with('success', "Populated {$count} items from system stock.");
     }
 
     public function complete(StockOpname $opname)

@@ -62,6 +62,14 @@ onMounted(() => {
 });
 onUnmounted(() => clearInterval(timer));
 
+// --- Formatters ---
+const formatMillions = (val) => {
+    if (Math.abs(val) >= 1000000) {
+        return (val / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' jt';
+    }
+    return val.toLocaleString('id-ID');
+};
+
 // --- Chart Options ---
 const commonOptions = computed(() => ({
     responsive: true,
@@ -78,6 +86,25 @@ const commonOptions = computed(() => ({
             titleFont: { family: 'Space Mono', weight: 'bold' },
             bodyFont: { family: 'Space Mono' },
             displayColors: false,
+            callbacks: {
+                label: (context) => {
+                    let label = context.dataset.label || '';
+                    if (label) label += ': ';
+                    if (context.parsed.y !== undefined) {
+                        label += formatCurrency(context.parsed.y);
+                        // Add millions summary in parenthesis
+                        if (Math.abs(context.parsed.y) >= 1000000) {
+                            label += ` (${formatMillions(context.parsed.y)})`;
+                        }
+                    } else if (context.parsed.x !== undefined) {
+                        label += formatCurrency(context.parsed.x);
+                        if (Math.abs(context.parsed.x) >= 1000000) {
+                            label += ` (${formatMillions(context.parsed.x)})`;
+                        }
+                    }
+                    return label;
+                }
+            }
         },
     },
     scales: {
@@ -87,7 +114,11 @@ const commonOptions = computed(() => ({
         },
         y: { 
             grid: { color: 'rgba(217, 70, 239, 0.1)', drawBorder: false },
-            ticks: { color: '#64748b', font: { family: 'Space Mono', size: 10 } }
+            ticks: { 
+                color: '#64748b', 
+                font: { family: 'Space Mono', size: 10 },
+                callback: (value) => formatMillions(value)
+            }
         },
     },
 }));
@@ -388,7 +419,30 @@ const customerData = computed(() => ({
                                 :options="{ 
                                     ...commonOptions, 
                                     indexAxis: 'y', 
-                                    plugins: { legend: { display: false } } 
+                                    plugins: { 
+                                        legend: { display: false },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: (context) => {
+                                                    return `Revenue: ${formatCurrency(context.parsed.x)} (${formatMillions(context.parsed.x)})`;
+                                                }
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: {
+                                            grid: { color: 'rgba(34, 211, 238, 0.1)', drawBorder: false },
+                                            ticks: { 
+                                                color: '#64748b', 
+                                                font: { family: 'Space Mono', size: 10 },
+                                                callback: (value) => formatMillions(value)
+                                            }
+                                        },
+                                        y: {
+                                            grid: { display: false },
+                                            ticks: { color: '#64748b', font: { family: 'Space Mono', size: 10 } }
+                                        }
+                                    }
                                 }" 
                             />
                         </div>

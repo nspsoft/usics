@@ -206,9 +206,12 @@ class SupplierController extends Controller
             'file' => 'required|mimes:xlsx,xls,csv|max:2048',
         ]);
 
-        Excel::import(new SupplierImport, $request->file('file'));
-
-        return back()->with('success', 'Suppliers imported successfully.');
+        try {
+            Excel::import(new SupplierImport, $request->file('file'));
+            return back()->with('success', 'Suppliers imported successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error importing file: ' . $e->getMessage());
+        }
     }
 
     public function template()
@@ -227,9 +230,12 @@ class SupplierController extends Controller
             'file' => 'required|mimes:xlsx,xls,csv|max:2048',
         ]);
 
-        Excel::import(new SupplierContactImport, $request->file('file'));
-
-        return back()->with('success', 'Supplier contacts imported successfully.');
+        try {
+            Excel::import(new SupplierContactImport, $request->file('file'));
+            return back()->with('success', 'Supplier contacts imported successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error importing file: ' . $e->getMessage());
+        }
     }
 
     public function templateContacts()

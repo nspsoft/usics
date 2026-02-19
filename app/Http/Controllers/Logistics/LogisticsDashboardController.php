@@ -58,7 +58,7 @@ class LogisticsDashboardController extends Controller
         // 4. Recent Deliveries
         $recentDeliveries = DeliveryOrder::with(['customer', 'vehicle'])
             ->latest()
-            ->limit(5)
+            ->limit(10)
             ->get()
             ->map(fn($do) => [
                 'id' => $do->id,

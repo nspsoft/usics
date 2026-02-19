@@ -39,9 +39,12 @@ class GoodsReceiptController extends Controller
             'file' => 'required|mimes:xlsx,xls,csv',
         ]);
 
-        Excel::import(new GoodsReceiptsImport, $request->file('file'));
-
-        return back()->with('success', 'Goods Receipts imported successfully.');
+        try {
+            Excel::import(new GoodsReceiptsImport, $request->file('file'));
+            return back()->with('success', 'Goods Receipts imported successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error importing file: ' . $e->getMessage());
+        }
     }
 
     public function index(Request $request): Response
@@ -119,7 +122,7 @@ class GoodsReceiptController extends Controller
             'receipt_date' => 'required|date',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
-            'items.*.po_item_id' => 'required|exists:purchase_order_items,id',
+            'items.*.po_item_id' => 'nullable|exists:purchase_order_items,id',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.qty_ordered' => 'required|numeric|min:0',
             'items.*.qty_received' => 'required|numeric|min:0.0001',
