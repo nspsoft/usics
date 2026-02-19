@@ -300,6 +300,16 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::get('/whatsapp/history/{phone}', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'history'])->name('whatsapp.history');
     Route::delete('/whatsapp/history/{phone}', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'destroy'])->name('whatsapp.destroy');
     Route::post('/whatsapp/send', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'send'])->name('whatsapp.send');
+    Route::get('/whatsapp/unread-count', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'unreadCount'])->name('whatsapp.unread-count');
+
+    // WhatsApp Templates
+    Route::post('/whatsapp/templates', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'storeTemplate'])->name('whatsapp.templates.store');
+    Route::put('/whatsapp/templates/{template}', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'updateTemplate'])->name('whatsapp.templates.update');
+    Route::delete('/whatsapp/templates/{template}', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'destroyTemplate'])->name('whatsapp.templates.destroy');
+
+    // WhatsApp Labels
+    Route::post('/whatsapp/labels', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'addLabel'])->name('whatsapp.labels.store');
+    Route::delete('/whatsapp/labels/{label}', [App\Http\Controllers\Sales\WhatsappCenterController::class, 'removeLabel'])->name('whatsapp.labels.destroy');
 
     // AI Email Inbox
     Route::get('/emails', [App\Http\Controllers\Sales\EmailInboxController::class, 'index'])->name('emails.index');

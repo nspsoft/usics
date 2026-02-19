@@ -18,10 +18,12 @@ class WhatsappMessage extends Model
         'intent',
         'metadata',
         'fonnte_message_id',
+        'is_read',
     ];
 
     protected $casts = [
         'metadata' => 'array',
+        'is_read' => 'boolean',
     ];
 
     /**
@@ -46,6 +48,14 @@ class WhatsappMessage extends Model
     public function scopeOutgoing($query)
     {
         return $query->where('direction', 'outgoing');
+    }
+
+    /**
+     * Scope for unread incoming messages
+     */
+    public function scopeUnread($query)
+    {
+        return $query->where('is_read', false)->where('direction', 'incoming');
     }
 
     /**

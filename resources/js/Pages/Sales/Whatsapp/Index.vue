@@ -16,12 +16,19 @@ import {
     PaperClipIcon,
     XMarkIcon,
     DocumentIcon,
-    ArrowDownTrayIcon
+    ArrowDownTrayIcon,
+    TagIcon,
+    PlusIcon,
+    DocumentDuplicateIcon,
+    ChevronDownIcon,
 } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 
 const props = defineProps({
     contacts: Array,
+    totalUnread: { type: Number, default: 0 },
+    templates: { type: Array, default: () => [] },
+    labelPresets: { type: Array, default: () => [] },
 });
 
 const search = ref('');
@@ -29,6 +36,10 @@ const activeContact = ref(null);
 const messages = ref([]);
 const isLoadingMessages = ref(false);
 const chatContainer = ref(null);
+const showTemplateDropdown = ref(false);
+const templateSearch = ref('');
+const showLabelDropdown = ref(false);
+const filterLabel = ref('');
 
 const form = useForm({
     phone: '',
@@ -50,7 +61,6 @@ const handleFileSelect = (e) => {
 
     form.file = file;
     
-    // Create preview if it's an image
     if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -58,7 +68,7 @@ const handleFileSelect = (e) => {
         };
         reader.readAsDataURL(file);
     } else {
-        filePreview.value = 'document'; // Placeholder for non-image files
+        filePreview.value = 'document';
     }
 };
 
@@ -68,14 +78,43 @@ const clearFile = () => {
     if (fileInput.value) fileInput.value.value = '';
 };
 
-// Filter contacts
+// Filter contacts by search and label
 const filteredContacts = computed(() => {
-    if (!search.value) return props.contacts;
-    return props.contacts.filter(c => 
-        c.phone.includes(search.value) || 
-        (c.customer?.name || '').toLowerCase().includes(search.value.toLowerCase()) ||
-        (c.customer?.contact_person || '').toLowerCase().includes(search.value.toLowerCase())
+    let results = props.contacts || [];
+    
+    if (search.value) {
+        results = results.filter(c => 
+            c.phone.includes(search.value) || 
+            (c.customer?.name || '').toLowerCase().includes(search.value.toLowerCase()) ||
+            (c.customer?.contact_person || '').toLowerCase().includes(search.value.toLowerCase())
+        );
+    }
+    
+    if (filterLabel.value) {
+        results = results.filter(c => 
+            c.labels && c.labels.some(l => l.label === filterLabel.value)
+        );
+    }
+    
+    return results;
+});
+
+// Template filtering
+const filteredTemplates = computed(() => {
+    if (!templateSearch.value) return props.templates;
+    return props.templates.filter(t =>
+        t.name.toLowerCase().includes(templateSearch.value.toLowerCase()) ||
+        t.body.toLowerCase().includes(templateSearch.value.toLowerCase())
     );
+});
+
+// All unique labels across contacts
+const allUsedLabels = computed(() => {
+    const set = new Set();
+    (props.contacts || []).forEach(c => {
+        (c.labels || []).forEach(l => set.add(l.label));
+    });
+    return Array.from(set);
 });
 
 // Select contact & load history
@@ -83,6 +122,7 @@ const selectContact = async (contact) => {
     activeContact.value = contact;
     form.phone = contact.phone;
     fetchMessages(contact.phone);
+    showLabelDropdown.value = false;
 };
 
 const fetchMessages = async (phone) => {
@@ -90,6 +130,12 @@ const fetchMessages = async (phone) => {
     try {
         const response = await axios.get(route('sales.whatsapp.history', phone));
         messages.value = response.data;
+        
+        // Reset unread count for this contact locally
+        if (activeContact.value) {
+            activeContact.value.unread_count = 0;
+        }
+        
         scrollToBottom();
     } catch (error) {
         console.error('Failed to load history', error);
@@ -107,7 +153,6 @@ const sendMessage = () => {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => {
-            // Optimistic update
             messages.value.push({
                 direction: 'outgoing',
                 message: form.message || (form.file ? `[File: ${form.file.name}]` : ''),
@@ -116,7 +161,7 @@ const sendMessage = () => {
                 metadata: form.file ? {
                     type: form.file.type.startsWith('image/') ? 'image' : 'document',
                     name: form.file.name,
-                    url: filePreview.value !== 'document' ? filePreview.value : null, // Temp preview URL
+                    url: filePreview.value !== 'document' ? filePreview.value : null,
                     size: form.file.size
                 } : null
             });
@@ -124,7 +169,6 @@ const sendMessage = () => {
             clearFile();
             scrollToBottom();
             
-            // Re-fetch to get actual server URLs
             setTimeout(() => {
                 fetchMessages(activeContact.value.phone);
             }, 1000);
@@ -149,6 +193,71 @@ const formatDate = (dateString) => {
     }).format(date);
 };
 
+// Template actions
+const selectTemplate = (template) => {
+    form.message = template.body;
+    showTemplateDropdown.value = false;
+    templateSearch.value = '';
+};
+
+const toggleTemplateDropdown = () => {
+    showTemplateDropdown.value = !showTemplateDropdown.value;
+    if (showTemplateDropdown.value) {
+        templateSearch.value = '';
+    }
+};
+
+// Label actions
+const addLabel = async (preset) => {
+    if (!activeContact.value) return;
+    
+    try {
+        await axios.post(route('sales.whatsapp.labels.store'), {
+            phone: activeContact.value.phone,
+            label: preset.label,
+            color: preset.color,
+        });
+        
+        // Add locally
+        if (!activeContact.value.labels) activeContact.value.labels = [];
+        if (!activeContact.value.labels.find(l => l.label === preset.label)) {
+            activeContact.value.labels.push({ label: preset.label, color: preset.color, id: Date.now() });
+        }
+        showLabelDropdown.value = false;
+    } catch (err) {
+        console.error('Failed to add label', err);
+    }
+};
+
+const removeLabel = async (label) => {
+    if (!label.id) return;
+    
+    try {
+        await axios.delete(route('sales.whatsapp.labels.destroy', label.id));
+        
+        // Remove locally
+        if (activeContact.value?.labels) {
+            activeContact.value.labels = activeContact.value.labels.filter(l => l.id !== label.id);
+        }
+    } catch (err) {
+        console.error('Failed to remove label', err);
+    }
+};
+
+// Label color mapping
+const labelColors = {
+    red: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800',
+    orange: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+    yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
+    rose: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border-rose-200 dark:border-rose-800',
+    purple: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+    blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+    slate: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700',
+    emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+};
+
+const getLabelClass = (color) => labelColors[color] || labelColors.slate;
+
 // Auto refresh history every 10s if active
 let pollingInterval;
 onMounted(() => {
@@ -156,7 +265,6 @@ onMounted(() => {
         if (activeContact.value) {
             axios.get(route('sales.whatsapp.history', activeContact.value.phone))
                 .then(res => {
-                    // Simple check if new messages
                     if (res.data.length > messages.value.length) {
                         messages.value = res.data;
                         scrollToBottom();
@@ -174,11 +282,15 @@ const confirmDeleteHistory = () => {
         router.delete(route('sales.whatsapp.destroy', activeContact.value.phone), {
             onSuccess: () => {
                 messages.value = [];
-                // Optional: You might want to remove the contact from the list or clear the active contact
-                // activeContact.value = null; // Uncomment if you want to deselect
             }
         });
     }
+};
+
+// Close dropdowns on click outside
+const closeDropdowns = () => {
+    showTemplateDropdown.value = false;
+    showLabelDropdown.value = false;
 };
 
 </script>
@@ -187,7 +299,7 @@ const confirmDeleteHistory = () => {
     <Head title="WhatsApp Center" />
 
     <AppLayout title="WhatsApp Center">
-        <div class="h-[calc(100vh-12rem)] w-full flex gap-6 overflow-hidden">
+        <div class="h-[calc(100vh-12rem)] w-full flex gap-6 overflow-hidden" @click.self="closeDropdowns">
             
             <!-- Chat List (Left) -->
             <div class="w-1/3 flex flex-col gap-4">
@@ -200,6 +312,21 @@ const confirmDeleteHistory = () => {
                         class="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl py-3 pl-10 pr-4 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-cyan-500/50 font-sans"
                     />
                     <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-500" />
+                </div>
+
+                <!-- Label Filter -->
+                <div v-if="allUsedLabels.length" class="flex items-center gap-2 flex-wrap">
+                    <button 
+                        @click="filterLabel = ''"
+                        class="text-[10px] px-2 py-1 rounded-lg border font-bold transition-all"
+                        :class="filterLabel === '' ? 'bg-cyan-500 text-white border-cyan-500' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-300 dark:border-slate-700 hover:border-cyan-400'"
+                    >All</button>
+                    <button 
+                        v-for="label in allUsedLabels" :key="label"
+                        @click="filterLabel = label"
+                        class="text-[10px] px-2 py-1 rounded-lg border font-bold transition-all"
+                        :class="filterLabel === label ? 'bg-cyan-500 text-white border-cyan-500' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-300 dark:border-slate-700 hover:border-cyan-400'"
+                    >{{ label }}</button>
                 </div>
 
                 <!-- Guide Link -->
@@ -232,11 +359,15 @@ const confirmDeleteHistory = () => {
 
                         <div class="relative flex items-center gap-3 mb-1">
                             <!-- Avatar -->
-                            <div class="flex-shrink-0">
+                            <div class="flex-shrink-0 relative">
                                 <img v-if="contact.customer?.profile_photo_url" :src="contact.customer.profile_photo_url" class="h-10 w-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shadow-sm" />
                                 <div v-else class="h-10 w-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold text-xs shadow-inner">
                                     {{ (contact.customer?.name || contact.phone).charAt(0) }}
                                 </div>
+                                <!-- Unread Badge -->
+                                <span v-if="contact.unread_count > 0" class="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-500 rounded-full shadow-lg shadow-red-500/30 ring-2 ring-white dark:ring-slate-900">
+                                    {{ contact.unread_count > 9 ? '9+' : contact.unread_count }}
+                                </span>
                             </div>
                             
                             <div class="flex-1 min-w-0">
@@ -258,9 +389,17 @@ const confirmDeleteHistory = () => {
                             {{ contact.last_message }}
                         </p>
 
-                        <div class="mt-2 flex items-center gap-2">
+                        <div class="mt-2 flex items-center gap-2 flex-wrap">
                             <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                                 {{ contact.last_intent || 'Unknown' }}
+                            </span>
+                            <!-- Contact Labels -->
+                            <span 
+                                v-for="label in (contact.labels || [])" :key="label.id"
+                                class="px-2 py-0.5 rounded text-[10px] font-bold border"
+                                :class="getLabelClass(label.color)"
+                            >
+                                {{ label.label }}
                             </span>
                         </div>
                     </button>
@@ -364,6 +503,35 @@ const confirmDeleteHistory = () => {
                                     </button>
                                 </div>
 
+                                <!-- Template Dropdown -->
+                                <div v-if="showTemplateDropdown" class="absolute bottom-full left-0 right-0 mb-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-20 max-h-72 overflow-hidden" @click.stop>
+                                    <div class="p-3 border-b border-slate-200 dark:border-slate-700">
+                                        <input 
+                                            v-model="templateSearch"
+                                            type="text" 
+                                            placeholder="Cari template..." 
+                                            class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-500/50"
+                                        />
+                                    </div>
+                                    <div class="overflow-y-auto max-h-52 custom-scrollbar">
+                                        <button 
+                                            v-for="tpl in filteredTemplates" :key="tpl.id"
+                                            type="button"
+                                            @click="selectTemplate(tpl)"
+                                            class="w-full text-left p-3 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0"
+                                        >
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="text-sm font-bold text-slate-900 dark:text-white">{{ tpl.name }}</span>
+                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">{{ tpl.category }}</span>
+                                            </div>
+                                            <p class="text-xs text-slate-500 line-clamp-2">{{ tpl.body }}</p>
+                                        </button>
+                                        <div v-if="filteredTemplates.length === 0" class="p-4 text-center text-sm text-slate-400">
+                                            Tidak ada template ditemukan
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <input type="file" ref="fileInput" class="hidden" @change="handleFileSelect" />
                                 
                                 <button 
@@ -375,12 +543,25 @@ const confirmDeleteHistory = () => {
                                     <PaperClipIcon class="h-5 w-5" />
                                 </button>
 
+                                <!-- Template Button -->
+                                <button 
+                                    type="button" 
+                                    @click.stop="toggleTemplateDropdown"
+                                    class="absolute left-12 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-cyan-500 transition-colors"
+                                    :class="{ 'text-cyan-500': showTemplateDropdown }"
+                                    :disabled="form.processing"
+                                    title="Quick Templates"
+                                >
+                                    <DocumentDuplicateIcon class="h-5 w-5" />
+                                </button>
+
                                 <input 
                                     v-model="form.message"
                                     type="text" 
                                     placeholder="Type a message to reply manually..." 
-                                    class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-0 rounded-xl py-4 pl-12 pr-14 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-2 focus:ring-cyan-500/50 shadow-inner"
+                                    class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-0 rounded-xl py-4 pl-[5.5rem] pr-14 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-2 focus:ring-cyan-500/50 shadow-inner"
                                     :disabled="form.processing"
+                                    @focus="showTemplateDropdown = false"
                                 />
                                 <button 
                                     type="submit" 
@@ -391,7 +572,7 @@ const confirmDeleteHistory = () => {
                                 </button>
                             </form>
                             <p class="text-[10px] text-slate-500 mt-2 text-center">
-                                Tip: Sending a manual message will not stop the bot from replying to future messages.
+                                Tip: Click <DocumentDuplicateIcon class="h-3 w-3 inline" /> for quick reply templates. Bot will still reply to future messages.
                             </p>
                         </div>
                     </div>
@@ -446,7 +627,53 @@ const confirmDeleteHistory = () => {
                         </div>
                     </div>
 
-                    <!-- Quick Actions (Placeholder) -->
+                    <!-- Labels Section -->
+                    <div class="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 backdrop-blur-sm shadow-lg dark:shadow-none">
+                        <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                            <TagIcon class="h-4 w-4 text-cyan-500" />
+                            Labels
+                        </h4>
+
+                        <!-- Current Labels -->
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <span 
+                                v-for="label in (activeContact.labels || [])" :key="label.id"
+                                class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all"
+                                :class="getLabelClass(label.color)"
+                            >
+                                {{ label.label }}
+                                <button @click="removeLabel(label)" class="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
+                                    <XMarkIcon class="h-3 w-3" />
+                                </button>
+                            </span>
+                            <span v-if="!activeContact.labels?.length" class="text-xs text-slate-400 italic">No labels</span>
+                        </div>
+
+                        <!-- Add Label -->
+                        <div class="relative">
+                            <button 
+                                @click.stop="showLabelDropdown = !showLabelDropdown"
+                                class="w-full flex items-center justify-center gap-1 px-3 py-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-500 hover:text-cyan-500 hover:border-cyan-400 transition-all"
+                            >
+                                <PlusIcon class="h-3.5 w-3.5" />
+                                Add Label
+                            </button>
+                            
+                            <!-- Label Preset Dropdown -->
+                            <div v-if="showLabelDropdown" class="absolute top-full left-0 right-0 mt-2 z-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden" @click.stop>
+                                <button 
+                                    v-for="preset in labelPresets" :key="preset.label"
+                                    @click="addLabel(preset)"
+                                    class="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                                >
+                                    <span class="w-2 h-2 rounded-full" :class="`bg-${preset.color}-500`"></span>
+                                    <span class="text-slate-700 dark:text-slate-300">{{ preset.label }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
                     <div class="bg-gradient-to-br from-indigo-50 dark:from-indigo-900/20 to-purple-50 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-500/20 rounded-3xl p-6 backdrop-blur-sm">
                         <h4 class="text-sm font-bold text-indigo-700 dark:text-indigo-300 mb-4 flex items-center gap-2">
                              Quick Actions

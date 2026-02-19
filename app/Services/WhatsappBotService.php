@@ -42,14 +42,27 @@ class WhatsappBotService
         // Log incoming message
         $this->logMessage($phone, $message, 'incoming', $customer?->id);
 
+        // Fetch last 8 messages for conversation context (memory)
+        $conversationHistory = WhatsappMessage::where('phone', $phone)
+            ->orderByDesc('created_at')
+            ->limit(8)
+            ->get()
+            ->reverse()
+            ->map(fn($m) => [
+                'role' => $m->direction === 'incoming' ? 'customer' : 'bot',
+                'message' => $m->message,
+            ])
+            ->values()
+            ->toArray();
+
         $customerContext = [
             'name' => $customer ? $customer->name : ($pushName ?? 'Guest'),
             'is_registered' => (bool) $customer,
             'has_orders' => $customer ? $customer->salesOrders()->exists() : false,
         ];
 
-        // Analyze intent using Gemini
-        $intent = $this->gemini->analyzeCustomerIntent($message, $customerContext);
+        // Analyze intent using Gemini (with conversation history)
+        $intent = $this->gemini->analyzeCustomerIntent($message, $customerContext, $conversationHistory);
 
         Log::info('WhatsApp Bot Intent', ['phone' => $phone, 'intent' => $intent]);
 
@@ -60,9 +73,9 @@ class WhatsappBotService
             'product_catalog' => $this->handleProductCatalog($intent['parameters'] ?? [], $phone),
             'request_quotation' => $this->handleRequestQuotation($customer, $intent['parameters'] ?? []),
             'greeting' => $this->handleGreeting($customer, $message),
-            'casual_chat' => $this->handleCasualChat($customer, $message),
-            'faq' => $this->handleFAQ($message),
-            default => $this->handleUnknown($customer, $message),
+            'casual_chat' => $this->handleCasualChat($customer, $message, $conversationHistory),
+            'faq' => $this->handleFAQ($message, $conversationHistory),
+            default => $this->handleUnknown($customer, $message, $conversationHistory),
         };
 
         // Log outgoing message
@@ -308,27 +321,27 @@ class WhatsappBotService
     /**
      * Handle casual chat (small talk)
      */
-    protected function handleCasualChat(?Customer $customer, string $message): string
+    protected function handleCasualChat(?Customer $customer, string $message, array $conversationHistory = []): string
     {
-        return $this->gemini->generateFAQResponse($message);
+        return $this->gemini->generateFAQResponse($message, $conversationHistory);
     }
 
     /**
      * Handle FAQ
      */
-    protected function handleFAQ(string $message): string
+    protected function handleFAQ(string $message, array $conversationHistory = []): string
     {
         // Use Gemini to generate FAQ response
-        return $this->gemini->generateFAQResponse($message);
+        return $this->gemini->generateFAQResponse($message, $conversationHistory);
     }
 
     /**
      * Handle unknown intent
      */
-    protected function handleUnknown(?Customer $customer, string $message): string
+    protected function handleUnknown(?Customer $customer, string $message, array $conversationHistory = []): string
     {
         // Try to let AI handle it as a general query first
-        $aiResponse = $this->gemini->generateFAQResponse($message);
+        $aiResponse = $this->gemini->generateFAQResponse($message, $conversationHistory);
         
         if (str_contains($aiResponse, "Maaf") && str_contains($aiResponse, "tidak mengerti")) {
             return "Maaf, saya tidak mengerti pertanyaan Anda.\n\nSaya bisa membantu untuk:\n• Cek status pesanan (ketik: status SO-xxx)\n• Cek tagihan (ketik: cek tagihan)\n• Jam operasional dan info umum\n\nAtau hubungi CS kami di 021-xxx-xxxx.";

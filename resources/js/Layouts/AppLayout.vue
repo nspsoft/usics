@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import {
     HomeIcon,
     CubeIcon,
@@ -97,6 +98,8 @@ const userMenuOpen = ref(false);
 const isFullscreen = ref(false);
 const isInstalled = ref(false);
 const isDark = ref(false);
+const waUnreadCount = ref(0);
+let waUnreadInterval = null;
 
 // Flash Notifications Logic
 const flashSuccess = computed(() => page.props.flash?.success);
@@ -194,7 +197,7 @@ const navigation = [
         current: false,
         permission: 'sales_crm.view',
         children: [
-            { name: 'WhatsApp Center', href: '/sales/whatsapp', icon: ChatBubbleLeftRightIcon, permission: 'sales_crm.whatsapp_center.view' },
+            { name: 'WhatsApp Center', href: '/sales/whatsapp', icon: ChatBubbleLeftRightIcon, permission: 'sales_crm.whatsapp_center.view', badgeKey: 'waUnread' },
             { name: 'AI Email Inbox', href: '/sales/emails', icon: InboxIcon, permission: 'sales_crm.ai_email_inbox.view' },
             { name: 'CRM Intelligence', href: '/crm/dashboard', icon: ChartBarIcon, permission: 'sales_crm.crm_intelligence.view' },
             { name: 'Leads Management', href: '/crm/leads', icon: FunnelIcon, permission: 'sales_crm.leads_management.view' },
@@ -472,6 +475,15 @@ onMounted(() => {
     
     checkInstall();
 
+    // Poll WhatsApp unread count every 30 seconds
+    const fetchWaUnread = () => {
+        axios.get('/sales/whatsapp/unread-count').then(r => {
+            waUnreadCount.value = r.data?.total || 0;
+        }).catch(() => {});
+    };
+    fetchWaUnread();
+    waUnreadInterval = setInterval(fetchWaUnread, 30000);
+
     // Listen to fullscreen change events
     document.addEventListener('fullscreenchange', () => {
         isFullscreen.value = !!document.fullscreenElement;
@@ -514,6 +526,16 @@ const toggleTheme = () => {
         localStorage.setItem('theme', 'light');
     }
 };
+
+// Badge value resolver
+const getBadge = (child) => {
+    if (child.badgeKey === 'waUnread') return waUnreadCount.value;
+    return 0;
+};
+
+onUnmounted(() => {
+    if (waUnreadInterval) clearInterval(waUnreadInterval);
+});
 
 </script>
 
@@ -589,6 +611,7 @@ const toggleTheme = () => {
                                             >
                                                 <component :is="child.icon" v-if="child.icon" class="h-4 w-4 shrink-0 transition-colors group-hover:text-white" />
                                                 <span :class="child.icon ? '' : 'pl-7'">{{ child.name }}</span>
+                                                <span v-if="getBadge(child)" class="ml-auto inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold text-white bg-red-500 rounded-full min-w-[18px] shadow-lg shadow-red-500/30 animate-pulse">{{ getBadge(child) }}</span>
                                             </component>
                                         </li>
                                     </ul>
@@ -707,6 +730,7 @@ const toggleTheme = () => {
                                                 >
                                                     <component :is="child.icon" v-if="child.icon" class="h-4 w-4 shrink-0 transition-colors group-hover:text-white" />
                                                     <span :class="child.icon ? '' : 'pl-7'">{{ child.name }}</span>
+                                                    <span v-if="getBadge(child)" class="ml-auto inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold text-white bg-red-500 rounded-full min-w-[18px] shadow-lg shadow-red-500/30 animate-pulse">{{ getBadge(child) }}</span>
                                                 </component>
                                             </li>
                                         </ul>

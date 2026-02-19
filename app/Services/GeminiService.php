@@ -317,7 +317,7 @@ class GeminiService
     /**
      * Analyze customer intent (Gemini/Ollama)
      */
-    public function analyzeCustomerIntent(string $message, ?array $customerContext = null): array
+    public function analyzeCustomerIntent(string $message, ?array $customerContext = null, array $conversationHistory = []): array
     {
         $this->ensureConfigured();
         $contextInfo = $customerContext ? "Customer Name: {$customerContext['name']}" : "Unknown customer";
@@ -326,11 +326,21 @@ class GeminiService
             ? "Personality & Context: {$this->customBotInstruction}"
             : "You are a friendly and professional customer service assistant for PT JIDOKA.";
 
+        // Build conversation history context
+        $historyText = '';
+        if (!empty($conversationHistory)) {
+            $historyText = "\n\nRecent conversation history (for context):\n";
+            foreach ($conversationHistory as $msg) {
+                $role = $msg['role'] === 'customer' ? 'Customer' : 'Bot';
+                $historyText .= "{$role}: {$msg['message']}\n";
+            }
+        }
+
         $prompt = "{$systemInstruction}
 Analyze this message and classify the intent precisely.
 
-Context: {$contextInfo}
-Message: \"{$message}\"
+Context: {$contextInfo}{$historyText}
+New Message: \"{$message}\"
 
 Intents:
 - greeting: Sapaan awal (Halo, Selamat siang, Pagi, etc.)
@@ -341,6 +351,8 @@ Intents:
 - request_quotation: Minta penawaran harga
 - faq: Pertanyaan umum tentang perusahaan
 - unknown: Tidak bisa diklasifikasikan
+
+IMPORTANT: Use the conversation history to understand follow-up messages. If the customer says something like 'kalau yang 6 inch?' after asking about pipe prices, classify it as 'product_catalog' and extract the product name from context.
 
 Return JSON strictly: { \"intent\": \"...\", \"parameters\": { \"order_number\": \"...\", \"product_name\": \"...\" }, \"confidence\": 0.9 }";
 
@@ -366,15 +378,25 @@ Return JSON strictly: { \"intent\": \"...\", \"parameters\": { \"order_number\":
     /**
      * FAQ Response
      */
-    public function generateFAQResponse(string $question): string
+    public function generateFAQResponse(string $question, array $conversationHistory = []): string
     {
         $this->ensureConfigured();
         $systemInstruction = $this->customBotInstruction 
             ? "Personality & Context: {$this->customBotInstruction}"
             : "You are a helpful customer service assistant for PT JIDOKA.";
 
+        // Build conversation history context
+        $historyText = '';
+        if (!empty($conversationHistory)) {
+            $historyText = "\n\nRecent conversation for context:\n";
+            foreach ($conversationHistory as $msg) {
+                $role = $msg['role'] === 'customer' ? 'Customer' : 'Bot';
+                $historyText .= "{$role}: {$msg['message']}\n";
+            }
+        }
+
         $prompt = "{$systemInstruction}
-Answer this customer question in Indonesian, friendly and concise (max 200 chars):
+Answer this customer question in Indonesian, friendly and concise (max 200 chars).{$historyText}
 Question: \"{$question}\"";
 
         Log::info("Gemini System Instruction Used: " . $systemInstruction);
