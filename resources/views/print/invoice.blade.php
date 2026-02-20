@@ -377,7 +377,19 @@
 
             <div class="signature-box">
                 <div>Cikarang, {{ $invoice->invoice_date->format('d F Y') }}</div>
-                <div class="signature-space"></div>
+                <div class="signature-space" style="position: relative;">
+                    @if($invoice->emeterai_serial)
+                    <div style="position: absolute; top: 5px; left: 50%; transform: translateX(-50%); text-align: center;">
+                        <div style="width: 80px; height: 80px; border: 2.5px solid #003680; border-radius: 8px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0f4ff 0%, #e8edff 100%); padding: 4px;">
+                            <div style="font-size: 5pt; font-weight: 900; color: #003680; letter-spacing: 1px; text-transform: uppercase;">e-METERAI</div>
+                            <div style="font-size: 14pt; font-weight: 900; color: #E21E26; margin: 2px 0;">Rp10.000</div>
+                            <div style="font-size: 4.5pt; color: #003680; font-weight: 700;">PERURI</div>
+                            <div style="font-size: 4pt; color: #666; margin-top: 2px; font-family: monospace;">{{ $invoice->emeterai_serial }}</div>
+                        </div>
+                        <div style="font-size: 6pt; color: #888; margin-top: 2px;">{{ $invoice->emeterai_stamped_at->format('d/m/Y H:i') }}</div>
+                    </div>
+                    @endif
+                </div>
                 <div class="signature-line">Jahrudin</div>
                 <div style="font-size: 9pt;">Direktur</div>
             </div>

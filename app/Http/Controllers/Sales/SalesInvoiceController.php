@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Sales;
 
 use App\Http\Controllers\Controller;
 use App\Models\SalesInvoice;
+use App\Services\EmeteraiService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -65,8 +66,12 @@ class SalesInvoiceController extends Controller
     {
         $salesInvoice->load(['salesOrder.customer', 'items.product', 'items.unit']);
 
+        $emeteraiService = new EmeteraiService();
+
         return Inertia::render('Sales/Invoices/Show', [
             'invoice' => $salesInvoice,
+            'emeteraiConfigured' => $emeteraiService->isConfigured(),
+            'emeteraiEnabled' => $emeteraiService->isEnabled(),
         ]);
     }
 
@@ -279,5 +284,75 @@ class SalesInvoiceController extends Controller
     public function template()
     {
         return Excel::download(new SalesInvoiceTemplateExport, 'sales_invoices_import_template.xlsx');
+    }
+
+    /**
+     * Stamp invoice with e-Meterai via Peruri API.
+     */
+    public function stampEmeterai(SalesInvoice $salesInvoice)
+    {
+        // Validation guards
+        if ($salesInvoice->status === 'draft') {
+            return back()->with('error', 'Invoice draft tidak bisa dibubuhkan e-Meterai.');
+        }
+
+        if ($salesInvoice->hasEmeterai()) {
+            return back()->with('error', 'Invoice ini sudah memiliki e-Meterai (SN: ' . $salesInvoice->emeterai_serial . ').');
+        }
+
+        if ($salesInvoice->total < 5000000) {
+            return back()->with('error', 'e-Meterai hanya wajib untuk invoice ≥ Rp 5.000.000.');
+        }
+
+        $service = new EmeteraiService();
+
+        if (!$service->isConfigured()) {
+            return back()->with('error', 'e-Meterai API belum dikonfigurasi. Silakan isi Client ID dan Secret Key di menu Settings > AI & Integration.');
+        }
+
+        // Generate the invoice PDF to a temp file
+        try {
+            $salesInvoice->load(['salesOrder.customer', 'items.product.partners', 'items.unit', 'customer']);
+            $this->injectProductAliases($salesInvoice);
+
+            $html = view('print.invoice', ['invoice' => $salesInvoice])->render();
+            $tempPath = storage_path('app/temp/invoice_' . $salesInvoice->id . '.pdf');
+
+            // Ensure temp directory exists
+            if (!is_dir(dirname($tempPath))) {
+                mkdir(dirname($tempPath), 0755, true);
+            }
+
+            // Use browser-based PDF or dompdf if available
+            if (class_exists('\Barryvdh\DomPDF\Facade\Pdf')) {
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('a4');
+                $pdf->save($tempPath);
+            } else {
+                // Fallback: save HTML as temp file for API
+                file_put_contents($tempPath, $html);
+            }
+
+            // Call Peruri API
+            $result = $service->stampDocument($tempPath);
+
+            // Cleanup temp file
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+
+            if ($result['success']) {
+                $salesInvoice->update([
+                    'emeterai_serial' => $result['serial'],
+                    'emeterai_stamped_at' => now(),
+                    'emeterai_pdf_path' => $result['stamped_pdf_path'],
+                ]);
+
+                return back()->with('success', 'e-Meterai berhasil dibubuhkan! SN: ' . $result['serial']);
+            }
+
+            return back()->with('error', $result['error']);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal membubuhkan e-Meterai: ' . $e->getMessage());
+        }
     }
 }

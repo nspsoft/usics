@@ -128,6 +128,9 @@ class SalesInvoice extends Model
         'balance',
         'notes',
         'created_by',
+        'emeterai_serial',
+        'emeterai_stamped_at',
+        'emeterai_pdf_path',
     ];
 
     protected $casts = [
@@ -139,6 +142,7 @@ class SalesInvoice extends Model
         'total' => 'double',
         'paid_amount' => 'double',
         'balance' => 'decimal:2',
+        'emeterai_stamped_at' => 'datetime',
     ];
 
     const STATUS_DRAFT = 'draft';
@@ -219,5 +223,21 @@ class SalesInvoice extends Model
             self::STATUS_CANCELLED => 'slate',
             default => 'slate',
         };
+    }
+
+    /**
+     * Check if this invoice needs e-Meterai (total >= Rp 5.000.000 and not yet stamped).
+     */
+    public function needsEmeterai(): bool
+    {
+        return $this->total >= 5000000 && empty($this->emeterai_serial);
+    }
+
+    /**
+     * Check if this invoice already has e-Meterai.
+     */
+    public function hasEmeterai(): bool
+    {
+        return !empty($this->emeterai_serial);
     }
 }

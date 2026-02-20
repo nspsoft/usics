@@ -13,16 +13,19 @@ import {
     ChatBubbleLeftRightIcon,
     CpuChipIcon,
     InformationCircleIcon,
-    GlobeAltIcon
+    GlobeAltIcon,
+    ShieldCheckIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     settings: Object,
     email_settings: Object,
+    emeterai_settings: Object,
     whatsapp_bot_instruction: String
 });
 
 const showKey = ref(false);
+const showEmeteraiKey = ref(false);
 
 const form = useForm({
     ai_driver: props.settings?.ai_driver || 'gemini',
@@ -46,6 +49,11 @@ const form = useForm({
         smtp_password: props.email_settings?.smtp_password || '',
         from_address: props.email_settings?.from_address || '',
         from_name: props.email_settings?.from_name || '',
+    },
+    emeterai_settings: {
+        enabled: props.emeterai_settings?.enabled ?? false,
+        client_id: props.emeterai_settings?.client_id || '',
+        secret_key: props.emeterai_settings?.secret_key || '',
     }
 });
 
@@ -330,6 +338,70 @@ const aiDrivers = [
                                     ></textarea>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- e-METERAI CONFIGURATION -->
+                        <div class="pt-8 border-t border-slate-200 dark:border-slate-800 space-y-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3 text-blue-500">
+                                    <ShieldCheckIcon class="h-6 w-6" />
+                                    <h4 class="text-sm font-black uppercase tracking-widest">e-Meterai (Peruri)</h4>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" v-model="form.emeterai_settings.enabled" class="sr-only peer" />
+                                    <div class="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    <span class="ms-2 text-xs font-bold" :class="form.emeterai_settings.enabled ? 'text-blue-500' : 'text-slate-400'">{{ form.emeterai_settings.enabled ? 'AKTIF' : 'NONAKTIF' }}</span>
+                                </label>
+                            </div>
+
+                            <div v-if="form.emeterai_settings.enabled" class="space-y-6 animate-fade-in-up">
+                            <div class="bg-blue-500/5 rounded-2xl p-4 border border-blue-500/10 flex gap-3">
+                                <InformationCircleIcon class="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
+                                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    Integrasi dengan Peruri e-Meterai untuk pembubuhan meterai elektronik pada invoice ≥ Rp 5.000.000. 
+                                    Dapatkan Client ID dan Secret Key dari <a href="https://e-meterai.co.id" target="_blank" class="text-blue-400 hover:underline">Portal e-Meterai Peruri</a>.
+                                </p>
+                            </div>
+
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                        <KeyIcon class="h-3 w-3" />
+                                        Client ID
+                                    </label>
+                                    <input v-model="form.emeterai_settings.client_id" type="text" class="form-input" placeholder="Masukkan Client ID dari Peruri" />
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                        <KeyIcon class="h-3 w-3" />
+                                        Secret Key
+                                    </label>
+                                    <div class="relative group">
+                                        <input 
+                                            v-model="form.emeterai_settings.secret_key" 
+                                            :type="showEmeteraiKey ? 'text' : 'password'" 
+                                            class="form-input pr-12" 
+                                            placeholder="Masukkan Secret Key dari Peruri" 
+                                        />
+                                        <button 
+                                            type="button"
+                                            @click="showEmeteraiKey = !showEmeteraiKey"
+                                            class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-blue-400 transition-colors"
+                                        >
+                                            <EyeIcon v-if="!showEmeteraiKey" class="h-5 w-5" />
+                                            <EyeSlashIcon v-else class="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-slate-500 mt-2 px-1 italic">
+                                * Setelah diisi, tombol "STAMP e-METERAI" akan muncul otomatis pada invoice ≥ Rp 5.000.000.
+                            </p>
+                            </div> <!-- end v-if enabled -->
+
+                            <p v-else class="text-xs text-slate-400 italic">
+                                Fitur e-Meterai sedang nonaktif. Aktifkan toggle di atas untuk mengkonfigurasi.
+                            </p>
                         </div>
                     </div>
                 </div>

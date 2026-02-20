@@ -300,6 +300,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::post('/invoices/{sales_invoice}/pay', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'recordPayment'])->name('invoices.pay');
     Route::get('/invoices/{sales_invoice}/print', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'print'])->name('invoices.print');
     Route::get('/invoices/{sales_invoice}/print-v2', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'printV2'])->name('invoices.print-v2');
+    Route::post('/invoices/{sales_invoice}/stamp-emeterai', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'stampEmeterai'])->name('invoices.stamp-emeterai');
     Route::get('/invoices-export', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'export'])->name('invoices.export');
     Route::post('/invoices-import', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'import'])->name('invoices.import');
     Route::get('/invoices-template', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'template'])->name('invoices.template');

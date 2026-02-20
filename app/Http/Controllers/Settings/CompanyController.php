@@ -89,6 +89,11 @@ class CompanyController extends Controller
                 'from_address' => '',
                 'from_name' => '',
             ],
+            'emeterai_settings' => $company->settings['emeterai'] ?? [
+                'enabled' => false,
+                'client_id' => '',
+                'secret_key' => '',
+            ],
             'whatsapp_bot_instruction' => (string) AppSetting::get('whatsapp_bot_instruction', $defaultInstruction)
         ]);
     }
@@ -103,6 +108,7 @@ class CompanyController extends Controller
             'ollama_model' => 'nullable|required_if:ai_driver,ollama|string',
             'whatsapp_bot_instruction' => 'nullable|string',
             'email_settings' => 'nullable|array',
+            'emeterai_settings' => 'nullable|array',
         ]);
 
         $company = Company::first();
@@ -136,6 +142,16 @@ class CompanyController extends Controller
                 'smtp_password' => $emailSettings['smtp_password'] ?? '',
                 'from_address' => $emailSettings['from_address'] ?? '',
                 'from_name' => $emailSettings['from_name'] ?? '',
+            ];
+        }
+
+        // Handle e-Meterai Settings
+        if ($request->has('emeterai_settings')) {
+            $emeteraiSettings = $request->emeterai_settings;
+            $settings['emeterai'] = [
+                'enabled' => (bool) ($emeteraiSettings['enabled'] ?? false),
+                'client_id' => $emeteraiSettings['client_id'] ?? '',
+                'secret_key' => $emeteraiSettings['secret_key'] ?? '',
             ];
         }
 

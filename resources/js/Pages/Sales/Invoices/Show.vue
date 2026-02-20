@@ -13,11 +13,14 @@ import {
     BanknotesIcon,
     ArrowPathIcon,
     PencilSquareIcon,
+    ShieldCheckIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 
 const props = defineProps({
     invoice: Object,
+    emeteraiConfigured: Boolean,
+    emeteraiEnabled: Boolean,
 });
 
 const showPaymentModal = ref(false);
@@ -37,6 +40,17 @@ const paymentForm = useForm({
 const confirmInvoice = () => {
     if (confirm('Are you sure you want to confirm and issue this invoice?')) {
         useForm({}).post(route('sales.invoices.confirm', props.invoice.id));
+    }
+};
+
+const emeteraiForm = useForm({});
+const stampEmeterai = () => {
+    if (!props.emeteraiConfigured) {
+        alert('e-Meterai API belum dikonfigurasi. Silakan isi Client ID dan Secret Key di menu Settings > AI & Integration.');
+        return;
+    }
+    if (confirm('Bubuhkan e-Meterai pada invoice ini? Biaya Rp 10.000 akan dipotong dari saldo e-Meterai Anda.')) {
+        emeteraiForm.post(route('sales.invoices.stamp-emeterai', props.invoice.id));
     }
 };
 
@@ -163,6 +177,29 @@ const getStatusBadge = (status) => {
                         <PencilSquareIcon class="h-4 w-4" />
                         REVISE INVOICE
                     </button>
+
+                    <!-- e-Meterai Stamp Button -->
+                    <button 
+                        v-if="emeteraiEnabled && invoice.status !== 'draft' && invoice.total >= 5000000 && !invoice.emeterai_serial"
+                        @click="stampEmeterai"
+                        :disabled="emeteraiForm.processing"
+                        class="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-700 px-6 py-2.5 text-sm font-bold text-white hover:from-blue-600 hover:to-indigo-600 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+                    >
+                        <ShieldCheckIcon class="h-4 w-4" />
+                        {{ emeteraiForm.processing ? 'PROCESSING...' : 'STAMP e-METERAI' }}
+                    </button>
+
+                    <!-- e-Meterai Already Stamped Badge -->
+                    <div 
+                        v-if="invoice.emeterai_serial"
+                        class="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-4 py-2.5 text-sm font-bold text-emerald-500"
+                    >
+                        <ShieldCheckIcon class="h-4 w-4" />
+                        <div>
+                            <div>✅ e-Meterai Applied</div>
+                            <div class="text-[10px] font-mono opacity-70">SN: {{ invoice.emeterai_serial }}</div>
+                        </div>
+                    </div>
 
                     <!-- <a 
                         :href="route('sales.invoices.print-v2', invoice.id)" 
