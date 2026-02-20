@@ -222,6 +222,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::put('/orders/items/{item}/qty', [SalesOrderController::class, 'updateItemQty'])->name('orders.update-item-qty');
     Route::get('/orders/{order}/print', [SalesOrderController::class, 'print'])->name('orders.print');
     Route::post('/orders/create-from-ai', [SalesOrderController::class, 'createFromAi'])->name('orders.create-from-ai');
+    Route::get('/orders/check-po', [SalesOrderController::class, 'checkPo'])->name('orders.check-po');
     Route::post('/orders/{order}/delivery', [SalesOrderController::class, 'createDelivery'])->name('orders.create-delivery');
     Route::post('/orders/{order}/invoice', [SalesOrderController::class, 'createInvoice'])->name('orders.create-invoice');
     Route::get('/orders-export', [SalesOrderController::class, 'export'])->name('orders.export');
@@ -258,6 +259,8 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::post('/po-extractor/store-product', [App\Http\Controllers\Sales\POImportController::class, 'storeProduct'])->name('po-extractor.store-product');
     Route::post('/po-extractor/store-product-bulk', [App\Http\Controllers\Sales\POImportController::class, 'storeProductBulk'])->name('po-extractor.store-product-bulk');
     Route::post('/po-extractor/export', [App\Http\Controllers\Sales\POExtractorController::class, 'export'])->name('po-extractor.export');
+    Route::post('/po-extractor/store-customer', [App\Http\Controllers\Sales\POExtractorController::class, 'storeCustomer'])->name('po-extractor.store-customer');
+    Route::post('/po-extractor/store-unit', [App\Http\Controllers\Sales\POExtractorController::class, 'storeUnit'])->name('po-extractor.store-unit');
 
     Route::get('/quotations/next-number', [App\Http\Controllers\Sales\QuotationController::class, 'generateNextNumber'])->name('quotations.next-number');
     Route::resource('quotations', App\Http\Controllers\Sales\QuotationController::class);
@@ -433,11 +436,21 @@ Route::middleware(['auth'])->prefix('hr')->name('hr.')->group(function () {
     Route::put('/payroll/{payroll}/status', [PayrollController::class, 'updateStatus'])->name('payroll.update-status');
 });
 
+// Warehouse (Loading Queue for Warehouse Staff)
+Route::middleware(['auth'])->prefix('warehouse')->name('warehouse.')->group(function () {
+    Route::get('/loading', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'index'])->name('loading.index');
+    Route::patch('/loading/{deliveryOrder}/status', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'updateStatus'])->name('loading.update-status');
+});
+
 // Logistics
 Route::middleware(['auth'])->prefix('logistics')->name('logistics.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Logistics\LogisticsDashboardController::class, 'index'])->name('dashboard');
     Route::get('/planning', [App\Http\Controllers\Logistics\LogisticsController::class, 'index'])->name('planning');
     Route::post('/planning/assign', [App\Http\Controllers\Logistics\LogisticsController::class, 'assignVehicle'])->name('planning.assign');
+
+    // Dispatch Panel
+    Route::get('/dispatch', [App\Http\Controllers\Logistics\DispatchController::class, 'index'])->name('dispatch.index');
+    Route::patch('/dispatch/{deliveryOrder}/ship', [App\Http\Controllers\Logistics\DispatchController::class, 'dispatch'])->name('dispatch.ship');
     
     Route::get('/fleet/export', [App\Http\Controllers\Logistics\VehicleController::class, 'export'])->name('fleet.export');
     Route::get('/fleet/template', [App\Http\Controllers\Logistics\VehicleController::class, 'template'])->name('fleet.template');
@@ -447,6 +460,14 @@ Route::middleware(['auth'])->prefix('logistics')->name('logistics.')->group(func
     Route::get('/fleet/{vehicle}', [App\Http\Controllers\Logistics\VehicleController::class, 'show'])->name('fleet.show');
     Route::put('/fleet/{vehicle}', [App\Http\Controllers\Logistics\VehicleController::class, 'update'])->name('fleet.update');
     Route::delete('/fleet/{vehicle}', [App\Http\Controllers\Logistics\VehicleController::class, 'destroy'])->name('fleet.destroy');
+});
+
+// Driver Mobile Module
+Route::middleware(['auth'])->prefix('driver')->name('driver.')->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\Driver\DriverController::class, 'dashboard'])->name('dashboard');
+    Route::get('/scan', [App\Http\Controllers\Driver\DriverController::class, 'scan'])->name('scan');
+    Route::post('/lookup', [App\Http\Controllers\Driver\DriverController::class, 'lookupDo'])->name('lookup');
+    Route::patch('/confirm/{deliveryOrder}', [App\Http\Controllers\Driver\DriverController::class, 'confirmArrival'])->name('confirm');
 });
 
 // CRM

@@ -23,6 +23,11 @@ class DashboardController extends Controller
         if ($user && $user->supplier_id) {
             return redirect()->route('portal.dashboard');
         }
+
+        // Redirect Drivers to their mobile dashboard
+        if ($user && $user->hasRole('Driver')) {
+            return redirect()->route('driver.dashboard');
+        }
         // Summary Stats
         $stats = [
             'products' => Product::where('is_active', true)->count(),

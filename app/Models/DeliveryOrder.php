@@ -43,6 +43,7 @@ class DeliveryOrder extends Model
         'prepared_by',
         'delivered_by',
         'delivered_at',
+        'driver_user_id',
         'revision',
     ];
 
@@ -54,6 +55,11 @@ class DeliveryOrder extends Model
     public function vehicle(): BelongsTo
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    public function driver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'driver_user_id');
     }
 
     protected $casts = [

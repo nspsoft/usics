@@ -1,6 +1,6 @@
 <script setup>
-import { computed } from 'vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
     ArrowLeftIcon,
@@ -17,8 +17,69 @@ import {
     MapPinIcon as MapPinIconSolid,
     CheckBadgeIcon,
     ArrowPathIcon,
+    ExclamationTriangleIcon,
+    InformationCircleIcon,
+    XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
+
+// --- ROLE-BASED ACCESS CONTROL ---
+const page = usePage();
+const userRoles = computed(() => page.props.auth?.roles || []);
+
+const hasRole = (...roles) => {
+    if (userRoles.value.includes('Super Admin')) return true;
+    return roles.some(r => userRoles.value.includes(r));
+};
+
+// Permission map per action
+const canSave = computed(() => hasRole('Sales', 'Sales Manager'));
+const canLoading = computed(() => hasRole('Warehouse Manager'));
+const canShip = computed(() => hasRole('Warehouse Manager'));
+const canVerify = computed(() => hasRole('Sales Manager', 'Director'));
+const canReset = computed(() => hasRole()); // Super Admin only (handled by hasRole)
+const canInvoice = computed(() => hasRole('Sales', 'Sales Manager'));
+
+// Smart action permission based on current status
+const canDoNextAction = computed(() => {
+    const status = props.deliveryOrder.status;
+    switch (status) {
+        case 'draft': return canLoading.value;
+        case 'picking': return canLoading.value;
+        case 'packed': return canShip.value;
+        case 'shipped': return canShip.value;
+        case 'delivered': return canVerify.value;
+        default: return false;
+    }
+});
+
+// --- PRINT READINESS CHECK ---
+const showPrintWarning = ref(false);
+
+const printReadiness = computed(() => {
+    const checks = [];
+    const o = props.deliveryOrder;
+    checks.push({ label: 'Items terisi', ok: o.items && o.items.length > 0 });
+    checks.push({ label: 'Armada (No Truk) terisi', ok: !!o.vehicle_number });
+    checks.push({ label: 'Sopir (Driver) terisi', ok: !!o.driver_name });
+    checks.push({ label: 'Tanggal kirim terisi', ok: !!o.delivery_date });
+    return checks;
+});
+
+const isReadyToPrint = computed(() => printReadiness.value.every(c => c.ok));
+
+const handlePrint = () => {
+    if (!isReadyToPrint.value) {
+        showPrintWarning.value = true;
+    } else {
+        window.open(route('sales.deliveries.print', props.deliveryOrder.id), '_blank');
+    }
+};
+
+const forcePrint = () => {
+    showPrintWarning.value = false;
+    window.open(route('sales.deliveries.print', props.deliveryOrder.id), '_blank');
+};
 
 const props = defineProps({
     deliveryOrder: Object,
@@ -69,8 +130,19 @@ const removeItem = (id) => {
     }
 };
 
+// --- CONFIRMATION MESSAGES PER STATUS ---
+const statusConfirmMessages = {
+    picking: '📦 MULAI LOADING\n\nBarang akan mulai diambil dan dimuat.\nPastikan item dan qty sudah benar sebelum melanjutkan.\n\nLanjutkan?',
+    packed: '✅ SELESAI PACKING\n\nBarang sudah selesai dimuat dan siap dikirim.\nPastikan semua item sudah masuk ke truk.\n\nLanjutkan?',
+    shipped: '🚛 BERANGKATKAN\n\nTruk akan berangkat ke tujuan.\nPastikan armada dan sopir sudah benar.\n\nNo Truk: ' + (props.deliveryOrder.vehicle_number || '-') + '\nSopir: ' + (props.deliveryOrder.driver_name || '-') + '\n\nLanjutkan?',
+    delivered: '📍 SAMPAI DI TUJUAN\n\nBarang telah sampai di lokasi customer.\nStatus akan berubah menjadi "Delivered".\n\nLanjutkan?',
+    completed: '🏁 VERIFIKASI SELESAI\n\nPengiriman akan ditandai selesai.\nStok akan dikurangi dan SO akan diupdate.\n\nLanjutkan?',
+    draft: '⚠️ REVISI (RESET)\n\nStatus akan dikembalikan ke Draft.\nStok yang sudah dikurangi akan dikembalikan.\n\nYakin ingin reset?',
+};
+
 const updateStatus = (status) => {
-    if (confirm(`Update status delivery ini menjadi '${status.toUpperCase()}'?`)) {
+    const msg = statusConfirmMessages[status] || `Update status delivery ini menjadi '${status.toUpperCase()}'?`;
+    if (confirm(msg)) {
         router.patch(route('sales.deliveries.update-status', props.deliveryOrder.id), {
             status: status
         }, {
@@ -128,11 +200,11 @@ const getStatusBadge = (status) => {
 };
 
 const steps = [
-    { label: 'CREATE DO', status: 'draft', icon: DocumentPlusIcon },
-    { label: 'LOADING', status: ['picking', 'packed'], icon: CubeIcon },
-    { label: 'SHIPPING', status: 'shipped', icon: TruckIcon },
-    { label: 'ARRIVED', status: 'delivered', icon: MapPinIconSolid },
-    { label: 'VERIFIED', status: 'completed', icon: CheckBadgeIcon },
+    { label: 'CREATE DO', status: 'draft', icon: DocumentPlusIcon, desc: 'Sales', pic: 'Sales' },
+    { label: 'LOADING', status: ['picking', 'packed'], icon: CubeIcon, desc: 'Gudang', pic: 'Warehouse' },
+    { label: 'SHIPPING', status: 'shipped', icon: TruckIcon, desc: 'Logistik', pic: 'Logistics' },
+    { label: 'ARRIVED', status: 'delivered', icon: MapPinIconSolid, desc: 'Driver', pic: 'Driver' },
+    { label: 'VERIFIED', status: 'completed', icon: CheckBadgeIcon, desc: 'Admin', pic: 'Admin' },
 ];
 
     const currentStepIndex = computed(() => {
@@ -191,10 +263,10 @@ const nextAction = computed(() => {
 
 const handleSmartAction = () => {
     if (!nextAction.value) return;
-
-    // Special handler for completion (uses different endpoint in original code, 
-    // but updateStatus handles 'completed' logic too via controller, 
-    // but let's stick to the main method for completion if needed or unify it)
+    if (!canDoNextAction.value) {
+        alert('Anda tidak memiliki akses untuk melakukan aksi ini. Hubungi Admin.');
+        return;
+    }
     
     if (nextAction.value.target === 'completed') {
         completeDelivery();
@@ -232,19 +304,20 @@ const handleSmartAction = () => {
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <!-- 1. Print SJ (Informations/Documentation) -->
-                    <a 
-                        :href="route('sales.deliveries.print', deliveryOrder.id)" 
-                        target="_blank"
-                        class="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
+                    <!-- 1. Print SJ with readiness check -->
+                    <button 
+                        type="button"
+                        @click="handlePrint"
+                        class="relative flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
                     >
                         <PrinterIcon class="h-4 w-4" />
                         Print SJ
-                    </a>
+                        <span v-if="!isReadyToPrint" class="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full animate-pulse" title="Data belum lengkap"></span>
+                    </button>
 
-                    <!-- 2. Save Changes (Only in Draft) -->
+                    <!-- 2. Save Changes (Only in Draft + Authorized Role) -->
                     <button 
-                        v-if="deliveryOrder.status === 'draft'"
+                        v-if="deliveryOrder.status === 'draft' && canSave"
                         @click="updateDelivery"
                         :disabled="!form.isDirty || form.processing"
                         class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all shadow-lg disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
@@ -253,9 +326,9 @@ const handleSmartAction = () => {
                         Save Changes
                     </button>
                     
-                    <!-- 3. SMART ACTION BUTTON (Pipeline Progression) -->
+                    <!-- 3. SMART ACTION BUTTON (Pipeline Progression + Role Check) -->
                     <button 
-                        v-if="nextAction"
+                        v-if="nextAction && canDoNextAction"
                         @click="handleSmartAction"
                         :disabled="form.isDirty || form.processing"
                         class="flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-black uppercase tracking-wide text-white shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
@@ -264,10 +337,15 @@ const handleSmartAction = () => {
                         <component :is="nextAction.icon" class="h-5 w-5" />
                         {{ nextAction.label }}
                     </button>
+                    <!-- Show disabled hint if no permission -->
+                    <div v-else-if="nextAction && !canDoNextAction" class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 border border-dashed border-slate-300 dark:border-slate-700 cursor-not-allowed" :title="'Aksi ini hanya untuk PIC ' + steps[currentStepIndex]?.pic">
+                        <component :is="nextAction.icon" class="h-4 w-4" />
+                        {{ nextAction.label }} ({{ steps[currentStepIndex]?.pic }})
+                    </div>
 
-                    <!-- NEW: Revert/Revise Button (Draft Reset) -->
+                    <!-- Revert/Revise Button (Super Admin Only) -->
                     <button 
-                        v-if="['delivered', 'completed'].includes(deliveryOrder.status)"
+                        v-if="['delivered', 'completed'].includes(deliveryOrder.status) && canReset"
                         @click="updateStatus('draft')"
                         class="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors border border-red-200 dark:border-red-900/50"
                         title="Kembalikan status ke Draft untuk revisi (Stok akan dikembalikan)"
@@ -276,9 +354,9 @@ const handleSmartAction = () => {
                         Revisi (Reset)
                     </button>
 
-                    <!-- 4. Create Invoice (Post-Delivery Process) -->
+                    <!-- 4. Create Invoice (Post-Delivery + Role Check) -->
                     <Link 
-                        v-if="deliveryOrder.status === 'completed'"
+                        v-if="deliveryOrder.status === 'completed' && canInvoice"
                         :href="route('sales.deliveries.create-invoice', deliveryOrder.id)"
                         method="post"
                         as="button"
@@ -338,6 +416,7 @@ const handleSmartAction = () => {
                             >
                                 {{ step.label }}
                             </span>
+                            <span class="text-[8px] font-bold mt-0.5" :class="index <= currentStepIndex ? 'text-slate-400' : 'text-slate-300 dark:text-slate-700'">{{ step.desc }}</span>
                             <!-- Show real status below label if in multi-status step -->
                             <span 
                                 v-if="index === 1 && ['picking', 'packed'].includes(deliveryOrder.status)"
@@ -531,7 +610,31 @@ const handleSmartAction = () => {
             </div>
         </div>
     </AppLayout>
+
+    <!-- Print SJ Warning Modal -->
+    <Teleport to="body">
+        <div v-if="showPrintWarning" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+                <div class="px-6 py-4 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/30 flex items-center gap-3">
+                    <ExclamationTriangleIcon class="h-6 w-6 text-amber-500" />
+                    <h3 class="text-sm font-bold text-amber-700 dark:text-amber-300 uppercase tracking-widest">Data Belum Lengkap</h3>
+                    <button @click="showPrintWarning = false" class="ml-auto text-slate-400 hover:text-slate-600">
+                        <XMarkIcon class="h-5 w-5" />
+                    </button>
+                </div>
+                <div class="p-6 space-y-3">
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">Surat Jalan akan dicetak dengan data berikut:</p>
+                    <div v-for="check in printReadiness" :key="check.label" class="flex items-center gap-3">
+                        <span v-if="check.ok" class="text-emerald-500 text-lg">✅</span>
+                        <span v-else class="text-red-500 text-lg">❌</span>
+                        <span class="text-sm" :class="check.ok ? 'text-slate-700 dark:text-slate-300' : 'text-red-600 dark:text-red-400 font-bold'">{{ check.label }}</span>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
+                    <button @click="showPrintWarning = false" class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">Batal</button>
+                    <button @click="forcePrint" class="px-4 py-2 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20">Tetap Print</button>
+                </div>
+            </div>
+        </div>
+    </Teleport>
 </template>
-
-
-

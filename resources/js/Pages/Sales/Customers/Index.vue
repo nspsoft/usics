@@ -370,11 +370,11 @@ const openMap = (address, city) => {
             @close="showMap = false" 
         />
 
-        <!-- Feature Guide -->
+        <!-- Panduan Pelanggan & CRM -->
         <div class="mt-12">
             <div class="flex items-center gap-2 mb-4 px-1">
                 <div class="h-px flex-1 bg-slate-50 dark:bg-slate-800"></div>
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Customer & CRM Guide</span>
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Panduan Pelanggan & CRM</span>
                 <div class="h-px flex-1 bg-slate-50 dark:bg-slate-800"></div>
             </div>
             
@@ -384,10 +384,10 @@ const openMap = (address, city) => {
                         <div class="p-2.5 rounded-xl bg-violet-500/10 text-violet-400">
                             <UserGroupIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Segmentation</h4>
+                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Segmentasi</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Tag customers as <strong>VIP</strong>, <strong>Wholesale</strong>, or <strong>Regular</strong>. Use this to apply specific pricing policies or priority service.
+                        Tandai pelanggan sebagai <strong>VIP</strong>, <strong>Grosir</strong>, atau <strong>Reguler</strong>. Gunakan ini untuk menerapkan kebijakan harga khusus atau layanan prioritas.
                     </p>
                 </div>
 
@@ -396,10 +396,10 @@ const openMap = (address, city) => {
                         <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-400">
                             <UserIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Key Relationships</h4>
+                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Hubungan Kunci</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Manage multiple <strong>Stakeholders</strong> for each company. Perfect for tracking purchasing managers, finance teams, and warehouse contacts.
+                        Kelola banyak <strong>Stakeholders</strong> untuk setiap perusahaan. Sempurna untuk melacak manajer pembelian, tim keuangan, dan kontak gudang.
                     </p>
                 </div>
 
@@ -408,10 +408,10 @@ const openMap = (address, city) => {
                         <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
                             <CreditCardIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Credit Limits</h4>
+                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Limit Kredit</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Set <strong>Payment Terms</strong> and monitor limits to prevent over-extension. Important for maintaining healthy cash flow and reducing risk.
+                        Atur <strong>Syarat Pembayaran</strong> dan pantau limit untuk mencegah kelebihan kredit. Penting untuk menjaga arus kas sehat dan mengurangi risiko.
                     </p>
                 </div>
                 
@@ -420,10 +420,10 @@ const openMap = (address, city) => {
                         <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
                             <ShieldCheckIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Activity Logs</h4>
+                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Log Aktivitas</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Every modification or import is <strong>audited</strong>. Inactive customers can be archived to keep your CRM clean without losing historical data.
+                        Setiap modifikasi atau impor <strong>diaudit</strong>. Pelanggan tidak aktif dapat diarsipkan untuk menjaga CRM Anda tetap bersih tanpa kehilangan data historis.
                     </p>
                 </div>
             </div>

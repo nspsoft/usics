@@ -17,6 +17,8 @@ import {
     TrashIcon,
     PencilIcon,
     ArrowDownTrayIcon,
+    UserPlusIcon,
+    UserCircleIcon,
 } from '@heroicons/vue/24/outline';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import axios from 'axios';
@@ -116,53 +118,168 @@ const registerProduct = async () => {
 
 const isBulkRegistering = ref(false);
 
-const generateSmartSku = (description) => {
-    const normalized = description.trim().toUpperCase();
-    // 1. Regex to find potential codes
-    const matches = normalized.match(/\b([A-Z0-9-]{3,})\b/g);
-    if (matches && matches.length > 0) {
-        // Find match with numbers
-        for (let i = matches.length - 1; i >= 0; i--) {
-            if (/[0-9]/.test(matches[i]) && /[A-Z]/.test(matches[i])) {
-                return matches[i];
-            }
-        }
-        // Fallback to last match (often code is at end)
-        return matches[matches.length - 1];
-    }
-    
-    // 2. Abbreviation Fallback
-    const words = normalized.split(/\s+/);
-    let sku = '';
-    words.forEach(word => {
-        if (word.length > 0) sku += word[0];
-    });
-    if (sku.length < 3) sku += Math.floor(Math.random() * 900 + 100);
-    return sku.substring(0, 10);
+// === Customer Matching & Registration ===
+const showCustomerModal = ref(false);
+const isRegisteringCustomer = ref(false);
+const customerForm = ref({
+    name: '',
+    code: '',
+    contact_person: '',
+    phone: '',
+    email: '',
+    address: '',
+});
+
+const customerMatched = computed(() => {
+    return editableData.value.matched_customer_id != null;
+});
+
+const openCustomerModal = () => {
+    customerForm.value = {
+        name: editableData.value.customer_name || '',
+        code: '',
+        contact_person: '',
+        phone: '',
+        email: '',
+        address: '',
+    };
+    showCustomerModal.value = true;
 };
 
-const registerAllNoMatch = async () => {
-    // Filter for UNMATCHED items
-    const noMatchItems = editableData.value.items.filter(item => !item.matched_product_id);
+const registerCustomer = async () => {
+    if (!customerForm.value.name) {
+        alert('Nama customer wajib diisi');
+        return;
+    }
+    isRegisteringCustomer.value = true;
+    try {
+        const response = await axios.post('/sales/po-extractor/store-customer', customerForm.value);
+        if (response.data.success) {
+            const newCust = response.data.customer;
+            editableData.value.matched_customer_id = newCust.id;
+            editableData.value.matched_customer_name = newCust.name;
+            editableData.value.customer_name = newCust.name;
+            showCustomerModal.value = false;
+            alert('Customer "' + newCust.name + '" berhasil didaftarkan!');
+        }
+    } catch (err) {
+        alert('Gagal mendaftarkan customer: ' + (err.response?.data?.message || err.message));
+    } finally {
+        isRegisteringCustomer.value = false;
+    }
+};
+
+// === Bulk Register Preview Modal ===
+const showBulkModal = ref(false);
+const bulkItems = ref([]);
+const localUnits = ref([...(props.units || [])]);
+
+const findUnitId = (unitText) => {
+    if (!unitText) return null;
+    const search = unitText.trim().toLowerCase();
+    const match = localUnits.value.find(u => 
+        u.name.toLowerCase() === search || 
+        (u.code && u.code.toLowerCase() === search)
+    );
+    return match ? match.id : null;
+};
+
+const openBulkModal = () => {
+    const noMatchItems = editableData.value.items
+        .map((item, idx) => ({ ...item, originalIndex: idx }))
+        .filter(item => !item.matched_product_id || item.match_status === 'NO_MATCH');
     
     if (noMatchItems.length === 0) {
-        alert('No unmatched items to register.');
+        alert('Tidak ada item yang belum terdaftar.');
         return;
     }
 
-    if (!confirm(`Are you sure you want to register ${noMatchItems.length} new products? SKUs will be auto-generated.`)) {
+    bulkItems.value = noMatchItems.map(item => ({
+        description: item.description,
+        sku: item.proposed_sku || '',
+        extracted_unit: item.unit || '',
+        unit_id: findUnitId(item.unit) || '',
+        selling_price: item.unit_price || 0,
+        originalIndex: item.originalIndex,
+        selected: true,
+    }));
+    showBulkModal.value = true;
+};
+
+const bulkSelectedCount = computed(() => bulkItems.value.filter(i => i.selected).length);
+
+const bulkHasUnitIssues = computed(() => bulkItems.value.some(i => i.selected && !i.unit_id));
+
+// === Inline Unit Registration ===
+const showUnitModal = ref(false);
+const unitModalTargetIndex = ref(null);
+const newUnitName = ref('');
+const newUnitCode = ref('');
+const isStoringUnit = ref(false);
+
+const openUnitModal = (index) => {
+    const item = bulkItems.value[index];
+    unitModalTargetIndex.value = index;
+    newUnitName.value = item.extracted_unit || '';
+    newUnitCode.value = (item.extracted_unit || '').toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10);
+    showUnitModal.value = true;
+};
+
+const storeNewUnit = async () => {
+    if (!newUnitName.value || !newUnitCode.value) return;
+    isStoringUnit.value = true;
+    try {
+        const res = await axios.post(route('sales.po-extractor.store-unit'), {
+            name: newUnitName.value,
+            code: newUnitCode.value.toUpperCase(),
+        });
+        if (res.data.success) {
+            // Add to local units list
+            localUnits.value.push(res.data.unit);
+            // Auto-select for the target item
+            if (unitModalTargetIndex.value !== null) {
+                bulkItems.value[unitModalTargetIndex.value].unit_id = res.data.unit.id;
+            }
+            // Also auto-assign to other items with same extracted_unit
+            const targetUnit = bulkItems.value[unitModalTargetIndex.value]?.extracted_unit;
+            if (targetUnit) {
+                bulkItems.value.forEach(item => {
+                    if (!item.unit_id && item.extracted_unit && item.extracted_unit.toLowerCase() === targetUnit.toLowerCase()) {
+                        item.unit_id = res.data.unit.id;
+                    }
+                });
+            }
+            showUnitModal.value = false;
+        }
+    } catch (e) {
+        const msg = e.response?.data?.errors?.code?.[0] || e.response?.data?.message || 'Gagal mendaftarkan satuan.';
+        alert(msg);
+    } finally {
+        isStoringUnit.value = false;
+    }
+};
+
+const registerBulkProducts = async () => {
+    const selectedItems = bulkItems.value.filter(i => i.selected);
+    if (selectedItems.length === 0) {
+        alert('Pilih minimal satu item.');
         return;
     }
-    
-    // Map items for backend
-    const itemsToRegister = noMatchItems.map(item => ({
-        description: item.description,
-        unit_id: item.unit ? (props.units.find(u => u.name.toLowerCase() === item.unit.toLowerCase())?.id || props.units[0]?.id) : props.units[0]?.id,
-        selling_price: item.unit_price || 0
-    }));
+    const missingUnit = selectedItems.filter(i => !i.unit_id);
+    if (missingUnit.length > 0) {
+        alert(`${missingUnit.length} item belum memiliki satuan yang valid. Silakan pilih satuan terlebih dahulu.`);
+        return;
+    }
 
     isBulkRegistering.value = true;
     try {
+        const itemsToRegister = selectedItems.map(item => ({
+            description: item.description,
+            sku: item.sku || '',
+            unit_id: item.unit_id,
+            selling_price: item.selling_price || 0
+        }));
+
         const response = await axios.post(route('sales.po-extractor.store-product-bulk'), {
             items: itemsToRegister
         });
@@ -170,28 +287,26 @@ const registerAllNoMatch = async () => {
         if (response.data.success) {
             const createdProducts = response.data.products;
             
-            // Update items with new product details
-            // We assume the order is preserved 1:1 with the sent array
-            let createdIndex = 0;
-            editableData.value.items.forEach(item => {
-                if (!item.matched_product_id) {
-                    if (createdProducts[createdIndex]) {
-                            const newProd = createdProducts[createdIndex];
-                            item.matched_product_id = newProd.id;
-                            item.matched_product_name = newProd.name;
-                            item.matched_sku = newProd.sku;
-                            item.db_price = newProd.selling_price;
-                            item.current_stock = newProd.current_stock;
-                            item.match_status = 'MATCHED';
+            selectedItems.forEach((bulkItem, idx) => {
+                if (createdProducts[idx]) {
+                    const newProd = createdProducts[idx];
+                    const origItem = editableData.value.items[bulkItem.originalIndex];
+                    if (origItem) {
+                        origItem.matched_product_id = newProd.id;
+                        origItem.matched_product_name = newProd.name;
+                        origItem.matched_sku = newProd.sku;
+                        origItem.db_price = newProd.selling_price;
+                        origItem.current_stock = newProd.current_stock;
+                        origItem.match_status = 'MATCHED';
                     }
-                    createdIndex++;
                 }
             });
+            showBulkModal.value = false;
             alert(response.data.message);
         }
     } catch (err) {
         console.error(err);
-        alert('Failed to bulk register: ' + (err.response?.data?.message || err.message));
+        alert('Gagal mendaftarkan produk: ' + (err.response?.data?.message || err.message));
     } finally {
         isBulkRegistering.value = false;
     }
@@ -212,6 +327,8 @@ const editableData = ref({
     po_number: '',
     po_date: '',
     customer_name: '',
+    matched_customer_id: null,
+    matched_customer_name: '',
     items: []
 });
 
@@ -222,18 +339,23 @@ watch(extractionResult, (newVal) => {
             po_number: newVal.po_number || '',
             po_date: newVal.po_date || '',
             customer_name: newVal.customer_name || '',
+            matched_customer_id: newVal.matched_customer_id || null,
+            matched_customer_name: newVal.matched_customer_name || '',
             items: (newVal.items || []).map(item => ({
+                material_number: item.material_number || null,
                 description: item.description || '',
                 qty: item.qty || 0,
                 unit: item.unit || 'Pcs',
                 unit_price: item.unit_price || 0,
-                po_price: item.po_price || item.unit_price || 0, // Price from PO (AI extracted)
-                db_price: item.db_price || 0, // Price from database (master product)
-                current_stock: item.current_stock || 0, // Available stock from product master
+                po_price: item.po_price || item.unit_price || 0,
+                db_price: item.db_price || 0,
+                current_stock: item.current_stock || 0,
                 price_mismatch: item.price_mismatch || false,
                 matched_product_id: item.matched_product_id || null,
                 matched_product_name: item.matched_product_name || '',
-                matched_sku: item.matched_sku || ''
+                matched_sku: item.matched_sku || '',
+                proposed_sku: item.proposed_sku || '',
+                match_status: item.match_status || (item.matched_product_id ? 'MATCHED' : 'NO_MATCH')
             }))
         };
     }
@@ -658,12 +780,32 @@ const exportToExcel = async () => {
                                     <PencilIcon class="h-3 w-3" />
                                     Customer Name
                                 </label>
-                                <input 
-                                    v-model="editableData.customer_name"
-                                    type="text"
-                                    class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                                    placeholder="Enter Customer Name..."
-                                />
+                                <div class="relative">
+                                    <input 
+                                        v-model="editableData.customer_name"
+                                        type="text"
+                                        :class="[
+                                            'w-full px-4 py-2.5 rounded-xl border text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all',
+                                            customerMatched 
+                                                ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 text-slate-900 dark:text-white' 
+                                                : 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 text-slate-900 dark:text-white'
+                                        ]"
+                                        placeholder="Enter Customer Name..."
+                                    />
+                                    <!-- Match indicator -->
+                                    <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                        <span v-if="customerMatched" class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 text-[10px] font-bold">
+                                            <CheckCircleIcon class="h-3 w-3" /> Terdaftar
+                                        </span>
+                                        <button 
+                                            v-else
+                                            @click="openCustomerModal"
+                                            class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 hover:bg-amber-500/30 text-[10px] font-bold transition-colors cursor-pointer"
+                                        >
+                                            <UserPlusIcon class="h-3 w-3" /> Daftarkan
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <div class="space-y-2">
                                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
@@ -790,7 +932,7 @@ const exportToExcel = async () => {
                                             <td class="px-2 py-2 text-center w-[8%]">
                                                 <div class="flex items-center justify-center gap-1">
                                                     <button 
-                                                        v-if="!item.matched_product_id"
+                                                        v-if="!item.matched_product_id || item.match_status === 'NO_MATCH'"
                                                         @click="openRegisterModal(item, index)"
                                                         class="p-1.5 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors"
                                                         title="Register new product"
@@ -843,14 +985,12 @@ const exportToExcel = async () => {
                                 Try Again
                             </button>
                             <button 
-                                v-if="editableData.items.some(i => !i.matched_product_id)"
-                                @click="registerAllNoMatch"
-                                :disabled="isBulkRegistering"
+                                v-if="editableData.items.some(i => !i.matched_product_id || i.match_status === 'NO_MATCH')"
+                                @click="openBulkModal"
                                 class="py-3 px-6 rounded-2xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-500/25 hover:bg-purple-500 transition-all flex items-center justify-center gap-2"
                             >
-                                <SparklesIcon v-if="!isBulkRegistering" class="h-5 w-5" />
-                                <ArrowPathIcon v-else class="h-5 w-5 animate-spin" />
-                                {{ isBulkRegistering ? 'Registering...' : 'Register All No Match' }}
+                                <SparklesIcon class="h-5 w-5" />
+                                Register All No Match
                             </button>
                             <button 
                                 @click="exportToExcel"
@@ -1074,6 +1214,248 @@ const exportToExcel = async () => {
                         <span v-if="isRegistering">Saving...</span>
                         <span v-else>Save Product</span>
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Register Modal -->
+        <div v-if="showCustomerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
+                    <div class="flex items-center gap-2">
+                        <UserPlusIcon class="h-5 w-5 text-amber-600" />
+                        <h3 class="font-bold text-slate-900 dark:text-white">Daftarkan Customer Baru</h3>
+                    </div>
+                    <button @click="showCustomerModal = false" class="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                        <XMarkIcon class="h-5 w-5" />
+                    </button>
+                </div>
+                
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Customer *</label>
+                        <input 
+                            v-model="customerForm.name"
+                            type="text"
+                            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            placeholder="PT. Example Indonesia"
+                        />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Kode</label>
+                            <input 
+                                v-model="customerForm.code"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                placeholder="CUST-001"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contact Person</label>
+                            <input 
+                                v-model="customerForm.contact_person"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Telepon</label>
+                            <input 
+                                v-model="customerForm.phone"
+                                type="text"
+                                class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                            <input 
+                                v-model="customerForm.email"
+                                type="email"
+                                class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Alamat</label>
+                        <textarea 
+                            v-model="customerForm.address"
+                            rows="2"
+                            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                        ></textarea>
+                    </div>
+                </div>
+                
+                <div class="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+                    <button 
+                        @click="showCustomerModal = false"
+                        class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700 font-bold text-sm transition-colors"
+                    >
+                        Batal
+                    </button>
+                    <button 
+                        @click="registerCustomer"
+                        :disabled="isRegisteringCustomer"
+                        class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm transition-colors flex items-center gap-2"
+                    >
+                        <ArrowPathIcon v-if="isRegisteringCustomer" class="h-4 w-4 animate-spin" />
+                        {{ isRegisteringCustomer ? 'Menyimpan...' : 'Daftarkan Customer' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Register Preview Modal -->
+        <div v-if="showBulkModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden">
+                <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
+                    <div>
+                        <h3 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <SparklesIcon class="h-5 w-5 text-purple-600" />
+                            Register Produk Baru (Bulk)
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Periksa dan sesuaikan data sebelum mendaftarkan</p>
+                    </div>
+                    <button @click="showBulkModal = false" class="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                        <XMarkIcon class="h-5 w-5" />
+                    </button>
+                </div>
+                
+                <div class="overflow-auto max-h-[60vh]">
+                    <table class="min-w-full">
+                        <thead class="bg-slate-100 dark:bg-slate-800 sticky top-0">
+                            <tr>
+                                <th class="px-3 py-3 text-center w-10">
+                                    <input 
+                                        type="checkbox" 
+                                        :checked="bulkItems.every(i => i.selected)"
+                                        @change="bulkItems.forEach(i => i.selected = $event.target.checked)"
+                                        class="rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                                    />
+                                </th>
+                                <th class="px-3 py-3 text-left text-[10px] font-bold text-slate-500 uppercase">Nama Produk</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-bold text-slate-500 uppercase w-32">SKU</th>
+                                <th class="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase w-24">Satuan PO</th>
+                                <th class="px-3 py-3 text-center text-[10px] font-bold text-slate-500 uppercase w-40">Satuan Master</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-bold text-slate-500 uppercase w-32">Harga Jual</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                            <tr v-for="(item, index) in bulkItems" :key="index" :class="[item.selected ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/50 opacity-60']">
+                                <td class="px-3 py-3 text-center">
+                                    <input 
+                                        v-model="item.selected"
+                                        type="checkbox" 
+                                        class="rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                                    />
+                                </td>
+                                <td class="px-3 py-3">
+                                    <input 
+                                        v-model="item.description"
+                                        type="text"
+                                        class="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
+                                    />
+                                </td>
+                                <td class="px-3 py-3">
+                                    <input 
+                                        v-model="item.sku"
+                                        type="text"
+                                        class="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
+                                        placeholder="Auto"
+                                    />
+                                </td>
+                                <td class="px-3 py-3 text-center">
+                                    <span class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400">
+                                        {{ item.extracted_unit || '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3">
+                                    <div class="flex items-center gap-1">
+                                        <select 
+                                            v-model="item.unit_id"
+                                            :class="[
+                                                'flex-1 px-2 py-1.5 rounded-lg border text-sm focus:ring-2 focus:ring-purple-500 outline-none',
+                                                item.unit_id 
+                                                    ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white' 
+                                                    : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-600'
+                                            ]"
+                                        >
+                                            <option value="" disabled>-- Pilih Satuan --</option>
+                                            <option v-for="unit in localUnits" :key="unit.id" :value="unit.id">
+                                                {{ unit.name }} {{ unit.code ? '(' + unit.code + ')' : '' }}
+                                            </option>
+                                        </select>
+                                        <button 
+                                            v-if="!item.unit_id"
+                                            type="button" 
+                                            @click="openUnitModal(index)"
+                                            class="shrink-0 px-2 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold transition-colors whitespace-nowrap"
+                                            title="Tambah satuan baru"
+                                        >
+                                            + Baru
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-3">
+                                    <input 
+                                        v-model.number="item.selling_price"
+                                        type="number"
+                                        min="0"
+                                        class="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none text-right"
+                                    />
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Warning for missing units -->
+                <div v-if="bulkHasUnitIssues" class="mx-4 mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-600 flex items-center gap-2">
+                    <ExclamationTriangleIcon class="h-5 w-5 shrink-0" />
+                    Beberapa item belum memiliki satuan yang valid (ditandai merah). Pilih satuan yang sesuai atau klik <strong>"+ Baru"</strong> untuk mendaftarkan satuan baru.
+                </div>
+
+                <!-- Unit Registration Mini Modal -->
+                <div v-if="showUnitModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" @click.self="showUnitModal = false">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">➕ Tambah Satuan Baru</h3>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-500 mb-1">Nama Satuan</label>
+                            <input v-model="newUnitName" type="text" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Contoh: Roll" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-500 mb-1">Kode Satuan</label>
+                            <input v-model="newUnitCode" type="text" maxlength="10" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono uppercase text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Contoh: ROL" />
+                        </div>
+                        <div class="flex gap-3 justify-end pt-2">
+                            <button @click="showUnitModal = false" class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 font-medium text-sm transition-colors">Batal</button>
+                            <button @click="storeNewUnit" :disabled="isStoringUnit || !newUnitName || !newUnitCode" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                {{ isStoringUnit ? 'Menyimpan...' : 'Simpan Satuan' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <span class="text-xs text-slate-500 font-medium">{{ bulkSelectedCount }} dari {{ bulkItems.length }} item dipilih</span>
+                    <div class="flex gap-3">
+                        <button 
+                            @click="showBulkModal = false"
+                            class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700 font-bold text-sm transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button 
+                            @click="registerBulkProducts"
+                            :disabled="isBulkRegistering || bulkSelectedCount === 0 || bulkHasUnitIssues"
+                            class="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ArrowPathIcon v-if="isBulkRegistering" class="h-4 w-4 animate-spin" />
+                            {{ isBulkRegistering ? 'Mendaftarkan...' : `Daftarkan ${bulkSelectedCount} Produk` }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

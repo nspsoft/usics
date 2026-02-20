@@ -323,11 +323,11 @@ const getTypeColor = (type, qty) => {
             </div>
         </div>
 
-        <!-- Feature Guide -->
+        <!-- Panduan Pelacakan Inventaris -->
         <div class="mt-12">
             <div class="flex items-center gap-2 mb-4 px-1">
                 <div class="h-px flex-1 bg-slate-50 dark:bg-slate-800"></div>
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Inventory Traceability Guide</span>
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Panduan Pelacakan Inventaris</span>
                 <div class="h-px flex-1 bg-slate-50 dark:bg-slate-800"></div>
             </div>
             
@@ -337,10 +337,10 @@ const getTypeColor = (type, qty) => {
                         <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-400">
                             <ClockIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-200 text-sm">Audit Trail</h4>
+                        <h4 class="font-bold text-slate-200 text-sm">Riwayat Audit</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Track every change to your inventory with a full history of <strong>In</strong> and <strong>Out</strong> movements. Know exactly who did what and when.
+                        Lacak setiap perubahan stok Anda dengan riwayat lengkap pergerakan <strong>Masuk</strong> dan <strong>Keluar</strong>. Ketahui siapa yang melakukan apa dan kapan.
                     </p>
                 </div>
 
@@ -349,10 +349,10 @@ const getTypeColor = (type, qty) => {
                         <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
                             <ArrowPathIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-200 text-sm">Movement Types</h4>
+                        <h4 class="font-bold text-slate-200 text-sm">Tipe Pergerakan</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Identify movements by their source: <strong>Adjustment</strong>, <strong>PO Receive</strong>, <strong>SO Delivery</strong>, or <strong>Transfer</strong>.
+                        Identifikasi sumber pergerakan: <strong>Adjustment</strong>, <strong>Penerimaan PO</strong>, <strong>Pengiriman SO</strong>, atau <strong>Transfer</strong> antar gudang.
                     </p>
                 </div>
 
@@ -361,10 +361,10 @@ const getTypeColor = (type, qty) => {
                         <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
                             <InformationCircleIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-200 text-sm">Balance History</h4>
+                        <h4 class="font-bold text-slate-200 text-sm">Riwayat Saldo</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        The <strong>Balance</strong> column shows the stock level <em>immediately after</em> the movement, helping you trace stock level changes over time.
+                        Kolom <strong>Balance</strong> menunjukkan level stok <em>segera setelah</em> pergerakan terjadi, membantu Anda melacak perubahan stok dari waktu ke waktu.
                     </p>
                 </div>
                 
@@ -373,10 +373,10 @@ const getTypeColor = (type, qty) => {
                         <div class="p-2.5 rounded-xl bg-purple-500/10 text-purple-400">
                             <ArrowsRightLeftIcon class="h-5 w-5" />
                         </div>
-                        <h4 class="font-bold text-slate-200 text-sm">Multi-Warehouse</h4>
+                        <h4 class="font-bold text-slate-200 text-sm">Multi-Gudang</h4>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Monitor stock flow across different <strong>Warehouses</strong>. Use the filter to see specific site activity accurately.
+                        Pantau aliran stok di berbagai <strong>Gudang</strong>. Gunakan filter untuk melihat aktivitas lokasi tertentu secara akurat.
                     </p>
                 </div>
             </div>

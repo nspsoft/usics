@@ -114,6 +114,22 @@ class SalesOrderController extends Controller
         ]);
     }
 
+    public function checkPo(Request $request)
+    {
+        $poNumber = $request->input('po_number');
+        if (!$poNumber) {
+            return response()->json(['exists' => false]);
+        }
+
+        $existing = SalesOrder::where('customer_po_number', $poNumber)
+            ->where('status', '!=', 'cancelled')
+            ->first();
+
+        return response()->json([
+            'exists' => !!$existing,
+            'so_number' => $existing?->so_number,
+        ]);
+    }
     public function store(Request $request)
     {
         $validated = $request->validate([

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import Pagination from '@/Components/Pagination.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -26,7 +26,7 @@ const form = useForm({
     so_number: props.salesOrder?.so_number || props.soNumber,
     customer_po_number: props.salesOrder?.customer_po_number || props.aiData?.po_number || '',
     customer_id: props.salesOrder?.customer_id || props.aiData?.matched_customer_id || '',
-    warehouse_id: props.salesOrder?.warehouse_id || '',
+    warehouse_id: props.salesOrder?.warehouse_id || props.warehouses?.[0]?.id || '',
     order_date: props.salesOrder?.order_date 
         ? new Date(props.salesOrder.order_date).toISOString().split('T')[0] 
         : (props.aiData?.po_date || new Date().toISOString().split('T')[0]),
@@ -142,7 +142,25 @@ const getPriceDeviation = (item) => {
     return { pct, standard: standardPrice, color: 'text-red-500', bg: 'bg-red-500/10', label: `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%` };
 };
 
-const submit = () => {
+const duplicatePoWarning = ref('');
+
+const submit = async () => {
+    // Check duplicate PO number before submit (only for new SO)
+    if (!props.salesOrder && form.customer_po_number) {
+        try {
+            const res = await axios.get(route('sales.orders.check-po'), {
+                params: { po_number: form.customer_po_number }
+            });
+            if (res.data.exists) {
+                duplicatePoWarning.value = `PO Number "${form.customer_po_number}" sudah terdaftar di ${res.data.so_number}. Tidak bisa membuat SO duplikat.`;
+                return;
+            }
+        } catch (e) {
+            // If check fails, allow submission
+        }
+    }
+    duplicatePoWarning.value = '';
+    
     if (props.salesOrder) {
         form.put(route('sales.orders.update', props.salesOrder.id));
     } else {
@@ -341,7 +359,8 @@ const submit = () => {
                                 </div>
                                 <div class="space-y-2">
                                     <label class="block text-sm font-medium text-slate-500 dark:text-slate-400">PO Number (Customer)</label>
-                                    <input v-model="form.customer_po_number" type="text" class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 sm:text-sm" placeholder="PO-XXXXX" />
+                                    <input v-model="form.customer_po_number" type="text" class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 sm:text-sm" :class="{ 'ring-2 ring-red-500': duplicatePoWarning }" placeholder="PO-XXXXX" />
+                                    <p v-if="duplicatePoWarning" class="mt-1 text-xs text-red-500 font-medium">⚠️ {{ duplicatePoWarning }}</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Notes</label>

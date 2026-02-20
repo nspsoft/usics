@@ -296,7 +296,9 @@ const navigation = [
         permission: 'logistics.view',
         children: [
             { name: 'Logistics Hub', href: '/logistics/dashboard', icon: PresentationChartBarIcon, permission: 'logistics.view' },
+            { name: 'Loading Queue', href: '/warehouse/loading', icon: CubeIcon, permission: 'logistics.view' },
             { name: 'Delivery Planning', href: '/logistics/planning', icon: MapIcon, permission: 'logistics.delivery_planning.view' },
+            { name: 'Dispatch', href: '/logistics/dispatch', icon: TruckIcon, permission: 'logistics.view' },
             { name: 'Vehicle Fleet', href: '/logistics/fleet', icon: TruckIcon, permission: 'logistics.vehicle_fleet.view' },
         ]
     },

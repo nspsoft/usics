@@ -124,8 +124,10 @@ class POImportController extends Controller
                      $item['matched_product_id'] = null;
                      $item['match_status'] = 'NO_MATCH';
                      
-                     // Propose a Smart SKU for creating this product
-                     $item['proposed_sku'] = $this->generateSmartSku($description);
+                     // Use material_number from AI extraction as proposed SKU, fallback to auto-generated
+                     $item['proposed_sku'] = !empty($item['material_number']) 
+                         ? $item['material_number'] 
+                         : $this->generateSmartSku($description);
                 }
             }
         }
@@ -244,6 +246,7 @@ class POImportController extends Controller
         $request->validate([
             'items' => 'required|array',
             'items.*.description' => 'required|string',
+            'items.*.sku' => 'nullable|string|max:50',
             'items.*.unit_id' => 'required|exists:units,id',
             'items.*.selling_price' => 'nullable|numeric',
         ]);
@@ -251,8 +254,8 @@ class POImportController extends Controller
         $createdProducts = [];
 
         foreach ($request->items as $index => $item) {
-            // Generate SKU
-            $sku = $this->generateSmartSku($item['description']);
+            // Use provided SKU or auto-generate
+            $sku = !empty($item['sku']) ? $item['sku'] : $this->generateSmartSku($item['description']);
              // Check uniqueness
             if (Product::where('sku', $sku)->exists()) {
                  $sku .= '-' . rand(100, 999);

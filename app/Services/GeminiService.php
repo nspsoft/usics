@@ -213,6 +213,14 @@ class GeminiService
         - The CUSTOMER/BUYER is typically the entity named in the header or 'From:'.
         - The 'To:' or 'Vendor:' field usually indicates PT. SPINDO (us).
         
+        CRITICAL - EXTRACTING ITEMS:
+        - Many POs have SEPARATE columns for 'Material Number' / 'Part Number' / 'Item Code' / 'Material code' AND 'Material Name' / 'Description' / 'Product Name'.
+        - You MUST extract them into SEPARATE fields: 'material_number' and 'description'.
+        - 'material_number' should contain ONLY the code/part number (e.g. 'Y9DBZ00004088', 'DXC49A', '500-12').
+        - 'description' should contain ONLY the human-readable product name/description (e.g. 'Cardboard pad SNP', 'Bracket Knob Joint').
+        - Do NOT merge or concatenate material_number into description. Keep them strictly separated.
+        - If the document has no separate material number column, set material_number to null.
+        
         Extract and return ONLY a valid JSON object with this exact structure:
         {
             \"po_number\": \"the PO number or null\",
@@ -222,7 +230,8 @@ class GeminiService
             \"customer_address\": \"address if visible or null\",
             \"items\": [
                 {
-                    \"description\": \"product name/description\",
+                    \"material_number\": \"part/material code or null\",
+                    \"description\": \"product name ONLY, not the material number\",
                     \"qty\": 100,
                     \"unit\": \"Pcs\",
                     \"unit_price\": 15000,
