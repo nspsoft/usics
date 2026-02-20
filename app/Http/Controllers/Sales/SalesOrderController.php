@@ -89,8 +89,10 @@ class SalesOrderController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        $preSelectedCustomerId = $request->query('customer_id');
+
         return Inertia::render('Sales/Orders/Form', [
             'salesOrder' => null,
             'soNumber' => SalesOrder::generateSoNumber(),
@@ -98,6 +100,7 @@ class SalesOrderController extends Controller
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
             'products' => Product::active()->where('is_sold', true)->with('unit')->orderBy('name')->get(),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
+            'preSelectedCustomerId' => $preSelectedCustomerId ? (int)$preSelectedCustomerId : null,
         ]);
     }
 
