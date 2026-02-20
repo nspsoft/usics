@@ -33,6 +33,18 @@ const formatDate = (date) => {
     });
 };
 
+const doStatusStyle = (status) => {
+    const map = {
+        draft: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
+        picking: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+        packed: 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20',
+        shipped: 'bg-purple-500/10 text-purple-600 border-purple-500/20 animate-pulse',
+        delivered: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+        completed: 'bg-green-500/10 text-green-600 border-green-500/20',
+    };
+    return map[status] || 'bg-slate-500/10 text-slate-500 border-slate-500/20';
+};
+
 const statusColor = computed(() => {
     if (!props.vehicle) return '';
     const s = props.vehicle.status?.toLowerCase();
@@ -188,8 +200,8 @@ const statusColor = computed(() => {
                         <div class="text-sm font-black text-slate-900 dark:text-white">{{ order.do_number }}</div>
                         <div class="text-[10px] text-slate-400 mt-0.5">{{ order.sales_order?.so_number }}</div>
                     </div>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-purple-500/10 text-purple-600 border border-purple-500/20 animate-pulse">
-                        Shipped
+                    <span :class="doStatusStyle(order.status)" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border">
+                        {{ order.status }}
                     </span>
                 </div>
 
