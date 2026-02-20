@@ -231,12 +231,16 @@ const statusColor = computed(() => {
                 </div>
 
                 <Link
+                    v-if="order.status === 'shipped'"
                     :href="'/driver/scan'"
                     class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/30 hover:from-emerald-500 hover:to-emerald-400 active:scale-95 transition-all"
                 >
                     <QrCodeIcon class="h-4 w-4" />
                     SCAN QR KONFIRMASI SAMPAI
                 </Link>
+                <div v-else class="w-full text-center py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700/50 text-slate-400 text-xs font-bold">
+                    ⏳ Menunggu status SHIPPED untuk konfirmasi
+                </div>
             </div>
         </div>
     </DriverLayout>
