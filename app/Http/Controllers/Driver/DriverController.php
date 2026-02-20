@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Driver;
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryOrder;
 use Illuminate\Http\Request;
+use App\Models\Vehicle;
 use Inertia\Inertia;
 
 class DriverController extends Controller
@@ -22,8 +23,32 @@ class DriverController extends Controller
             ->orderBy('delivery_date')
             ->get();
 
+        // Find the driver's vehicle - from assigned DOs or by name match
+        $vehicle = null;
+        $latestDo = DeliveryOrder::where('driver_user_id', $user->id)
+            ->whereNotNull('vehicle_id')
+            ->latest()
+            ->first();
+
+        if ($latestDo) {
+            $vehicle = Vehicle::find($latestDo->vehicle_id);
+        }
+        
+        if (!$vehicle) {
+            $vehicle = Vehicle::where('driver_name', $user->name)->where('is_active', true)->first();
+        }
+
+        // Trip stats
+        $tripStats = [
+            'total' => DeliveryOrder::where('driver_user_id', $user->id)->count(),
+            'delivered' => DeliveryOrder::where('driver_user_id', $user->id)->where('status', 'completed')->count(),
+            'in_progress' => DeliveryOrder::where('driver_user_id', $user->id)->whereIn('status', ['shipped', 'delivered'])->count(),
+        ];
+
         return Inertia::render('Driver/Dashboard', [
             'deliveryOrders' => $deliveryOrders,
+            'vehicle' => $vehicle,
+            'tripStats' => $tripStats,
         ]);
     }
 
