@@ -365,10 +365,16 @@ class WhatsappBotService
         $response .= "*Item:*\n{$items}\n";
 
         if ($order->deliveryOrders->isNotEmpty()) {
-            $do = $order->deliveryOrders->last();
-            $response .= "\n*Pengiriman:*\n";
-            $response .= "No. DO: {$do->do_number}\n";
-            $response .= "Tanggal: " . ($do->delivery_date?->format('d M Y') ?? '-') . "\n";
+            $response .= "\n*Info Pengiriman:*\n";
+            foreach ($order->deliveryOrders as $do) {
+                $statusStr = $this->translateStatus($do->status);
+                $trackUrl = route('sales.deliveries.public-validate', $do->id);
+                
+                $response .= "🚚 *{$do->do_number}*\n";
+                $response .= "   Status: {$statusStr}\n";
+                $response .= "   Tgl: " . ($do->delivery_date?->format('d M Y') ?? '-') . "\n";
+                $response .= "   Lacak: {$trackUrl}\n\n";
+            }
         }
 
         return $response;
