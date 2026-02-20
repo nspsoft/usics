@@ -356,7 +356,7 @@ class WhatsappBotService
     protected function formatOrderStatus(SalesOrder $order): string
     {
         $status = $this->translateStatus($order->status);
-        $items = $order->items->take(3)->map(fn($i) => "• {$i->product->name} ({$i->quantity} {$i->unit})")->join("\n");
+        $items = $order->items->take(10)->map(fn($i) => "• {$i->product->name} (" . number_format($i->quantity) . " " . ($i->unit->name ?? $i->unit_id) . ")")->join("\n");
         
         $response = "📦 *Status Pesanan*\n\n";
         $response .= "*{$order->so_number}*\n";
