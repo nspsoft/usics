@@ -16,22 +16,24 @@ class DriverController extends Controller
 
         // Find vehicles owned by this driver (by name match)
         $driverVehicleIds = Vehicle::where('driver_name', $user->name)
-            ->where('is_active', true)
             ->pluck('id')
             ->toArray();
 
-        // Scope: all DOs that belong to this driver
-        $driverScope = function ($q) use ($user, $driverVehicleIds) {
-            $q->where('driver_user_id', $user->id)
-              ->orWhere('delivered_by', $user->id);
-            if (!empty($driverVehicleIds)) {
-                $q->orWhereIn('vehicle_id', $driverVehicleIds);
-            }
-        };
+        // Collect all DO IDs belonging to this driver
+        $driverDoIds = DeliveryOrder::where(function ($q) use ($user, $driverVehicleIds) {
+                $q->where('driver_user_id', $user->id)
+                  ->orWhere('delivered_by', $user->id);
+                if (!empty($driverVehicleIds)) {
+                    $q->orWhereIn('vehicle_id', $driverVehicleIds);
+                }
+            })
+            ->pluck('id')
+            ->toArray();
 
+        // Active DOs (shipped/picking only)
         $deliveryOrders = DeliveryOrder::with(['customer', 'vehicle', 'warehouse', 'items.product', 'items.unit', 'salesOrder'])
+            ->whereIn('id', $driverDoIds)
             ->whereIn('status', ['shipped', 'picking'])
-            ->where($driverScope)
             ->orderBy('delivery_date')
             ->get();
 
@@ -50,11 +52,12 @@ class DriverController extends Controller
             }
         }
 
-        // Trip stats - using same expanded scope
+        // Trip stats from all driver DOs
+        $allDriverDos = DeliveryOrder::whereIn('id', $driverDoIds)->get();
         $tripStats = [
-            'total' => DeliveryOrder::where($driverScope)->count(),
-            'delivered' => DeliveryOrder::where($driverScope)->whereIn('status', ['delivered', 'completed'])->count(),
-            'in_progress' => DeliveryOrder::where($driverScope)->whereIn('status', ['shipped', 'picking'])->count(),
+            'total' => $allDriverDos->count(),
+            'delivered' => $allDriverDos->whereIn('status', ['delivered', 'completed'])->count(),
+            'in_progress' => $allDriverDos->whereIn('status', ['shipped', 'picking'])->count(),
         ];
 
         return Inertia::render('Driver/Dashboard', [
