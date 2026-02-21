@@ -33,10 +33,14 @@ class SalesOrderController extends Controller
             ->when($request->search, function ($q, $search) {
                 $q->where(function ($q) use ($search) {
                     $q->where('so_number', 'like', "%{$search}%")
+                      ->orWhere('customer_po_number', 'like', "%{$search}%")
                       ->orWhereHas('customer', function ($cq) use ($search) {
                           $cq->where('name', 'like', "%{$search}%");
                       });
                 });
+            })
+            ->when($request->po_number, function ($q, $po_number) {
+                $q->where('customer_po_number', 'like', "%{$po_number}%");
             })
             ->when($request->status, function ($q, $status) {
                 $q->where('status', $status);
@@ -76,7 +80,7 @@ class SalesOrderController extends Controller
             'salesOrders' => $salesOrders,
             'stats' => $stats,
             'customers' => Customer::active()->orderBy('name')->get(['id', 'name', 'code']),
-            'filters' => $request->only(['search', 'status', 'customer']),
+            'filters' => $request->only(['search', 'status', 'customer', 'po_number']),
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'waiting_po', 'label' => 'Waiting PO'],
@@ -89,10 +93,8 @@ class SalesOrderController extends Controller
         ]);
     }
 
-    public function create(Request $request): Response
+    public function create(): Response
     {
-        $preSelectedCustomerId = $request->query('customer_id');
-
         return Inertia::render('Sales/Orders/Form', [
             'salesOrder' => null,
             'soNumber' => SalesOrder::generateSoNumber(),
@@ -100,7 +102,6 @@ class SalesOrderController extends Controller
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
             'products' => Product::active()->where('is_sold', true)->with('unit')->orderBy('name')->get(),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
-            'preSelectedCustomerId' => $preSelectedCustomerId ? (int)$preSelectedCustomerId : null,
         ]);
     }
 

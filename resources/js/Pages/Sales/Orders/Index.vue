@@ -52,6 +52,7 @@ const props = defineProps({
 });
 
 const search = ref(props.filters.search || '');
+const poNumber = ref(props.filters.po_number || '');
 const selectedStatus = ref(props.filters.status || '');
 const selectedCustomer = ref(props.filters.customer || '');
 const sortField = ref(props.filters.sort || 'created_at');
@@ -61,6 +62,7 @@ const showFilters = ref(false);
 const applyFilters = debounce(() => {
     router.get('/sales/orders', {
         search: search.value || undefined,
+        po_number: poNumber.value || undefined,
         status: selectedStatus.value || undefined,
         customer: selectedCustomer.value || undefined,
         sort: sortField.value,
@@ -81,10 +83,11 @@ const sort = (field) => {
     applyFilters();
 };
 
-watch([search, selectedStatus, selectedCustomer], applyFilters);
+watch([search, poNumber, selectedStatus, selectedCustomer], applyFilters);
 
 const clearFilters = () => {
     search.value = '';
+    poNumber.value = '';
     selectedStatus.value = '';
     selectedCustomer.value = '';
 };
@@ -163,8 +166,8 @@ const calculateWidth = (value, total) => {
                     <input
                         v-model="search"
                         type="search"
-                        placeholder="Search SO number..."
-                        class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 py-2 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500/50 transition-all"
+                        placeholder="Search SO or PO number..."
+                        class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 py-2 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/50 transition-all shadow-sm"
                     />
                 </div>
                 <button 
@@ -252,12 +255,12 @@ const calculateWidth = (value, total) => {
             leave-to-class="opacity-0 -translate-y-2"
         >
             <div v-if="showFilters" class="mb-6 rounded-2xl glass-card p-4">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Status</label>
                         <select
                             v-model="selectedStatus"
-                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:bg-white dark:focus:bg-slate-800"
                         >
                             <option value="">All Status</option>
                             <option v-for="status in statuses" :key="status.value" :value="status.value">
@@ -269,7 +272,7 @@ const calculateWidth = (value, total) => {
                         <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Customer</label>
                         <select
                             v-model="selectedCustomer"
-                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:bg-white dark:focus:bg-slate-800"
                         >
                             <option value="">All Customers</option>
                             <option v-for="customer in customers" :key="customer.id" :value="customer.id">
@@ -277,10 +280,19 @@ const calculateWidth = (value, total) => {
                             </option>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">PO Number</label>
+                        <input
+                            v-model="poNumber"
+                            type="text"
+                            placeholder="Search PO..."
+                            class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 py-2.5 px-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/50 transition-all shadow-sm"
+                        />
+                    </div>
                     <div class="flex items-end">
                         <button 
                             @click="clearFilters"
-                            class="w-full rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-700 transition-colors"
+                            class="w-full rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                         >
                             Clear Filters
                         </button>
