@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SalesInvoice;
 use App\Services\EmeteraiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -93,9 +94,19 @@ class SalesInvoiceController extends Controller
 
     public function publicValidate($uuid)
     {
-        $invoice = SalesInvoice::with(['salesOrder.customer', 'items.product.partners', 'items.unit', 'customer'])
-            ->where('id', $uuid)
-            ->firstOrFail();
+        if (Str::isUuid($uuid)) {
+            $invoice = SalesInvoice::with(['salesOrder.customer', 'items.product.partners', 'items.unit', 'customer'])
+                ->where('public_uuid', $uuid)
+                ->firstOrFail();
+        } else {
+            $invoice = SalesInvoice::with(['salesOrder.customer', 'items.product.partners', 'items.unit', 'customer'])
+                ->where('id', $uuid)
+                ->firstOrFail();
+
+            if (!empty($invoice->public_uuid)) {
+                return redirect()->route('sales.invoices.public-validate', $invoice->public_uuid);
+            }
+        }
 
         $this->injectProductAliases($invoice);
 

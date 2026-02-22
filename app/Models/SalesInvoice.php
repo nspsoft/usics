@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -68,6 +69,12 @@ class SalesInvoice extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (SalesInvoice $invoice) {
+            if (empty($invoice->public_uuid)) {
+                $invoice->public_uuid = (string) Str::uuid();
+            }
+        });
+
         static::saving(function (SalesInvoice $invoice) {
             $invoice->calculateTotals();
         });
@@ -115,6 +122,7 @@ class SalesInvoice extends Model
     protected $fillable = [
         'company_id',
         'invoice_number',
+        'public_uuid',
         'sales_order_id',
         'customer_id',
         'invoice_date',

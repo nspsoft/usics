@@ -9,19 +9,16 @@ use App\Models\Product;
 use App\Models\Warehouse;
 use App\Models\Unit;
 use App\Models\Company;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class SalesFlowTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     public function test_full_sales_cycle()
     {
         // 1. Setup Data
-        $user = User::first();
-        if (!$user) {
-            $user = User::factory()->create();
-        }
+        $user = User::factory()->create();
         $this->actingAs($user);
 
         $company = Company::first();

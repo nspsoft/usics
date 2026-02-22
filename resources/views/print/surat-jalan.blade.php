@@ -256,7 +256,7 @@
                 </td>
                 <td width="33%" style="vertical-align: top; text-align: right; border: none;">
                     <div style="display: inline-block; text-align: center;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode(route('sales.deliveries.public-validate', $order->id)) }}" style="width: 70px; height: 70px; border: 1px solid #f1f5f9; padding: 2px;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode(route('sales.deliveries.public-validate', $order->public_uuid ?: $order->id)) }}" style="width: 70px; height: 70px; border: 1px solid #f1f5f9; padding: 2px;">
                         <div style="font-size: 8pt; font-weight: bold; margin-top: 4px; color: #003680; line-height: 1;">SCAN FOR VALIDATION</div>
                         <div style="font-size: 7pt; color: #666; margin-top: 3px;">Official JIDOKA Form</div>
                     </div>

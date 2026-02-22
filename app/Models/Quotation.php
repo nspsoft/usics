@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -21,6 +22,7 @@ class Quotation extends Model
 
     protected $fillable = [
         'number',
+        'public_uuid',
         'customer_id',
         'quotation_date',
         'valid_until',
@@ -42,6 +44,15 @@ class Quotation extends Model
         'tax' => 'double',
         'total' => 'double',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Quotation $quotation) {
+            if (empty($quotation->public_uuid)) {
+                $quotation->public_uuid = (string) Str::uuid();
+            }
+        });
+    }
 
     public static function generateNumber(?int $customerId = null, ?string $date = null): string
     {

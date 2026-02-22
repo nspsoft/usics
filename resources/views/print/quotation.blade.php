@@ -328,7 +328,7 @@
                 </td>
                 <td width="30%" style="vertical-align: bottom; text-align: right;">
                     <div style="text-align: center; float: right; margin-bottom: 10px;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode(route('sales.quotations.public-validate', $quotation->id)) }}" style="width: 100px; height: 100px;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode(route('sales.quotations.public-validate', $quotation->public_uuid ?: $quotation->id)) }}" style="width: 100px; height: 100px;">
                         <div style="font-size: 9pt; font-weight: bold; margin-top: 5px; color: #0055A5;">SCAN FOR VALIDATION</div>
                         <div style="font-size: 8pt; color: #555;">Official JIDOKA Document</div>
                     </div>

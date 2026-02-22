@@ -12,6 +12,7 @@ use App\Models\SalesReturn;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -262,9 +263,19 @@ class SalesReturnController extends Controller
 
     public function publicValidate($uuid)
     {
-        $salesReturn = SalesReturn::with(['items.product', 'customer', 'warehouse'])
-            ->where('id', $uuid)
-            ->firstOrFail();
+        if (Str::isUuid($uuid)) {
+            $salesReturn = SalesReturn::with(['items.product', 'customer', 'warehouse'])
+                ->where('public_uuid', $uuid)
+                ->firstOrFail();
+        } else {
+            $salesReturn = SalesReturn::with(['items.product', 'customer', 'warehouse'])
+                ->where('id', $uuid)
+                ->firstOrFail();
+
+            if (!empty($salesReturn->public_uuid)) {
+                return redirect()->route('sales.returns.public-validate', $salesReturn->public_uuid);
+            }
+        }
 
         return view('print.public-return-validation', ['return' => $salesReturn]);
     }

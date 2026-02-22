@@ -9,6 +9,7 @@ use App\Models\SalesOrderItem;
 use App\Models\Warehouse;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -330,13 +331,19 @@ class DeliveryOrderController extends Controller
                 
                 // Regex to extract running number from similar formats
                 // We look for {number}/DO/JRI-...
-                $lastDO = DeliveryOrder::where('do_number', 'REGEXP', '^[0-9]+/DO/JRI-')
-                    ->orderByRaw('CAST(SUBSTRING_INDEX(do_number, "/", 1) AS UNSIGNED) DESC')
-                    ->first();
+                if (DB::connection()->getDriverName() === 'mysql') {
+                    $lastDO = DeliveryOrder::where('do_number', 'REGEXP', '^[0-9]+/DO/JRI-')
+                        ->orderByRaw('CAST(SUBSTRING_INDEX(do_number, "/", 1) AS UNSIGNED) DESC')
+                        ->first();
+                } else {
+                    $lastDO = DeliveryOrder::where('do_number', 'like', '%/DO/JRI-%')
+                        ->orderByDesc('id')
+                        ->first();
+                }
 
                 if ($lastDO) {
-                    $parts = explode('/', $lastDO->do_number);
-                    $lastRun = is_numeric($parts[0]) ? (int)$parts[0] : 0;
+                    $parts = explode('/', $lastDO->do_number, 2);
+                    $lastRun = ctype_digit($parts[0]) ? (int) $parts[0] : 0;
                     $nextRun = $lastRun + 1;
                 } else {
                     $nextRun = 1; 
@@ -446,9 +453,19 @@ class DeliveryOrderController extends Controller
 
     public function publicValidate($uuid)
     {
-        $order = DeliveryOrder::with(['salesOrder', 'customer', 'warehouse', 'items.product', 'items.unit'])
-            ->where('id', $uuid)
-            ->firstOrFail();
+        if (Str::isUuid($uuid)) {
+            $order = DeliveryOrder::with(['salesOrder', 'customer', 'warehouse', 'items.product', 'items.unit'])
+                ->where('public_uuid', $uuid)
+                ->firstOrFail();
+        } else {
+            $order = DeliveryOrder::with(['salesOrder', 'customer', 'warehouse', 'items.product', 'items.unit'])
+                ->where('id', $uuid)
+                ->firstOrFail();
+
+            if (!empty($order->public_uuid)) {
+                return redirect()->route('sales.deliveries.public-validate', $order->public_uuid);
+            }
+        }
 
         return view('print.public-delivery-validation', ['order' => $order]);
     }

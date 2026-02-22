@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -23,6 +24,7 @@ class SalesReturn extends Model
 
     protected $fillable = [
         'number',
+        'public_uuid',
         'sales_invoice_id',
         'sales_order_id',
         'customer_id',
@@ -38,6 +40,15 @@ class SalesReturn extends Model
         'return_date' => 'date',
         'total_amount' => 'decimal:2',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (SalesReturn $return) {
+            if (empty($return->public_uuid)) {
+                $return->public_uuid = (string) Str::uuid();
+            }
+        });
+    }
 
     public function salesOrder(): BelongsTo
     {

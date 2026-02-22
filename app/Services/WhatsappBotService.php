@@ -368,7 +368,7 @@ class WhatsappBotService
             $response .= "\n*Info Pengiriman:*\n";
             foreach ($order->deliveryOrders as $do) {
                 $statusStr = $this->translateStatus($do->status);
-                $trackUrl = route('sales.deliveries.public-validate', $do->id);
+                $trackUrl = route('sales.deliveries.public-validate', $do->public_uuid ?: $do->id);
                 
                 $response .= "🚚 *{$do->do_number}*\n";
                 $response .= "   Status: {$statusStr}\n";

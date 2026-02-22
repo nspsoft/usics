@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Quotation;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -264,10 +265,20 @@ class QuotationController extends Controller
         return view('print.quotation', ['quotation' => $quotation]);
     }
 
-    public function publicValidate($id)
+    public function publicValidate($uuid)
     {
-        $quotation = Quotation::with(['customer', 'items.product'])
-            ->findOrFail($id);
+        if (Str::isUuid($uuid)) {
+            $quotation = Quotation::with(['customer', 'items.product'])
+                ->where('public_uuid', $uuid)
+                ->firstOrFail();
+        } else {
+            $quotation = Quotation::with(['customer', 'items.product'])
+                ->findOrFail($uuid);
+
+            if (!empty($quotation->public_uuid)) {
+                return redirect()->route('sales.quotations.public-validate', $quotation->public_uuid);
+            }
+        }
 
         return view('print.public-quotation-validation', [
             'quotation' => $quotation

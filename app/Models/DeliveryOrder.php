@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
@@ -26,6 +27,7 @@ class DeliveryOrder extends Model
     protected $fillable = [
         'company_id',
         'do_number',
+        'public_uuid',
         'vehicle_id',
         'vehicle_number',
         'driver_name',
@@ -66,6 +68,15 @@ class DeliveryOrder extends Model
         'delivery_date' => 'date',
         'delivered_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (DeliveryOrder $order) {
+            if (empty($order->public_uuid)) {
+                $order->public_uuid = (string) Str::uuid();
+            }
+        });
+    }
 
     const STATUS_DRAFT = 'draft';
     const STATUS_PICKING = 'picking';

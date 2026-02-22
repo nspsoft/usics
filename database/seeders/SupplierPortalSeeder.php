@@ -16,11 +16,17 @@ use App\Models\Company;
 use App\Models\Warehouse;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 class SupplierPortalSeeder extends Seeder
 {
     public function run()
     {
+        if (app()->environment('production')) {
+            throw new RuntimeException('SupplierPortalSeeder tidak boleh dijalankan di production.');
+        }
+
         DB::transaction(function () {
             $this->seedData();
         });
@@ -47,6 +53,12 @@ class SupplierPortalSeeder extends Seeder
             $this->command->info("Seeding data for Supplier: {$supplier->name} (User: {$user->email})");
         } else {
             // Create dummy supplier and user
+            $seedEmail = env('SUPPLIER_PORTAL_ADMIN_EMAIL', 'admin@megasteel.co.id');
+            $seedPassword = env('SUPPLIER_PORTAL_ADMIN_PASSWORD');
+            if (!$seedPassword || $seedPassword === 'password') {
+                throw new RuntimeException('SUPPLIER_PORTAL_ADMIN_PASSWORD wajib di-set dan tidak boleh bernilai "password".');
+            }
+
             $supplier = Supplier::create([
                 'name' => 'PT. Mega Steel Indonesia',
                 'code' => 'SUP-MEGA',
@@ -57,8 +69,8 @@ class SupplierPortalSeeder extends Seeder
             
             $user = User::factory()->create([
                 'name' => 'Admin Mega Steel',
-                'email' => 'admin@megasteel.co.id',
-                'password' => bcrypt('password'),
+                'email' => $seedEmail,
+                'password' => Hash::make($seedPassword),
                 'supplier_id' => $supplier->id,
             ]);
             $this->command->info("Created new Supplier: {$supplier->name} & User: {$user->email}");

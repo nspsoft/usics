@@ -192,7 +192,7 @@
                 </td>
                 <td width="40%" style="text-align: right; vertical-align: top;">
                     <div style="display: inline-block; text-align: center;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode(route('sales.invoices.public-validate', $invoice->id)) }}" style="width: 80px; height: 80px;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode(route('sales.invoices.public-validate', $invoice->public_uuid ?: $invoice->id)) }}" style="width: 80px; height: 80px;">
                         <div style="font-size: 8pt; font-weight: bold; margin-top: 5px; color: #003680; line-height: 1;">SCAN FOR VALIDATION</div>
                         <div style="font-size: 7pt; color: #666; margin-top: 3px;">Official JIDOKA Document</div>
                     </div>
