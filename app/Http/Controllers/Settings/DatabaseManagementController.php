@@ -193,6 +193,7 @@ class DatabaseManagementController extends Controller
         $request->validate([
             'module' => 'required|string',
             'password' => 'required|string',
+            'mode' => 'nullable|in:soft,hard',
         ]);
 
         // Verify password
@@ -200,7 +201,8 @@ class DatabaseManagementController extends Controller
             return back()->with('error', 'Invalid password');
         }
 
-        $result = $this->backupService->moduleReset($request->module);
+        $mode = (string) ($request->input('mode') ?? 'hard');
+        $result = $this->backupService->moduleReset($request->module, $mode);
 
         if ($result['success']) {
             return back()->with('success', $result['message']);

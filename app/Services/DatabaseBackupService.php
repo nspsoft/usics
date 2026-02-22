@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -112,6 +113,38 @@ class DatabaseBackupService
             'maintenance_logs',
             'spareparts',
             'maintenance_sparepart_usage',
+        ],
+    ];
+
+    protected $moduleTransactionTables = [
+        'sales' => [
+            'quotation_items', 'quotations',
+            'sales_order_items', 'sales_orders',
+            'delivery_order_items', 'delivery_orders',
+            'sales_invoice_items', 'sales_invoices',
+            'sales_return_items', 'sales_returns',
+        ],
+        'purchasing' => [
+            'purchase_request_items', 'purchase_requests',
+            'purchase_order_items', 'purchase_orders',
+            'goods_receipt_items', 'goods_receipts',
+            'purchase_invoice_items', 'purchase_invoices',
+            'purchase_return_items', 'purchase_returns',
+        ],
+        'inventory' => [
+            'stock_movements',
+            'stock_opname_items', 'stock_opnames',
+        ],
+        'manufacturing' => [
+            'work_order_items', 'work_orders',
+            'production_entries',
+            'subcontract_order_items', 'subcontract_orders',
+        ],
+        'hr' => [
+            'attendance', 'payroll_items', 'payrolls',
+        ],
+        'finance' => [
+            'journal_entries', 'journals',
         ],
     ];
 
@@ -240,8 +273,7 @@ class DatabaseBackupService
                 $sql = gzdecode($sql);
             }
             
-            // Disable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+            Schema::disableForeignKeyConstraints();
             
             // Execute the SQL
             $statements = $this->parseSqlStatements($sql);
@@ -252,8 +284,7 @@ class DatabaseBackupService
                 }
             }
             
-            // Re-enable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            Schema::enableForeignKeyConstraints();
             
             $this->logSuccess('Database restored', $filepath);
             $this->notifyAdmins('Restore Completed', "Database restored from: {$filepath}");
@@ -280,7 +311,7 @@ class DatabaseBackupService
     public function softReset(): array
     {
         try {
-            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+            Schema::disableForeignKeyConstraints();
             
             $transactionTables = [
                 // Sales transactions
@@ -408,11 +439,15 @@ class DatabaseBackupService
     /**
      * Module reset - Reset specific module only with safety checks
      */
-    public function moduleReset(string $module): array
+    public function moduleReset(string $module, string $mode = 'hard'): array
     {
         try {
             if (!isset($this->moduleTables[$module])) {
                 throw new Exception("Unknown module: {$module}");
+            }
+
+            if ($mode === 'soft') {
+                return $this->moduleSoftReset($module);
             }
 
             // SAFETY CHECK: Check dependencies
@@ -458,6 +493,45 @@ class DatabaseBackupService
         } catch (Exception $e) {
             $this->logError('Module reset failed', $e->getMessage());
             
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function moduleSoftReset(string $module): array
+    {
+        try {
+            if (!isset($this->moduleTransactionTables[$module])) {
+                throw new Exception("Soft reset is not available for module: {$module}");
+            }
+
+            Schema::disableForeignKeyConstraints();
+
+            $tables = $this->moduleTransactionTables[$module];
+            foreach ($tables as $table) {
+                if ($this->tableExists($table)) {
+                    DB::table($table)->truncate();
+                }
+            }
+
+            if ($module === 'inventory' && $this->tableExists('stocks')) {
+                DB::table('stocks')->update(['quantity' => 0]);
+            }
+
+            Schema::enableForeignKeyConstraints();
+
+            $this->logSuccess('Module soft reset completed', "Module: {$module}");
+
+            return [
+                'success' => true,
+                'message' => "Module '{$module}' has been soft reset (transactions cleared, master data kept).",
+                'tables' => $tables,
+            ];
+        } catch (Exception $e) {
+            $this->logError('Module soft reset failed', $e->getMessage());
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -557,20 +631,40 @@ class DatabaseBackupService
 
     protected function getAllTables(): array
     {
-        $tables = [];
-        $result = DB::select('SHOW TABLES');
-        $key = 'Tables_in_' . config('database.connections.mysql.database');
-        
-        foreach ($result as $row) {
-            $tables[] = $row->$key;
+        $driver = DB::getDriverName();
+
+        if ($driver === 'mysql') {
+            $tables = [];
+            $result = DB::select('SHOW TABLES');
+            $key = 'Tables_in_' . config('database.connections.mysql.database');
+
+            foreach ($result as $row) {
+                $tables[] = $row->$key;
+            }
+
+            return $tables;
         }
-        
-        return $tables;
+
+        if ($driver === 'sqlite') {
+            return array_map(
+                fn ($row) => $row->name,
+                DB::select("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+            );
+        }
+
+        if ($driver === 'pgsql') {
+            return array_map(
+                fn ($row) => $row->tablename,
+                DB::select("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname='public'")
+            );
+        }
+
+        return [];
     }
 
     protected function tableExists(string $table): bool
     {
-        return in_array($table, $this->getAllTables());
+        return Schema::hasTable($table);
     }
 
     protected function generateSqlDump(array $tables): string

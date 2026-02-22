@@ -57,6 +57,7 @@ const hardResetForm = useForm({
 
 const moduleResetForm = useForm({
     module: '',
+    mode: 'hard',
     password: '',
 });
 
@@ -74,6 +75,8 @@ const moduleLabels = {
     logistics: { name: 'Logistics', icon: '🚚', desc: 'Fleet, Delivery Schedules' },
     maintenance: { name: 'Maintenance', icon: '🔧', desc: 'Schedules, Logs, Spareparts' },
 };
+
+const softResettableModules = new Set(['sales', 'purchasing', 'inventory', 'manufacturing', 'hr', 'finance']);
 
 // Computed
 const selectedModuleCount = computed(() => backupForm.modules.length);
@@ -180,9 +183,16 @@ const performModuleReset = () => {
             },
         });
     };
-    confirmTitle.value = 'Module Reset';
-    confirmMessage.value = `This will reset all data in the "${moduleLabels[moduleResetForm.module]?.name || moduleResetForm.module}" module. Continue?`;
-    confirmType.value = 'warning';
+    const moduleName = moduleLabels[moduleResetForm.module]?.name || moduleResetForm.module;
+    if (moduleResetForm.mode === 'soft') {
+        confirmTitle.value = 'Module Soft Reset';
+        confirmMessage.value = `This will DELETE transaction data in the "${moduleName}" module but KEEP master data. Continue?`;
+        confirmType.value = 'danger';
+    } else {
+        confirmTitle.value = 'Module Reset';
+        confirmMessage.value = `This will reset all data in the "${moduleName}" module (including master data). Continue?`;
+        confirmType.value = 'warning';
+    }
     showConfirmModal.value = true;
 };
 
@@ -594,6 +604,35 @@ const formatDate = (dateStr) => {
 
                         <div>
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Reset Mode
+                            </label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer"
+                                    :class="moduleResetForm.mode === 'soft' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : ''">
+                                    <input type="radio" value="soft" v-model="moduleResetForm.mode"
+                                        :disabled="moduleResetForm.module && !softResettableModules.has(moduleResetForm.module)"
+                                        class="text-purple-600">
+                                    <div>
+                                        <p class="text-sm font-medium text-slate-900 dark:text-white">Soft</p>
+                                        <p class="text-xs text-slate-500">Keep master data</p>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer"
+                                    :class="moduleResetForm.mode === 'hard' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : ''">
+                                    <input type="radio" value="hard" v-model="moduleResetForm.mode" class="text-purple-600">
+                                    <div>
+                                        <p class="text-sm font-medium text-slate-900 dark:text-white">Hard</p>
+                                        <p class="text-xs text-slate-500">Reset module entirely</p>
+                                    </div>
+                                </label>
+                            </div>
+                            <p v-if="moduleResetForm.module && moduleResetForm.mode === 'soft' && !softResettableModules.has(moduleResetForm.module)" class="text-xs text-amber-600 mt-2">
+                                Soft mode is not available for this module.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                 Password
                             </label>
                             <input 
@@ -605,7 +644,7 @@ const formatDate = (dateStr) => {
 
                         <button
                             type="submit"
-                            :disabled="moduleResetForm.processing || !moduleResetForm.module || !moduleResetForm.password"
+                            :disabled="moduleResetForm.processing || !moduleResetForm.module || !moduleResetForm.password || (moduleResetForm.mode === 'soft' && !softResettableModules.has(moduleResetForm.module))"
                             class="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Reset Module
