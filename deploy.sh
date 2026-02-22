@@ -27,6 +27,7 @@ $PHP_BIN artisan optimize:clear
 $PHP_BIN artisan config:cache
 $PHP_BIN artisan route:cache
 $PHP_BIN artisan view:cache
+$PHP_BIN artisan app:generate-favicons || true
 $PHP_BIN artisan queue:restart || true
 
 chown -R www:www "$PROJECT_PATH" || true

@@ -19,10 +19,18 @@
             if (is_file($manifestPath)) {
                 $assetVersion = (string) filemtime($manifestPath);
             }
+            $faviconVersion = $assetVersion;
+            try {
+                $companyUpdatedAt = optional(\App\Models\Company::query()->select('updated_at')->first())->updated_at;
+                if ($companyUpdatedAt) {
+                    $faviconVersion = (string) $companyUpdatedAt->timestamp;
+                }
+            } catch (\Throwable $e) {
+            }
         @endphp
-        <link rel="icon" type="image/png" href="{{ route('favicon') }}?v={{ $assetVersion }}">
-        <link rel="shortcut icon" type="image/png" href="{{ route('favicon') }}?v={{ $assetVersion }}">
-        <link rel="icon" type="image/png" href="{{ route('favicon.ico') }}?v={{ $assetVersion }}">
+        <link rel="icon" type="image/png" href="{{ route('favicon') }}?v={{ $faviconVersion }}">
+        <link rel="shortcut icon" type="image/png" href="{{ route('favicon') }}?v={{ $faviconVersion }}">
+        <link rel="icon" type="image/png" href="{{ route('favicon.ico') }}?v={{ $faviconVersion }}">
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
         <link rel="manifest" href="/manifest.webmanifest">
 

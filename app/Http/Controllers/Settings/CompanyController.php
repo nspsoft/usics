@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use App\Services\FaviconService;
 
 class CompanyController extends Controller
 {
@@ -56,6 +57,11 @@ class CompanyController extends Controller
         }
 
         $company->save();
+
+        try {
+            app(FaviconService::class)->generateForCompany($company);
+        } catch (\Throwable $e) {
+        }
 
         return redirect()->back()->with('success', 'Company profile updated successfully.');
     }
