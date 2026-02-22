@@ -30,7 +30,7 @@
         @endphp
         <link rel="icon" type="image/png" href="{{ route('favicon') }}?v={{ $faviconVersion }}">
         <link rel="shortcut icon" type="image/png" href="{{ route('favicon') }}?v={{ $faviconVersion }}">
-        <link rel="icon" type="image/png" href="{{ route('favicon.ico') }}?v={{ $faviconVersion }}">
+        <link rel="icon" type="image/x-icon" href="{{ route('favicon.ico') }}?v={{ $faviconVersion }}">
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
         <link rel="manifest" href="/manifest.webmanifest">
 
