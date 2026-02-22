@@ -30,7 +30,9 @@ class DeliveryOrderItemController extends Controller
                     })
                     ->orWhereHas('deliveryOrder', function ($do) use ($search) {
                         $do->where('do_number', 'like', "%{$search}%")
-                           ->orWhere('customer_po_number', 'like', "%{$search}%")
+                           ->orWhereHas('salesOrder', function ($so) use ($search) {
+                               $so->where('customer_po_number', 'like', "%{$search}%");
+                           })
                            ->orWhereHas('customer', function ($c) use ($search) {
                                $c->where('name', 'like', "%{$search}%");
                            });

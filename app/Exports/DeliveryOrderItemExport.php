@@ -33,7 +33,9 @@ class DeliveryOrderItemExport implements FromQuery, WithHeadings, WithMapping, S
                     })
                     ->orWhereHas('deliveryOrder', function ($do) use ($search) {
                         $do->where('do_number', 'like', "%{$search}%")
-                           ->orWhere('customer_po_number', 'like', "%{$search}%")
+                           ->orWhereHas('salesOrder', function ($so) use ($search) {
+                               $so->where('customer_po_number', 'like', "%{$search}%");
+                           })
                            ->orWhereHas('customer', function ($c) use ($search) {
                                $c->where('name', 'like', "%{$search}%");
                            });
@@ -64,9 +66,9 @@ class DeliveryOrderItemExport implements FromQuery, WithHeadings, WithMapping, S
             'Product SKU',
             'Product Name',
             'Qty DO',
-            'Qty Actual',
-            'Delay / Balance',
+            'Qty Act',
             'Unit',
+            'Delay',
             'Notes / Problem',
             'Loaded',
             'Status',
@@ -84,8 +86,8 @@ class DeliveryOrderItemExport implements FromQuery, WithHeadings, WithMapping, S
             $item->product->name ?? '-',
             $item->qty_ordered,
             $item->qty_delivered,
-            $item->qty_delivered - $item->qty_ordered,
             $item->unit->name ?? '-',
+            $item->qty_delivered - $item->qty_ordered,
             $item->notes,
             $item->is_loaded ? 'Yes' : 'No',
             ucfirst($item->deliveryOrder->status),

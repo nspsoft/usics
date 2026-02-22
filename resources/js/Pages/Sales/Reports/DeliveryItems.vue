@@ -200,8 +200,9 @@ const getStatusClass = (status) => {
                                 </div>
                             </th>
                             <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Qty DO</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Qty Actual</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Delay / Balance</th>
+                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Qty Act</th>
+                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Unit</th>
+                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Delay</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Notes / Problem</th>
                             <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Loaded</th>
                             <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
@@ -230,7 +231,10 @@ const getStatusClass = (status) => {
                                 {{ formatNumber(item.qty_ordered) }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-slate-900 dark:text-white">
-                                {{ formatNumber(item.qty_delivered) }} {{ item.unit?.code }}
+                                {{ formatNumber(item.qty_delivered) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-slate-500 uppercase">
+                                {{ item.unit?.code }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold" :class="(item.qty_delivered - item.qty_ordered) < 0 ? 'text-rose-500' : 'text-slate-500'">
                                 {{ formatNumber(item.qty_delivered - item.qty_ordered) }}
