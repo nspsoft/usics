@@ -26,9 +26,27 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('public-validate-view', function (Request $request) {
+            return [
+                Limit::perMinute(60)->by($request->ip()),
+                Limit::perHour(500)->by($request->ip()),
+            ];
+        });
+
+        RateLimiter::for('public-validate-action', function (Request $request) {
+            $uuid = (string) ($request->route('uuid') ?? '');
+            $key = $uuid !== '' ? $request->ip() . '|' . $uuid : $request->ip();
+
+            return [
+                Limit::perMinute(10)->by($key),
+                Limit::perHour(100)->by($key),
+            ];
+        });
+
         RateLimiter::for('public-validate', function (Request $request) {
             return [
-                Limit::perMinute(30)->by($request->ip()),
+                Limit::perMinute(60)->by($request->ip()),
+                Limit::perHour(500)->by($request->ip()),
             ];
         });
 
