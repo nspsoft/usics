@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Login;
@@ -23,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('public-validate', function (Request $request) {
+            return [
+                Limit::perMinute(30)->by($request->ip()),
+            ];
+        });
+
         // Fix for Cloudflare Tunnel / Reverse Proxy (Mixed Content Issue)
         // Check X-Forwarded-Proto OR if the Host is the secure domain
         if (\Illuminate\Support\Facades\Request::server('HTTP_X_FORWARDED_PROTO') === 'https' || 

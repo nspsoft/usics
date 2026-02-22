@@ -5,19 +5,21 @@ use App\Http\Controllers\HR\AttendanceController;
 use App\Http\Controllers\HR\PayrollSettingController;
 
 // Public Payroll Validation (No login required)
-Route::get('/v/p/{uuid}', [PayrollController::class, 'publicValidate'])->name('payroll.public-validate');
-Route::get('/v/pr/{uuid}', [App\Http\Controllers\Purchasing\PurchaseRequestController::class, 'publicValidate'])->name('purchasing.requests.public-validate');
-Route::get('/v/po/{uuid}', [App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'publicValidate'])->name('purchasing.orders.public-validate');
-Route::get('/v/grn/{uuid}', [App\Http\Controllers\Purchasing\GoodsReceiptController::class, 'publicValidate'])->name('purchasing.receipts.public-validate');
-Route::post('/v/grn/{uuid}/confirm', [App\Http\Controllers\Purchasing\GoodsReceiptController::class, 'publicConfirmReceive'])->name('purchasing.receipts.public-confirm');
-Route::get('/v/wo/{uuid}', [App\Http\Controllers\Manufacturing\WorkOrderController::class, 'publicValidate'])->name('manufacturing.work-orders.public-validate');
-Route::get('/v/sco/{uuid}', [App\Http\Controllers\Manufacturing\SubcontractOrderController::class, 'publicValidate'])->name('manufacturing.subcontract-orders.public-validate');
-Route::get('/v/scsj/{uuid}', [App\Http\Controllers\Manufacturing\SubcontractOrderController::class, 'publicValidateSJ'])->name('manufacturing.subcontract-orders.public-validate-sj');
-Route::get('/v/scgr/{uuid}', [App\Http\Controllers\Manufacturing\SubcontractOrderController::class, 'publicValidateGRN'])->name('manufacturing.subcontract-orders.public-validate-grn');
-Route::get('/v/q/{uuid}', [App\Http\Controllers\Sales\QuotationController::class, 'publicValidate'])->name('sales.quotations.public-validate');
-Route::get('/v/inv/{uuid}', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'publicValidate'])->name('sales.invoices.public-validate');
-Route::get('/v/do/{uuid}', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'publicValidate'])->name('sales.deliveries.public-validate');
-Route::get('/v/ret/{uuid}', [App\Http\Controllers\Sales\SalesReturnController::class, 'publicValidate'])->name('sales.returns.public-validate');
+Route::middleware('throttle:public-validate')->group(function () {
+    Route::get('/v/p/{uuid}', [PayrollController::class, 'publicValidate'])->name('payroll.public-validate');
+    Route::get('/v/pr/{uuid}', [App\Http\Controllers\Purchasing\PurchaseRequestController::class, 'publicValidate'])->name('purchasing.requests.public-validate');
+    Route::get('/v/po/{uuid}', [App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'publicValidate'])->name('purchasing.orders.public-validate');
+    Route::get('/v/grn/{uuid}', [App\Http\Controllers\Purchasing\GoodsReceiptController::class, 'publicValidate'])->name('purchasing.receipts.public-validate');
+    Route::post('/v/grn/{uuid}/confirm', [App\Http\Controllers\Purchasing\GoodsReceiptController::class, 'publicConfirmReceive'])->name('purchasing.receipts.public-confirm');
+    Route::get('/v/wo/{uuid}', [App\Http\Controllers\Manufacturing\WorkOrderController::class, 'publicValidate'])->name('manufacturing.work-orders.public-validate');
+    Route::get('/v/sco/{uuid}', [App\Http\Controllers\Manufacturing\SubcontractOrderController::class, 'publicValidate'])->name('manufacturing.subcontract-orders.public-validate');
+    Route::get('/v/scsj/{uuid}', [App\Http\Controllers\Manufacturing\SubcontractOrderController::class, 'publicValidateSJ'])->name('manufacturing.subcontract-orders.public-validate-sj');
+    Route::get('/v/scgr/{uuid}', [App\Http\Controllers\Manufacturing\SubcontractOrderController::class, 'publicValidateGRN'])->name('manufacturing.subcontract-orders.public-validate-grn');
+    Route::get('/v/q/{uuid}', [App\Http\Controllers\Sales\QuotationController::class, 'publicValidate'])->name('sales.quotations.public-validate');
+    Route::get('/v/inv/{uuid}', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'publicValidate'])->name('sales.invoices.public-validate');
+    Route::get('/v/do/{uuid}', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'publicValidate'])->name('sales.deliveries.public-validate');
+    Route::get('/v/ret/{uuid}', [App\Http\Controllers\Sales\SalesReturnController::class, 'publicValidate'])->name('sales.returns.public-validate');
+});
 use App\Http\Controllers\HR\EmployeeController;
 use App\Http\Controllers\Inventory\ProductPartnerController;
 use App\Http\Controllers\Inventory\ProductController;

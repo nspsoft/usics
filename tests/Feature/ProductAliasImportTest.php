@@ -10,6 +10,7 @@ use App\Models\Supplier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Maatwebsite\Excel\Facades\Excel;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class ProductAliasImportTest extends TestCase
@@ -32,7 +33,7 @@ class ProductAliasImportTest extends TestCase
         $this->actingAs($this->user);
     }
 
-    /** @test */
+    #[Test]
     public function import_product_aliases_successfully()
     {
         // 1. Setup Data
@@ -103,7 +104,7 @@ class ProductAliasImportTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function import_template_download()
     {
         $response = $this->get(route('inventory.product-aliases.template'));
@@ -112,7 +113,7 @@ class ProductAliasImportTest extends TestCase
         // $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
     }
 
-    /** @test */
+    #[Test]
     public function import_template_download_with_data()
     {
         $user = User::factory()->create();
