@@ -33,49 +33,6 @@ const hasRole = (...roles) => {
     return roles.some(r => userRoles.value.includes(r));
 };
 
-// --- SHORT SHIPMENT HANDLING ---
-const showManageItemsModal = ref(false);
-const revisionForm = useForm({
-    item_id: null,
-    qty: 0,
-    reason: '',
-});
-
-const openManageItems = () => {
-    showManageItemsModal.value = true;
-};
-
-const updateItemQty = (item) => {
-    if (revisionForm.processing) return;
-    
-    const newQty = prompt(`Revisi Qty untuk ${item.product.name}\nQty Order: ${item.qty_ordered}\nQty Baru:`, item.qty_delivered);
-    
-    if (newQty === null) return;
-    if (isNaN(newQty) || newQty < 0) {
-        alert('Quantity tidak valid.');
-        return;
-    }
-    if (parseFloat(newQty) > item.qty_ordered) {
-        alert('Quantity tidak boleh melebihi Qty Order.');
-        return;
-    }
-
-    const reason = prompt('Alasan Revisi:');
-    
-    revisionForm.item_id = item.id;
-    revisionForm.qty = parseFloat(newQty);
-    revisionForm.reason = reason || '';
-    
-    revisionForm.put(route('warehouse.loading.update-item-qty', props.deliveryOrder.id), {
-        preserveScroll: true,
-        onSuccess: () => {
-            // Success handler
-        },
-        onError: (errors) => {
-            alert('Gagal revisi qty: ' + (errors.qty || errors.reason || 'Terjadi kesalahan'));
-        }
-    });
-};
 
 // Permission map per action
 const canSave = computed(() => hasRole('Sales', 'Sales Manager'));
@@ -178,7 +135,7 @@ const removeItem = (id) => {
 // --- CONFIRMATION MESSAGES PER STATUS ---
 const statusConfirmMessages = {
     picking: '📦 MULAI LOADING\n\nBarang akan mulai diambil dan dimuat.\nPastikan item dan qty sudah benar sebelum melanjutkan.\n\nLanjutkan?',
-    packed: '✅ SELESAI PACKING\n\nBarang sudah selesai dimuat dan siap dikirim.\nPastikan semua item sudah masuk ke truk.\n\nLanjutkan?',
+    packed: '✅ SELESAI LOADING\n\nBarang sudah selesai dimuat dan siap dikirim.\nPastikan semua item sudah masuk ke truk.\n\nLanjutkan?',
     shipped: '🚛 BERANGKATKAN\n\nTruk akan berangkat ke tujuan.\nPastikan armada dan sopir sudah benar.\n\nNo Truk: ' + (props.deliveryOrder.vehicle_number || '-') + '\nSopir: ' + (props.deliveryOrder.driver_name || '-') + '\n\nLanjutkan?',
     delivered: '📍 SAMPAI DI TUJUAN\n\nBarang telah sampai di lokasi customer.\nStatus akan berubah menjadi "Delivered".\n\nLanjutkan?',
     completed: '🏁 VERIFIKASI SELESAI\n\nPengiriman akan ditandai selesai.\nStok akan dikurangi dan SO akan diupdate.\n\nLanjutkan?',
@@ -275,7 +232,7 @@ const nextAction = computed(() => {
             };
         case 'picking':
             return {
-                label: 'FINISH PACKING',
+                label: 'FINISH LOADING',
                 target: 'packed',
                 icon: CubeIcon,
                 color: 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-500/30'
@@ -360,15 +317,6 @@ const handleSmartAction = () => {
                         <span v-if="!isReadyToPrint" class="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full animate-pulse" title="Data belum lengkap"></span>
                     </button>
                     
-                    <!-- Short Shipment (Draft/Picking) -->
-                    <button 
-                        v-if="['draft', 'picking'].includes(deliveryOrder.status)"
-                        @click="openManageItems"
-                        class="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
-                    >
-                        <FunnelIcon class="h-4 w-4" />
-                        Kelola Item / Short Shipment
-                    </button>
 
                     <!-- 2. Save Changes (Only in Draft + Authorized Role) -->
                     <button 
@@ -693,77 +641,4 @@ const handleSmartAction = () => {
         </div>
     </Teleport>
 
-    <!-- Manage Items Modal -->
-    <Teleport to="body">
-        <Transition
-            enter-active-class="transition ease-out duration-200"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
-            leave-active-class="transition ease-in duration-150"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-        >
-            <div v-if="showManageItemsModal" class="fixed inset-0 z-50 flex items-center justify-center">
-                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showManageItemsModal = false"></div>
-                <div class="relative w-full max-w-4xl mx-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
-                    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ deliveryOrder.do_number }}</h3>
-                            <p class="text-xs text-slate-500">{{ deliveryOrder.sales_order?.customer?.name }}</p>
-                        </div>
-                        <button @click="showManageItemsModal = false" class="p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                            <ArrowPathIcon class="h-5 w-5 text-slate-500" v-if="revisionForm.processing" />
-                            <span v-else class="text-2xl leading-none">&times;</span>
-                        </button>
-                    </div>
-                    <div class="p-6 max-h-[70vh] overflow-y-auto">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead>
-                                    <tr class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
-                                        <th class="py-3 px-2">Item</th>
-                                        <th class="py-3 px-2 text-center">Order</th>
-                                        <th class="py-3 px-2 text-center">Dikirim (Muat)</th>
-                                        <th class="py-3 px-2 text-center">Satuan</th>
-                                        <th class="py-3 px-2 text-right">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                                    <tr v-for="item in deliveryOrder.items" :key="item.id" class="text-sm">
-                                        <td class="py-4 px-2">
-                                            <div class="font-bold text-slate-900 dark:text-white">{{ item.product?.name }}</div>
-                                            <div class="text-[10px] text-slate-500">{{ item.product?.sku }}</div>
-                                            <div v-if="item.notes" class="text-[10px] italic text-amber-500 mt-1">{{ item.notes }}</div>
-                                        </td>
-                                        <td class="py-4 px-2 text-center font-mono">{{ item.qty_ordered }}</td>
-                                        <td class="py-4 px-2 text-center font-mono font-bold" :class="item.qty_delivered < item.qty_ordered ? 'text-red-500 underline' : 'text-blue-500'">
-                                            {{ item.qty_delivered }}
-                                        </td>
-                                        <td class="py-4 px-2 text-center text-xs text-slate-500">{{ item.unit?.name }}</td>
-                                        <td class="py-4 px-2 text-right">
-                                            <button 
-                                                @click="updateItemQty(item)"
-                                                :disabled="revisionForm.processing"
-                                                class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-blue-500 hover:text-white transition-all disabled:opacity-50"
-                                            >
-                                                REVISI QTY
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                        <div class="text-[10px] text-slate-500 max-w-sm">
-                            💡 Mengurangi jumlah di sini akan mengembalikan sisa barang ke saldo Sales Order secara otomatis.
-                        </div>
-                        <button @click="showManageItemsModal = false" class="px-6 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold shadow-lg">
-                            TUTUP
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </Transition>
-    </Teleport>
 </template>

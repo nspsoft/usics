@@ -94,7 +94,7 @@ const startLoading = (order) => {
     });
 };
 
-const finishPacking = (order) => {
+const finishLoading = (order) => {
     if (!confirm('✅ SELESAI LOADING\n\nSemua item DO ' + order.do_number + ' sudah selesai dimuat ke truk.\nPastikan semua item sudah dicek.\n\nLanjutkan?')) return;
     processingId.value = order.id;
     router.patch(route('warehouse.loading.update-status', order.id), {
@@ -261,7 +261,7 @@ const formatDate = (date) => {
                             </div>
                             <div class="flex flex-col gap-2">
                                 <button
-                                    @click="finishPacking(order)"
+                                    @click="finishLoading(order)"
                                     :disabled="processingId === order.id"
                                     class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-black uppercase tracking-wide shadow-lg shadow-blue-500/30 hover:from-blue-500 hover:to-blue-400 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                                 >
