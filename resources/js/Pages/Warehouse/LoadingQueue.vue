@@ -113,6 +113,32 @@ const formatDate = (date) => {
         year: 'numeric'
     });
 };
+
+const toggleItemLoaded = (item) => {
+    if (processingId.value) return;
+    
+    router.patch(route('warehouse.loading.toggle-item-loaded', selectedOrder.value.id), {
+        item_id: item.id,
+        is_loaded: !item.is_loaded
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            const updatedOrder = page.props.deliveryOrders.find(o => o.id === selectedOrder.value.id);
+            if (updatedOrder) selectedOrder.value = updatedOrder;
+        },
+    });
+};
+
+const calculateProgress = (order) => {
+    if (!order.items || order.items.length === 0) return 0;
+    const loadedCount = order.items.filter(item => item.is_loaded).length;
+    return Math.round((loadedCount / order.items.length) * 100);
+};
+
+const getLoadedCount = (order) => {
+    if (!order.items) return 0;
+    return order.items.filter(item => item.is_loaded).length;
+};
 </script>
 
 <template>
@@ -258,6 +284,26 @@ const formatDate = (date) => {
                                     🚛 {{ order.vehicle_number }} <span v-if="order.driver_name">• {{ order.driver_name }}</span>
                                 </div>
                                 <div v-if="order.warehouse" class="text-[10px] text-slate-500">🏭 {{ order.warehouse.name }}</div>
+
+                                <!-- Progress Bar -->
+                                <div v-if="order.status === 'picking'" class="mt-4 pt-4 border-t border-blue-200/50 dark:border-blue-800/50">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Loading Progress</span>
+                                        <span class="text-[10px] font-black text-blue-700 dark:text-blue-300">{{ calculateProgress(order) }}%</span>
+                                    </div>
+                                    <div class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden border border-blue-200/30 dark:border-blue-800/30">
+                                        <div 
+                                            class="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-500 ease-out shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                                            :style="{ width: calculateProgress(order) + '%' }"
+                                        ></div>
+                                    </div>
+                                    <div class="flex justify-between mt-1 text-[9px] font-medium text-slate-500">
+                                        <span>{{ getLoadedCount(order) }} of {{ order.items?.length || 0 }} items loaded</span>
+                                        <span v-if="calculateProgress(order) === 100" class="text-green-500 flex items-center gap-0.5 animate-bounce">
+                                            <CheckCircleIcon class="h-3 w-3" /> READY
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                             <div class="flex flex-col gap-2">
                                 <button
@@ -276,7 +322,7 @@ const formatDate = (date) => {
                                     @click="openManageItems(order)"
                                     class="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
                                 >
-                                    Kelola Item / Short Shipment
+                                    MANAGE ITEMS / SHORT SHIPMENT
                                 </button>
                             </div>
                         </div>
@@ -313,6 +359,7 @@ const formatDate = (date) => {
                                     <thead>
                                         <tr class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
                                             <th class="py-3 px-2">Item</th>
+                                            <th class="py-3 px-2 text-center">Status</th>
                                             <th class="py-3 px-2 text-center">Order</th>
                                             <th class="py-3 px-2 text-center">Dikirim (Muat)</th>
                                             <th class="py-3 px-2 text-center">Satuan</th>
@@ -325,6 +372,22 @@ const formatDate = (date) => {
                                                 <div class="font-bold text-slate-900 dark:text-white">{{ item.product?.name }}</div>
                                                 <div class="text-[10px] text-slate-500">{{ item.product?.sku }}</div>
                                                 <div v-if="item.notes" class="text-[10px] italic text-amber-500 mt-1">{{ item.notes }}</div>
+                                            </td>
+                                            <td class="py-4 px-2 text-center">
+                                                <button 
+                                                    @click="toggleItemLoaded(item)"
+                                                    :disabled="selectedOrder.status !== 'picking' || processingId"
+                                                    class="group relative flex items-center justify-center mx-auto"
+                                                >
+                                                    <div 
+                                                        class="w-8 h-8 rounded-xl border-2 transition-all flex items-center justify-center"
+                                                        :class="item.is_loaded 
+                                                            ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/30 text-white' 
+                                                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-transparent group-hover:border-blue-500'"
+                                                    >
+                                                        <CheckCircleIcon class="h-5 w-5" :class="item.is_loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-50'" />
+                                                    </div>
+                                                </button>
                                             </td>
                                             <td class="py-4 px-2 text-center font-mono">{{ item.qty_ordered }}</td>
                                             <td class="py-4 px-2 text-center font-mono font-bold" :class="item.qty_delivered < item.qty_ordered ? 'text-red-500 underline' : 'text-blue-500'">

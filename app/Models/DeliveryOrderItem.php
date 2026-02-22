@@ -31,6 +31,7 @@ class DeliveryOrderItem extends Model
         'location_id',
         'batch_number',
         'notes',
+        'is_loaded',
         'qty_invoiced',
     ];
 
@@ -38,6 +39,7 @@ class DeliveryOrderItem extends Model
         'qty_ordered' => 'float',
         'qty_delivered' => 'float',
         'qty_invoiced' => 'float',
+        'is_loaded' => 'boolean',
     ];
 
     protected static function boot()

@@ -99,4 +99,21 @@ class WarehouseLoadingController extends Controller
 
         return back()->with('success', 'Quantity item ' . $item->product->name . ' berhasil direvisi.');
     }
+
+    public function toggleItemLoaded(Request $request, DeliveryOrder $deliveryOrder)
+    {
+        $request->validate([
+            'item_id' => 'required|exists:delivery_order_items,id',
+            'is_loaded' => 'required|boolean',
+        ]);
+
+        if ($deliveryOrder->status !== 'picking') {
+            return back()->with('error', 'Item loading can only be tracked during "Loading in Progress" (Picking) phase.');
+        }
+
+        $item = $deliveryOrder->items()->findOrFail($request->item_id);
+        $item->update(['is_loaded' => $request->is_loaded]);
+
+        return back()->with('success', $request->is_loaded ? 'Item marked as loaded.' : 'Item marked as not loaded.');
+    }
 }
