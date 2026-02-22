@@ -84,8 +84,8 @@ const getStatusClass = (status) => {
 </script>
 
 <template>
-    <Head title="Delivery Items Report" />
-    <AppLayout title="Delivery Items Report">
+    <Head title="DO Items Report" />
+    <AppLayout title="DO Items Report">
         <!-- Header Actions -->
         <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
             <div class="flex flex-wrap items-center gap-3">
@@ -199,7 +199,10 @@ const getStatusClass = (status) => {
                                     </template>
                                 </div>
                             </th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Delivered</th>
+                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Qty DO</th>
+                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Qty Actual</th>
+                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Delay / Balance</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Notes / Problem</th>
                             <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Loaded</th>
                             <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
@@ -223,8 +226,17 @@ const getStatusClass = (status) => {
                                 <div class="text-sm font-medium text-slate-900 dark:text-white">{{ item.product?.name }}</div>
                                 <div class="text-xs text-slate-500 font-mono">{{ item.product?.sku }}</div>
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-slate-500">
+                                {{ formatNumber(item.qty_ordered) }}
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-slate-900 dark:text-white">
-                                {{ formatNumber(item.qty_delivered) }} {{ item.unit?.name }}
+                                {{ formatNumber(item.qty_delivered) }} {{ item.unit?.code }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold" :class="(item.qty_delivered - item.qty_ordered) < 0 ? 'text-rose-500' : 'text-slate-500'">
+                                {{ formatNumber(item.qty_delivered - item.qty_ordered) }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-500">
+                                <div class="max-w-xs truncate" :title="item.notes">{{ item.notes || '-' }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <CheckCircleIcon 

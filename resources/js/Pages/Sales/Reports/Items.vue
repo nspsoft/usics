@@ -87,9 +87,9 @@ const getStatusBadge = (status) => {
 </script>
 
 <template>
-    <Head title="Sales Items Report" />
+    <Head title="SO Items Report" />
 
-    <AppLayout title="Sales Items Report">
+    <AppLayout title="SO Items Report">
         <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
             <div class="flex flex-wrap items-center gap-3">
                 <div class="relative w-full sm:w-64">
