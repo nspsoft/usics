@@ -272,6 +272,9 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::get('/quotations-export', [App\Http\Controllers\Sales\QuotationController::class, 'export'])->name('quotations.export');
     Route::post('/quotations-import', [App\Http\Controllers\Sales\QuotationController::class, 'import'])->name('quotations.import');
     Route::get('/quotations-template', [App\Http\Controllers\Sales\QuotationController::class, 'template'])->name('quotations.template');
+    Route::get('/deliveries/items', [App\Http\Controllers\Sales\DeliveryOrderItemController::class, 'index'])->name('deliveries.items');
+    Route::get('/deliveries/items/export', [App\Http\Controllers\Sales\DeliveryOrderItemController::class, 'export'])->name('deliveries.items.export');
+
     Route::get('/deliveries', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'index'])->name('deliveries.index');
     Route::get('/deliveries/create', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'create'])->name('deliveries.create');
     Route::get('/deliveries/so-items/{sales_order}', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'getSoItems'])->name('deliveries.so-items');

@@ -186,6 +186,7 @@ const navigation = [
             { name: 'Sales Invoices', href: '/sales/invoices', icon: BanknotesIcon, permission: 'sales_crm.invoices.view' },
             { name: 'Sales Returns', href: '/sales/returns', icon: ArrowUturnLeftIcon, permission: 'sales_crm.sales_returns.view' },
             { name: 'Items Report', href: '/sales/orders/items', icon: ClipboardDocumentListIcon, permission: 'sales_crm.items_report.view' },
+            { name: 'Delivery Items Report', href: '/sales/deliveries/items', icon: QueueListIcon, permission: 'sales_crm.items_report.view' },
             { name: 'Information', href: '/sales/information', icon: InformationCircleIcon, permission: 'sales_crm.information.view' },
             { name: 'PO Tracking', href: '/sales/po-tracking', icon: MapPinIcon, permission: 'sales_crm.po_tracking.view' },
             { name: 'AI PO Extractor', href: '/sales/po-extractor', icon: SparklesIcon, permission: 'sales_crm.ai_po_extractor.view' },
