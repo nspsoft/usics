@@ -81,7 +81,7 @@ class DeliveryOrderItemExport implements FromQuery, WithHeadings, WithMapping, S
             $item->deliveryOrder->do_number,
             $item->deliveryOrder->delivery_date ? $item->deliveryOrder->delivery_date->format('Y-m-d') : '-',
             $item->deliveryOrder->customer->name ?? '-',
-            $item->deliveryOrder->customer_po_number ?? '-',
+            $item->deliveryOrder->salesOrder->customer_po_number ?? '-',
             $item->product->sku ?? '-',
             $item->product->name ?? '-',
             $item->qty_ordered,
