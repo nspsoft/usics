@@ -214,9 +214,11 @@
             </tr>
         </thead>
         <tbody>
+            @php $no = 1; @endphp
             @foreach($order->items as $index => $item)
+            @if($item->qty_delivered > 0)
             <tr>
-                <td style="text-align: center; border-bottom: none;">{{ $index + 1 }}</td>
+                <td style="text-align: center; border-bottom: none;">{{ $no++ }}</td>
                 <td style="border-bottom: none;">
                     <strong>{{ $item->product->name }}</strong><br>
                     <span style="font-size: 8pt; color: #444;">{{ $item->product->description }}</span>
@@ -225,6 +227,7 @@
                 <td style="text-align: center; border-bottom: none;">{{ $item->unit->code ?? 'PCs' }}</td>
                 <td style="border-bottom: none; font-size: 8pt; color: #444;">{{ $item->notes }}</td>
             </tr>
+            @endif
             @endforeach
             <!-- Placeholder for border bottom -->
             <tr>

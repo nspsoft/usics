@@ -200,18 +200,26 @@ const formatDate = (date) => {
                                 </div>
                                 <div v-if="order.warehouse" class="text-[10px] text-slate-500">🏭 {{ order.warehouse.name }}</div>
                             </div>
-                            <button
-                                @click="startLoading(order)"
-                                :disabled="processingId === order.id"
-                                class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-white text-sm font-black uppercase tracking-wide shadow-lg shadow-amber-500/30 hover:from-amber-500 hover:to-amber-400 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
-                            >
-                                <span v-if="processingId === order.id" class="flex items-center justify-center gap-2">
-                                    <ArrowPathIcon class="h-4 w-4 animate-spin" /> Processing...
-                                </span>
-                                <span v-else class="flex items-center justify-center gap-2">
-                                    <CubeIcon class="h-4 w-4" /> MULAI LOADING
-                                </span>
-                            </button>
+                            <div class="flex flex-col gap-2">
+                                <button
+                                    @click="startLoading(order)"
+                                    :disabled="processingId === order.id"
+                                    class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-white text-sm font-black uppercase tracking-wide shadow-lg shadow-amber-500/30 hover:from-amber-500 hover:to-amber-400 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                                >
+                                    <span v-if="processingId === order.id" class="flex items-center justify-center gap-2">
+                                        <ArrowPathIcon class="h-4 w-4 animate-spin" /> Processing...
+                                    </span>
+                                    <span v-else class="flex items-center justify-center gap-2">
+                                        <CubeIcon class="h-4 w-4" /> MULAI LOADING
+                                    </span>
+                                </button>
+                                <button
+                                    @click="openManageItems(order)"
+                                    class="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
+                                >
+                                    Kelola Item / Short Shipment
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
