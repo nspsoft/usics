@@ -134,12 +134,12 @@ const removeItem = (id) => {
 
 // --- CONFIRMATION MESSAGES PER STATUS ---
 const statusConfirmMessages = {
-    picking: '📦 MULAI LOADING\n\nBarang akan mulai diambil dan dimuat.\nPastikan item dan qty sudah benar sebelum melanjutkan.\n\nLanjutkan?',
+    picking: '📦 START LOADING\n\nItems will start being picked and loaded.\nPlease ensure items and quantities are correct before continuing.\n\nContinue?',
     packed: '✅ SELESAI LOADING\n\nBarang sudah selesai dimuat dan siap dikirim.\nPastikan semua item sudah masuk ke truk.\n\nLanjutkan?',
-    shipped: '🚛 BERANGKATKAN\n\nTruk akan berangkat ke tujuan.\nPastikan armada dan sopir sudah benar.\n\nNo Truk: ' + (props.deliveryOrder.vehicle_number || '-') + '\nSopir: ' + (props.deliveryOrder.driver_name || '-') + '\n\nLanjutkan?',
-    delivered: '📍 SAMPAI DI TUJUAN\n\nBarang telah sampai di lokasi customer.\nStatus akan berubah menjadi "Delivered".\n\nLanjutkan?',
-    completed: '🏁 VERIFIKASI SELESAI\n\nPengiriman akan ditandai selesai.\nStok akan dikurangi dan SO akan diupdate.\n\nLanjutkan?',
-    draft: '⚠️ REVISI (RESET)\n\nStatus akan dikembalikan ke Draft.\nStok yang sudah dikurangi akan dikembalikan.\n\nYakin ingin reset?',
+    shipped: '🚛 DEPARTURE\n\nTruck will depart to the destination.\nPlease ensure vehicle and driver are correct.\n\nPlate No: ' + (props.deliveryOrder.vehicle_number || '-') + '\nDriver: ' + (props.deliveryOrder.driver_name || '-') + '\n\nContinue?',
+    delivered: '📍 ARRIVED AT DESTINATION\n\nItems have arrived at the customer\'s location.\nStatus will change to "Delivered".\n\nContinue?',
+    completed: '🏁 VERIFICATION COMPLETE\n\nDelivery will be marked as completed.\nStock will be reduced and SO will be updated.\n\nContinue?',
+    draft: '⚠️ REVISE (RESET)\n\nStatus will be reverted to Draft.\nStock that was reduced will be returned.\n\nAre you sure you want to reset?',
 };
 
 const updateStatus = (status) => {
@@ -313,7 +313,7 @@ const handleSmartAction = () => {
                         class="relative flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
                     >
                         <PrinterIcon class="h-4 w-4" />
-                        Print SJ
+                        PRINT SJ
                         <span v-if="!isReadyToPrint" class="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full animate-pulse" title="Data belum lengkap"></span>
                     </button>
                     
@@ -354,7 +354,7 @@ const handleSmartAction = () => {
                         title="Kembalikan status ke Draft untuk revisi (Stok akan dikembalikan)"
                     >
                         <ArrowPathIcon class="h-4 w-4" />
-                        Revisi (Reset)
+                        REVISE (RESET)
                     </button>
 
                     <!-- 4. Create Invoice (Post-Delivery + Role Check) -->

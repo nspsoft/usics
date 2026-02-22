@@ -84,7 +84,7 @@ const draftOrders = computed(() => props.deliveryOrders.filter(o => o.status ===
 const pickingOrders = computed(() => props.deliveryOrders.filter(o => o.status === 'picking'));
 
 const startLoading = (order) => {
-    if (!confirm('📦 MULAI LOADING\n\nBarang dari DO ' + order.do_number + ' akan mulai diambil dan dimuat.\n\nLanjutkan?')) return;
+    if (!confirm('📦 START LOADING\n\nItems for DO ' + order.do_number + ' will start being picked and loaded.\n\nContinue?')) return;
     processingId.value = order.id;
     router.patch(route('warehouse.loading.update-status', order.id), {
         status: 'picking'
@@ -95,7 +95,7 @@ const startLoading = (order) => {
 };
 
 const finishLoading = (order) => {
-    if (!confirm('✅ SELESAI LOADING\n\nSemua item DO ' + order.do_number + ' sudah selesai dimuat ke truk.\nPastikan semua item sudah dicek.\n\nLanjutkan?')) return;
+    if (!confirm('✅ FINISH LOADING\n\nAll items for DO ' + order.do_number + ' have been loaded into the truck.\nPlease ensure all items are checked.\n\nContinue?')) return;
     processingId.value = order.id;
     router.patch(route('warehouse.loading.update-status', order.id), {
         status: 'packed'
@@ -210,14 +210,14 @@ const formatDate = (date) => {
                                         <ArrowPathIcon class="h-4 w-4 animate-spin" /> Processing...
                                     </span>
                                     <span v-else class="flex items-center justify-center gap-2">
-                                        <CubeIcon class="h-4 w-4" /> MULAI LOADING
+                                        <CubeIcon class="h-4 w-4" /> START LOADING
                                     </span>
                                 </button>
                                 <button
                                     @click="openManageItems(order)"
                                     class="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
                                 >
-                                    Kelola Item / Short Shipment
+                                    MANAGE ITEMS / SHORT SHIPMENT
                                 </button>
                             </div>
                         </div>
@@ -269,7 +269,7 @@ const formatDate = (date) => {
                                         <ArrowPathIcon class="h-4 w-4 animate-spin" /> Processing...
                                     </span>
                                     <span v-else class="flex items-center justify-center gap-2">
-                                        <CheckCircleIcon class="h-4 w-4" /> SELESAI LOADING
+                                        <CheckCircleIcon class="h-4 w-4" /> FINISH LOADING
                                     </span>
                                 </button>
                                 <button
@@ -337,7 +337,7 @@ const formatDate = (date) => {
                                                     :disabled="revisionForm.processing"
                                                     class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-blue-500 hover:text-white transition-all disabled:opacity-50"
                                                 >
-                                                    REVISI QTY
+                                                    REVISE QTY
                                                 </button>
                                             </td>
                                         </tr>
@@ -350,7 +350,7 @@ const formatDate = (date) => {
                                 💡 Mengurangi jumlah di sini akan mengembalikan sisa barang ke saldo Sales Order secara otomatis.
                             </div>
                             <button @click="showManageItemsModal = false" class="px-6 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold shadow-lg">
-                                TUTUP
+                                CLOSE
                             </button>
                         </div>
                     </div>
