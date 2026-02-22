@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Surat Jalan - {{ $order->do_number }}</title>
+    @php
+        $activeItemsCount = $order->items->where('qty_delivered', '>', 0)->count();
+        $paperSize = $activeItemsCount > 3 ? 'A4 portrait' : 'A5 landscape';
+    @endphp
     <style>
         @page {
             margin: 0.3cm;
-            size: A5 landscape;
+            size: {{ $paperSize }};
         }
         body {
             font-family: Arial, sans-serif;
