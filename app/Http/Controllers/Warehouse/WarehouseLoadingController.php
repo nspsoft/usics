@@ -69,8 +69,8 @@ class WarehouseLoadingController extends Controller
             'reason' => 'nullable|string|max:255',
         ]);
 
-        if ($deliveryOrder->status !== 'picking') {
-            return back()->with('error', 'Hanya bisa revisi qty saat status Picking (Sedang Loading).');
+        if (!in_array($deliveryOrder->status, ['draft', 'picking'])) {
+            return back()->with('error', 'Hanya bisa revisi qty saat status Draft atau Picking (Sedang Loading).');
         }
 
         $item = $deliveryOrder->items()->findOrFail($request->item_id);
