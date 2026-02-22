@@ -5,6 +5,8 @@ use App\Http\Controllers\HR\AttendanceController;
 use App\Http\Controllers\HR\PayrollSettingController;
 
 // Public Payroll Validation (No login required)
+Route::get('/favicon.png', [App\Http\Controllers\FaviconController::class, 'show'])->name('favicon');
+
 Route::middleware('throttle:public-validate-view')->group(function () {
     Route::get('/v/p/{uuid}', [PayrollController::class, 'publicValidate'])->name('payroll.public-validate');
     Route::get('/v/pr/{uuid}', [App\Http\Controllers\Purchasing\PurchaseRequestController::class, 'publicValidate'])->name('purchasing.requests.public-validate');

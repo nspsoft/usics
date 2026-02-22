@@ -13,7 +13,8 @@
         <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|orbitron:400,500,700,900&display=swap" rel="stylesheet" />
 
         <!-- Branding & PWA -->
-        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2">
+        <link rel="icon" type="image/png" href="{{ route('favicon') }}">
+        <link rel="shortcut icon" type="image/png" href="{{ route('favicon') }}">
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
         <link rel="manifest" href="/manifest.webmanifest">
 
