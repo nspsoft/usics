@@ -13,8 +13,16 @@
         <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|orbitron:400,500,700,900&display=swap" rel="stylesheet" />
 
         <!-- Branding & PWA -->
-        <link rel="icon" type="image/png" href="{{ route('favicon') }}">
-        <link rel="shortcut icon" type="image/png" href="{{ route('favicon') }}">
+        @php
+            $assetVersion = '1';
+            $manifestPath = public_path('build/manifest.json');
+            if (is_file($manifestPath)) {
+                $assetVersion = (string) filemtime($manifestPath);
+            }
+        @endphp
+        <link rel="icon" type="image/png" href="{{ route('favicon') }}?v={{ $assetVersion }}">
+        <link rel="shortcut icon" type="image/png" href="{{ route('favicon') }}?v={{ $assetVersion }}">
+        <link rel="icon" type="image/png" href="{{ route('favicon.ico') }}?v={{ $assetVersion }}">
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
         <link rel="manifest" href="/manifest.webmanifest">
 

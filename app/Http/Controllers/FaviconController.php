@@ -32,7 +32,10 @@ class FaviconController extends Controller
 
         $etag = 'W/"' . sha1($binary) . '"';
         if ($request->headers->get('If-None-Match') === $etag) {
-            return response('', 304)->header('ETag', $etag);
+            return response('', 304)
+                ->header('ETag', $etag)
+                ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                ->header('Pragma', 'no-cache');
         }
 
         $png = $this->toPng($binary, 64, 64);
@@ -41,13 +44,15 @@ class FaviconController extends Controller
 
             return response($binary, 200)
                 ->header('Content-Type', $contentType)
-                ->header('Cache-Control', 'public, max-age=0, must-revalidate')
+                ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                ->header('Pragma', 'no-cache')
                 ->header('ETag', $etag);
         }
 
         return response($png, 200)
             ->header('Content-Type', 'image/png')
-            ->header('Cache-Control', 'public, max-age=0, must-revalidate')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
             ->header('ETag', $etag);
     }
 
