@@ -721,21 +721,11 @@ const startNewChat = () => {
                              Quick Actions
                         </h4>
                         <div class="space-y-2">
-                            <button 
-                                @click="activeContact?.customer?.id ? router.visit(route('sales.orders.create', { customer_id: activeContact.customer.id })) : null"
-                                class="w-full text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-sm text-slate-700 dark:text-slate-300 transition-all flex items-center justify-between group"
-                                :disabled="!activeContact?.customer?.id"
-                                :class="{ 'opacity-50 cursor-not-allowed': !activeContact?.customer?.id }"
-                            >
+                            <button class="w-full text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-sm text-slate-700 dark:text-slate-300 transition-all flex items-center justify-between group">
                                 Create Sales Order
                                 <ArrowPathIcon class="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </button>
-                            <button 
-                                @click="activeContact?.customer?.id ? router.visit(route('sales.customers.show', activeContact.customer.id)) : null"
-                                class="w-full text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-sm text-slate-700 dark:text-slate-300 transition-all flex items-center justify-between group"
-                                :disabled="!activeContact?.customer?.id"
-                                :class="{ 'opacity-50 cursor-not-allowed': !activeContact?.customer?.id }"
-                            >
+                            <button class="w-full text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-sm text-slate-700 dark:text-slate-300 transition-all flex items-center justify-between group">
                                 View Profile
                                 <ArrowPathIcon class="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </button>

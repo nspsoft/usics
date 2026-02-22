@@ -441,6 +441,7 @@ Route::middleware(['auth'])->prefix('hr')->name('hr.')->group(function () {
 Route::middleware(['auth'])->prefix('warehouse')->name('warehouse.')->group(function () {
     Route::get('/loading', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'index'])->name('loading.index');
     Route::patch('/loading/{deliveryOrder}/status', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'updateStatus'])->name('loading.update-status');
+    Route::put('/loading/{deliveryOrder}/item-qty', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'updateItemQty'])->name('loading.update-item-qty');
 });
 
 // Logistics

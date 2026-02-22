@@ -60,4 +60,43 @@ class WarehouseLoadingController extends Controller
 
         return back()->with('success', $messages[$request->status] ?? 'Status updated.');
     }
+
+    public function updateItemQty(Request $request, DeliveryOrder $deliveryOrder)
+    {
+        $request->validate([
+            'item_id' => 'required|exists:delivery_order_items,id',
+            'qty' => 'required|numeric|min:0',
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        if ($deliveryOrder->status !== 'picking') {
+            return back()->with('error', 'Hanya bisa revisi qty saat status Picking (Sedang Loading).');
+        }
+
+        $item = $deliveryOrder->items()->findOrFail($request->item_id);
+
+        if ($request->qty > $item->qty_ordered) {
+            return back()->with('error', 'Quantity dikirim tidak boleh melebihi qty order.');
+        }
+
+        $oldQty = $item->qty_delivered;
+        $item->update([
+            'qty_delivered' => $request->qty,
+            'notes' => $request->reason ? ($item->notes ? $item->notes . " | " : "") . "Revisi: " . $request->reason : $item->notes,
+        ]);
+
+        // Recalculate SO Item totals (handled by model event saved in DeliveryOrderItem)
+
+        activity()
+            ->performedOn($deliveryOrder)
+            ->withProperties([
+                'item' => $item->product->name,
+                'old_qty' => $oldQty,
+                'new_qty' => $request->qty,
+                'reason' => $request->reason,
+            ])
+            ->log('Gudang merevisi jumlah muatan item ' . $item->product->name);
+
+        return back()->with('success', 'Quantity item ' . $item->product->name . ' berhasil direvisi.');
+    }
 }

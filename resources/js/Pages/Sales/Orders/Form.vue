@@ -20,13 +20,12 @@ const props = defineProps({
     products: Array,
     units: Array,
     aiData: Object,
-    preSelectedCustomerId: [Number, String],
 });
 
 const form = useForm({
     so_number: props.salesOrder?.so_number || props.soNumber,
     customer_po_number: props.salesOrder?.customer_po_number || props.aiData?.po_number || '',
-    customer_id: props.salesOrder?.customer_id || props.aiData?.matched_customer_id || props.preSelectedCustomerId || '',
+    customer_id: props.salesOrder?.customer_id || props.aiData?.matched_customer_id || '',
     warehouse_id: props.salesOrder?.warehouse_id || props.warehouses?.[0]?.id || '',
     order_date: props.salesOrder?.order_date 
         ? new Date(props.salesOrder.order_date).toISOString().split('T')[0] 
