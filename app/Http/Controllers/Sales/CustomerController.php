@@ -109,7 +109,30 @@ class CustomerController extends Controller
         $customer = Customer::create($validated);
 
         if ($request->has('contacts')) {
-            $customer->contacts()->createMany($request->contacts);
+            $unique = [];
+            foreach ((array) $request->contacts as $contact) {
+                $name = trim((string) ($contact['name'] ?? ''));
+                $email = strtolower(trim((string) ($contact['email'] ?? '')));
+                $phone = preg_replace('/\D+/', '', (string) ($contact['phone'] ?? ''));
+                $position = trim((string) ($contact['position'] ?? ''));
+
+                if ($name === '' && $email === '' && $phone === '' && $position === '') {
+                    continue;
+                }
+
+                $key = $email !== '' ? 'email:' . $email : ($phone !== '' ? 'phone:' . $phone : 'name:' . strtolower($name) . '|pos:' . strtolower($position));
+
+                $unique[$key] = [
+                    'name' => $name,
+                    'email' => $email !== '' ? $email : null,
+                    'phone' => $phone !== '' ? $phone : null,
+                    'position' => $position !== '' ? $position : null,
+                ];
+            }
+
+            if (!empty($unique)) {
+                $customer->contacts()->createMany(array_values($unique));
+            }
         }
 
         return redirect()->route('sales.customers.index')
@@ -195,15 +218,59 @@ class CustomerController extends Controller
         $customer->update($validated);
 
         if ($request->has('contacts')) {
-            $contactIds = collect($request->contacts)->pluck('id')->filter()->toArray();
+            $contacts = collect((array) $request->contacts)
+                ->map(function ($c) {
+                    $contact = (array) $c;
+                    $contact['name'] = trim((string) ($contact['name'] ?? ''));
+                    $contact['email'] = strtolower(trim((string) ($contact['email'] ?? '')));
+                    $contact['phone'] = preg_replace('/\D+/', '', (string) ($contact['phone'] ?? ''));
+                    $contact['position'] = trim((string) ($contact['position'] ?? ''));
+                    if ($contact['email'] === '') {
+                        $contact['email'] = null;
+                    }
+                    if ($contact['phone'] === '') {
+                        $contact['phone'] = null;
+                    }
+                    if ($contact['position'] === '') {
+                        $contact['position'] = null;
+                    }
+                    return $contact;
+                })
+                ->filter(fn ($c) => ($c['name'] ?? '') !== '' || ($c['email'] ?? null) || ($c['phone'] ?? null) || ($c['position'] ?? null))
+                ->values();
+
+            $contactIds = $contacts->pluck('id')->filter()->toArray();
             $customer->contacts()->whereNotIn('id', $contactIds)->delete();
 
-            foreach ($request->contacts as $contactData) {
+            $seen = [];
+            foreach ($contacts as $contactData) {
+                $key = ($contactData['email'] ?? null)
+                    ? 'email:' . $contactData['email']
+                    : (($contactData['phone'] ?? null)
+                        ? 'phone:' . $contactData['phone']
+                        : 'name:' . strtolower((string) ($contactData['name'] ?? '')) . '|pos:' . strtolower((string) ($contactData['position'] ?? '')));
+
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+
                 if (isset($contactData['id'])) {
                     $customer->contacts()->where('id', $contactData['id'])->update($contactData);
-                } else {
-                    $customer->contacts()->create($contactData);
+                    continue;
                 }
+
+                $match = [];
+                if (!empty($contactData['email'])) {
+                    $match['email'] = $contactData['email'];
+                } elseif (!empty($contactData['phone'])) {
+                    $match['phone'] = $contactData['phone'];
+                } else {
+                    $match['name'] = $contactData['name'] ?? '';
+                    $match['position'] = $contactData['position'] ?? null;
+                }
+
+                $customer->contacts()->updateOrCreate($match, $contactData);
             }
         }
 
