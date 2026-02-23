@@ -261,7 +261,7 @@ onMounted(() => {
             <form @submit.prevent="submit" class="space-y-6">
                 <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
                     <!-- Left Column: Main Cargo Info -->
-                    <div class="xl:col-span-4 space-y-6">
+                    <div class="xl:col-span-4 space-y-6 relative z-10">
                         <!-- Reference Section -->
                         <div class="glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
                             <div class="flex items-center gap-2 mb-4">
@@ -424,7 +424,7 @@ onMounted(() => {
                     </div>
 
                     <!-- Right Column: Shipped Items -->
-                    <div class="xl:col-span-8 space-y-6">
+                    <div class="xl:col-span-8 space-y-6 relative z-20">
                         <div class="glass-card rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm min-h-[400px]">
                             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/30 flex justify-between items-center">
                                 <div class="flex items-center gap-3">
