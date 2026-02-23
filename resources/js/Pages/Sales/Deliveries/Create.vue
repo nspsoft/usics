@@ -72,8 +72,10 @@ const isLoading = ref(false);
 const showGuide = ref(false);
 const searchFilter = ref('');
 
+const hasSalesOrder = computed(() => Boolean(form.sales_order_id));
+
 const filteredItems = computed(() => {
-    if (!searchFilter.value || !form.sales_order_id) return form.items;
+    if (!searchFilter.value || !hasSalesOrder.value) return form.items;
     const q = searchFilter.value.toLowerCase();
     return form.items.filter(item => 
         (item.name && item.name.toLowerCase().includes(q)) ||
@@ -204,7 +206,7 @@ const onProductChange = (item, index) => {
 
 const submit = () => {
     // Filter: only include checked items with qty > 0
-    if (form.sales_order_id) {
+    if (hasSalesOrder.value) {
         const shippableItems = form.items.filter(i => i.include && i.qty_delivered > 0);
         if (shippableItems.length === 0) {
             alert('Pilih minimal satu item dan isi qty kirim.');
@@ -222,7 +224,7 @@ const submit = () => {
         return;
     }
     
-    if (!form.sales_order_id && form.items.length === 0) {
+    if (!hasSalesOrder.value && form.items.length === 0) {
         alert('Tambahkan minimal satu item barang.');
         return;
     }
@@ -427,12 +429,12 @@ onMounted(() => {
                             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/30 flex justify-between items-center">
                                 <div class="flex items-center gap-3">
                                     <h3 class="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-widest">Items to Ship</h3>
-                                    <span v-if="form.sales_order_id && form.items.length > 0" class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="includedCount > 0 ? 'bg-blue-500/10 text-blue-500' : 'bg-slate-200 text-slate-500'">
+                                    <span v-if="hasSalesOrder && form.items.length > 0" class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="includedCount > 0 ? 'bg-blue-500/10 text-blue-500' : 'bg-slate-200 text-slate-500'">
                                         {{ includedCount }} / {{ form.items.length }} item dipilih
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <template v-if="form.sales_order_id && form.items.length > 0">
+                                    <template v-if="hasSalesOrder && form.items.length > 0">
                                         <button type="button" @click="fillAllMax" class="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 px-2 py-1 rounded-lg hover:bg-emerald-500/10 transition-colors">
                                             ✅ Pilih Semua (Max)
                                         </button>
@@ -440,14 +442,14 @@ onMounted(() => {
                                             ✖ Reset
                                         </button>
                                     </template>
-                                    <button v-if="!form.sales_order_id" type="button" @click="addItem" class="text-xs font-bold text-blue-500 hover:text-blue-400 flex items-center gap-1">
+                                    <button v-if="!hasSalesOrder" type="button" @click="addItem" class="text-xs font-bold text-blue-500 hover:text-blue-400 flex items-center gap-1">
                                         <PlusIcon class="h-3 w-3" /> ADD ITEM
                                     </button>
                                 </div>
                             </div>
 
                             <!-- Search Filter -->
-                            <div v-if="form.sales_order_id && form.items.length > 5" class="px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                            <div v-if="hasSalesOrder && form.items.length > 5" class="px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                                 <div class="relative">
                                     <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
                                     <input 
@@ -466,7 +468,7 @@ onMounted(() => {
                                 <table class="w-full text-left">
                                     <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm">
                                         <tr>
-                                            <th v-if="form.sales_order_id" class="px-3 py-3 text-center w-10">
+                                            <th v-if="hasSalesOrder" class="px-3 py-3 text-center w-10">
                                                 <input 
                                                     type="checkbox" 
                                                     :checked="allSelected"
@@ -476,23 +478,23 @@ onMounted(() => {
                                                 />
                                             </th>
                                             <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Product</th>
-                                            <th v-if="form.sales_order_id" class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-center tracking-tighter">Sisa SO</th>
+                                            <th v-if="hasSalesOrder" class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-center tracking-tighter">Sisa SO</th>
                                             <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-center tracking-tighter">Qty Kirim</th>
                                             <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">UOM</th>
                                             <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Notes</th>
-                                            <th v-if="!form.sales_order_id" class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-right tracking-tighter"></th>
+                                            <th v-if="!hasSalesOrder" class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-right tracking-tighter"></th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
                                         <tr v-for="(item, index) in filteredItems" :key="item.sales_order_item_id || index" 
                                             class="transition-colors"
                                             :class="[
-                                                form.sales_order_id 
+                                                hasSalesOrder 
                                                     ? (item.include ? 'bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20' : 'opacity-40 hover:opacity-60 hover:bg-slate-50 dark:hover:bg-slate-800/20') 
                                                     : 'hover:bg-slate-50 dark:hover:bg-slate-800/20'
                                             ]"
                                         >
-                                            <td v-if="form.sales_order_id" class="px-3 py-4 text-center">
+                                            <td v-if="hasSalesOrder" class="px-3 py-4 text-center">
                                                 <input 
                                                     v-model="item.include"
                                                     type="checkbox" 
@@ -501,7 +503,7 @@ onMounted(() => {
                                                 />
                                             </td>
                                             <td class="px-6 py-4 min-w-[250px]">
-                                                <div v-if="form.sales_order_id">
+                                                <div v-if="hasSalesOrder">
                                                     <div class="text-sm font-bold text-slate-900 dark:text-white">{{ item.name }}</div>
                                                     <div class="text-[10px] text-slate-500 font-mono">{{ item.sku }}</div>
                                                 </div>
@@ -515,7 +517,7 @@ onMounted(() => {
                                                     />
                                                 </div>
                                             </td>
-                                            <td v-if="form.sales_order_id" class="px-6 py-4 text-center">
+                                            <td v-if="hasSalesOrder" class="px-6 py-4 text-center">
                                                 <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-500">
                                                     {{ formatNumber(item.remaining) }}
                                                 </span>
@@ -526,14 +528,14 @@ onMounted(() => {
                                                     type="number"
                                                     step="any"
                                                     min="0"
-                                                    :max="form.sales_order_id ? item.remaining : null"
+                                                    :max="hasSalesOrder ? item.remaining : null"
                                                     class="w-24 rounded-lg border-0 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-center focus:ring-1 focus:ring-blue-500"
                                                     :class="{ 
-                                                        'text-red-500 ring-1 ring-red-500/50 bg-red-500/5': form.sales_order_id && item.qty_delivered > item.remaining,
-                                                        'opacity-30': form.sales_order_id && !item.include 
+                                                        'text-red-500 ring-1 ring-red-500/50 bg-red-500/5': hasSalesOrder && item.qty_delivered > item.remaining,
+                                                        'opacity-30': hasSalesOrder && !item.include 
                                                     }"
-                                                    :disabled="form.sales_order_id && !item.include"
-                                                    @focus="if (form.sales_order_id && !item.include) { item.include = true; item.qty_delivered = item.remaining; }"
+                                                    :disabled="hasSalesOrder && !item.include"
+                                                    @focus="if (hasSalesOrder && !item.include) { item.include = true; item.qty_delivered = item.remaining; }"
                                                 />
                                             </td>
                                             <td class="px-6 py-4 text-xs text-slate-500 font-medium whitespace-nowrap">
@@ -547,14 +549,14 @@ onMounted(() => {
                                                     class="w-full rounded-lg border-0 bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-blue-500"
                                                 />
                                             </td>
-                                            <td v-if="!form.sales_order_id" class="px-6 py-4 text-right">
+                                            <td v-if="!hasSalesOrder" class="px-6 py-4 text-right">
                                                 <button type="button" @click="removeItem(index)" class="p-1.5 text-slate-400 hover:text-red-500 transition-colors">
                                                     <TrashIcon class="h-4 w-4" />
                                                 </button>
                                             </td>
                                         </tr>
                                         <tr v-if="form.items.length === 0">
-                                            <td :colspan="form.sales_order_id ? 7 : 6" class="px-6 py-12 text-center">
+                                            <td :colspan="hasSalesOrder ? 7 : 6" class="px-6 py-12 text-center">
                                                 <div v-if="isLoading" class="flex flex-col items-center gap-3">
                                                     <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
                                                     <span class="text-sm text-slate-500">Memuat item Sales Order...</span>
@@ -562,7 +564,7 @@ onMounted(() => {
                                                 <div v-else class="flex flex-col items-center gap-2">
                                                     <TruckIcon class="h-10 w-10 text-slate-200 dark:text-slate-800" />
                                                     <span class="text-sm text-slate-500 italic">
-                                                        {{ form.sales_order_id ? 'Tidak ada item.' : 'Klik + ADD ITEM untuk menambah barang.' }}
+                                                        {{ hasSalesOrder ? 'Tidak ada item.' : 'Klik + ADD ITEM untuk menambah barang.' }}
                                                     </span>
                                                 </div>
                                             </td>
@@ -583,11 +585,11 @@ onMounted(() => {
                                 </Link>
                                 <button 
                                     type="submit"
-                                    :disabled="form.processing || (form.sales_order_id ? includedCount === 0 : form.items.length === 0)"
+                                    :disabled="form.processing || (hasSalesOrder ? includedCount === 0 : form.items.length === 0)"
                                     class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 hover:from-blue-500 hover:to-blue-400 transition-all disabled:opacity-50 active:scale-95"
                                 >
                                     <TruckIcon class="h-5 w-5" />
-                                    {{ form.processing ? 'Menyimpan...' : (form.sales_order_id ? `KIRIM ${includedCount} ITEM` : 'SIMPAN SURAT JALAN') }}
+                                    {{ form.processing ? 'Menyimpan...' : (hasSalesOrder ? `KIRIM ${includedCount} ITEM` : 'SIMPAN SURAT JALAN') }}
                                 </button>
                             </div>
                         </div>
