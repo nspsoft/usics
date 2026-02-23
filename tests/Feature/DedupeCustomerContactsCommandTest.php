@@ -53,5 +53,45 @@ class DedupeCustomerContactsCommandTest extends TestCase
             'email' => 'henry@example.com',
         ]);
     }
-}
 
+    public function test_command_can_dedupe_by_name_only(): void
+    {
+        $customer = Customer::query()->create([
+            'company_id' => null,
+            'code' => 'CUST-2',
+            'name' => 'Customer B',
+            'country' => 'ID',
+            'payment_terms' => 'NET30',
+            'payment_days' => 30,
+            'credit_limit' => 0,
+            'currency' => 'IDR',
+            'customer_type' => 'regular',
+            'is_active' => 1,
+        ]);
+
+        CustomerContact::query()->create([
+            'customer_id' => $customer->id,
+            'name' => 'Djatmiko Anggoro (Mr)',
+            'email' => 'anggoro.djatmiko@mmki.co.id',
+            'phone' => '085318617468',
+            'position' => 'KD Logistics',
+        ]);
+
+        CustomerContact::query()->create([
+            'customer_id' => $customer->id,
+            'name' => 'Djatmiko  Anggoro (Mr)',
+            'email' => 'anggoro.djatmiko@mmki.co.id',
+            'phone' => '085318617468',
+            'position' => 'Manager',
+        ]);
+
+        $this->assertDatabaseCount('customer_contacts', 2);
+
+        Artisan::call('app:dedupe-customer-contacts', [
+            '--customer-id' => (string) $customer->id,
+            '--by' => 'name',
+        ]);
+
+        $this->assertDatabaseCount('customer_contacts', 1);
+    }
+}

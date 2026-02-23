@@ -10,6 +10,7 @@ class DedupeCustomerContacts extends Command
 {
     protected $signature = 'app:dedupe-customer-contacts
         {--dry-run : Show changes without deleting anything}
+        {--by=default : Deduplication key (default|name)}
         {--customer-id= : Only process a single customer id}
         {--customer-code= : Only process a single customer code}';
 
@@ -18,6 +19,11 @@ class DedupeCustomerContacts extends Command
     public function handle(): int
     {
         $dryRun = (bool) $this->option('dry-run');
+        $by = (string) ($this->option('by') ?? 'default');
+        if (!in_array($by, ['default', 'name'], true)) {
+            $this->error("Invalid --by value. Allowed: default, name");
+            return self::FAILURE;
+        }
 
         $query = Customer::query()->select(['id', 'code']);
 
@@ -35,7 +41,7 @@ class DedupeCustomerContacts extends Command
         $updated = 0;
         $customersAffected = 0;
 
-        $processCustomer = function (Customer $customer) use ($dryRun, &$deleted, &$updated, &$customersAffected) {
+        $processCustomer = function (Customer $customer) use ($dryRun, $by, &$deleted, &$updated, &$customersAffected) {
             $contacts = CustomerContact::query()
                 ->where('customer_id', $customer->id)
                 ->orderBy('id')
@@ -47,7 +53,7 @@ class DedupeCustomerContacts extends Command
 
             $groups = [];
             foreach ($contacts as $contact) {
-                $key = $this->dedupeKey($contact);
+                $key = $this->dedupeKeyBy($contact, $by);
                 $groups[$key] ??= [];
                 $groups[$key][] = $contact;
             }
@@ -61,6 +67,11 @@ class DedupeCustomerContacts extends Command
                 }
 
                 usort($group, function (CustomerContact $a, CustomerContact $b) {
+                    $aScore = $this->completenessScore($a);
+                    $bScore = $this->completenessScore($b);
+                    if ($aScore !== $bScore) {
+                        return $bScore <=> $aScore;
+                    }
                     $aTs = $a->updated_at ? $a->updated_at->getTimestamp() : 0;
                     $bTs = $b->updated_at ? $b->updated_at->getTimestamp() : 0;
                     if ($aTs === $bTs) {
@@ -156,8 +167,13 @@ class DedupeCustomerContacts extends Command
         return self::SUCCESS;
     }
 
-    private function dedupeKey(CustomerContact $contact): string
+    private function dedupeKeyBy(CustomerContact $contact, string $by): string
     {
+        if ($by === 'name') {
+            $name = $this->normalizeName($contact->name);
+            return 'name:' . $name;
+        }
+
         $email = $this->normalizeEmail($contact->email);
         if ($email !== null && $email !== '') {
             return 'email:' . $email;
@@ -168,9 +184,16 @@ class DedupeCustomerContacts extends Command
             return 'phone:' . $phone;
         }
 
-        $name = strtolower(trim((string) $contact->name));
+        $name = $this->normalizeName($contact->name);
         $pos = strtolower(trim((string) ($contact->position ?? '')));
         return 'name:' . $name . '|pos:' . $pos;
+    }
+
+    private function normalizeName(?string $name): string
+    {
+        $name = strtolower(trim((string) $name));
+        $name = preg_replace('/\s+/', ' ', $name);
+        return (string) $name;
     }
 
     private function normalizeEmail(?string $email): ?string
@@ -193,5 +216,23 @@ class DedupeCustomerContacts extends Command
         }
         $s = trim((string) $value);
         return $s === '' ? null : $s;
+    }
+
+    private function completenessScore(CustomerContact $contact): int
+    {
+        $score = 0;
+        if ($this->normalizeField($contact->email) !== null) {
+            $score += 2;
+        }
+        if ($this->normalizeField($contact->phone) !== null) {
+            $score += 2;
+        }
+        if ($this->normalizeField($contact->position) !== null) {
+            $score += 1;
+        }
+        if ($this->normalizeField($contact->name) !== null) {
+            $score += 1;
+        }
+        return $score;
     }
 }
