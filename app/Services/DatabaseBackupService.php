@@ -21,6 +21,7 @@ class DatabaseBackupService
     protected $moduleTables = [
         'sales' => [
             'customers',
+            'customer_contacts',
             'quotations',
             'quotation_items',
             'sales_orders',
@@ -343,7 +344,7 @@ class DatabaseBackupService
             
             foreach ($transactionTables as $table) {
                 if ($this->tableExists($table)) {
-                    DB::table($table)->truncate();
+                    $this->wipeTable($table);
                 }
             }
             
@@ -471,17 +472,17 @@ class DatabaseBackupService
                 }
             }
             
-            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+            Schema::disableForeignKeyConstraints();
             
             $tables = $this->moduleTables[$module];
             
             foreach ($tables as $table) {
                 if ($this->tableExists($table)) {
-                    DB::table($table)->truncate();
+                    $this->wipeTable($table);
                 }
             }
             
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            Schema::enableForeignKeyConstraints();
             
             $this->logSuccess('Module reset completed', "Module: {$module}");
             
@@ -512,7 +513,7 @@ class DatabaseBackupService
             $tables = $this->moduleTransactionTables[$module];
             foreach ($tables as $table) {
                 if ($this->tableExists($table)) {
-                    DB::table($table)->truncate();
+                    $this->wipeTable($table);
                 }
             }
 
@@ -665,6 +666,11 @@ class DatabaseBackupService
     protected function tableExists(string $table): bool
     {
         return Schema::hasTable($table);
+    }
+
+    protected function wipeTable(string $table): void
+    {
+        DB::table($table)->delete();
     }
 
     protected function generateSqlDump(array $tables): string
