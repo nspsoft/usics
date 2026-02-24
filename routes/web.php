@@ -347,6 +347,9 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
 // Manufacturing Module
 Route::prefix('manufacturing')->name('manufacturing.')->middleware(['auth'])->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Manufacturing\ProductionDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/boms/export', [BomController::class, 'export'])->name('boms.export');
+    Route::get('/boms/template', [BomController::class, 'template'])->name('boms.template');
+    Route::post('/boms/import', [BomController::class, 'import'])->name('boms.import');
     Route::resource('boms', BomController::class);
     Route::post('/boms/{bom}/activate', [BomController::class, 'activate'])->name('boms.activate');
     Route::post('/boms/{bom}/archive', [BomController::class, 'archive'])->name('boms.archive');

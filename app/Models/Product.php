@@ -29,6 +29,8 @@ class Product extends Model
         'description',
         'barcode',
         'category_id',
+        'customer_id',
+        'supplier_id',
         'type',
         'product_type',
         'unit_id',
@@ -316,5 +318,15 @@ class Product extends Model
 
         // 2. Must not have any transaction history
         return !$this->hasTransactions();
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 }

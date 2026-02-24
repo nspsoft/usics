@@ -46,25 +46,52 @@ class SalesForecastTemplateExport implements FromCollection, WithHeadings, WithE
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function(AfterSheet $event) {
+            AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet;
+                $spreadsheet = $sheet->getDelegate()->getParent();
 
-                // 1. Add Comments (Instructions)
-                $sheet->getComment('A1')->getText()->createTextRun("Required: Customer Code (e.g., SPINDO-001)");
-                $sheet->getComment('B1')->getText()->createTextRun("Required: Product SKU (e.g., PIPE-GI-0.5)");
-                $sheet->getComment('C1')->getText()->createTextRun("Required Format: YYYY-MM-DD\ne.g., 2026-01-01");
-                $sheet->getComment('D1')->getText()->createTextRun("Required: Numeric value");
+                $sheet->getComment('A1')->getText()->createTextRun('Required: Customer Code (e.g., CUST-001)');
+                $sheet->getComment('B1')->getText()->createTextRun('Required: Product SKU (e.g., PROD-SKU-001)');
+                $sheet->getComment('C1')->getText()->createTextRun("Required: Periode forecast.\nGunakan tanggal hari pertama bulan, format YYYY-MM-DD (e.g., 2026-01-01).");
+                $sheet->getComment('D1')->getText()->createTextRun('Required: Qty forecast. Harus angka ≥ 0.');
+                $sheet->getComment('E1')->getText()->createTextRun('Optional: Catatan tambahan untuk baris forecast ini.');
 
-                // 2. Visual Cues (Mandatory Fields = Red & Bold)
                 $sheet->getStyle('A1:D1')->getFont()->setBold(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_RED));
-                
-                // Optional: Standard Black Bold
                 $sheet->getStyle('E1')->getFont()->setBold(true);
 
-                // Auto-size columns
                 foreach (range('A', 'E') as $col) {
                     $sheet->getColumnDimension($col)->setAutoSize(true);
                 }
+
+                $instructionSheet = $spreadsheet->createSheet();
+                $instructionSheet->setTitle('Instruction');
+
+                $instructionSheet->setCellValue('A1', 'Instruksi Import Sales Forecast');
+                $instructionSheet->mergeCells('A1:D1');
+                $instructionSheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
+                $instructionSheet->setCellValue('A3', 'Langkah umum:');
+                $instructionSheet->setCellValue('A4', '1. Download template ini dari menu Sales Forecast > Import.');
+                $instructionSheet->setCellValue('A5', '2. Isi data mulai dari baris ke-2 di sheet utama.');
+                $instructionSheet->setCellValue('A6', '3. Satu baris = satu kombinasi Customer + Produk + Periode.');
+                $instructionSheet->setCellValue('A7', '4. Simpan file sebagai .xlsx lalu upload kembali di form Import.');
+
+                $instructionSheet->setCellValue('A9', 'Keterangan kolom:');
+                $instructionSheet->setCellValue('A10', 'customer_code *');
+                $instructionSheet->setCellValue('B10', 'Wajib. Kode customer, harus sama persis dengan master customer.');
+                $instructionSheet->setCellValue('A11', 'product_sku *');
+                $instructionSheet->setCellValue('B11', 'Wajib. Kode SKU produk, harus sama dengan master product.');
+                $instructionSheet->setCellValue('A12', 'period *');
+                $instructionSheet->setCellValue('B12', 'Wajib. Tanggal hari pertama bulan forecast (YYYY-MM-DD), contoh 2026-01-01.');
+                $instructionSheet->setCellValue('A13', 'qty *');
+                $instructionSheet->setCellValue('B13', 'Wajib. Qty forecast untuk periode tersebut. Harus angka ≥ 0.');
+                $instructionSheet->setCellValue('A14', 'notes');
+                $instructionSheet->setCellValue('B14', 'Opsional. Catatan tambahan (misal: promo, seasonal, dsb).');
+
+                $instructionSheet->getColumnDimension('A')->setWidth(25);
+                $instructionSheet->getColumnDimension('B')->setWidth(80);
+                $instructionSheet->getStyle('A3')->getFont()->setBold(true);
+                $instructionSheet->getStyle('A9')->getFont()->setBold(true);
             },
         ];
     }

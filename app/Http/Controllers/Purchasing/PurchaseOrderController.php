@@ -425,6 +425,11 @@ class PurchaseOrderController extends Controller
         $oldQty = $item->qty;
         $newQty = $validated['qty'];
 
+        $alreadyReceived = ($item->qty_received ?? 0) - ($item->qty_returned ?? 0);
+        if ($newQty < max(0, $alreadyReceived)) {
+            return back()->with('error', "Quantity cannot be less than already received quantity (" . max(0, $alreadyReceived) . ").");
+        }
+
         if ($oldQty == $newQty) {
             return back();
         }

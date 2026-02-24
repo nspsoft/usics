@@ -5,6 +5,8 @@ namespace App\Imports;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Unit;
+use App\Models\Customer;
+use App\Models\Supplier;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
@@ -43,11 +45,27 @@ class ProductImport implements ToModel, WithHeadingRow, WithCalculatedFormulas
             ]
         );
 
+        // Find Customer (Optional)
+        $customerId = null;
+        if (!empty($row['customer_name'])) {
+            $customer = Customer::where('name', $row['customer_name'])->first();
+            $customerId = $customer?->id;
+        }
+
+        // Find Supplier (Optional)
+        $supplierId = null;
+        if (!empty($row['supplier_name'])) {
+            $supplier = Supplier::where('name', $row['supplier_name'])->first();
+            $supplierId = $supplier?->id;
+        }
+
         $productData = [
             'name'           => $row['name'],
             'description'    => $row['description'] ?? null,
             'barcode'        => $row['barcode'] ?? null,
             'category_id'    => $category->id,
+            'customer_id'    => $customerId,
+            'supplier_id'    => $supplierId,
             'unit_id'        => $unit->id,
             'type'           => $row['item_type'] ?? 'product', // product, service, consumable
             'product_type'   => $row['product_type'] ?? 'raw_material', // raw_material, wip, finished_good, spare_part

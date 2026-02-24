@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatNumber, formatCurrency } from '@/helpers';
 import {
@@ -13,9 +13,14 @@ import {
     ClipboardDocumentListIcon,
     ArrowPathRoundedSquareIcon,
     CalculatorIcon,
+    ArrowDownTrayIcon,
+    ArrowUpTrayIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 import Pagination from '@/Components/Pagination.vue';
+import Modal from '@/Components/Modal.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 const props = defineProps({
     boms: Object,
@@ -53,6 +58,35 @@ const getStatusBadge = (status) => {
     return badges[status] || 'bg-slate-500/20 text-slate-500 dark:text-slate-400 border-slate-500/30';
 };
 
+const showImportModal = ref(false);
+const importForm = useForm({
+    file: null,
+});
+
+const openImportModal = () => {
+    showImportModal.value = true;
+};
+
+const closeImportModal = () => {
+    showImportModal.value = false;
+    importForm.reset();
+};
+
+const handleFileChange = (e) => {
+    importForm.file = e.target.files[0];
+};
+
+const submitImport = () => {
+    importForm.post(route('manufacturing.boms.import'), {
+        preserveScroll: true,
+        onSuccess: () => closeImportModal(),
+    });
+};
+
+const exportBoms = () => {
+    window.location.href = route('manufacturing.boms.export');
+};
+
 </script>
 
 <template>
@@ -81,13 +115,33 @@ const getStatusBadge = (status) => {
                 </select>
             </div>
             
-            <Link
-                :href="route('manufacturing.boms.create')"
-                class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all"
-            >
-                <PlusIcon class="h-5 w-5" />
-                Create BOM
-            </Link>
+            <div class="flex gap-2">
+                <button 
+                    @click="exportBoms"
+                    class="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                    title="Export to Excel"
+                >
+                    <ArrowDownTrayIcon class="h-5 w-5" />
+                    <span class="hidden md:inline">Export</span>
+                </button>
+
+                <button 
+                    @click="openImportModal"
+                    class="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                    title="Import from Excel"
+                >
+                    <ArrowUpTrayIcon class="h-5 w-5" />
+                    <span class="hidden md:inline">Import</span>
+                </button>
+
+                <Link
+                    :href="route('manufacturing.boms.create')"
+                    class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all"
+                >
+                    <PlusIcon class="h-5 w-5" />
+                    Create BOM
+                </Link>
+            </div>
         </div>
 
         <div class="rounded-2xl glass-card overflow-hidden">
@@ -210,8 +264,56 @@ const getStatusBadge = (status) => {
                 </div>
             </div>
         </div>
+
+        <Modal :show="showImportModal" @close="closeImportModal">
+            <div class="p-6 bg-white dark:bg-slate-900 rounded-2xl">
+                <h2 class="text-lg font-medium text-slate-900 dark:text-white mb-4">
+                    Import Bill of Materials
+                </h2>
+                
+                <div class="mb-4">
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
+                        Upload an Excel file (.xlsx, .xls) to import BOM definitions. Rows with the same BOM Code and Version will be grouped into one BOM.
+                    </p>
+                    
+                    <a :href="route('manufacturing.boms.template')" class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-500 mb-4 font-medium">
+                        <ArrowDownTrayIcon class="h-4 w-4" />
+                        Download Template
+                    </a>
+
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">
+                        Required: BOM Code, Product Code (finished good), Component Code, Component Qty.
+                    </p>
+                    
+                    <div class="flex items-center justify-center w-full">
+                        <label for="bom-import-file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:hover:border-slate-500 transition-colors">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <ArrowUpTrayIcon class="w-8 h-8 mb-2 text-slate-500 dark:text-slate-400" />
+                                <p class="mb-2 text-sm text-slate-500 dark:text-slate-400">
+                                    <span class="font-semibold">Click to upload</span>
+                                </p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400" v-if="importForm.file">
+                                    {{ importForm.file.name }}
+                                </p>
+                            </div>
+                            <input id="bom-import-file" type="file" class="hidden" @change="handleFileChange" accept=".xlsx, .xls, .csv" />
+                        </label>
+                    </div>
+                    <div v-if="importForm.errors.file" class="text-red-500 text-xs mt-1">{{ importForm.errors.file }}</div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 mt-6">
+                    <SecondaryButton @click="closeImportModal"> Cancel </SecondaryButton>
+                    <PrimaryButton 
+                        @click="submitImport" 
+                        :class="{ 'opacity-25': importForm.processing }" 
+                        :disabled="!importForm.file || importForm.processing"
+                    >
+                        Import Data
+                    </PrimaryButton>
+                </div>
+            </div>
+        </Modal>
     </AppLayout>
 </template>
-
-
 

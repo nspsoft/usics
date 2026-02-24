@@ -35,22 +35,36 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
+        $company = null;
+
+        try {
+            $company = \App\Models\Company::query()
+                ->select('name', 'logo', 'updated_at')
+                ->first();
+        } catch (\Throwable $e) {
+            $company = null;
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
-                'permissions' => $request->user() ? $request->user()->getAllPermissions()->pluck('name') : [],
-                'roles' => $request->user() ? $request->user()->getRoleNames() : [],
-                'unreadNotificationsCount' => $request->user() ? $request->user()->unreadNotifications()->count() : 0,
-                'recentNotifications' => $request->user() ? $request->user()->notifications()->latest()->limit(5)->get() : [],
+                'user' => $user,
+                'permissions' => $user ? $user->getAllPermissions()->pluck('name') : [],
+                'roles' => $user ? $user->getRoleNames() : [],
+                'unreadNotificationsCount' => $user ? $user->unreadNotifications()->count() : 0,
+                'recentNotifications' => $user ? $user->notifications()->latest()->limit(5)->get() : [],
             ],
-            'company' => \App\Models\Company::first() ? [
-                'name' => \App\Models\Company::first()->name,
-                'logo' => \App\Models\Company::first()->logo,
-            ] : [
-                'name' => 'JICOS ERP',
-                'logo' => '/images/jicos.png',
-            ],
+            'company' => $company
+                ? [
+                    'name' => $company->name ?? 'JICOS ERP',
+                    'logo' => $company->logo ?? '/images/jicos.png',
+                ]
+                : [
+                    'name' => 'JICOS ERP',
+                    'logo' => '/images/jicos.png',
+                ],
             'csrf_token' => csrf_token(),
         ];
     }

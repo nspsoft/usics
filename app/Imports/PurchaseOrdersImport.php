@@ -17,7 +17,6 @@ class PurchaseOrdersImport implements ToCollection, WithHeadingRow
 {
     public function collection(Collection $rows)
     {
-        // Group rows by unique PO identifier (Supplier Code + Warehouse Name + Order Date)
         $grouped = $rows->groupBy(function ($row) {
             $date = $this->parseDate($row['order_date']);
             return strtolower(trim($row['supplier_code'])) . '|' . strtolower(trim($row['warehouse_name'])) . '|' . $date;
@@ -36,8 +35,15 @@ class PurchaseOrdersImport implements ToCollection, WithHeadingRow
                     $orderDate = $this->parseDate($firstRow['order_date']);
                     $expectedDate = !empty($firstRow['expected_date']) ? $this->parseDate($firstRow['expected_date']) : null;
 
+                    $rawPoNumber = $firstRow['po_number'] ?? null;
+                    if ($rawPoNumber && trim($rawPoNumber) !== '') {
+                        $poNumber = trim($rawPoNumber);
+                    } else {
+                        $poNumber = PurchaseOrder::generatePoNumber();
+                    }
+
                     $po = PurchaseOrder::create([
-                        'po_number' => PurchaseOrder::generatePoNumber(),
+                        'po_number' => $poNumber,
                         'supplier_id' => $supplier->id,
                         'warehouse_id' => $warehouse->id,
                         'order_date' => $orderDate,

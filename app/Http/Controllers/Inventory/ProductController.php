@@ -85,6 +85,8 @@ class ProductController extends Controller
             'categories' => Category::where('type', 'product')->orderBy('name')->get(),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
             'warehouses' => Warehouse::where('is_active', true)->orderBy('name')->get(),
+            'customers' => Customer::active()->orderBy('name')->get(['id', 'name']),
+            'suppliers' => Supplier::active()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -99,6 +101,8 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'barcode' => 'nullable|string|max:50',
             'category_id' => 'nullable|exists:categories,id',
+            'customer_id' => 'nullable|exists:customers,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
             'type' => 'required|in:product,service,consumable',
             'product_type' => 'required|in:raw_material,wip,finished_good,spare_part',
             'unit_id' => 'nullable|exists:units,id',
@@ -160,6 +164,8 @@ class ProductController extends Controller
             'categories' => Category::where('type', 'product')->orderBy('name')->get(),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
             'warehouses' => Warehouse::where('is_active', true)->orderBy('name')->get(),
+            'customers' => Customer::active()->orderBy('name')->get(['id', 'name']),
+            'suppliers' => Supplier::active()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -174,6 +180,8 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'barcode' => 'nullable|string|max:50',
             'category_id' => 'nullable|exists:categories,id',
+            'customer_id' => 'nullable|exists:customers,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
             'type' => 'required|in:product,service,consumable',
             'product_type' => 'required|in:raw_material,wip,finished_good,spare_part',
             'unit_id' => 'nullable|exists:units,id',

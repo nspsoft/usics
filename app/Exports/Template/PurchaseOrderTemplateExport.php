@@ -14,17 +14,19 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
     {
         return collect([
             [
-                '2026-02-15',       // Order Date
-                '2026-02-20',       // Expected Date
-                'SUP-001',          // Supplier Code
-                'Main Warehouse',   // Warehouse Name
-                'PROD-001',         // Product Code
-                100,                // Quantity
-                50000,              // Unit Price
-                0,                  // Discount %
-                'Urgent Order',     // Notes
+                'PO-2026-0001',
+                '2026-02-15',
+                '2026-02-20',
+                'SUP-001',
+                'Main Warehouse',
+                'PROD-001',
+                100,
+                50000,
+                0,
+                'Urgent Order',
             ],
             [
+                'PO-2026-0002',
                 '2026-02-15',
                 '2026-02-20',
                 'SUP-001',
@@ -36,6 +38,7 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
                 '',
             ],
             [
+                'PO-2026-0003',
                 '2026-02-16',
                 '',
                 'SUP-002',
@@ -52,6 +55,7 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
     public function headings(): array
     {
         return [
+            'PO Number',
             'Order Date',
             'Expected Date',
             'Supplier Code',
@@ -67,23 +71,84 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function(AfterSheet $event) {
-                $sheet = $event->sheet;
-                $sheet->getDelegate()->getStyle('A1:I1')->getFont()->setBold(true);
-                
-                // Add comments
-                $sheet->getComment('A1')->getText()->createTextRun("Required. Format: YYYY-MM-DD\nRows with same Date + Supplier + Warehouse will be grouped into one PO.");
-                $sheet->getComment('B1')->getText()->createTextRun("Optional. Format: YYYY-MM-DD");
-                $sheet->getComment('C1')->getText()->createTextRun("Required. Must match an existing Supplier Code.");
-                $sheet->getComment('D1')->getText()->createTextRun("Required. Must match an existing Warehouse Name.");
-                $sheet->getComment('E1')->getText()->createTextRun("Required. Must match an existing Product Code.");
-                $sheet->getComment('F1')->getText()->createTextRun("Required. Numeric.");
-                $sheet->getComment('G1')->getText()->createTextRun("Required. Numeric.");
-                $sheet->getComment('H1')->getText()->createTextRun("Optional. Numeric (0-100).");
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                $sheet->getStyle('A1:J1')->getFont()->setBold(true);
 
-                // Color headers
+                $sheet->getComment('A1')->getText()->createTextRun(
+                    'Optional. Nomor PO dari sistem lama. Jika dikosongkan, sistem akan membuat PO Number otomatis.'
+                );
+                $sheet->getComment('B1')->getText()->createTextRun(
+                    "Required. Tanggal PO dalam format YYYY-MM-DD atau tanggal Excel.\nBaris dengan Order Date + Supplier + Warehouse yang sama akan digabung menjadi satu PO."
+                );
+                $sheet->getComment('C1')->getText()->createTextRun(
+                    'Optional. Tanggal estimasi kedatangan barang. Format YYYY-MM-DD atau tanggal Excel.'
+                );
+                $sheet->getComment('D1')->getText()->createTextRun(
+                    'Required. Kode supplier. Harus sama persis dengan Supplier Code di master supplier.'
+                );
+                $sheet->getComment('E1')->getText()->createTextRun(
+                    'Required. Nama gudang. Harus sama persis dengan Warehouse Name di master gudang.'
+                );
+                $sheet->getComment('F1')->getText()->createTextRun(
+                    'Required. Kode produk. Harus sama dengan Product Code di master produk.'
+                );
+                $sheet->getComment('G1')->getText()->createTextRun(
+                    'Required. Qty yang dipesan. Harus berupa angka.'
+                );
+                $sheet->getComment('H1')->getText()->createTextRun(
+                    'Required. Harga per unit. Harus berupa angka.'
+                );
+                $sheet->getComment('I1')->getText()->createTextRun(
+                    'Optional. Diskon dalam persen (0-100).'
+                );
+                $sheet->getComment('J1')->getText()->createTextRun(
+                    'Optional. Catatan tambahan untuk baris PO ini.'
+                );
+
                 $redColor = new Color(Color::COLOR_RED);
-                $sheet->getDelegate()->getStyle('A1:G1')->getFont()->setColor($redColor);
+                $sheet->getStyle('B1:H1')->getFont()->setColor($redColor);
+
+                $spreadsheet = $sheet->getParent();
+                $instructionSheet = $spreadsheet->createSheet();
+                $instructionSheet->setTitle('Instruction');
+
+                $instructionSheet->setCellValue('A1', 'Instruksi Import Purchase Orders');
+                $instructionSheet->mergeCells('A1:D1');
+                $instructionSheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
+                $instructionSheet->setCellValue('A3', 'Langkah umum:');
+                $instructionSheet->setCellValue('A4', '1. Download template ini dari menu Purchase Orders > Import.');
+                $instructionSheet->setCellValue('A5', '2. Isi data mulai dari baris ke-2 di sheet utama.');
+                $instructionSheet->setCellValue('A6', '3. Baris dengan Order Date + Supplier Code + Warehouse Name yang sama akan digabung menjadi satu PO.');
+                $instructionSheet->setCellValue('A7', '4. Simpan file sebagai .xlsx lalu upload kembali di form Import.');
+
+                $instructionSheet->setCellValue('A9', 'Keterangan kolom:');
+                $instructionSheet->setCellValue('A10', 'PO Number');
+                $instructionSheet->setCellValue('B10', 'Opsional. Nomor PO dari sistem lama. Jika dikosongkan, sistem akan membuat nomor otomatis.');
+                $instructionSheet->setCellValue('A11', 'Order Date *');
+                $instructionSheet->setCellValue('B11', 'Wajib. Tanggal PO. Format YYYY-MM-DD atau tanggal Excel.');
+                $instructionSheet->setCellValue('A12', 'Expected Date');
+                $instructionSheet->setCellValue('B12', 'Opsional. Perkiraan tanggal barang datang.');
+                $instructionSheet->setCellValue('A13', 'Supplier Code *');
+                $instructionSheet->setCellValue('B13', 'Wajib. Kode supplier sesuai master supplier.');
+                $instructionSheet->setCellValue('A14', 'Warehouse Name *');
+                $instructionSheet->setCellValue('B14', 'Wajib. Nama gudang sesuai master gudang.');
+                $instructionSheet->setCellValue('A15', 'Product Code *');
+                $instructionSheet->setCellValue('B15', 'Wajib. Kode produk sesuai master produk.');
+                $instructionSheet->setCellValue('A16', 'Quantity *');
+                $instructionSheet->setCellValue('B16', 'Wajib. Qty yang dipesan. Harus angka ≥ 0.');
+                $instructionSheet->setCellValue('A17', 'Unit Price *');
+                $instructionSheet->setCellValue('B17', 'Wajib. Harga per unit. Harus angka ≥ 0.');
+                $instructionSheet->setCellValue('A18', 'Discount %');
+                $instructionSheet->setCellValue('B18', 'Opsional. Persentase diskon baris ini (0-100).');
+                $instructionSheet->setCellValue('A19', 'Notes');
+                $instructionSheet->setCellValue('B19', 'Opsional. Catatan tambahan untuk baris PO.');
+
+                $instructionSheet->getColumnDimension('A')->setWidth(25);
+                $instructionSheet->getColumnDimension('B')->setWidth(80);
+                $instructionSheet->getStyle('A3')->getFont()->setBold(true);
+                $instructionSheet->getStyle('A9')->getFont()->setBold(true);
             },
         ];
     }

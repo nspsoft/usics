@@ -8,13 +8,19 @@ import {
     PhotoIcon,
     QuestionMarkCircleIcon,
 } from '@heroicons/vue/24/outline';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 
 const props = defineProps({
     product: Object,
     categories: Array,
     units: Array,
     warehouses: Array,
+    customers: Array,
+    suppliers: Array,
 });
+
+const customerOptions = computed(() => props.customers?.map(c => ({ id: c.id, label: c.name })) || []);
+const supplierOptions = computed(() => props.suppliers?.map(s => ({ id: s.id, label: s.name })) || []);
 
 const isEditing = computed(() => !!props.product);
 
@@ -24,6 +30,8 @@ const form = useForm({
     description: props.product?.description || '',
     barcode: props.product?.barcode || '',
     category_id: props.product?.category_id || '',
+    customer_id: props.product?.customer_id || '',
+    supplier_id: props.product?.supplier_id || '',
     type: props.product?.type || 'product',
     product_type: props.product?.product_type || 'finished_good',
     unit_id: props.product?.unit_id || '',
@@ -251,6 +259,59 @@ watch([() => form.cost_price, profitMargin, autoCalculate], ([newCost, newMargin
                                             {{ type.label }}
                                         </option>
                                     </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Partner Information -->
+                    <div class="rounded-2xl glass-card">
+                        <div class="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
+                            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Partner Information</h2>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">
+                                        Exclusive Customer
+                                        <div class="group relative cursor-help">
+                                            <QuestionMarkCircleIcon class="h-4 w-4 text-slate-500 hover:text-blue-400 transition-colors" />
+                                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                                <p class="text-xs text-slate-900 dark:text-white">
+                                                    <span class="font-bold block mb-1">Pelanggan Eksklusif</span>
+                                                    Jika diisi, produk ini hanya akan muncul untuk pelanggan yang dipilih.
+                                                </p>
+                                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-slate-50 dark:bg-slate-800 border-r border-b border-slate-200 dark:border-slate-700"></div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <SearchableSelect
+                                        v-model="form.customer_id"
+                                        :options="customerOptions"
+                                        placeholder="Select customer (Optional)"
+                                        class="block w-full"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">
+                                        Preferred Supplier
+                                        <div class="group relative cursor-help">
+                                            <QuestionMarkCircleIcon class="h-4 w-4 text-slate-500 hover:text-blue-400 transition-colors" />
+                                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                                <p class="text-xs text-slate-900 dark:text-white">
+                                                    <span class="font-bold block mb-1">Pemasok Utama</span>
+                                                    Pemasok default untuk produk ini saat membuat Purchase Order.
+                                                </p>
+                                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-slate-50 dark:bg-slate-800 border-r border-b border-slate-200 dark:border-slate-700"></div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <SearchableSelect
+                                        v-model="form.supplier_id"
+                                        :options="supplierOptions"
+                                        placeholder="Select supplier (Optional)"
+                                        class="block w-full"
+                                    />
                                 </div>
                             </div>
                         </div>

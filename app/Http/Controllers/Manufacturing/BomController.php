@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Manufacturing;
 
+use App\Exports\BomExport;
+use App\Exports\Template\BomTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Imports\BomImport;
 use App\Models\Bom;
 use App\Models\Product;
 use App\Models\Unit;
@@ -10,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
 
 class BomController extends Controller
 {
@@ -237,6 +241,37 @@ class BomController extends Controller
 
         return redirect()->route('manufacturing.boms.index')
             ->with('success', 'BOM updated successfully.');
+    }
+
+    public function export()
+    {
+        return Excel::download(new BomExport, 'boms_' . now()->format('Y-m-d') . '.xlsx');
+    }
+
+    public function template()
+    {
+        return Excel::download(new BomTemplateExport, 'boms_template.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv|max:5120',
+        ]);
+
+        $import = new BomImport();
+
+        Excel::import($import, $request->file('file'));
+
+        $message = "Import completed: {$import->importedCount} row(s) created.";
+        if ($import->skippedCount > 0) {
+            $message .= " {$import->skippedCount} row(s) skipped.";
+        }
+        if (!empty($import->errors)) {
+            $message .= ' Errors: ' . implode('; ', array_slice($import->errors, 0, 5));
+        }
+
+        return back()->with($import->importedCount > 0 ? 'success' : 'error', $message);
     }
 
     public function activate(Bom $bom)
