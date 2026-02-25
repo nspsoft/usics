@@ -283,7 +283,7 @@
                      <div style="float: left; padding-left: 5px;">IDR</div>
                      <div style="float: right; padding-right: 5px;">{{ number_format($item->qty * $item->unit_price, 0, ',', '.') }}</div>
                 </td>
-                <td class="italic" style="font-size: 8pt; padding-top: 10px;">{{ $item->notes }}</td>
+                <td class="italic" style="font-size: 8pt; padding-top: 10px;">{{ $item->notes ?? '' }}</td>
             </tr>
             @endforeach
             
@@ -335,6 +335,11 @@
                 <div>Kabupaten Bekasi, Provinsi Jawa Barat</div>
             </td>
             <td class="box-cell" style="border-right: none;">
+                <div class="font-bold italic">Remarks :</div>
+                <div class="italic" style="margin-top: 5px;">
+                    {!! nl2br(e($purchaseOrder->notes ?? '-')) !!}
+                </div>
+                <div style="height: 10px;"></div>
                 <div class="font-bold italic">Terms of payment :</div>
                 <div class="italic" style="margin-top: 5px;">
                     - Term of Payment {{ $purchaseOrder->payment_terms ?? '30' }} Days after invoice Received

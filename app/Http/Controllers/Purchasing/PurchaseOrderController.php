@@ -170,6 +170,7 @@ class PurchaseOrderController extends Controller
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
+            'items.*.notes' => 'nullable|string|max:255',
             'items.*.qty' => 'required|numeric|min:0.0001',
             'items.*.unit_id' => 'nullable|exists:units,id',
             'items.*.unit_price' => 'required|numeric|min:0',
@@ -200,6 +201,7 @@ class PurchaseOrderController extends Controller
             foreach ($validated['items'] as $item) {
                 $po->items()->create([
                     'product_id' => $item['product_id'],
+                    'notes' => $item['notes'] ?? null,
                     'qty' => $item['qty'],
                     'unit_id' => $item['unit_id'] ?? null,
                     'unit_price' => $item['unit_price'],
@@ -285,6 +287,7 @@ class PurchaseOrderController extends Controller
             'items' => 'required|array|min:1',
             'items.*.id' => 'nullable|exists:purchase_order_items,id',
             'items.*.product_id' => 'required|exists:products,id',
+            'items.*.notes' => 'nullable|string|max:255',
             'items.*.qty' => 'required|numeric|min:0.0001',
             'items.*.unit_id' => 'nullable|exists:units,id',
             'items.*.unit_price' => 'required|numeric|min:0',
@@ -318,6 +321,7 @@ class PurchaseOrderController extends Controller
 
                     $existingItem->update([
                         'product_id' => $item['product_id'],
+                        'notes' => $item['notes'] ?? null,
                         'qty' => $item['qty'],
                         'unit_id' => $item['unit_id'] ?? null,
                         'unit_price' => $item['unit_price'],
@@ -326,6 +330,7 @@ class PurchaseOrderController extends Controller
                 } else {
                     $order->items()->create([
                         'product_id' => $item['product_id'],
+                        'notes' => $item['notes'] ?? null,
                         'qty' => $item['qty'],
                         'unit_id' => $item['unit_id'] ?? null,
                         'unit_price' => $item['unit_price'],

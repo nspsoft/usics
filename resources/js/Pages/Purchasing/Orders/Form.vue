@@ -47,6 +47,7 @@ const form = useForm({
         discount_percent: parseFloat(item.discount_percent || 0),
         unit_id: item.unit_id,
         description: item.description || '',
+        notes: item.notes || '',
     })) || [{
         product_id: '',
         qty: 1,
@@ -54,6 +55,7 @@ const form = useForm({
         discount_percent: 0,
         unit_id: null,
         description: '',
+        notes: '',
     }],
 });
 
@@ -87,6 +89,7 @@ const addItem = () => {
         discount_percent: 0,
         unit_id: null,
         description: '',
+        notes: '',
     });
 };
 
@@ -229,6 +232,11 @@ const submit = () => {
                                         <TrashIcon class="h-4 w-4" />
                                     </button>
                                 </div>
+
+                                <div class="col-span-12">
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Remarks</label>
+                                    <input type="text" v-model="item.notes" maxlength="255" class="w-full rounded-lg border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500" placeholder="Remarks per item..." />
+                                </div>
                             </div>
                         </div>
 
@@ -256,4 +264,3 @@ const submit = () => {
         </div>
     </AppLayout>
 </template>
-

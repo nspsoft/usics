@@ -14,6 +14,7 @@ class PurchaseOrderItem extends Model
         'purchase_order_id',
         'product_id',
         'description',
+        'notes',
         'qty',
         'unit_id',
         'unit_price',
