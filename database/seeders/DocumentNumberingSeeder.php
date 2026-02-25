@@ -52,23 +52,15 @@ class DocumentNumberingSeeder extends Seeder
                 'code' => 'delivery_order',
                 'name' => 'Delivery Order',
                 'prefix' => 'DO',
-                'format' => '{PREFIX}/{y}/{m}/{NUMBER}',
+                'format' => '{NUMBER}/DO/JRI-{CUST_CODE}/{ROMAN_MONTH}/{y}',
                 'padding' => 3,
             ],
-             [
+            [
                 'module' => 'sales',
                 'code' => 'quotation',
                 'name' => 'Quotation',
                 'prefix' => 'QUOT',
                 'format' => '{NUMBER}/QUOT/JRI-{CUST_CODE}/{ROMAN_MONTH}/{y}',
-                'padding' => 3,
-            ],
-            [
-                'module' => 'sales',
-                'code' => 'delivery_order',
-                'name' => 'Delivery Order',
-                'prefix' => 'DO',
-                'format' => '{NUMBER}/DO/JRI-{CUST_CODE}/{ROMAN_MONTH}/{y}',
                 'padding' => 3,
             ],
             // Purchasing
