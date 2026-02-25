@@ -415,10 +415,11 @@ class SubcontractOrderController extends Controller
 
         return DB::transaction(function () use ($subcontractOrder) {
             $workOrder = $subcontractOrder->workOrder;
+            $supplier = \App\Models\Supplier::find($subcontractOrder->supplier_id);
             
             // 1. Create Purchase Order
             $po = PurchaseOrder::create([
-                'po_number' => PurchaseOrder::generatePoNumber(),
+                'po_number' => PurchaseOrder::generatePoNumber($supplier, now()),
                 'supplier_id' => $subcontractOrder->supplier_id,
                 'warehouse_id' => $workOrder->warehouse_id,
                 'order_date' => now(),

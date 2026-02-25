@@ -116,7 +116,7 @@ class DashboardSeeder extends Seeder
                 
                 $po = PurchaseOrder::create([
                     'company_id' => $company->id,
-                    'po_number' => PurchaseOrder::generatePoNumber(),
+                    'po_number' => PurchaseOrder::generatePoNumber($supplier, $poDate),
                     'supplier_id' => $supplier->id,
                     'warehouse_id' => $mainWarehouse->id,
                     'order_date' => $poDate,

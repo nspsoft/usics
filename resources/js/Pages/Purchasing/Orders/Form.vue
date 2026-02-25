@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
@@ -55,6 +55,28 @@ const form = useForm({
         description: '',
     }],
 });
+
+const refreshPoNumber = async () => {
+    if (isEdit.value) return;
+    if (!form.supplier_id || !form.order_date) return;
+
+    const supplier = props.suppliers?.find(s => String(s.id) === String(form.supplier_id));
+    if (!supplier?.code) return;
+
+    try {
+        const res = await fetch(`${route('numbering.preview', 'purchase_order')}?SUPP_CODE=${encodeURIComponent(supplier.code)}&date=${encodeURIComponent(form.order_date)}`, {
+            headers: { 'Accept': 'application/json' },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data?.preview) {
+            form.po_number = data.preview;
+        }
+    } catch (e) {
+    }
+};
+
+watch(() => [form.supplier_id, form.order_date], refreshPoNumber, { immediate: true });
 
 const addItem = () => {
     form.items.push({
@@ -228,6 +250,5 @@ const submit = () => {
         </div>
     </AppLayout>
 </template>
-
 
 

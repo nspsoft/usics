@@ -39,7 +39,7 @@ class PurchaseOrdersImport implements ToCollection, WithHeadingRow
                     if ($rawPoNumber && trim($rawPoNumber) !== '') {
                         $poNumber = trim($rawPoNumber);
                     } else {
-                        $poNumber = PurchaseOrder::generatePoNumber();
+                        $poNumber = PurchaseOrder::generatePoNumber($supplier, $orderDate);
                     }
 
                     $po = PurchaseOrder::create([

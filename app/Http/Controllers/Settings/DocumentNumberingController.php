@@ -62,10 +62,14 @@ class DocumentNumberingController extends Controller
     /**
      * Preview generated number
      */
-    public function preview(DocumentNumberService $service, $code)
+    public function preview(Request $request, DocumentNumberService $service, $code)
     {
+        $date = $request->query('date');
+        $params = $request->query();
+        unset($params['date']);
+
         return response()->json([
-            'preview' => $service->preview($code)
+            'preview' => $service->preview($code, $params, $date)
         ]);
     }
 }

@@ -184,10 +184,14 @@ class PurchaseOrder extends Model
     /**
      * Generate PO number
      */
-    public static function generatePoNumber(): string
+    public static function generatePoNumber(?Supplier $supplier = null, $date = null): string
     {
         try {
-            return app(\App\Services\DocumentNumberService::class)->generate('purchase_order');
+            return app(\App\Services\DocumentNumberService::class)->generate(
+                'purchase_order',
+                ['SUPP_CODE' => $supplier?->code ?? ''],
+                $date
+            );
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning("Document Numbering failing for purchase_order: " . $e->getMessage());
             
@@ -207,6 +211,19 @@ class PurchaseOrder extends Model
             }
 
             return $prefix . $newNumber;
+        }
+    }
+
+    public static function previewPoNumber(?Supplier $supplier = null, $date = null): string
+    {
+        try {
+            return app(\App\Services\DocumentNumberService::class)->preview(
+                'purchase_order',
+                ['SUPP_CODE' => $supplier?->code ?? ''],
+                $date
+            );
+        } catch (\Exception $e) {
+            return '';
         }
     }
 

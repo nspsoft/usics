@@ -76,8 +76,8 @@ class DocumentNumberingSeeder extends Seeder
                 'module' => 'purchasing',
                 'code' => 'purchase_order',
                 'name' => 'Purchase Order',
-                'prefix' => 'PO',
-                'format' => '{PREFIX}/{y}/{m}/{NUMBER}',
+                'prefix' => 'PRCH',
+                'format' => 'JRI-{SUPP_CODE}/{y}/{m}/PRCH/{NUMBER}',
                 'padding' => 3,
             ],
             [

@@ -10,6 +10,7 @@ use App\Models\PurchaseRequest;
 use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\Warehouse;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -146,7 +147,7 @@ class PurchaseOrderController extends Controller
 
         return Inertia::render('Purchasing/Orders/Form', [
             'purchaseOrder' => $purchaseOrder,
-            'poNumber' => PurchaseOrder::generatePoNumber(),
+            'poNumber' => null,
             'suppliers' => Supplier::active()->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
             'products' => Product::active()->with('unit')->orderBy('name')->get(),
@@ -160,7 +161,6 @@ class PurchaseOrderController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'po_number' => 'required|string|max:30|unique:purchase_orders,po_number',
             'supplier_id' => 'required|exists:suppliers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'order_date' => 'required|date',
@@ -176,9 +176,16 @@ class PurchaseOrderController extends Controller
             'items.*.discount_percent' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use ($validated) {
+            $supplier = Supplier::findOrFail($validated['supplier_id']);
+            $poNumber = app(DocumentNumberService::class)->generate(
+                'purchase_order',
+                ['SUPP_CODE' => $supplier->code ?? ''],
+                $validated['order_date']
+            );
+
             $po = PurchaseOrder::create([
-                'po_number' => $validated['po_number'],
+                'po_number' => $poNumber,
                 'supplier_id' => $validated['supplier_id'],
                 'warehouse_id' => $validated['warehouse_id'],
                 'order_date' => $validated['order_date'],
