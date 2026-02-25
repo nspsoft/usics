@@ -37,6 +37,7 @@ const form = useForm({
     warehouse_id: props.purchaseOrder?.warehouse_id || '',
     order_date: props.purchaseOrder?.order_date || new Date().toISOString().split('T')[0],
     expected_date: props.purchaseOrder?.expected_date || '',
+    tax_percent: props.purchaseOrder?.tax_percent ?? 11,
     notes: props.purchaseOrder?.notes || '',
     items: props.purchaseOrder?.items?.map(item => ({
         id: item.id,
@@ -167,6 +168,11 @@ const submit = () => {
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Expected Date</label>
                             <input type="date" v-model="form.expected_date" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" />
                         </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">VAT (%)</label>
+                            <input type="number" v-model="form.tax_percent" min="0" max="100" step="any" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" />
+                        </div>
                     </div>
 
                     <!-- Items -->
@@ -250,5 +256,4 @@ const submit = () => {
         </div>
     </AppLayout>
 </template>
-
 
