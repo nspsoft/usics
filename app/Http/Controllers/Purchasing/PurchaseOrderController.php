@@ -306,7 +306,7 @@ class PurchaseOrderController extends Controller
             $existingIds = collect($validated['items'])->pluck('id')->filter()->all();
             
             // Delete items that are not in the request
-            $order->items()->whereNotIn('id', $existingIds)->delete();
+            $order->items()->whereNotIn('id', $existingIds)->get()->each->delete();
 
             // Update or create items
             foreach ($validated['items'] as $item) {
@@ -316,7 +316,7 @@ class PurchaseOrderController extends Controller
                         throw new \Exception("Quantity for product {$existingItem->product->name} cannot be less than already received quantity ({$existingItem->qty_received}).");
                     }
 
-                    $order->items()->where('id', $item['id'])->update([
+                    $existingItem->update([
                         'product_id' => $item['product_id'],
                         'qty' => $item['qty'],
                         'unit_id' => $item['unit_id'] ?? null,
@@ -334,8 +334,8 @@ class PurchaseOrderController extends Controller
                 }
             }
 
-            // Totals are auto-recalculated via PurchaseOrderItem::saved event
-            $order->refresh();
+            $order->refresh()->load('items');
+            $order->calculateTotals();
         });
 
         return redirect()->route('purchasing.orders.index')
