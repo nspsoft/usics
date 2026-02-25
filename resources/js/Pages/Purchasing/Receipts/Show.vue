@@ -90,6 +90,10 @@ const getStatusBadge = (status) => {
                                 <p class="text-[10px] text-slate-500 uppercase font-bold">Receipt Date</p>
                                 <p class="text-sm text-slate-900 dark:text-white">{{ formatDate(receipt.receipt_date) }}</p>
                             </div>
+                            <div v-if="receipt.delivery_note_number">
+                                <p class="text-[10px] text-slate-500 uppercase font-bold">No SJ Supplier</p>
+                                <p class="text-sm font-mono text-slate-900 dark:text-white">{{ receipt.delivery_note_number }}</p>
+                            </div>
                             <div>
                                 <p class="text-[10px] text-slate-500 uppercase font-bold">Warehouse</p>
                                 <p class="text-sm text-slate-900 dark:text-white">{{ receipt.warehouse?.name }}</p>

@@ -22,7 +22,7 @@ class SyncDeliveryOrders extends Command
         $dryRun = $this->option('dry-run');
 
         $sos = SalesOrder::whereIn('status', ['delivered', 'completed', 'partial', 'shipped'])
-            ->with(['items', 'deliveryOrders.items'])
+            ->with(['items', 'deliveryOrders.items', 'customer'])
             ->get();
 
         $createdCount = 0;
@@ -53,9 +53,23 @@ class SyncDeliveryOrders extends Command
                 
                 if (!$dryRun) {
                     DB::transaction(function () use ($so, $missingItems, $systemUser, &$createdCount) {
+                        $customer = $so->customer;
+                        $custCode = $customer ? ($customer->code ?? 'GEN') : 'GEN';
+                        $roman = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII', 9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'];
+                        $monthRoman = $roman[(int) date('n')];
+
+                        try {
+                            $doNumber = app(\App\Services\DocumentNumberService::class)->generate('delivery_order', [
+                                'CUST_CODE' => $custCode,
+                                'ROMAN_MONTH' => $monthRoman
+                            ]);
+                        } catch (\Exception $e) {
+                            $doNumber = DeliveryOrder::generateDoNumber();
+                        }
+
                         $do = DeliveryOrder::create([
                             'company_id' => $so->company_id ?? 1,
-                            'do_number' => DeliveryOrder::generateDoNumber(),
+                            'do_number' => $doNumber,
                             'sales_order_id' => $so->id,
                             'customer_id' => $so->customer_id,
                             'warehouse_id' => $so->warehouse_id,

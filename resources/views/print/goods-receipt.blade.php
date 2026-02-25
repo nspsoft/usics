@@ -151,6 +151,13 @@
                         <td class="text-center">:</td>
                         <td class="text-right">{{ date('d F Y', strtotime($receipt->receipt_date)) }}</td>
                     </tr>
+                    @if($receipt->delivery_note_number)
+                    <tr>
+                        <td class="font-bold">No. SJ Supplier</td>
+                        <td class="text-center">:</td>
+                        <td class="text-right font-bold">{{ $receipt->delivery_note_number }}</td>
+                    </tr>
+                    @endif
                     @if($receipt->purchaseOrder)
                     <tr>
                         <td class="font-bold">No. PO</td>

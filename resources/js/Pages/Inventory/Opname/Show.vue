@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import axios from 'axios';
+import { Html5Qrcode } from 'html5-qrcode';
 import {
     ArrowLeftIcon,
     MagnifyingGlassIcon,
@@ -15,6 +16,8 @@ import {
     CheckIcon,
     XMarkIcon,
     FunnelIcon,
+    QrCodeIcon,
+    CameraIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber } from '@/helpers';
 
@@ -27,6 +30,13 @@ const filterMode = ref('all'); // all | changed | unchanged
 const savingItemId = ref(null);
 const savedItemId = ref(null);
 const errorItemId = ref(null);
+const showScanModal = ref(false);
+const scanMode = ref('location');
+const scanning = ref(false);
+const scanError = ref('');
+const scannedLocation = ref(null);
+const locationProductIds = ref(null);
+let html5QrCode = null;
 
 // Local state for items
 const items = ref(
@@ -69,7 +79,116 @@ const filteredItems = computed(() => {
         list = list.filter(i => i.qty_difference === 0);
     }
 
+    if (locationProductIds.value && Array.isArray(locationProductIds.value)) {
+        const set = new Set(locationProductIds.value.map(Number));
+        list = list.filter(i => set.has(Number(i.product?.id)));
+    }
+
     return list;
+});
+
+const parseScanText = (text) => {
+    const raw = String(text || '').trim();
+    if (!raw) return null;
+
+    const locMatch = raw.match(/LOC\s*[:=]\s*([A-Z0-9._-]+)/i);
+    if (locMatch) return { type: 'location', code: locMatch[1].trim().toUpperCase() };
+
+    const skuMatch = raw.match(/SKU\s*[:=]\s*([A-Z0-9._-]+)/i);
+    const qtyMatch = raw.match(/QTY\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)/i);
+    if (skuMatch) return { type: 'product', sku: skuMatch[1].trim().toUpperCase(), qty: qtyMatch ? Number(qtyMatch[1]) : 1 };
+
+    try {
+        const obj = JSON.parse(raw);
+        if (obj.loc || obj.LOC) return { type: 'location', code: String(obj.loc || obj.LOC).trim().toUpperCase() };
+        if (obj.sku || obj.SKU) return { type: 'product', sku: String(obj.sku || obj.SKU).trim().toUpperCase(), qty: obj.qty || obj.QTY || 1 };
+    } catch (e) {}
+
+    const token = raw.match(/[A-Z0-9._-]{3,}/i);
+    if (token) {
+        const t = token[0].trim().toUpperCase();
+        return scanMode.value === 'location' ? { type: 'location', code: t } : { type: 'product', sku: t, qty: 1 };
+    }
+
+    return null;
+};
+
+const openScan = (mode) => {
+    scanMode.value = mode;
+    scanError.value = '';
+    showScanModal.value = true;
+};
+
+const stopScan = async () => {
+    if (html5QrCode && html5QrCode.isScanning) {
+        await html5QrCode.stop();
+    }
+    scanning.value = false;
+};
+
+const startScan = async () => {
+    scanError.value = '';
+    scanning.value = true;
+
+    try {
+        html5QrCode = new Html5Qrcode('opname-qr-reader');
+        await html5QrCode.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 260, height: 260 } },
+            async (decodedText) => {
+                await stopScan();
+                const payload = parseScanText(decodedText);
+                if (!payload) {
+                    scanError.value = 'QR tidak terbaca (format tidak dikenali).';
+                    return;
+                }
+
+                if (scanMode.value === 'location') {
+                    const code = payload.type === 'location' ? payload.code : payload.sku;
+                    try {
+                        const res = await axios.get(`/inventory/opname/${props.opname.id}/location-stock`, { params: { code } });
+                        scannedLocation.value = res.data.location;
+                        locationProductIds.value = res.data.product_ids || [];
+                        showScanModal.value = false;
+                    } catch (e) {
+                        scanError.value = e?.response?.data?.message || 'Gagal mengambil data lokasi.';
+                    }
+                    return;
+                }
+
+                const sku = payload.type === 'product' ? payload.sku : payload.sku;
+                const addQty = Number(payload.qty) > 0 ? Number(payload.qty) : 1;
+                const item = items.value.find(i => String(i.product?.sku || '').toUpperCase() === String(sku || '').toUpperCase());
+                if (!item) {
+                    scanError.value = `SKU ${sku} tidak ada di sesi opname ini.`;
+                    return;
+                }
+                item.qty_physic = Math.max(0, Number(item.qty_physic) || 0) + addQty;
+                item.qty_difference = item.qty_physic - item.qty_system;
+                autoSave(item);
+            },
+            () => {}
+        );
+    } catch (err) {
+        scanError.value = 'Gagal mengakses kamera: ' + (err?.message || String(err));
+        scanning.value = false;
+    }
+};
+
+const clearLocationFilter = () => {
+    scannedLocation.value = null;
+    locationProductIds.value = null;
+};
+
+watch(showScanModal, async (open) => {
+    if (!open) {
+        scanError.value = '';
+        await stopScan();
+    }
+});
+
+onBeforeUnmount(async () => {
+    await stopScan();
 });
 
 // Auto-save single item
@@ -191,6 +310,24 @@ const getDiffBg = (diff) => {
                 </Link>
                 <div class="flex items-center gap-2">
                     <button
+                        v-if="opname.status !== 'completed' && items.length > 0"
+                        @click="openScan('location')"
+                        class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                    >
+                        <QrCodeIcon class="h-4 w-4" />
+                        <span class="hidden sm:inline">Scan Lokasi</span>
+                        <span class="sm:hidden">Lokasi</span>
+                    </button>
+                    <button
+                        v-if="opname.status !== 'completed' && items.length > 0"
+                        @click="openScan('product')"
+                        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+                    >
+                        <QrCodeIcon class="h-4 w-4" />
+                        <span class="hidden sm:inline">Scan Produk</span>
+                        <span class="sm:hidden">Produk</span>
+                    </button>
+                    <button
                         v-if="opname.status !== 'completed'"
                         @click="deleteOpname"
                         class="p-2 sm:px-3 sm:py-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
@@ -239,6 +376,12 @@ const getDiffBg = (diff) => {
                         <p class="text-xs text-slate-500">Created By</p>
                         <p class="font-medium text-slate-900 dark:text-white truncate">{{ opname.created_by_user?.name ?? '—' }}</p>
                     </div>
+                </div>
+                <div v-if="scannedLocation" class="mt-4 flex items-center justify-between gap-3 rounded-xl bg-blue-500/10 border border-blue-500/20 px-4 py-3">
+                    <div class="text-sm text-slate-700 dark:text-slate-300">
+                        Lokasi: <span class="font-bold">{{ scannedLocation.code }}</span> — {{ scannedLocation.name }}
+                    </div>
+                    <button @click="clearLocationFilter" class="text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200">Clear</button>
                 </div>
             </div>
 
@@ -414,6 +557,57 @@ const getDiffBg = (diff) => {
                 </button>
             </div>
         </div>
+
+        <Teleport to="body">
+            <div v-if="showScanModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+                        <QrCodeIcon class="h-6 w-6 text-slate-500" />
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">
+                            {{ scanMode === 'location' ? 'Scan Lokasi' : 'Scan Produk' }}
+                        </h3>
+                        <button @click="showScanModal = false" class="ml-auto text-slate-400 hover:text-slate-600">
+                            <XMarkIcon class="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    <div class="p-6 space-y-4">
+                        <div
+                            id="opname-qr-reader"
+                            class="rounded-2xl overflow-hidden border-2 border-dashed border-blue-300 dark:border-blue-700 bg-slate-100 dark:bg-slate-800 min-h-[280px]"
+                            :class="scanning ? 'border-solid border-blue-500' : ''"
+                        ></div>
+
+                        <button
+                            v-if="!scanning"
+                            type="button"
+                            @click="startScan"
+                            class="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-black uppercase tracking-wide shadow-lg shadow-blue-500/30 hover:from-blue-500 hover:to-indigo-500 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            <CameraIcon class="h-5 w-5" />
+                            BUKA KAMERA
+                        </button>
+                        <button
+                            v-else
+                            type="button"
+                            @click="stopScan"
+                            class="w-full py-3 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 text-white text-sm font-bold shadow-lg shadow-red-500/30 hover:from-red-500 hover:to-red-400 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            <XMarkIcon class="h-5 w-5" />
+                            TUTUP KAMERA
+                        </button>
+
+                        <div v-if="scanError" class="bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 border border-red-200 dark:border-red-800/30">
+                            <div class="text-sm font-bold text-red-600 dark:text-red-400">{{ scanError }}</div>
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
+                        <button @click="showScanModal = false" class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </Teleport>
     </AppLayout>
 </template>
 

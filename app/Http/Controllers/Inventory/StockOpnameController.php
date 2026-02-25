@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Inventory;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductStock;
+use App\Models\Location;
 use App\Models\StockMovement;
 use App\Models\StockOpname;
 use App\Models\Warehouse;
@@ -267,5 +268,35 @@ class StockOpnameController extends Controller
 
         return redirect()->route('inventory.opname.index')
             ->with('success', 'Stock Opname deleted.');
+    }
+
+    public function locationStock(Request $request, StockOpname $opname)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:30',
+        ]);
+
+        $location = Location::where('warehouse_id', $opname->warehouse_id)
+            ->where('code', $validated['code'])
+            ->first();
+
+        if (!$location) {
+            return response()->json(['message' => 'Lokasi tidak ditemukan.'], 404);
+        }
+
+        $productIds = ProductStock::where('warehouse_id', $opname->warehouse_id)
+            ->where('location_id', $location->id)
+            ->where('qty_on_hand', '!=', 0)
+            ->pluck('product_id')
+            ->values();
+
+        return response()->json([
+            'location' => [
+                'id' => $location->id,
+                'code' => $location->code,
+                'name' => $location->name,
+            ],
+            'product_ids' => $productIds,
+        ]);
     }
 }

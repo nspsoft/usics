@@ -113,6 +113,7 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::post('/opname/{opname}/populate', [App\Http\Controllers\Inventory\StockOpnameController::class, 'populate'])->name('opname.populate');
     Route::put('/opname/{opname}/items', [App\Http\Controllers\Inventory\StockOpnameController::class, 'updateItems'])->name('opname.update-items');
     Route::put('/opname/{opname}/item', [App\Http\Controllers\Inventory\StockOpnameController::class, 'updateSingleItem'])->name('opname.update-item');
+    Route::get('/opname/{opname}/location-stock', [App\Http\Controllers\Inventory\StockOpnameController::class, 'locationStock'])->name('opname.location-stock');
     Route::post('/opname/{opname}/complete', [App\Http\Controllers\Inventory\StockOpnameController::class, 'complete'])->name('opname.complete');
     // Reports
     Route::get('/reports', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
@@ -289,6 +290,8 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::post('/deliveries', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'store'])->name('deliveries.store');
     Route::get('/deliveries/{delivery_order}', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'show'])->name('deliveries.show');
     Route::put('/deliveries/{delivery_order}/items', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'updateItems'])->name('deliveries.update-items');
+    Route::get('/deliveries/{delivery_order}/add-item-options', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'getAddItemOptions'])->name('deliveries.add-item-options');
+    Route::post('/deliveries/{delivery_order}/items', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'storeItem'])->name('deliveries.store-item');
     Route::delete('/deliveries/items/{item}', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'destroyItem'])->name('deliveries.destroy-item');
     Route::delete('/deliveries/{delivery_order}', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'destroy'])->name('deliveries.destroy');
     Route::post('/deliveries/{delivery_order}/complete', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'complete'])->name('deliveries.complete');
@@ -644,7 +647,7 @@ Route::middleware([
     // Deliveries (Surat Jalan)
     Route::get('deliveries/create/{order}', [App\Http\Controllers\Portal\PortalDeliveryController::class, 'create'])->name('deliveries.create');
     Route::get('deliveries/{delivery}/print', [\App\Http\Controllers\Portal\PortalDeliveryController::class, 'print'])->name('deliveries.print');
-    Route::resource('deliveries', \App\Http\Controllers\Portal\PortalDeliveryController::class);
+    Route::resource('deliveries', \App\Http\Controllers\Portal\PortalDeliveryController::class)->except(['create']);
 
     // Invoices
     Route::resource('invoices', App\Http\Controllers\Portal\PortalInvoiceController::class);

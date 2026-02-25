@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Sales;
 
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryOrder;
+use App\Models\Product;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
 use App\Models\Warehouse;
@@ -273,6 +274,182 @@ class DeliveryOrderController extends Controller
         ]);
     }
 
+    public function getAddItemOptions(Request $request, DeliveryOrder $deliveryOrder)
+    {
+        if ($deliveryOrder->status !== 'draft') {
+            return response()->json(['message' => 'Hanya Delivery Order berstatus Draft yang bisa ditambah item.'], 422);
+        }
+
+        $deliveryOrder->load(['salesOrder.items.product', 'salesOrder.items.unit', 'items']);
+
+        $salesOrder = $deliveryOrder->salesOrder;
+        $isDirect = !$salesOrder || $salesOrder->status === SalesOrder::STATUS_WAITING_PO;
+
+        if (!$isDirect && $salesOrder) {
+            $existingSoItemIds = $deliveryOrder->items->pluck('sales_order_item_id')->all();
+
+            $items = $salesOrder->items->map(function ($item) use ($existingSoItemIds) {
+                if (in_array($item->id, $existingSoItemIds)) return null;
+
+                $remaining = $item->remaining_qty;
+                if ($remaining <= 0) return null;
+
+                return [
+                    'sales_order_item_id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'name' => $item->product->name ?? 'N/A',
+                    'sku' => $item->product->sku ?? 'N/A',
+                    'qty_ordered' => (float) $item->qty,
+                    'remaining' => (float) $remaining,
+                    'unit_id' => $item->unit_id,
+                    'unit_code' => $item->unit->code ?? null,
+                ];
+            })->filter()->values();
+
+            return response()->json([
+                'mode' => 'so',
+                'items' => $items,
+            ]);
+        }
+
+        $existingProductIds = $deliveryOrder->items->pluck('product_id')->all();
+
+        $productsQuery = Product::active()
+            ->where('is_sold', true)
+            ->with('unit')
+            ->when($request->query('q'), function ($q, $term) {
+                $q->where(function ($qq) use ($term) {
+                    $qq->where('name', 'like', "%{$term}%")
+                        ->orWhere('sku', 'like', "%{$term}%");
+                });
+            })
+            ->when(!empty($existingProductIds), fn ($q) => $q->whereNotIn('id', $existingProductIds))
+            ->orderBy('name')
+            ->limit(50);
+
+        $products = $productsQuery->get(['id', 'name', 'sku', 'unit_id'])->map(function ($p) {
+            return [
+                'product_id' => $p->id,
+                'name' => $p->name,
+                'sku' => $p->sku,
+                'unit_id' => $p->unit_id,
+                'unit_code' => $p->unit?->code,
+            ];
+        })->values();
+
+        return response()->json([
+            'mode' => 'direct',
+            'items' => $products,
+        ]);
+    }
+
+    public function storeItem(Request $request, DeliveryOrder $deliveryOrder)
+    {
+        if ($deliveryOrder->status !== 'draft') {
+            return back()->with('error', 'Hanya Delivery Order berstatus Draft yang bisa ditambah item.');
+        }
+
+        $deliveryOrder->load(['salesOrder', 'items']);
+        $salesOrder = $deliveryOrder->salesOrder;
+        $isDirect = !$salesOrder || $salesOrder->status === SalesOrder::STATUS_WAITING_PO;
+
+        if (!$isDirect) {
+            $validated = $request->validate([
+                'sales_order_item_id' => 'required|exists:sales_order_items,id',
+                'qty_delivered' => 'required|numeric|gt:0',
+                'notes' => 'nullable|string|max:255',
+            ]);
+
+            $soItem = SalesOrderItem::with(['product', 'unit'])->findOrFail($validated['sales_order_item_id']);
+            if ((int) $soItem->sales_order_id !== (int) $deliveryOrder->sales_order_id) {
+                return back()->with('error', 'Item Sales Order tidak sesuai dengan Delivery Order ini.');
+            }
+
+            $exists = \App\Models\DeliveryOrderItem::where('delivery_order_id', $deliveryOrder->id)
+                ->where('sales_order_item_id', $soItem->id)
+                ->exists();
+            if ($exists) {
+                return back()->with('error', 'Item ini sudah ada di Delivery Order.');
+            }
+
+            $realDelivered = \App\Models\DeliveryOrderItem::where('sales_order_item_id', $soItem->id)
+                ->whereHas('deliveryOrder', function ($q) {
+                    $q->where('status', '!=', 'cancelled');
+                })
+                ->sum('qty_delivered');
+            $qtyReturned = $soItem->returnItems()->sum('qty');
+            $netDelivered = $realDelivered - $qtyReturned;
+            $allowable = $soItem->qty - $netDelivered;
+
+            if ((float) $validated['qty_delivered'] > ((float) $allowable + 0.0001)) {
+                return back()->with('error', "Kuantitas melebihi sisa pesanan. Sisa maksimum: {$allowable}.");
+            }
+
+            \App\Models\DeliveryOrderItem::create([
+                'delivery_order_id' => $deliveryOrder->id,
+                'sales_order_item_id' => $soItem->id,
+                'product_id' => $soItem->product_id,
+                'qty_ordered' => (float) $soItem->qty,
+                'qty_delivered' => (float) $validated['qty_delivered'],
+                'unit_id' => $soItem->unit_id,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            return back()->with('success', 'Item berhasil ditambahkan ke Delivery Order.');
+        }
+
+        $validated = $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'qty_delivered' => 'required|numeric|gt:0',
+            'notes' => 'nullable|string|max:255',
+        ]);
+
+        if (!$salesOrder) {
+            return back()->with('error', 'Delivery Order ini tidak memiliki Sales Order.');
+        }
+
+        if ($salesOrder->status !== SalesOrder::STATUS_WAITING_PO) {
+            return back()->with('error', 'Penambahan produk bebas hanya diizinkan untuk Direct Delivery Order.');
+        }
+
+        $exists = \App\Models\DeliveryOrderItem::where('delivery_order_id', $deliveryOrder->id)
+            ->where('product_id', $validated['product_id'])
+            ->exists();
+        if ($exists) {
+            return back()->with('error', 'Produk ini sudah ada di Delivery Order.');
+        }
+
+        $product = Product::with('unit')->findOrFail($validated['product_id']);
+        if (!$product->is_sold || !$product->is_active) {
+            return back()->with('error', 'Produk tidak tersedia untuk dijual.');
+        }
+        if (!$product->unit_id) {
+            return back()->with('error', 'Unit produk belum diatur.');
+        }
+
+        $soItem = $salesOrder->items()->create([
+            'product_id' => $product->id,
+            'qty' => (float) $validated['qty_delivered'],
+            'unit_id' => $product->unit_id,
+            'unit_price' => 0,
+            'discount_percent' => 0,
+            'discount_amount' => 0,
+            'subtotal' => 0,
+        ]);
+
+        \App\Models\DeliveryOrderItem::create([
+            'delivery_order_id' => $deliveryOrder->id,
+            'sales_order_item_id' => $soItem->id,
+            'product_id' => $product->id,
+            'qty_ordered' => (float) $soItem->qty,
+            'qty_delivered' => (float) $validated['qty_delivered'],
+            'unit_id' => $product->unit_id,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        return back()->with('success', 'Item berhasil ditambahkan ke Delivery Order.');
+    }
+
     public function store(Request $request)
     {
         $rules = [
@@ -318,39 +495,42 @@ class DeliveryOrderController extends Controller
                     ]);
                 }
 
-                // Generate Custom DO Number: 165/DO/JRI-TRPI/II/25
+                // Generate Custom DO Number: 020/DO/JRI-KBI/II/26
                 $customer = \App\Models\Customer::find($order->customer_id);
                 $custCode = $customer ? ($customer->code ?? 'GEN') : 'GEN';
                 $monthRoman = $this->getRomanMonth(date('n'));
-                $yearShort = date('y');
-                $formatSuffix = "/DO/JRI-{$custCode}/{$monthRoman}/{$yearShort}";
 
-                // Find last running number for this specific format (ignoring customer code changes? No, usually per format)
-                // If user wants running number to be GLOBAL across all customers, we should check broadly.
-                // "165" implies a global running number. Let's assume global running number for "DO" type.
-                
-                // Regex to extract running number from similar formats
-                // We look for {number}/DO/JRI-...
-                if (DB::connection()->getDriverName() === 'mysql') {
-                    $lastDO = DeliveryOrder::where('do_number', 'REGEXP', '^[0-9]+/DO/JRI-')
-                        ->orderByRaw('CAST(SUBSTRING_INDEX(do_number, "/", 1) AS UNSIGNED) DESC')
-                        ->first();
-                } else {
-                    $lastDO = DeliveryOrder::where('do_number', 'like', '%/DO/JRI-%')
-                        ->orderByDesc('id')
-                        ->first();
+                try {
+                    $number = app(\App\Services\DocumentNumberService::class)->generate('delivery_order', [
+                        'CUST_CODE' => $custCode,
+                        'ROMAN_MONTH' => $monthRoman
+                    ]);
+                } catch (\Exception $e) {
+                    // Fallback to manual generation if service fails
+                    $yearShort = date('y');
+                    $formatSuffix = "/DO/JRI-{$custCode}/{$monthRoman}/{$yearShort}";
+                    
+                    if (DB::connection()->getDriverName() === 'mysql') {
+                        $lastDO = DeliveryOrder::where('do_number', 'REGEXP', '^[0-9]+/DO/JRI-')
+                            ->orderByRaw('CAST(SUBSTRING_INDEX(do_number, "/", 1) AS UNSIGNED) DESC')
+                            ->first();
+                    } else {
+                        $lastDO = DeliveryOrder::where('do_number', 'like', '%/DO/JRI-%')
+                            ->orderByDesc('id')
+                            ->first();
+                    }
+
+                    if ($lastDO) {
+                        $parts = explode('/', $lastDO->do_number, 2);
+                        $lastRun = ctype_digit($parts[0]) ? (int) $parts[0] : 0;
+                        $nextRun = $lastRun + 1;
+                    } else {
+                        $nextRun = 1; 
+                    }
+                    
+                    $nextRunPadded = str_pad($nextRun, 3, '0', STR_PAD_LEFT);
+                    $number = "{$nextRunPadded}{$formatSuffix}";
                 }
-
-                if ($lastDO) {
-                    $parts = explode('/', $lastDO->do_number, 2);
-                    $lastRun = ctype_digit($parts[0]) ? (int) $parts[0] : 0;
-                    $nextRun = $lastRun + 1;
-                } else {
-                    $nextRun = 1; 
-                }
-
-                $nextRunPadded = str_pad($nextRun, 3, '0', STR_PAD_LEFT);
-                $number = "{$nextRunPadded}{$formatSuffix}";
 
                 $doData = [
                     'do_number' => $number,

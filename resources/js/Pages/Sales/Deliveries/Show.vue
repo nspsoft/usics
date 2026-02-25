@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { Html5Qrcode } from 'html5-qrcode';
 import {
     ArrowLeftIcon,
     TruckIcon,
@@ -21,6 +22,8 @@ import {
     InformationCircleIcon,
     XMarkIcon,
     FunnelIcon,
+    QrCodeIcon,
+    CameraIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 
@@ -131,6 +134,183 @@ const removeItem = (id) => {
         });
     }
 };
+
+const showAddItemModal = ref(false);
+const addItemLoading = ref(false);
+const addItemOptions = ref([]);
+const addItemSearch = ref('');
+
+const addItemMode = computed(() => {
+    const so = props.deliveryOrder.sales_order;
+    if (!so) return 'direct';
+    return so.status === 'waiting_po' ? 'direct' : 'so';
+});
+
+const addItemForm = useForm({
+    sales_order_item_id: '',
+    product_id: '',
+    qty_delivered: '',
+    notes: ''
+});
+
+const openAddItemModal = async () => {
+    addItemForm.reset();
+    addItemForm.clearErrors();
+    addItemSearch.value = '';
+    addItemOptions.value = [];
+    showAddItemModal.value = true;
+    await fetchAddItemOptions();
+};
+
+const fetchAddItemOptions = async () => {
+    addItemLoading.value = true;
+    try {
+        const params = new URLSearchParams();
+        if (addItemMode.value === 'direct' && addItemSearch.value.trim() !== '') {
+            params.set('q', addItemSearch.value.trim());
+        }
+        const url = route('sales.deliveries.add-item-options', props.deliveryOrder.id) + (params.toString() ? `?${params.toString()}` : '');
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+        addItemOptions.value = data.items || [];
+    } finally {
+        addItemLoading.value = false;
+    }
+};
+
+const onAddItemSelect = () => {
+    if (addItemMode.value !== 'so') return;
+    const selected = addItemOptions.value.find(o => String(o.sales_order_item_id) === String(addItemForm.sales_order_item_id));
+    if (selected) {
+        addItemForm.qty_delivered = selected.remaining;
+    }
+};
+
+const submitAddItem = () => {
+    addItemForm.post(route('sales.deliveries.store-item', props.deliveryOrder.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showAddItemModal.value = false;
+            addItemForm.reset();
+        }
+    });
+};
+
+const showScanModal = ref(false);
+const scanError = ref('');
+const scanning = ref(false);
+const scanResult = ref(null);
+let html5QrCode = null;
+
+const parseScanPayload = (text) => {
+    const raw = String(text || '').trim();
+    if (!raw) return null;
+
+    try {
+        const obj = JSON.parse(raw);
+        const sku = obj.sku || obj.SKU;
+        const qty = obj.qty || obj.QTY || obj.quantity || obj.QUANTITY;
+        if (sku) {
+            return { sku: String(sku).trim().toUpperCase(), qty: qty !== undefined ? Number(qty) : 1 };
+        }
+    } catch (e) {}
+
+    const pairs = raw.split('|').map(p => p.trim()).filter(Boolean);
+    const map = {};
+    for (const p of pairs) {
+        const [k, ...rest] = p.split(':');
+        if (!k || rest.length === 0) continue;
+        map[k.trim().toUpperCase()] = rest.join(':').trim();
+    }
+
+    const skuFromPair = map.SKU || map.PRODUCT || map.ITEM;
+    const qtyFromPair = map.QTY || map.QUANTITY;
+    if (skuFromPair) {
+        return {
+            sku: String(skuFromPair).trim().toUpperCase(),
+            qty: qtyFromPair !== undefined ? Number(qtyFromPair) : 1,
+        };
+    }
+
+    const skuMatch = raw.match(/SKU\s*[:=]\s*([A-Z0-9._-]+)/i);
+    const qtyMatch = raw.match(/QTY\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)/i);
+    if (skuMatch) {
+        return { sku: skuMatch[1].trim().toUpperCase(), qty: qtyMatch ? Number(qtyMatch[1]) : 1 };
+    }
+
+    const token = raw.match(/[A-Z0-9._-]{3,}/i);
+    if (token) {
+        return { sku: token[0].trim().toUpperCase(), qty: 1 };
+    }
+
+    return null;
+};
+
+const openScanModal = async () => {
+    scanError.value = '';
+    scanResult.value = null;
+    showScanModal.value = true;
+};
+
+const startScan = async () => {
+    scanError.value = '';
+    scanResult.value = null;
+    scanning.value = true;
+
+    try {
+        html5QrCode = new Html5Qrcode('do-qr-reader');
+        await html5QrCode.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 260, height: 260 } },
+            async (decodedText) => {
+                await stopScan();
+                const payload = parseScanPayload(decodedText);
+                if (!payload) {
+                    scanError.value = 'QR tidak terbaca (format tidak dikenali).';
+                    return;
+                }
+
+                const sku = payload.sku;
+                const addQty = Number(payload.qty) > 0 ? Number(payload.qty) : 1;
+                const idx = props.deliveryOrder.items.findIndex(i => String(i.product?.sku || '').toUpperCase() === sku);
+                if (idx < 0) {
+                    scanError.value = `SKU ${sku} tidak ada di DO ini.`;
+                    return;
+                }
+
+                const max = Number(getRemainingBeforeThis(props.deliveryOrder.items[idx])) || 0;
+                const current = Number(form.items[idx].qty_delivered) || 0;
+                const next = Math.min(current + addQty, max);
+                form.items[idx].qty_delivered = next;
+
+                scanResult.value = { sku, qty: addQty, applied: next - current, max };
+            },
+            () => {}
+        );
+    } catch (err) {
+        scanError.value = 'Gagal mengakses kamera: ' + (err?.message || String(err));
+        scanning.value = false;
+    }
+};
+
+const stopScan = async () => {
+    if (html5QrCode && html5QrCode.isScanning) {
+        await html5QrCode.stop();
+    }
+    scanning.value = false;
+};
+
+watch(showScanModal, async (open) => {
+    if (!open) {
+        scanError.value = '';
+        scanResult.value = null;
+        await stopScan();
+    }
+});
+
+onBeforeUnmount(async () => {
+    await stopScan();
+});
 
 // --- CONFIRMATION MESSAGES PER STATUS ---
 const statusConfirmMessages = {
@@ -509,7 +689,27 @@ const handleSmartAction = () => {
                     <div class="rounded-2xl glass-card overflow-hidden shadow-sm">
                         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20 flex items-center justify-between">
                             <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-widest">Items to Deliver</h3>
-                            <div class="text-[10px] font-bold text-slate-500 uppercase">Warehouse: {{ deliveryOrder.warehouse?.name }}</div>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    v-if="deliveryOrder.status === 'draft'"
+                                    type="button"
+                                    @click="openAddItemModal"
+                                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-700 transition-colors"
+                                >
+                                    <DocumentPlusIcon class="h-4 w-4" />
+                                    Add Product
+                                </button>
+                                <button
+                                    v-if="['draft','picking'].includes(deliveryOrder.status) && (canLoading || canSave)"
+                                    type="button"
+                                    @click="openScanModal"
+                                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-500 transition-colors"
+                                >
+                                    <QrCodeIcon class="h-4 w-4" />
+                                    Scan Loading
+                                </button>
+                                <div class="text-[10px] font-bold text-slate-500 uppercase">Warehouse: {{ deliveryOrder.warehouse?.name }}</div>
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left">
@@ -636,6 +836,168 @@ const handleSmartAction = () => {
                 <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
                     <button @click="showPrintWarning = false" class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">Batal</button>
                     <button @click="forcePrint" class="px-4 py-2 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20">Tetap Print</button>
+                </div>
+            </div>
+        </div>
+    </Teleport>
+
+    <Teleport to="body">
+        <div v-if="showAddItemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+                    <DocumentPlusIcon class="h-6 w-6 text-slate-500" />
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Add Product</h3>
+                    <button @click="showAddItemModal = false" class="ml-auto text-slate-400 hover:text-slate-600">
+                        <XMarkIcon class="h-5 w-5" />
+                    </button>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <div v-if="addItemMode === 'direct'" class="flex items-center gap-3">
+                        <input
+                            v-model="addItemSearch"
+                            type="text"
+                            placeholder="Cari product (nama / SKU)..."
+                            class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            @keyup.enter="fetchAddItemOptions"
+                        />
+                        <button
+                            type="button"
+                            @click="fetchAddItemOptions"
+                            class="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-700 transition-colors"
+                            :disabled="addItemLoading"
+                        >
+                            Cari
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1.5">
+                            {{ addItemMode === 'so' ? 'Pilih Item SO (Open)' : 'Pilih Product' }}
+                        </label>
+                        <select
+                            v-if="addItemMode === 'so'"
+                            v-model="addItemForm.sales_order_item_id"
+                            @change="onAddItemSelect"
+                            class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        >
+                            <option value="">-- pilih --</option>
+                            <option v-for="opt in addItemOptions" :key="opt.sales_order_item_id" :value="opt.sales_order_item_id">
+                                {{ opt.sku }} - {{ opt.name }} (Sisa: {{ formatNumber(opt.remaining) }} {{ opt.unit_code || '' }})
+                            </option>
+                        </select>
+
+                        <select
+                            v-else
+                            v-model="addItemForm.product_id"
+                            class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        >
+                            <option value="">-- pilih --</option>
+                            <option v-for="opt in addItemOptions" :key="opt.product_id" :value="opt.product_id">
+                                {{ opt.sku }} - {{ opt.name }} ({{ opt.unit_code || '' }})
+                            </option>
+                        </select>
+                        <div v-if="addItemLoading" class="text-xs text-slate-500 mt-2">Memuat...</div>
+                        <div v-else-if="addItemOptions.length === 0" class="text-xs text-slate-500 mt-2">Tidak ada data.</div>
+                        <div v-if="addItemForm.errors.sales_order_item_id" class="text-xs text-red-500 mt-2">{{ addItemForm.errors.sales_order_item_id }}</div>
+                        <div v-if="addItemForm.errors.product_id" class="text-xs text-red-500 mt-2">{{ addItemForm.errors.product_id }}</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="sm:col-span-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1.5">Qty</label>
+                            <input
+                                v-model="addItemForm.qty_delivered"
+                                type="number"
+                                step="any"
+                                min="0"
+                                class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-center focus:ring-2 focus:ring-blue-500/50"
+                            />
+                            <div v-if="addItemForm.errors.qty_delivered" class="text-xs text-red-500 mt-2">{{ addItemForm.errors.qty_delivered }}</div>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1.5">Remarks</label>
+                            <input
+                                v-model="addItemForm.notes"
+                                type="text"
+                                placeholder="catatan..."
+                                class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            />
+                            <div v-if="addItemForm.errors.notes" class="text-xs text-red-500 mt-2">{{ addItemForm.errors.notes }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
+                    <button @click="showAddItemModal = false" class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">Batal</button>
+                    <button
+                        type="button"
+                        @click="submitAddItem"
+                        class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-500 transition-colors disabled:opacity-50"
+                        :disabled="addItemForm.processing || addItemLoading"
+                    >
+                        Tambah
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Teleport>
+
+    <Teleport to="body">
+        <div v-if="showScanModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+                    <QrCodeIcon class="h-6 w-6 text-slate-500" />
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Scan Loading</h3>
+                    <button @click="showScanModal = false" class="ml-auto text-slate-400 hover:text-slate-600">
+                        <XMarkIcon class="h-5 w-5" />
+                    </button>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <div
+                        id="do-qr-reader"
+                        class="rounded-2xl overflow-hidden border-2 border-dashed border-blue-300 dark:border-blue-700 bg-slate-100 dark:bg-slate-800 min-h-[280px]"
+                        :class="scanning ? 'border-solid border-blue-500' : ''"
+                    ></div>
+
+                    <div class="flex items-center gap-3">
+                        <button
+                            v-if="!scanning"
+                            type="button"
+                            @click="startScan"
+                            class="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-black uppercase tracking-wide shadow-lg shadow-blue-500/30 hover:from-blue-500 hover:to-indigo-500 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            <CameraIcon class="h-5 w-5" />
+                            BUKA KAMERA
+                        </button>
+                        <button
+                            v-else
+                            type="button"
+                            @click="stopScan"
+                            class="w-full py-3 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 text-white text-sm font-bold shadow-lg shadow-red-500/30 hover:from-red-500 hover:to-red-400 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            <XMarkIcon class="h-5 w-5" />
+                            TUTUP KAMERA
+                        </button>
+                    </div>
+
+                    <div v-if="scanError" class="bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 border border-red-200 dark:border-red-800/30">
+                        <div class="text-sm font-bold text-red-600 dark:text-red-400">{{ scanError }}</div>
+                    </div>
+
+                    <div v-if="scanResult" class="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800/30">
+                        <div class="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                            {{ scanResult.sku }} +{{ formatNumber(scanResult.applied) }} (max {{ formatNumber(scanResult.max) }})
+                        </div>
+                        <div class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                            Jika ingin menyimpan, tekan Save Changes.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
+                    <button @click="showScanModal = false" class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">Tutup</button>
                 </div>
             </div>
         </div>

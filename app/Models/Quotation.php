@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
@@ -73,9 +74,16 @@ class Quotation extends Model
         $year = date('y', $timestamp);
         
         // Format: NNN/QUOT/JRI-{CUST}/{ROMAN}/{YY}
-        $likePattern = "%/QUOT/JRI-%/%/{$year}";
-        
-        $last = static::where('number', 'like', $likePattern)->orderByDesc('id')->value('number');
+        $likePattern = "%/QUOT/JRI-%/{$monthRoman}/{$year}";
+
+        $lastQuery = static::where('number', 'like', $likePattern);
+        if (DB::connection()->getDriverName() === 'mysql') {
+            $lastQuery->orderByRaw('CAST(SUBSTRING_INDEX(number, "/", 1) AS UNSIGNED) DESC');
+        } else {
+            $lastQuery->orderByDesc('id');
+        }
+
+        $last = $lastQuery->value('number');
         
         $sequence = 1;
         if ($last) {

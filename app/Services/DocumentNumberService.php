@@ -13,11 +13,12 @@ class DocumentNumberService
      * Generate next document number
      * 
      * @param string $code Unique code for document type (e.g. 'sales_order')
+     * @param array $params Optional parameters for dynamic placeholders (e.g. ['CUST_CODE' => 'ABC'])
      * @return string Generated number (e.g. 'SO/2026/01/0001')
      */
-    public function generate(string $code): string
+    public function generate(string $code, array $params = [], $date = null): string
     {
-        return DB::transaction(function () use ($code) {
+        return DB::transaction(function () use ($code, $params, $date) {
             $config = DocumentNumbering::where('code', $code)->lockForUpdate()->first();
 
             if (!$config) {
@@ -33,14 +34,14 @@ class DocumentNumberService
             $config->save();
 
             // Format number
-            return $this->format($config);
+            return $this->format($config, null, $params, $date);
         });
     }
 
     /**
      * Preview next number without incrementing
      */
-    public function preview(string $code): string
+    public function preview(string $code, array $params = [], $date = null): string
     {
         $config = DocumentNumbering::where('code', $code)->first();
         
@@ -56,7 +57,7 @@ class DocumentNumberService
             $nextNumber = 1;
         }
 
-        return $this->format($config, $nextNumber);
+        return $this->format($config, $nextNumber, $params, $date);
     }
 
     protected function checkResetPeriod(DocumentNumbering $config): void
@@ -91,27 +92,27 @@ class DocumentNumberService
         };
     }
 
-    protected function format(DocumentNumbering $config, ?int $number = null): string
+    protected function format(DocumentNumbering $config, ?int $number = null, array $params = [], $date = null): string
     {
         $num = $number ?? $config->current_number;
         $paddedNumber = str_pad($num, $config->padding, '0', STR_PAD_LEFT);
+        $dt = $date ? ($date instanceof Carbon ? $date : Carbon::parse($date)) : now();
         
         // Supported placeholders: {PREFIX}, {Y}, {y}, {m}, {d}, {NUMBER}
         $replacements = [
             '{PREFIX}' => $config->prefix,
-            '{Y}' => now()->format('Y'),      // 4-digit year (2026)
-            '{y}' => now()->format('y'),      // 2-digit year (26)
-            '{m}' => now()->format('m'),
-            '{d}' => now()->format('d'),
+            '{Y}' => $dt->format('Y'),
+            '{y}' => $dt->format('y'),
+            '{m}' => $dt->format('m'),
+            '{d}' => $dt->format('d'),
             '{NUMBER}' => $paddedNumber,
         ];
-
-        // Also support Custom Separator integration if needed, but usually it's part of format
-        // If config->format doesn't contain placeholders, assumes it's standard pattern
-        // Standard pattern default: {PREFIX}{SEPARATOR}{Y}{SEPARATOR}{m}{SEPARATOR}{NUMBER}
         
-        $format = $config->format;
+        // Merge dynamic params
+        foreach ($params as $key => $value) {
+            $replacements['{' . $key . '}'] = $value;
+        }
 
-        return str_replace(array_keys($replacements), array_values($replacements), $format);
+        return str_replace(array_keys($replacements), array_values($replacements), $config->format);
     }
 }

@@ -27,6 +27,7 @@ const form = useForm({
     supplier_id: props.purchaseOrder?.supplier_id || '',
     warehouse_id: props.purchaseOrder?.warehouse_id || '',
     receipt_date: new Date().toISOString().split('T')[0],
+    delivery_note_number: '',
     notes: '',
     items: props.purchaseOrder?.items.map(item => ({
         product_id: item.product_id,
@@ -135,6 +136,16 @@ const submit = () => {
                         <div>
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Receipt Date</label>
                             <input type="date" v-model="form.receipt_date" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" required />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">No SJ Supplier</label>
+                            <input
+                                type="text"
+                                v-model="form.delivery_note_number"
+                                class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                                placeholder="Contoh: SJ/02/2026/123"
+                            />
                         </div>
                     </div>
 

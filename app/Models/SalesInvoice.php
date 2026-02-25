@@ -25,13 +25,11 @@ class SalesInvoice extends Model
 
     /**
      * Generate custom invoice number: XXXX/INV/JRI-{CUST}/{ROMAN}/{YY}
-     * Resets sequence every year.
      */
     public static function generateInvoiceNumber($customer, $date = null)
     {
         $targetDate = $date ? \Carbon\Carbon::parse($date) : now();
         $year = $targetDate->format('y'); // 26
-        $fullYear = $targetDate->format('Y'); // 2026
         $month = $targetDate->format('n'); // 1-12
 
         // Roman Numerals for months
@@ -44,27 +42,34 @@ class SalesInvoice extends Model
         // Customer Code (Default to 'GEN' if empty)
         $custCode = $customer->code ?? 'GEN';
 
-        // Find max sequence for this year
-        // We look for invoices created in this YEAR
-        $lastInvoice = self::whereYear('created_at', $fullYear)
-            ->where('invoice_number', 'LIKE', '%/INV/JRI-%') // Filter for this format
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $nextSequence = 1;
-
-        if ($lastInvoice) {
-            // Try to parse the sequence from the start of the string
-            // Format: 1247/INV/JRI-...
-            $parts = explode('/', $lastInvoice->invoice_number);
-            if (is_numeric($parts[0])) {
-                $nextSequence = (int)$parts[0] + 1;
+        try {
+            return app(\App\Services\DocumentNumberService::class)->generate('sales_invoice', [
+                'CUST_CODE' => $custCode,
+                'ROMAN_MONTH' => $romanMonth
+            ], $targetDate);
+        } catch (\Exception $e) {
+            $likePattern = "%/INV/JRI-%/{$romanMonth}/{$year}";
+            $lastQuery = self::where('invoice_number', 'like', $likePattern);
+            if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'mysql') {
+                $lastQuery->orderByRaw('CAST(SUBSTRING_INDEX(invoice_number, "/", 1) AS UNSIGNED) DESC');
+            } else {
+                $lastQuery->orderByDesc('id');
             }
+            $lastInvoiceNumber = $lastQuery->value('invoice_number');
+
+            $nextSequence = 1;
+
+            if ($lastInvoiceNumber) {
+                $parts = explode('/', $lastInvoiceNumber);
+                if (is_numeric($parts[0])) {
+                    $nextSequence = (int) $parts[0] + 1;
+                }
+            }
+
+            $sequenceStr = str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+
+            return "{$sequenceStr}/INV/JRI-{$custCode}/{$romanMonth}/{$year}";
         }
-
-        $sequenceStr = str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
-
-        return "{$sequenceStr}/INV/JRI-{$custCode}/{$romanMonth}/{$year}";
     }  
 
     protected static function booted(): void

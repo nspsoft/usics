@@ -106,7 +106,12 @@ class GoodsReceiptController extends Controller
 
         return Inertia::render('Purchasing/Receipts/Create', [
             'purchaseOrder' => $purchaseOrder,
-            'purchaseOrders' => PurchaseOrder::whereIn('status', ['ordered', 'partial'])->with('supplier')->orderByDesc('created_at')->get(),
+            'purchaseOrders' => PurchaseOrder::whereIn('status', [
+                PurchaseOrder::STATUS_APPROVED,
+                PurchaseOrder::STATUS_ORDERED,
+                PurchaseOrder::STATUS_ACKNOWLEDGED,
+                PurchaseOrder::STATUS_PARTIAL,
+            ])->with('supplier')->orderByDesc('created_at')->get(),
             'suppliers' => Supplier::active()->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
             'products' => Product::active()->with('unit')->orderBy('name')->get(),
@@ -120,6 +125,7 @@ class GoodsReceiptController extends Controller
             'supplier_id' => 'required|exists:suppliers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'receipt_date' => 'required|date',
+            'delivery_note_number' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.po_item_id' => 'nullable|exists:purchase_order_items,id',
@@ -151,6 +157,7 @@ class GoodsReceiptController extends Controller
                 'supplier_id' => $validated['supplier_id'],
                 'warehouse_id' => $validated['warehouse_id'],
                 'receipt_date' => $validated['receipt_date'],
+                'delivery_note_number' => $validated['delivery_note_number'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'status' => 'draft',
                 'received_by' => auth()->id(),
