@@ -102,7 +102,7 @@ const formatDate = (date) => {
     <Head :title="`PO ${purchaseOrder.po_number}`" />
     
     <AppLayout title="Purchase Orders">
-        <div class="max-w-7xl mx-auto">
+        <div class="max-w-full px-4 sm:px-6 lg:px-8 mx-auto">
             <div class="flex items-center justify-between mb-6">
                 <Link href="/purchasing/orders" class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white">
                     <ArrowLeftIcon class="h-4 w-4" /> Back to List
