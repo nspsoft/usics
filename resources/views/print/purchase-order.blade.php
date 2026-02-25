@@ -1,6 +1,6 @@
     <style>
         @page {
-            margin: 0.5cm;
+            margin: 0.5cm 0.5cm 0.2cm 0.5cm;
             size: A4;
         }
         body {
@@ -289,7 +289,7 @@
             
             <!-- Spacer Row (Adjusted for better bottom spacing) -->
             <tr class="item-row">
-                <td style="height: 300px;"></td> <!-- Reduced from 320px to prevent overflow -->
+                <td style="height: 220px;"></td>
                 <td></td><td></td><td></td><td></td><td></td><td></td>
             </tr>
 
@@ -371,7 +371,7 @@
                             <td width="33%">Prepared</td>
                         </tr>
                         <tr>
-                            <td class="italic">Date : {{ $purchaseOrder->approved_at ? \Carbon\Carbon::parse($purchaseOrder->approved_at)->format('d-m-Y') : '24-01-2026' }}</td>
+                            <td class="italic">Date : {{ $purchaseOrder->approved_at ? \Carbon\Carbon::parse($purchaseOrder->approved_at)->format('d-m-Y') : \Carbon\Carbon::parse($purchaseOrder->order_date)->format('d-m-Y') }}</td>
                             <td class="italic">Date : {{ \Carbon\Carbon::parse($purchaseOrder->order_date)->format('d-m-Y') }}</td>
                             <td class="italic">Date : {{ \Carbon\Carbon::parse($purchaseOrder->order_date)->format('d-m-Y') }}</td>
                         </tr>
@@ -382,7 +382,7 @@
                         </tr>
                         <tr class="font-bold italic">
                             <td style="padding: 5px;">
-                                @if($purchaseOrder->approved_by) {{ $purchaseOrder->approvedBy->name }} @else &nbsp; @endif
+                                {{ $purchaseOrder->approvedBy->name ?? $purchaseOrder->createdBy->name ?? 'Administrator' }}
                             </td>
                             <td style="padding: 5px;">Ely Susanti</td>
                             <td style="padding: 5px;">
