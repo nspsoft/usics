@@ -617,4 +617,134 @@ class DeliveryScheduleController extends Controller
 
         return response()->json(['error' => 'Invalid parameters'], 400);
     }
+
+    // ========== AI Matrix Extractor ==========
+
+    protected $gemini;
+
+    public function __construct(\App\Services\GeminiService $gemini)
+    {
+        $this->gemini = $gemini;
+    }
+
+    public function extractFromImageMatrix(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->getRealPath();
+        $mimeType = $file->getMimeType();
+
+        try {
+            $extracted = $this->gemini->extractDeliveryScheduleMatrix($path, $mimeType);
+
+            if (!$extracted) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to extract data from image. Please check AI configuration.'
+                ], 422);
+            }
+
+            // Auto-match products
+            $items = $this->autoMatchProducts($extracted['items'] ?? []);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'month_year' => $extracted['month_year'] ?? '',
+                    'items' => $items,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AI Extraction Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function autoMatchProducts(array $items)
+    {
+        $products = \App\Models\Product::where('is_active', true)->get(['id', 'name', 'sku']);
+        $customers = \App\Models\Customer::all(['id', 'name', 'code']);
+
+        foreach ($items as &$item) {
+            $code = strtoupper(trim($item['product_code'] ?? ''));
+            $matchedProduct = $products->first(fn($p) => strtoupper($p->sku) === $code);
+
+            if (!$matchedProduct) {
+                $matchedProduct = $products->first(fn($p) => str_contains(strtoupper($p->sku), $code));
+            }
+
+            if ($matchedProduct) {
+                $item['product_id'] = $matchedProduct->id;
+                $item['product_name'] = $matchedProduct->name;
+                $item['product_sku'] = $matchedProduct->sku;
+                $item['match_status'] = 'MATCHED';
+            } else {
+                $item['product_id'] = null;
+                $item['match_status'] = 'NO_MATCH';
+            }
+
+            $supplierName = $item['supplier_name'] ?? '';
+            $matchedCustomer = $customers->first(fn($c) =>
+                str_contains(strtoupper($c->name), strtoupper($supplierName)) ||
+                str_contains(strtoupper($c->code ?? ''), strtoupper($supplierName))
+            );
+
+            if ($matchedCustomer) {
+                $item['customer_id'] = $matchedCustomer->id;
+                $item['customer_name'] = $matchedCustomer->name;
+            } else {
+                $item['customer_id'] = null;
+            }
+        }
+
+        return $items;
+    }
+
+    public function storeBulk(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.customer_id' => 'required|exists:customers,id',
+            'items.*.date' => 'required|date',
+            'items.*.qty' => 'required|numeric|min:0',
+            'items.*.po_number' => 'nullable|string',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $count = 0;
+            foreach ($request->items as $item) {
+                DeliverySchedule::updateOrCreate(
+                    [
+                        'customer_id' => $item['customer_id'],
+                        'product_id' => $item['product_id'],
+                        'delivery_date' => $item['date'],
+                        'po_number' => $item['po_number'] ?? null,
+                    ],
+                    [
+                        'qty_scheduled' => $item['qty'],
+                        'created_by' => auth()->id(),
+                    ]
+                );
+                $count++;
+            }
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully imported {$count} schedule entries."
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error storing data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

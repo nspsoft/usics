@@ -261,6 +261,8 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
         Route::get('/schedule/comparison', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'comparison'])->name('schedule.comparison');
         Route::get('/schedule/print', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'printSchedule'])->name('schedule.print');
         Route::get('/schedule/chart-data', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'comparisonChart'])->name('schedule.chart-data');
+        Route::post('/schedule/extract-matrix', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'extractFromImageMatrix'])->name('schedule.extract-matrix');
+        Route::post('/schedule/store-bulk', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'storeBulk'])->name('schedule.store-bulk');
     });
 
     // AI PO Extractor Page
