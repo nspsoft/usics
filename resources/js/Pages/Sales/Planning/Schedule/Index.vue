@@ -380,14 +380,14 @@ const saveBulk = async () => {
                     <!-- Step 1: Upload -->
                     <div v-if="aiStep === 1" class="p-8 flex-1 overflow-y-auto">
                         <div @click="$refs.aiFileInput.click()" class="w-full h-80 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group relative overflow-hidden">
-                            <input ref="aiFileInput" type="file" class="hidden" accept="image/*" @change="handleAiFileSelect" />
+                            <input ref="aiFileInput" type="file" class="hidden" accept="image/*,.pdf" @change="handleAiFileSelect" />
                             <template v-if="!aiFilePreview">
                                 <div class="p-6 rounded-full bg-slate-50 dark:bg-slate-800 group-hover:bg-amber-500/10 transition-colors">
                                     <ArrowUpTrayIcon class="h-12 w-12 text-slate-400 group-hover:text-amber-500 transition-colors" />
                                 </div>
                                 <div class="text-center">
                                     <p class="text-lg font-semibold text-slate-700 dark:text-slate-200">Upload gambar jadwal delivery</p>
-                                    <p class="text-sm text-slate-500 mt-1">PNG, JPG atau WebP (Max 5MB)</p>
+                                    <p class="text-sm text-slate-500 mt-1">PDF, PNG, JPG atau WebP (Max 5MB)</p>
                                 </div>
                             </template>
                             <img v-else :src="aiFilePreview" class="w-full h-full object-contain p-4" />
