@@ -11,8 +11,16 @@ import {
     ChevronUpIcon,
     ChevronDownIcon,
     UserIcon,
+    SparklesIcon,
+    ArrowPathIcon,
+    ExclamationTriangleIcon,
+    CheckCircleIcon,
+    EyeIcon,
+    ArrowsPointingOutIcon,
+    TrashIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber } from '@/helpers';
+import axios from 'axios';
 
 const props = defineProps({
     schedules: Object,
@@ -92,6 +100,79 @@ const formatDateShort = (date) => {
     if (!date) return '';
     return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
 };
+
+// ========== AI Matrix Extractor ==========
+const aiModalOpen = ref(false);
+const aiStep = ref(1);
+const aiFile = ref(null);
+const aiFilePreview = ref(null);
+const isExtracting = ref(false);
+const isSaving = ref(false);
+const aiError = ref(null);
+const extractedData = ref({ month_year: '', items: [] });
+
+const openAiModal = () => {
+    aiModalOpen.value = true;
+    aiStep.value = 1;
+    aiFile.value = null;
+    aiFilePreview.value = null;
+    aiError.value = null;
+    extractedData.value = { month_year: '', items: [] };
+};
+
+const closeAiModal = () => {
+    aiModalOpen.value = false;
+    if (aiFilePreview.value) URL.revokeObjectURL(aiFilePreview.value);
+};
+
+const handleAiFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        aiFile.value = file;
+        aiFilePreview.value = URL.createObjectURL(file);
+    }
+};
+
+const extractMatrix = async () => {
+    if (!aiFile.value) return;
+    isExtracting.value = true;
+    aiError.value = null;
+    const formData = new FormData();
+    formData.append('file', aiFile.value);
+    try {
+        const response = await axios.post(route('sales.planning.schedule.extract-matrix'), formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (response.data.success) {
+            extractedData.value = response.data.data;
+            aiStep.value = 2;
+        }
+    } catch (err) {
+        aiError.value = err.response?.data?.message || 'Gagal mengekstrak data.';
+    } finally {
+        isExtracting.value = false;
+    }
+};
+
+const removeItem = (index) => extractedData.value.items.splice(index, 1);
+
+const saveBulk = async () => {
+    isSaving.value = true;
+    try {
+        const response = await axios.post(route('sales.planning.schedule.store-bulk'), {
+            items: extractedData.value.items
+        });
+        if (response.data.success) {
+            alert(response.data.message);
+            closeAiModal();
+            router.reload();
+        }
+    } catch (err) {
+        alert(err.response?.data?.message || 'Gagal menyimpan data.');
+    } finally {
+        isSaving.value = false;
+    }
+};
 </script>
 
 <template>
@@ -136,6 +217,13 @@ const formatDateShort = (date) => {
                             </svg>
                             Export Excel
                         </a>
+                        <button 
+                            @click="openAiModal"
+                            class="flex items-center gap-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg group"
+                        >
+                            <SparklesIcon class="w-5 h-5 group-hover:animate-pulse" />
+                            AI Matrix Extractor
+                        </button>
                         <button 
                             @click="openImportModal"
                             class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors"
@@ -265,6 +353,130 @@ const formatDateShort = (date) => {
                 </div>
             </div>
         </div>
+
+        <!-- AI Matrix Extractor Modal -->
+        <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="opacity-100 scale-100"
+            leave-to-class="opacity-0 scale-95"
+        >
+            <div v-if="aiModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-hidden">
+                <div :class="['bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 transition-all duration-500 overflow-hidden flex flex-col', aiStep === 1 ? 'max-w-xl w-full max-h-[90vh]' : 'max-w-[95vw] w-full h-[90vh]']">
+                    <!-- Header -->
+                    <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-xl bg-amber-500/10 text-amber-600"><SparklesIcon class="h-6 w-6" /></div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white">AI Matrix Extractor</h3>
+                                <p class="text-xs text-slate-500">Ekstrak jadwal dari gambar menggunakan Gemini AI</p>
+                            </div>
+                        </div>
+                        <button @click="closeAiModal" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors"><XMarkIcon class="h-6 w-6" /></button>
+                    </div>
+
+                    <!-- Step 1: Upload -->
+                    <div v-if="aiStep === 1" class="p-8 flex-1 overflow-y-auto">
+                        <div @click="$refs.aiFileInput.click()" class="w-full h-80 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group relative overflow-hidden">
+                            <input ref="aiFileInput" type="file" class="hidden" accept="image/*" @change="handleAiFileSelect" />
+                            <template v-if="!aiFilePreview">
+                                <div class="p-6 rounded-full bg-slate-50 dark:bg-slate-800 group-hover:bg-amber-500/10 transition-colors">
+                                    <ArrowUpTrayIcon class="h-12 w-12 text-slate-400 group-hover:text-amber-500 transition-colors" />
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-lg font-semibold text-slate-700 dark:text-slate-200">Upload gambar jadwal delivery</p>
+                                    <p class="text-sm text-slate-500 mt-1">PNG, JPG atau WebP (Max 5MB)</p>
+                                </div>
+                            </template>
+                            <img v-else :src="aiFilePreview" class="w-full h-full object-contain p-4" />
+                            <div v-if="aiFilePreview" class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/50 to-transparent flex justify-center">
+                                <span class="bg-white/90 dark:bg-slate-800/90 py-1.5 px-3 rounded-full text-xs font-bold shadow-sm backdrop-blur-sm">Ganti Gambar</span>
+                            </div>
+                        </div>
+                        <div v-if="aiError" class="mt-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-500">
+                            <ExclamationTriangleIcon class="h-5 w-5 shrink-0" />
+                            <span class="text-sm font-medium">{{ aiError }}</span>
+                        </div>
+                        <button @click="extractMatrix" :disabled="!aiFile || isExtracting" class="mt-8 w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-bold shadow-lg shadow-amber-500/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-lg">
+                            <template v-if="isExtracting"><ArrowPathIcon class="h-6 w-6 animate-spin" /> AI sedang menganalisis...</template>
+                            <template v-else><SparklesIcon class="h-6 w-6" /> Ekstrak Jadwal</template>
+                        </button>
+                    </div>
+
+                    <!-- Step 2: Verification -->
+                    <div v-if="aiStep === 2" class="flex-1 flex overflow-hidden">
+                        <!-- Left: Image -->
+                        <div class="w-1/3 border-r border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-6 overflow-hidden flex flex-col">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-sm font-bold text-slate-500 flex items-center gap-2"><EyeIcon class="h-4 w-4" /> REFERENSI</h4>
+                                <a :href="aiFilePreview" target="_blank" class="text-blue-500 hover:text-blue-600"><ArrowsPointingOutIcon class="h-4 w-4" /></a>
+                            </div>
+                            <div class="flex-1 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-950">
+                                <img :src="aiFilePreview" class="w-full h-full object-contain" />
+                            </div>
+                            <div class="mt-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-400 italic">
+                                💡 Bandingkan hasil ekstraksi di tabel dengan gambar asli sebelum menyimpan.
+                            </div>
+                        </div>
+                        <!-- Right: Table -->
+                        <div class="flex-1 flex flex-col bg-white dark:bg-slate-900 overflow-hidden">
+                            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+                                <div class="flex items-center gap-4">
+                                    <div class="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-xs font-bold ring-1 ring-emerald-500/20">{{ extractedData.items.length }} Items</div>
+                                    <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Periode: <span class="text-blue-600">{{ extractedData.month_year }}</span></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button @click="aiStep = 1" class="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm">Ganti Gambar</button>
+                                    <button @click="saveBulk" :disabled="isSaving || extractedData.items.length === 0" class="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 disabled:opacity-50 flex items-center gap-2">
+                                        <template v-if="isSaving"><ArrowPathIcon class="h-4 w-4 animate-spin" /> Menyimpan...</template>
+                                        <template v-else><CheckCircleIcon class="h-4 w-4" /> Konfirmasi & Simpan</template>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950/20 p-6">
+                                <table class="w-full text-left border-separate border-spacing-0">
+                                    <thead class="sticky top-0 z-20">
+                                        <tr>
+                                            <th class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-900">Material Code</th>
+                                            <th class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-900">Customer</th>
+                                            <th class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-900">Tanggal</th>
+                                            <th class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-900 text-right">Qty</th>
+                                            <th class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-900 text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                                        <tr v-for="(item, idx) in extractedData.items" :key="idx" class="group hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">
+                                            <td class="px-4 py-3">
+                                                <input v-model="item.product_code" class="bg-transparent border-none p-0 text-sm font-bold text-slate-900 dark:text-white focus:ring-0 w-full" />
+                                                <div v-if="item.match_status === 'MATCHED'" class="flex items-center gap-1 mt-1">
+                                                    <CheckCircleIcon class="h-3 w-3 text-emerald-500" />
+                                                    <span class="text-[10px] text-emerald-500 font-bold">{{ item.product_name }}</span>
+                                                </div>
+                                                <div v-else class="flex items-center gap-1 mt-1">
+                                                    <ExclamationTriangleIcon class="h-3 w-3 text-amber-500" />
+                                                    <span class="text-[10px] text-amber-500 font-bold">Belum Terdaftar</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <input v-model="item.supplier_name" class="bg-transparent border-none p-0 text-sm text-slate-600 dark:text-slate-400 focus:ring-0 w-full" />
+                                                <span class="text-[10px] text-slate-400 font-mono">{{ item.customer_name || 'Manual' }}</span>
+                                            </td>
+                                            <td class="px-4 py-3"><input v-model="item.date" type="date" class="bg-transparent border-none p-0 text-sm font-mono text-slate-600 dark:text-slate-400 focus:ring-0" /></td>
+                                            <td class="px-4 py-3 text-right"><input v-model.number="item.qty" type="number" class="bg-transparent border-none p-0 text-sm font-mono text-right font-bold text-slate-900 dark:text-white focus:ring-0 w-24" /></td>
+                                            <td class="px-4 py-3 text-center">
+                                                <button @click="removeItem(idx)" class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all opacity-0 group-hover:opacity-100"><TrashIcon class="h-4 w-4" /></button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Transition>
 
         <!-- Import Modal -->
         <Transition
