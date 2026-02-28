@@ -2,6 +2,8 @@
 
 namespace App\Exports\Template;
 
+use App\Models\SalesOrder;
+use App\Models\SalesOrderItem;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -11,11 +13,43 @@ class DeliveryOrderTemplateExport implements FromCollection, WithHeadings, WithE
 {
     public function collection()
     {
-        return collect([
-            ['DO-2026-0001', 'SO-202602-0001', 'PO-2026-0001', 'SKU001', 5, '2026-02-13', '', ''],
-            ['DO-2026-0002', 'SO-202602-0001', 'PO-2026-0001', 'SKU002', 10, '2026-02-13', '', ''],
-            ['DO-2026-0003', 'SO-202602-0002', 'PO-2026-0002', 'SKU003', 3, '2026-02-14', 'BATCH-001', 'Handle with care'],
-        ]);
+        // Pull real Sales Orders that can be delivered
+        $orders = SalesOrder::with(['items.product', 'items.unit'])
+            ->whereIn('status', ['confirmed', 'processing', 'partial'])
+            ->orderBy('order_date', 'desc')
+            ->take(3)
+            ->get();
+
+        $rows = collect();
+        $today = now()->format('Y-m-d');
+
+        if ($orders->count() > 0) {
+            foreach ($orders as $so) {
+                $items = $so->items->take(2); // max 2 items per SO for sample
+                foreach ($items as $item) {
+                    $remaining = max(0, $item->qty - ($item->qty_delivered ?? 0));
+                    if ($remaining <= 0) $remaining = $item->qty; // show original qty if fully delivered
+
+                    $rows->push([
+                        '',                                         // DO Number (auto-generate)
+                        $so->so_number,                              // SO Number
+                        $so->customer_po_number ?? '',               // Customer PO
+                        $item->product?->sku ?? 'SKU-UNKNOWN',      // Product Code
+                        $remaining,                                  // Qty Delivered
+                        $today,                                      // Delivery Date
+                        '',                                          // Batch Number
+                        'Contoh: sisa qty dari ' . $so->so_number,   // Notes
+                    ]);
+                }
+            }
+        } else {
+            // Fallback if no deliverable SOs exist
+            $rows->push(['', 'SO/2026/02/0001', 'PO-CUST-001', 'SKU-001', 100, $today, '', 'Contoh - isi SO Number yang sudah Confirmed']);
+            $rows->push(['', 'SO/2026/02/0001', 'PO-CUST-001', 'SKU-002', 50, $today, 'BATCH-001', '']);
+            $rows->push(['DO-CUSTOM-001', 'SO/2026/02/0002', '', 'SKU-001', 200, $today, '', 'Contoh dengan DO Number custom']);
+        }
+
+        return $rows;
     }
 
     public function headings(): array

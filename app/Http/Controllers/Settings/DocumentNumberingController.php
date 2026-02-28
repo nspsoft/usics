@@ -52,6 +52,7 @@ class DocumentNumberingController extends Controller
             'padding' => 'required|integer|min:2|max:10',
             'reset_period' => 'required|in:never,daily,monthly,yearly',
             'separator' => 'required|string|max:5',
+            'current_number' => 'sometimes|integer|min:0',
         ]);
 
         $documentNumbering->update($validated);

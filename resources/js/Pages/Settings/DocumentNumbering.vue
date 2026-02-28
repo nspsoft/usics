@@ -28,6 +28,8 @@ const form = useForm({
     format: '{PREFIX}/{Y}/{m}/{NUMBER}',
     padding: 4,
     reset_period: 'monthly',
+    current_number: 0,
+    separator: '/',
 });
 
 const createNew = () => {
@@ -50,6 +52,8 @@ const edit = (numbering) => {
     form.format = numbering.format;
     form.padding = numbering.padding;
     form.reset_period = numbering.reset_period;
+    form.current_number = numbering.current_number;
+    form.separator = numbering.separator || '/';
     showModal.value = true;
     updatePreview();
 };
@@ -263,17 +267,29 @@ const insertTag = (tag) => {
                             </div>
                         </div>
 
-                        <!-- Reset Period -->
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Reset Counter</label>
-                            <select 
-                                v-model="form.reset_period"
-                                class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-blue-500 text-sm"
-                            >
-                                <option v-for="opt in resetPeriods" :key="opt.value" :value="opt.value">
-                                    {{ opt.label }}
-                                </option>
-                            </select>
+                        <!-- Reset Period & Next Number -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Reset Counter</label>
+                                <select 
+                                    v-model="form.reset_period"
+                                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-blue-500 text-sm"
+                                >
+                                    <option v-for="opt in resetPeriods" :key="opt.value" :value="opt.value">
+                                        {{ opt.label }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div v-if="isEditing">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Current Counter</label>
+                                <input 
+                                    v-model.number="form.current_number" 
+                                    type="number" 
+                                    min="0"
+                                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-blue-500 text-sm"
+                                >
+                                <p class="mt-1 text-[10px] text-amber-500">Next # will be: <span class="font-bold">{{ (form.current_number || 0) + 1 }}</span></p>
+                            </div>
                         </div>
 
                         <!-- Format Builder -->

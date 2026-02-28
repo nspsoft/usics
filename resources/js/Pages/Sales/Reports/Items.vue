@@ -25,6 +25,8 @@ const props = defineProps({
 const search = ref(props.filters.search || '');
 const selectedStatus = ref(props.filters.status || '');
 const selectedCustomer = ref(props.filters.customer || '');
+const dateFrom = ref(props.filters.date_range?.[0] || '');
+const dateTo = ref(props.filters.date_range?.[1] || '');
 const sortField = ref(props.filters.sort || 'sales_orders.order_date');
 const sortDirection = ref(props.filters.direction || 'desc');
 const showFilters = ref(false);
@@ -41,6 +43,7 @@ const applyFilters = debounce(() => {
         search: search.value || undefined,
         status: selectedStatus.value || undefined,
         customer: selectedCustomer.value || undefined,
+        date_range: (dateFrom.value && dateTo.value) ? [dateFrom.value, dateTo.value] : undefined,
         sort: sortField.value,
         direction: sortDirection.value,
     }, {
@@ -59,12 +62,14 @@ const sort = (field) => {
     applyFilters();
 };
 
-watch([search, selectedStatus, selectedCustomer], applyFilters);
+watch([search, selectedStatus, selectedCustomer, dateFrom, dateTo], applyFilters);
 
 const clearFilters = () => {
     search.value = '';
     selectedStatus.value = '';
     selectedCustomer.value = '';
+    dateFrom.value = '';
+    dateTo.value = '';
 };
 
 const formatDate = (date) => {
@@ -131,7 +136,7 @@ const getStatusBadge = (status) => {
             leave-to-class="opacity-0 -translate-y-2"
         >
             <div v-if="showFilters" class="mb-6 rounded-2xl glass-card p-4">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Status</label>
                         <select
@@ -156,6 +161,22 @@ const getStatusBadge = (status) => {
                             </option>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Date From</label>
+                        <input
+                            v-model="dateFrom"
+                            type="date"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Date To</label>
+                        <input
+                            v-model="dateTo"
+                            type="date"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        />
+                    </div>
                     <div class="flex items-end">
                         <button 
                             @click="clearFilters"
@@ -169,11 +190,11 @@ const getStatusBadge = (status) => {
         </Transition>
 
         <div class="rounded-2xl glass-card overflow-hidden">
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto overflow-y-auto max-h-[600px]">
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                    <thead class="bg-slate-50 dark:bg-slate-800/50">
+                    <thead>
                         <tr>
-                            <th @click="sort('sales_orders.so_number')" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700">
+                            <th @click="sort('sales_orders.so_number')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
                                 <div class="flex items-center gap-1">
                                     SO Number
                                     <span v-if="sortField === 'sales_orders.so_number'">
@@ -182,7 +203,7 @@ const getStatusBadge = (status) => {
                                     </span>
                                 </div>
                             </th>
-                            <th @click="sort('sales_orders.order_date')" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700">
+                            <th @click="sort('sales_orders.order_date')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
                                 <div class="flex items-center gap-1">
                                     Date
                                     <span v-if="sortField === 'sales_orders.order_date'">
@@ -191,7 +212,7 @@ const getStatusBadge = (status) => {
                                     </span>
                                 </div>
                             </th>
-                            <th @click="sort('customer_name')" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700">
+                            <th @click="sort('customer_name')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
                                 <div class="flex items-center gap-1">
                                     Customer
                                     <span v-if="sortField === 'customer_name'">
@@ -200,7 +221,7 @@ const getStatusBadge = (status) => {
                                     </span>
                                 </div>
                             </th>
-                            <th @click="sort('product_name')" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700">
+                            <th @click="sort('product_name')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
                                 <div class="flex items-center gap-1">
                                     Product
                                     <span v-if="sortField === 'product_name'">
@@ -209,13 +230,13 @@ const getStatusBadge = (status) => {
                                     </span>
                                 </div>
                             </th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Ordered</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Delivered</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider text-rose-600">Returned</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider text-amber-600">Balance</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Invoiced</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Ordered</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Delivered</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Returned</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Balance</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Invoiced</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Status</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900/50">

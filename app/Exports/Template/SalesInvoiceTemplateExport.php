@@ -2,6 +2,7 @@
 
 namespace App\Exports\Template;
 
+use App\Models\SalesOrder;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -11,11 +12,41 @@ class SalesInvoiceTemplateExport implements FromCollection, WithHeadings, WithEv
 {
     public function collection()
     {
-        return collect([
-            ['SO-202602-0001', '2026-02-13', '2026-03-15', 'SKU001', 5, 100000, 0, ''],
-            ['SO-202602-0001', '2026-02-13', '2026-03-15', 'SKU002', 10, 50000, 5, ''],
-            ['SO-202602-0002', '2026-02-13', '2026-03-15', 'SKU003', 3, 250000, 0, 'Priority shipment'],
-        ]);
+        // Pull real Sales Orders that can be invoiced
+        $orders = SalesOrder::with(['items.product'])
+            ->whereIn('status', ['confirmed', 'processing', 'partial', 'shipped', 'delivered'])
+            ->orderBy('order_date', 'desc')
+            ->take(3)
+            ->get();
+
+        $rows = collect();
+        $today = now()->format('Y-m-d');
+        $dueDate = now()->addDays(30)->format('Y-m-d');
+
+        if ($orders->count() > 0) {
+            foreach ($orders as $so) {
+                $items = $so->items->take(2);
+                foreach ($items as $item) {
+                    $rows->push([
+                        $so->so_number,
+                        $today,
+                        $dueDate,
+                        $item->product?->sku ?? 'SKU-UNKNOWN',
+                        $item->qty,
+                        $item->unit_price,
+                        $item->discount_percent ?? 0,
+                        'Contoh invoice dari ' . $so->so_number,
+                    ]);
+                }
+            }
+        } else {
+            // Fallback if no invoiceable SOs exist
+            $rows->push(['SO/2026/02/0001', $today, $dueDate, 'SKU-001', 100, 50000, 0, 'Contoh - isi SO Number yang valid']);
+            $rows->push(['SO/2026/02/0001', $today, $dueDate, 'SKU-002', 50, 25000, 5, '']);
+            $rows->push(['SO/2026/02/0002', $today, $dueDate, 'SKU-001', 200, 50000, 0, 'Contoh SO berbeda = Invoice terpisah']);
+        }
+
+        return $rows;
     }
 
     public function headings(): array
@@ -37,31 +68,69 @@ class SalesInvoiceTemplateExport implements FromCollection, WithHeadings, WithEv
         return [
             AfterSheet::class => function(AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
+                $spreadsheet = $sheet->getParent();
 
                 $sheet->getComment('A1')->getText()->createTextRun(
-                    "Required. The SO Number to link this invoice to. Must be a valid confirmed/processing SO."
+                    "Wajib. SO Number yang akan dibuatkan invoice. Harus SO yang valid di sistem."
                 );
                 $sheet->getComment('B1')->getText()->createTextRun(
-                    "Required. Invoice date in YYYY-MM-DD format."
+                    "Wajib. Tanggal invoice dalam format YYYY-MM-DD."
                 );
                 $sheet->getComment('C1')->getText()->createTextRun(
-                    "Required. Due date in YYYY-MM-DD format."
+                    "Wajib. Tanggal jatuh tempo dalam format YYYY-MM-DD."
                 );
                 $sheet->getComment('D1')->getText()->createTextRun(
-                    "Required. Product SKU code. Must match an existing product."
+                    "Wajib. Kode SKU produk. Harus sama dengan master product."
                 );
                 $sheet->getComment('E1')->getText()->createTextRun(
-                    "Required. Quantity to invoice. Must be greater than 0."
+                    "Wajib. Jumlah yang akan di-invoice. Harus lebih dari 0."
                 );
                 $sheet->getComment('F1')->getText()->createTextRun(
-                    "Required. Unit price for the product."
+                    "Wajib. Harga satuan produk."
                 );
                 $sheet->getComment('G1')->getText()->createTextRun(
-                    "Optional. Discount percentage (0-100)."
+                    "Opsional. Persentase diskon (0-100)."
                 );
                 $sheet->getComment('H1')->getText()->createTextRun(
-                    "Optional. Notes for the invoice."
+                    "Opsional. Catatan tambahan untuk invoice."
                 );
+
+                // Instruction Sheet
+                $instructionSheet = $spreadsheet->createSheet();
+                $instructionSheet->setTitle('Instruction');
+
+                $instructionSheet->setCellValue('A1', 'Instruksi Import Sales Invoices');
+                $instructionSheet->mergeCells('A1:D1');
+                $instructionSheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
+                $instructionSheet->setCellValue('A3', 'Langkah umum:');
+                $instructionSheet->setCellValue('A4', '1. Download template ini dari menu Sales Invoices > Import.');
+                $instructionSheet->setCellValue('A5', '2. Isi data mulai dari baris ke-2 di sheet utama.');
+                $instructionSheet->setCellValue('A6', '3. Baris dengan SO Number yang sama akan dikelompokkan menjadi 1 Invoice.');
+                $instructionSheet->setCellValue('A7', '4. Simpan file sebagai .xlsx lalu upload kembali di form Import.');
+
+                $instructionSheet->setCellValue('A9', 'Keterangan kolom:');
+                $instructionSheet->setCellValue('A10', 'SO Number *');
+                $instructionSheet->setCellValue('B10', 'Wajib. Nomor Sales Order. Baris dengan SO Number sama akan dijadikan 1 Invoice.');
+                $instructionSheet->setCellValue('A11', 'Invoice Date *');
+                $instructionSheet->setCellValue('B11', 'Wajib. Tanggal invoice dalam format YYYY-MM-DD. Diambil dari baris pertama per SO.');
+                $instructionSheet->setCellValue('A12', 'Due Date *');
+                $instructionSheet->setCellValue('B12', 'Wajib. Tanggal jatuh tempo pembayaran dalam format YYYY-MM-DD.');
+                $instructionSheet->setCellValue('A13', 'Product Code *');
+                $instructionSheet->setCellValue('B13', 'Wajib. SKU produk, harus sama dengan master product.');
+                $instructionSheet->setCellValue('A14', 'Qty *');
+                $instructionSheet->setCellValue('B14', 'Wajib. Jumlah yang di-invoice. Harus angka > 0.');
+                $instructionSheet->setCellValue('A15', 'Unit Price *');
+                $instructionSheet->setCellValue('B15', 'Wajib. Harga satuan produk dalam mata uang dasar.');
+                $instructionSheet->setCellValue('A16', 'Discount %');
+                $instructionSheet->setCellValue('B16', 'Opsional. Persentase diskon per item (0-100). Kosongkan jika tidak ada diskon.');
+                $instructionSheet->setCellValue('A17', 'Notes');
+                $instructionSheet->setCellValue('B17', 'Opsional. Catatan tambahan. Diambil dari baris pertama per SO sebagai catatan invoice.');
+
+                $instructionSheet->getColumnDimension('A')->setWidth(25);
+                $instructionSheet->getColumnDimension('B')->setWidth(80);
+                $instructionSheet->getStyle('A3')->getFont()->setBold(true);
+                $instructionSheet->getStyle('A9')->getFont()->setBold(true);
             },
         ];
     }

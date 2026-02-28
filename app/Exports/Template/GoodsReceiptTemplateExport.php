@@ -2,6 +2,10 @@
 
 namespace App\Exports\Template;
 
+use App\Models\PurchaseOrder;
+use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\Warehouse;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -13,18 +17,56 @@ class GoodsReceiptTemplateExport implements FromCollection, WithHeadings, WithSt
 {
     public function collection()
     {
-        // Return a single example row
-        return collect([
-            [
-                '2023-10-25', // Receipt Date
-                'SUP-001',    // Supplier Code
-                'WH-MAIN',    // Warehouse Name
-                'DN-12345',   // Delivery Note
-                'PO-2023-001',// PO Number
-                'PROD-001',   // Product Code
-                '100',        // Qty Received
-            ]
-        ]);
+        // Pull real POs that can be received
+        $orders = PurchaseOrder::with(['items.product', 'supplier', 'warehouse'])
+            ->whereIn('status', ['confirmed', 'approved', 'partial'])
+            ->orderBy('order_date', 'desc')
+            ->take(3)
+            ->get();
+
+        $rows = collect();
+        $today = now()->format('Y-m-d');
+
+        if ($orders->count() > 0) {
+            foreach ($orders as $po) {
+                $items = $po->items->take(2);
+                foreach ($items as $item) {
+                    $remaining = max(0, $item->qty - ($item->qty_received ?? 0));
+                    if ($remaining <= 0) $remaining = $item->qty;
+
+                    $rows->push([
+                        $today,
+                        $po->supplier?->code ?? 'SUP-001',
+                        $po->warehouse?->name ?? 'Main Warehouse',
+                        'SJ-' . now()->format('Ymd') . '-SAMPLE',
+                        $po->po_number,
+                        $item->product?->code ?? $item->product?->sku ?? 'PROD-001',
+                        $remaining,
+                    ]);
+                }
+            }
+        } else {
+            // Fallback if no receivable POs
+            $supplier = Supplier::first();
+            $warehouse = Warehouse::first();
+            $products = Product::take(2)->get();
+
+            $supCode = $supplier?->code ?? 'SUP-001';
+            $whName = $warehouse?->name ?? 'Main Warehouse';
+
+            $rows->push([
+                $today, $supCode, $whName, 'SJ-SAMPLE-001', '',
+                $products->first()?->code ?? $products->first()?->sku ?? 'PROD-001',
+                100,
+            ]);
+            $rows->push([
+                $today, $supCode, $whName, 'SJ-SAMPLE-001', '',
+                $products->last()?->code ?? $products->last()?->sku ?? 'PROD-002',
+                50,
+            ]);
+        }
+
+        return $rows;
     }
 
     public function headings(): array
@@ -54,25 +96,25 @@ class GoodsReceiptTemplateExport implements FromCollection, WithHeadings, WithSt
                 $sheet = $event->sheet->getDelegate();
 
                 $sheet->getComment('A1')->getText()->createTextRun(
-                    'Required. Tanggal penerimaan barang. Format YYYY-MM-DD atau tanggal Excel.'
+                    'Wajib. Tanggal penerimaan barang. Format YYYY-MM-DD atau tanggal Excel.'
                 );
                 $sheet->getComment('B1')->getText()->createTextRun(
-                    'Required. Kode supplier. Harus sama dengan Supplier Code di master supplier.'
+                    'Wajib. Kode supplier. Harus sama dengan Supplier Code di master supplier.'
                 );
                 $sheet->getComment('C1')->getText()->createTextRun(
-                    'Required. Nama gudang. Harus sama dengan Warehouse Name di master gudang.'
+                    'Wajib. Nama gudang. Harus sama dengan Warehouse Name di master gudang.'
                 );
                 $sheet->getComment('D1')->getText()->createTextRun(
-                    'Required. Nomor delivery note / surat jalan dari supplier. Baris dengan Supplier + Warehouse + Delivery Note Number yang sama akan digabung menjadi satu Goods Receipt.'
+                    'Wajib. Nomor delivery note / surat jalan dari supplier. Baris dengan Supplier + Warehouse + Delivery Note Number yang sama akan digabung menjadi satu Goods Receipt.'
                 );
                 $sheet->getComment('E1')->getText()->createTextRun(
-                    'Optional. Nomor Purchase Order terkait. Jika diisi, harus sama dengan PO Number di sistem.'
+                    'Opsional. Nomor Purchase Order terkait. Jika diisi, harus sama dengan PO Number di sistem.'
                 );
                 $sheet->getComment('F1')->getText()->createTextRun(
-                    'Required. Kode produk yang diterima. Harus sama dengan Product Code di master produk.'
+                    'Wajib. Kode produk yang diterima. Harus sama dengan Product Code di master produk.'
                 );
                 $sheet->getComment('G1')->getText()->createTextRun(
-                    'Required. Qty yang diterima. Harus berupa angka.'
+                    'Wajib. Qty yang diterima. Harus berupa angka.'
                 );
 
                 $spreadsheet = $sheet->getParent();

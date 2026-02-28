@@ -26,6 +26,8 @@ const props = defineProps({
 const search = ref(props.filters.search || '');
 const status = ref(props.filters.status || '');
 const customer = ref(props.filters.customer || '');
+const dateFrom = ref(props.filters.date_range?.[0] || '');
+const dateTo = ref(props.filters.date_range?.[1] || '');
 const sort = ref(props.filters.sort || 'delivery_orders.delivery_date');
 const direction = ref(props.filters.direction || 'desc');
 const showFilters = ref(false);
@@ -35,6 +37,7 @@ const updateFilters = debounce(() => {
         search: search.value || undefined,
         status: status.value || undefined,
         customer: customer.value || undefined,
+        date_range: (dateFrom.value && dateTo.value) ? [dateFrom.value, dateTo.value] : undefined,
         sort: sort.value,
         direction: direction.value,
     }, {
@@ -53,12 +56,14 @@ const sortBy = (column) => {
     updateFilters();
 };
 
-watch([search, status, customer], updateFilters);
+watch([search, status, customer, dateFrom, dateTo], updateFilters);
 
 const clearFilters = () => {
     search.value = '';
     status.value = '';
     customer.value = '';
+    dateFrom.value = '';
+    dateTo.value = '';
 };
 
 const formatDate = (date) => {
@@ -130,7 +135,7 @@ const getStatusClass = (status) => {
             leave-to-class="opacity-0 -translate-y-2"
         >
             <div v-if="showFilters" class="mb-6 rounded-2xl glass-card p-4">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Status</label>
                         <select v-model="status" class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50">
@@ -144,6 +149,22 @@ const getStatusClass = (status) => {
                             <option value="">All Customers</option>
                             <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Date From</label>
+                        <input
+                            v-model="dateFrom"
+                            type="date"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Date To</label>
+                        <input
+                            v-model="dateTo"
+                            type="date"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        />
                     </div>
                     <div class="flex items-end">
                         <button 
@@ -159,11 +180,11 @@ const getStatusClass = (status) => {
 
         <!-- Table -->
         <div class="rounded-2xl glass-card overflow-hidden">
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto overflow-y-auto max-h-[600px]">
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                    <thead class="bg-slate-50 dark:bg-slate-800/50">
+                    <thead>
                         <tr>
-                            <th @click="sortBy('delivery_orders.do_number')" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700">
+                            <th @click="sortBy('delivery_orders.do_number')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
                                 <div class="flex items-center gap-1">
                                     DO Number
                                     <template v-if="sort === 'delivery_orders.do_number'">
@@ -172,7 +193,7 @@ const getStatusClass = (status) => {
                                     </template>
                                 </div>
                             </th>
-                            <th @click="sortBy('delivery_orders.delivery_date')" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700">
+                            <th @click="sortBy('delivery_orders.delivery_date')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
                                 <div class="flex items-center gap-1">
                                     Date
                                     <template v-if="sort === 'delivery_orders.delivery_date'">
@@ -181,7 +202,7 @@ const getStatusClass = (status) => {
                                     </template>
                                 </div>
                             </th>
-                            <th @click="sortBy('customer_name')" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700">
+                            <th @click="sortBy('customer_name')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
                                 <div class="flex items-center gap-1">
                                     Customer
                                     <template v-if="sort === 'customer_name'">
@@ -190,7 +211,7 @@ const getStatusClass = (status) => {
                                     </template>
                                 </div>
                             </th>
-                            <th @click="sortBy('product_name')" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700">
+                            <th @click="sortBy('product_name')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
                                 <div class="flex items-center gap-1">
                                     Product
                                     <template v-if="sort === 'product_name'">
@@ -199,14 +220,14 @@ const getStatusClass = (status) => {
                                     </template>
                                 </div>
                             </th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Qty DO</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Qty Act</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Unit</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Delay</th>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Notes / Problem</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Loaded</th>
-                            <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm whitespace-nowrap">Qty DO</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm whitespace-nowrap">Qty Act</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm whitespace-nowrap">Unit</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm whitespace-nowrap">Delay</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Notes / Problem</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Loaded</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Status</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900/50">

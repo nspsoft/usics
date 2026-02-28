@@ -2,6 +2,9 @@
 
 namespace App\Exports\Template;
 
+use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\Warehouse;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -12,44 +15,73 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
 {
     public function collection()
     {
-        return collect([
-            [
-                'PO-2026-0001',
-                '2026-02-15',
-                '2026-02-20',
-                'SUP-001',
-                'Main Warehouse',
-                'PROD-001',
+        // Pull real data from database
+        $suppliers = Supplier::orderBy('name')->take(2)->get();
+        $products = Product::with('unit')->orderBy('name')->take(3)->get();
+        $warehouse = Warehouse::first();
+
+        $supCode1 = $suppliers->first()?->code ?? 'SUP-001';
+        $supCode2 = ($suppliers->count() > 1 ? $suppliers->last()?->code : $suppliers->first()?->code) ?? 'SUP-002';
+        $whName = $warehouse?->name ?? 'Main Warehouse';
+        $today = now()->format('Y-m-d');
+        $expectedDate = now()->addDays(14)->format('Y-m-d');
+
+        $rows = collect();
+
+        if ($products->count() >= 2) {
+            $p1 = $products[0];
+            $p2 = $products[1];
+            $p3 = $products->count() > 2 ? $products[2] : $products[0];
+
+            // Row 1 & 2: Same supplier + warehouse + date = grouped into one PO
+            $rows->push([
+                '',                         // PO Number (auto-generate)
+                $today,
+                $expectedDate,
+                $supCode1,
+                $whName,
+                $p1->code ?? $p1->sku,
                 100,
-                50000,
+                $p1->cost_price ?: 50000,
                 0,
-                'Urgent Order',
-            ],
-            [
-                'PO-2026-0002',
-                '2026-02-15',
-                '2026-02-20',
-                'SUP-001',
-                'Main Warehouse',
-                'PROD-002',
+                'Contoh PO (baris ini & baris berikutnya jadi 1 PO karena Supplier + Warehouse + Date sama)',
+            ]);
+            $rows->push([
+                '',
+                $today,
+                $expectedDate,
+                $supCode1,
+                $whName,
+                $p2->code ?? $p2->sku,
                 50,
-                75000,
+                $p2->cost_price ?: 75000,
                 5,
                 '',
-            ],
-            [
-                'PO-2026-0003',
-                '2026-02-16',
+            ]);
+            // Row 3: Different supplier = new PO
+            $rows->push([
                 '',
-                'SUP-002',
-                'Site A',
-                'MAT-005',
+                $today,
+                '',
+                $supCode2,
+                $whName,
+                $p3->code ?? $p3->sku,
                 200,
-                10000,
+                $p3->cost_price ?: 10000,
                 0,
-                'Regular Restock',
-            ],
-        ]);
+                'Contoh PO terpisah (supplier berbeda)',
+            ]);
+        } else {
+            // Fallback
+            $p = $products->first();
+            $code = $p?->code ?? $p?->sku ?? 'PROD-001';
+            $price = $p?->cost_price ?: 50000;
+
+            $rows->push(['', $today, $expectedDate, $supCode1, $whName, $code, 100, $price, 0, 'Contoh order']);
+            $rows->push(['', $today, '', $supCode2, $whName, $code, 200, $price, 0, 'Contoh PO lain']);
+        }
+
+        return $rows;
     }
 
     public function headings(): array
