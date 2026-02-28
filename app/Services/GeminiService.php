@@ -599,4 +599,81 @@ Keep the analysis practical, data-driven, and focused on actionable insights. Us
 
         return 'Maaf, layanan AI sedang tidak tersedia. Silakan coba lagi nanti.';
     }
+
+    /**
+     * Extract Delivery Schedule Matrix data from an image.
+     */
+    public function extractDeliveryScheduleMatrix(string $filePath, string $mimeType): ?array
+    {
+        $this->ensureConfigured();
+        if ($this->driver === 'ollama') return null;
+        if (!$this->apiKey) {
+            Log::error('Gemini API Key is not configured for Matrix Extraction.');
+            return null;
+        }
+
+        $fileData = base64_encode(file_get_contents($filePath));
+        $prompt = $this->getDeliveryScheduleMatrixPrompt();
+
+        try {
+            $response = Http::timeout(120)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt],
+                            ['inline_data' => ['mime_type' => $mimeType, 'data' => $fileData]]
+                        ]
+                    ]
+                ],
+                'generationConfig' => ['response_mime_type' => 'application/json']
+            ]);
+
+            Log::info('Matrix Extraction Response Status: ' . $response->status());
+            return $this->parseResponse($response);
+        } catch (\Exception $e) {
+            Log::error('Exception in GeminiService (Matrix): ' . $e->getMessage());
+        }
+        return null;
+    }
+
+    protected function getDeliveryScheduleMatrixPrompt(): string
+    {
+        return "You are an expert at reading complex logistics tables. Analyze this Delivery Schedule Matrix carefully.
+
+        The table columns usually represent dates (e.g. 02-Feb, 03-Feb, etc.).
+        The table rows represent Products/Materials (with Code and Supplier).
+        
+        CRITICAL - MATRIX STRUCTURE:
+        - The rows contain a 'Code' column (e.g. 'LHB02', 'CFT01').
+        - The columns from left to right represent specific dates in a month (e.g. Feb-26).
+        - Cells contain the QUANTITY scheduled for that specific Product on that specific Date.
+        
+        YOUR TASK:
+        Convert this matrix into a flat list of individual schedule entries. 
+        Each entry must contain:
+        1. product_code: The code found in the 'Code' column.
+        2. date: The date from the column header (formatted as YYYY-MM-DD). If the year is not visible, assume 2026.
+        3. qty: The quantity value in the cell.
+        4. supplier_name: The name from the 'Supplier' column.
+        
+        Output format:
+        Extract and return ONLY a valid JSON object with this exact structure:
+        {
+            \"month_year\": \"Feb 2026\",
+            \"items\": [
+                {
+                    \"product_code\": \"LHB02\",
+                    \"date\": \"2026-02-02\",
+                    \"qty\": 1000,
+                    \"supplier_name\": \"Jidoka\"
+                },
+                ...
+            ]
+        }
+        
+        IMPORTANT:
+        - Skip cells that are empty or contain only a dot (.).
+        - Only include entries where quantity > 0.
+        - Return pure JSON without any markdown formatting.";
+    }
 }
