@@ -76,7 +76,7 @@ class StockAdjustmentController extends Controller
             'adjustment' => null,
             'adjustmentNumber' => StockAdjustment::generateNumber(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
-            'products' => Product::active()->stockManaged()->orderBy('name')->get(),
+            'products' => Product::active()->stockManaged()->select('id','sku','name','unit_id')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
         ]);
     }
 

@@ -219,7 +219,7 @@ const getStatusBadge = (status) => {
                         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20">
                             <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Invoice Items</h3>
                         </div>
-                        <div class="overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar relative">
+                        <div class="overflow-x-auto relative">
                             <table class="w-full text-left">
                                 <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm">
                                     <tr class="bg-slate-50 dark:bg-slate-800/30">

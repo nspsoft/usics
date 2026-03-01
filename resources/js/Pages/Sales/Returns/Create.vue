@@ -206,7 +206,7 @@ onMounted(() => {
                                 <div class="col-span-1"></div>
                             </div>
 
-                            <div v-for="(item, index) in form.items" :key="index" class="grid grid-cols-12 gap-3 items-center bg-slate-50 dark:bg-slate-800/20 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/40 transition-all border border-transparent hover:border-slate-200 dark:border-slate-700/50 shadow-sm">
+                            <div v-for="(item, index) in form.items" :key="index" :style="{ zIndex: 100 - index }" class="relative grid grid-cols-12 gap-3 items-center bg-slate-50 dark:bg-slate-800/20 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/40 transition-all border border-transparent hover:border-slate-200 dark:border-slate-700/50 shadow-sm">
                                 <div class="col-span-12 sm:col-span-4">
                                     <select 
                                         :value="item.product_id" 

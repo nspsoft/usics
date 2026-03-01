@@ -79,7 +79,7 @@ class SalesReturnController extends Controller
             'salesOrders' => $salesOrders,
             'customers' => Customer::orderBy('name')->get(['id', 'name']),
             'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
-            'products' => Product::orderBy('name')->get(['id', 'name', 'sku']),
+            'products' => Product::orderBy('name')->get(['id', 'name', 'sku'])->each->setAppends([]),
         ]);
     }
 

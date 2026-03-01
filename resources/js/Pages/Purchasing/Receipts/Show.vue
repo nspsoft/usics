@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon, TruckIcon, DocumentTextIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon, TruckIcon, DocumentTextIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 
 const props = defineProps({
@@ -54,6 +54,14 @@ const getStatusBadge = (status) => {
                     >
                         <PrinterIcon class="h-4 w-4" /> Print
                     </a>
+                    <Link
+                        v-if="receipt.status !== 'completed'"
+                        :href="route('purchasing.receipts.edit', receipt.id)"
+                        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/25"
+                    >
+                        <PencilSquareIcon class="h-4 w-4" />
+                        Edit
+                    </Link>
                     <button 
                         v-if="receipt.status !== 'completed'"
                         @click="completeReceipt"

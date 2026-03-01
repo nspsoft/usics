@@ -150,8 +150,18 @@ class PurchaseOrderController extends Controller
             'poNumber' => null,
             'suppliers' => Supplier::active()->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
-            'products' => Product::active()->with('unit')->orderBy('name')->get(),
+            'products' => Product::active()->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
+        ]);
+    }
+
+    public function generateNextNumber(Request $request)
+    {
+        $supplierId = $request->input('supplier_id');
+        $date = $request->input('order_date');
+        $supplier = $supplierId ? Supplier::find($supplierId) : null;
+        return response()->json([
+            'number' => PurchaseOrder::generatePoNumber($supplier, $date)
         ]);
     }
 
@@ -161,6 +171,7 @@ class PurchaseOrderController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'po_number' => 'nullable|string|max:100',
             'supplier_id' => 'required|exists:suppliers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'order_date' => 'required|date',
@@ -179,11 +190,15 @@ class PurchaseOrderController extends Controller
 
         DB::transaction(function () use ($validated) {
             $supplier = Supplier::findOrFail($validated['supplier_id']);
-            $poNumber = app(DocumentNumberService::class)->generate(
-                'purchase_order',
-                ['SUPP_CODE' => $supplier->code ?? ''],
-                $validated['order_date']
-            );
+
+            // Use user-provided PO number if available, otherwise auto-generate
+            $poNumber = !empty($validated['po_number'])
+                ? $validated['po_number']
+                : app(DocumentNumberService::class)->generate(
+                    'purchase_order',
+                    ['SUPP_CODE' => $supplier->code ?? ''],
+                    $validated['order_date']
+                );
 
             $po = PurchaseOrder::create([
                 'po_number' => $poNumber,
@@ -246,6 +261,50 @@ class PurchaseOrderController extends Controller
     }
 
     /**
+     * Duplicate the specified purchase order into a new draft.
+     */
+    public function duplicate(PurchaseOrder $order)
+    {
+        $newPoId = DB::transaction(function () use ($order) {
+            $order->load('items');
+            
+            // Generate new PO Number
+            $poNumber = app(DocumentNumberService::class)->generate(
+                'purchase_order',
+                ['SUPP_CODE' => $order->supplier->code ?? ''],
+                date('Y-m-d')
+            );
+            
+            // Replicate header
+            $newPo = $order->replicate()->fill([
+                'po_number' => $poNumber,
+                'order_date' => date('Y-m-d'),
+                'expected_date' => null,
+                'status' => 'draft',
+                'created_by' => auth()->id(),
+                'approved_by' => null,
+                'approved_at' => null,
+            ]);
+            $newPo->save();
+            
+            // Replicate items
+            foreach ($order->items as $item) {
+                $newItem = $item->replicate()->fill([
+                    'purchase_order_id' => $newPo->id,
+                    'qty_received' => 0,
+                    'qty_returned' => 0,
+                ]);
+                $newItem->save();
+            }
+            
+            return $newPo->id;
+        });
+
+        return redirect()->route('purchasing.orders.edit', $newPoId)
+            ->with('success', 'Purchase Order duplicated successfully. You can now edit the new draft.');
+    }
+
+    /**
      * Show the form for editing the specified purchase order.
      */
     public function edit(PurchaseOrder $order)
@@ -262,7 +321,7 @@ class PurchaseOrderController extends Controller
             'poNumber' => $order->po_number,
             'suppliers' => Supplier::active()->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
-            'products' => Product::active()->with('unit')->orderBy('name')->get(),
+            'products' => Product::active()->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
@@ -295,16 +354,40 @@ class PurchaseOrderController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $order) {
-            $order->update([
-                'supplier_id' => $validated['supplier_id'],
-                'warehouse_id' => $validated['warehouse_id'],
-                'order_date' => $validated['order_date'],
-                'expected_date' => $validated['expected_date'] ?? null,
-                'discount_percent' => $validated['discount_percent'] ?? 0,
-                'tax_percent' => $validated['tax_percent'] ?? 11,
-                'notes' => $validated['notes'] ?? null,
-            ]);
+        $updateData = [
+            'supplier_id' => $validated['supplier_id'],
+            'warehouse_id' => $validated['warehouse_id'],
+            'order_date' => $validated['order_date'],
+            'expected_date' => $validated['expected_date'] ?? null,
+            'discount_percent' => $validated['discount_percent'] ?? 0,
+            'tax_percent' => $validated['tax_percent'] ?? 11,
+            'notes' => $validated['notes'] ?? null,
+        ];
 
+        // Handle revision if status is finalized (approved/ordered/partial)
+        if (in_array($order->status, ['approved', 'ordered', 'partial'])) {
+             $baseNumber = $order->po_number;
+             // Remove existing revision suffix if any to get base
+             if (strpos($baseNumber, '-R') !== false) {
+                 // Check if it's genuinely a revision suffix like -R1, -R2
+                 $parts = explode('-R', $baseNumber);
+                 if (is_numeric(end($parts))) {
+                     array_pop($parts);
+                     $baseNumber = implode('-R', $parts);
+                 }
+             }
+             
+             // Increment revision
+             $newRevision = ($order->revision ?? 0) + 1;
+             
+             $updateData['status'] = 'draft';
+             $updateData['revision'] = $newRevision;
+             $updateData['po_number'] = $baseNumber . '-R' . $newRevision;
+             $updateData['approved_by'] = null;
+             $updateData['approved_at'] = null;
+        }
+
+        $order->update($updateData);
             // Get existing item IDs
             $existingIds = collect($validated['items'])->pluck('id')->filter()->all();
             

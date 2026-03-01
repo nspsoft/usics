@@ -12,6 +12,7 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 
 const props = defineProps({
     products: Array,
+    departments: Array,
     user: Object,
     request: Object, // Optional, for edit mode
     prefill: Object, // Optional, for initial data
@@ -43,18 +44,7 @@ const form = useForm({
     }],
 });
 
-const departments = [
-    'Production',
-    'Logistics',
-    'General Affair',
-    'Marketing',
-    'Finance',
-    'HR & GA',
-    'IT',
-    'Maintenance',
-    'QC',
-    'PPIC',
-];
+
 
 const addItem = () => {
     form.items.push({
@@ -116,13 +106,22 @@ const submit = () => {
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Department</label>
                             <select v-model="form.department" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" required>
                                 <option value="">Select Department</option>
-                                <option v-for="dept in departments" :key="dept" :value="dept">{{ dept }}</option>
+                                <option v-for="dept in departments" :key="dept.id" :value="dept.name">{{ dept.name }}</option>
                             </select>
                         </div>
 
                          <div>
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Requester</label>
-                            <input type="text" v-model="form.requester" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" placeholder="Your Name" required />
+                            <select v-model="form.requester" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" required>
+                                <option value="">Select Requester</option>
+                                <option value="Nanang">Nanang</option>
+                                <option value="Amur">Amur</option>
+                                <option value="Andi">Andi</option>
+                                <option value="Jahrudin">Jahrudin</option>
+                                <option value="Agus">Agus</option>
+                                <option value="Santi">Santi</option>
+                                <option value="Moris">Moris</option>
+                            </select>
                         </div>
                     </div>
 
@@ -135,7 +134,7 @@ const submit = () => {
                             </button>
                         </div>
 
-                        <div class="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-2 relative">
+                        <div class="space-y-3 pr-2 relative">
                             <!-- Header Row -->
                             <div class="grid grid-cols-12 gap-3 px-3 py-2 mb-2 hidden sm:grid sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                                 <div class="col-span-12 sm:col-span-5">
@@ -150,7 +149,7 @@ const submit = () => {
                                 <div class="col-span-4 sm:col-span-1"></div>
                             </div>
 
-                            <div v-for="(item, index) in form.items" :key="index" class="grid grid-cols-12 gap-3 items-end bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-900 dark:bg-slate-800/50 transition-colors">
+                            <div v-for="(item, index) in form.items" :key="index" :style="{ zIndex: 100 - index }" class="relative grid grid-cols-12 gap-3 items-end bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-900 dark:bg-slate-800/50 transition-colors">
                                 <div class="col-span-12 sm:col-span-5">
                                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">Product</label>
                                     <SearchableSelect 

@@ -44,6 +44,7 @@ class PurchaseOrder extends Model
         'created_by',
         'approved_by',
         'approved_at',
+        'revision',
     ];
 
     protected $casts = [

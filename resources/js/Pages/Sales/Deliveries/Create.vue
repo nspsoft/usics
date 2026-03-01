@@ -464,7 +464,7 @@ onMounted(() => {
                                 </div>
                             </div>
 
-                            <div class="overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar relative">
+                            <div class="overflow-x-auto relative">
                                 <table class="w-full text-left">
                                     <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm">
                                         <tr>

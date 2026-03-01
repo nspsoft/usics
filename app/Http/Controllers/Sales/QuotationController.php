@@ -66,7 +66,7 @@ class QuotationController extends Controller
     {
         return Inertia::render('Sales/Quotations/Create', [
             'customers' => Customer::active()->orderBy('name')->get(),
-            'products' => Product::active()->where('is_sold', true)->orderBy('name')->get(),
+            'products' => Product::active()->where('is_sold', true)->select('id','sku','name','unit_id','cost_price','selling_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'quotationNumber' => Quotation::generateNumber(),
         ]);
     }
@@ -136,7 +136,7 @@ class QuotationController extends Controller
         return Inertia::render('Sales/Quotations/Edit', [
             'quotation' => $quotation,
             'customers' => Customer::active()->orderBy('name')->get(),
-            'products' => Product::active()->where('is_sold', true)->orderBy('name')->get(),
+            'products' => Product::active()->where('is_sold', true)->select('id','sku','name','unit_id','cost_price','selling_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
         ]);
     }
 

@@ -67,7 +67,7 @@ class PurchaseReturnController extends Controller
             'purchaseOrders' => PurchaseOrder::whereIn('status', ['received', 'completed', 'partial'])->with('supplier')->orderByDesc('created_at')->get(),
             'suppliers' => Supplier::orderBy('name')->get(['id', 'name']),
             'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
-            'products' => Product::orderBy('name')->get(['id', 'name', 'sku']),
+            'products' => Product::orderBy('name')->get(['id', 'name', 'sku'])->each->setAppends([]),
         ]);
     }
 

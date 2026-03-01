@@ -241,7 +241,7 @@ class DeliveryOrderController extends Controller
             'vehicles' => Vehicle::where('is_active', true)->orderBy('license_plate')->get(),
             'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
             'customers' => \App\Models\Customer::orderBy('name')->get(['id', 'name', 'code']),
-            'products' => \App\Models\Product::with('unit')->orderBy('name')->get(['id', 'name', 'sku', 'unit_id']),
+            'products' => \App\Models\Product::with('unit:id,name,symbol')->orderBy('name')->get(['id', 'name', 'sku', 'unit_id'])->each->setAppends([]),
         ]);
     }
 

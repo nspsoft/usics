@@ -226,6 +226,8 @@ const navigation = [
             { name: 'AI Gen. Receipt', href: '/purchasing/dn-extractor', icon: SparklesIcon, permission: 'purchasing.goods_receipts.view' },
             { name: 'Purchase Invoices', href: '/purchasing/invoices', icon: BanknotesIcon, permission: 'purchasing.purchase_invoices.view' },
             { name: 'Purchase Returns', href: '/purchasing/returns', icon: ArrowUturnLeftIcon, permission: 'purchasing.purchase_returns.view' },
+            { name: 'PO Items Report', href: '/purchasing/orders/items', icon: ClipboardDocumentListIcon, permission: 'purchasing.view' },
+            { name: 'GR Items Report', href: '/purchasing/receipts/items', icon: QueueListIcon, permission: 'purchasing.view' },
         ]
     },
     { 
@@ -362,6 +364,7 @@ const navigation = [
             { name: 'User Management', href: '/settings/users', icon: UsersIcon, permission: 'settings.user_management.view' },
             { name: 'Roles & Permissions', href: '/settings/roles', icon: ShieldCheckIcon, permission: 'settings.roles_&_permissions.view' },
             { name: 'Company Profile', href: '/settings/company', icon: BuildingOfficeIcon, permission: 'settings.company_profile.view' },
+            { name: 'Departments', href: '/settings/departments', icon: BuildingOfficeIcon, permission: 'settings.view' },
             { name: 'AI Configuration', href: '/settings/ai', icon: CpuChipIcon, permission: 'settings.company_profile.view' },
             { name: 'Document Numbering', href: '/settings/numbering', icon: QueueListIcon, permission: 'settings.document_numbering.view' },
             { name: 'Regional & Tax', href: '/settings/regional', icon: GlobeAltIcon, permission: 'settings.regional_&_tax.view' },

@@ -146,8 +146,13 @@ Route::prefix('purchasing')->name('purchasing.')->middleware(['auth'])->group(fu
     Route::post('/suppliers-contacts-import', [SupplierController::class, 'importContacts'])->name('suppliers.contacts.import');
     Route::get('/suppliers-template', [SupplierController::class, 'template'])->name('suppliers.template');
     Route::get('/suppliers-contacts-template', [SupplierController::class, 'templateContacts'])->name('suppliers.contacts.template');
+    // PO Items Report
+    Route::get('/orders/items', [App\Http\Controllers\Purchasing\PurchaseOrderItemController::class, 'index'])->name('orders.items');
+    Route::get('/orders/generate-number', [App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'generateNextNumber'])->name('orders.generate-number');
+    Route::get('/orders/items/export', [App\Http\Controllers\Purchasing\PurchaseOrderItemController::class, 'export'])->name('orders.items.export');
     Route::get('/orders/export', [App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'export'])->name('orders.export');
     Route::get('/orders/template', [App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'template'])->name('orders.template');
+    Route::post('/orders/{order}/duplicate', [App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'duplicate'])->name('orders.duplicate');
     Route::post('/orders/import', [App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'import'])->name('orders.import');
     Route::resource('orders', PurchaseOrderController::class);
     Route::post('/orders/{order}/submit', [PurchaseOrderController::class, 'submit'])->name('orders.submit');
@@ -172,7 +177,11 @@ Route::prefix('purchasing')->name('purchasing.')->middleware(['auth'])->group(fu
     Route::get('/requests/{request}', [App\Http\Controllers\Purchasing\PurchaseRequestController::class, 'show'])->name('requests.show');
     Route::post('/requests/{request}/approve', [App\Http\Controllers\Purchasing\PurchaseRequestController::class, 'approve'])->name('requests.approve');
     Route::post('/requests/{request}/reject', [App\Http\Controllers\Purchasing\PurchaseRequestController::class, 'reject'])->name('requests.reject');
+    Route::post('/requests/{request}/duplicate', [App\Http\Controllers\Purchasing\PurchaseRequestController::class, 'duplicate'])->name('requests.duplicate');
     Route::get('/requests/{request}/print', [App\Http\Controllers\Purchasing\PurchaseRequestController::class, 'print'])->name('requests.print');
+    // GR Items Report
+    Route::get('/receipts/items', [App\Http\Controllers\Purchasing\GoodsReceiptItemController::class, 'index'])->name('receipts.items');
+    Route::get('/receipts/items/export', [App\Http\Controllers\Purchasing\GoodsReceiptItemController::class, 'export'])->name('receipts.items.export');
     Route::get('/receipts/po-items/{order}', [App\Http\Controllers\Purchasing\GoodsReceiptController::class, 'getPoItems'])->name('receipts.po-items');
         Route::get('receipts/scan', [\App\Http\Controllers\Purchasing\GoodsReceiptController::class, 'scan'])->name('receipts.scan');
         Route::post('receipts/scan/process', [\App\Http\Controllers\Purchasing\GoodsReceiptController::class, 'processScan'])->name('receipts.scan-process');
@@ -546,6 +555,12 @@ Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(functi
     Route::post('/roles', [App\Http\Controllers\Settings\RoleController::class, 'store'])->name('roles.store');
     Route::put('/roles/{role}', [App\Http\Controllers\Settings\RoleController::class, 'update'])->name('roles.update');
     Route::delete('/roles/{role}', [App\Http\Controllers\Settings\RoleController::class, 'destroy'])->name('roles.destroy');
+
+    // Departments
+    Route::get('/departments', [App\Http\Controllers\Settings\DepartmentController::class, 'index'])->name('departments');
+    Route::post('/departments', [App\Http\Controllers\Settings\DepartmentController::class, 'store'])->name('departments.store');
+    Route::put('/departments/{department}', [App\Http\Controllers\Settings\DepartmentController::class, 'update'])->name('departments.update');
+    Route::delete('/departments/{department}', [App\Http\Controllers\Settings\DepartmentController::class, 'destroy'])->name('departments.destroy');
 
     // UAT Scenarios
     Route::get('/uat', [App\Http\Controllers\Settings\UatController::class, 'index'])->name('uat');

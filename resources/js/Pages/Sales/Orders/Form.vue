@@ -260,7 +260,7 @@ const submit = async () => {
                                     <PlusIcon class="h-4 w-4" /> Add Item
                                 </button>
                             </div>
-                            <div class="overflow-x-auto max-h-[600px] overflow-y-auto relative">
+                            <div class="overflow-x-auto relative">
                                 <table class="w-full text-left text-sm text-slate-500 dark:text-slate-400">
                                     <thead class="bg-white dark:bg-slate-950 text-slate-200 sticky top-0 z-10">
                                         <tr>

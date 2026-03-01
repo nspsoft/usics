@@ -100,7 +100,7 @@ class SalesOrderController extends Controller
             'soNumber' => SalesOrder::generateSoNumber(),
             'customers' => Customer::active()->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
-            'products' => Product::active()->where('is_sold', true)->with('unit')->orderBy('name')->get(),
+            'products' => Product::active()->where('is_sold', true)->select('id','sku','name','unit_id','cost_price','selling_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
@@ -112,7 +112,7 @@ class SalesOrderController extends Controller
             'soNumber' => SalesOrder::generateSoNumber(),
             'customers' => Customer::active()->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
-            'products' => Product::active()->where('is_sold', true)->with('unit')->orderBy('name')->get(),
+            'products' => Product::active()->where('is_sold', true)->select('id','sku','name','unit_id','cost_price','selling_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
             'aiData' => $request->input('data')
         ]);
@@ -226,7 +226,7 @@ class SalesOrderController extends Controller
             'soNumber' => $order->so_number,
             'customers' => Customer::active()->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
-            'products' => Product::active()->where('is_sold', true)->with('unit')->orderBy('name')->get(),
+            'products' => Product::active()->where('is_sold', true)->select('id','sku','name','unit_id','cost_price','selling_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
         ]);
 

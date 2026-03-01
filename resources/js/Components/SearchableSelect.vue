@@ -69,7 +69,7 @@ const selectedOption = computed({
                     leaveTo="opacity-0"
                     @after-leave="query = ''"
                 >
-                    <ComboboxOptions class="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white dark:bg-slate-800 py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm z-[9999] border border-slate-200 dark:border-slate-700">
+                    <ComboboxOptions class="absolute mt-1 max-h-60 min-w-[360px] w-max overflow-auto rounded-xl bg-white dark:bg-slate-800 py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm z-[9999] border border-slate-200 dark:border-slate-700">
                         <div
                             v-if="filteredOptions.length === 0 && query !== ''"
                             class="relative cursor-default select-none py-2 px-4 text-slate-400"

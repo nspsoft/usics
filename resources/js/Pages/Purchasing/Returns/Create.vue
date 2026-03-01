@@ -142,7 +142,7 @@ const submit = () => {
                             </button>
                         </div>
 
-                        <div class="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-2 relative">
+                        <div class="space-y-3 pr-2 relative">
                             <!-- Header Row -->
                             <div class="grid grid-cols-12 gap-3 px-3 py-2 mb-2 hidden sm:grid sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                                 <div class="col-span-12 sm:col-span-4">
@@ -160,7 +160,7 @@ const submit = () => {
                                 <div class="col-span-4 sm:col-span-1"></div>
                             </div>
 
-                            <div v-for="(item, index) in form.items" :key="index" class="grid grid-cols-12 gap-3 items-end bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-900 dark:bg-slate-800/50 transition-colors">
+                            <div v-for="(item, index) in form.items" :key="index" :style="{ zIndex: 100 - index }" class="relative grid grid-cols-12 gap-3 items-end bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-900 dark:bg-slate-800/50 transition-colors">
                                 <div class="col-span-12 sm:col-span-4">
                                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">Product</label>
                                     <select 

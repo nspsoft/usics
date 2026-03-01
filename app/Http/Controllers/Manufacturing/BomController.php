@@ -53,8 +53,8 @@ class BomController extends Controller
     {
         return Inertia::render('Manufacturing/Boms/Form', [
             'bom' => null,
-            'products' => Product::active()->where('is_manufactured', true)->orderBy('name')->get(),
-            'materials' => Product::active()->whereIn('product_type', ['raw_material', 'wip', 'spare_part'])->orderBy('name')->get(),
+            'products' => Product::active()->where('is_manufactured', true)->select('id','sku','name','unit_id')->orderBy('name')->get()->each->setAppends([]),
+            'materials' => Product::active()->whereIn('product_type', ['raw_material', 'wip', 'spare_part'])->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
@@ -141,8 +141,8 @@ class BomController extends Controller
 
         return Inertia::render('Manufacturing/Boms/Form', [
             'bom' => $bom,
-            'products' => Product::active()->where('is_manufactured', true)->orderBy('name')->get(),
-            'materials' => Product::active()->whereIn('product_type', ['raw_material', 'wip', 'spare_part'])->orderBy('name')->get(),
+            'products' => Product::active()->where('is_manufactured', true)->select('id','sku','name','unit_id')->orderBy('name')->get()->each->setAppends([]),
+            'materials' => Product::active()->whereIn('product_type', ['raw_material', 'wip', 'spare_part'])->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
         ]);
     }

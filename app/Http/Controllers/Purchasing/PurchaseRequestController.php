@@ -70,7 +70,8 @@ class PurchaseRequestController extends Controller
         }
 
         return Inertia::render('Purchasing/Requests/Form', [
-            'products' => Product::active()->where('is_purchased', true)->with('unit')->orderBy('name')->get(),
+            'products' => Product::active()->where('is_purchased', true)->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
+            'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->get(),
             'user' => auth()->user(),
             'prefill' => $prefill,
         ]);
@@ -136,7 +137,8 @@ class PurchaseRequestController extends Controller
         
         return Inertia::render('Purchasing/Requests/Form', [
             'request' => $request,
-            'products' => Product::active()->where('is_purchased', true)->with('unit')->orderBy('name')->get(),
+            'products' => Product::active()->where('is_purchased', true)->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
+            'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->get(),
             'user' => auth()->user(),
         ]);
     }
@@ -197,6 +199,38 @@ class PurchaseRequestController extends Controller
         
         return redirect()->route('purchasing.requests.index')
             ->with('success', 'Purchase Request deleted successfully.');
+    }
+
+    /**
+     * Duplicate the specified purchase request.
+     */
+    public function duplicate(PurchaseRequest $request)
+    {
+        $newPrId = DB::transaction(function () use ($request) {
+            $request->load('items');
+
+            // Replicate header
+            $newPr = $request->replicate()->fill([
+                'pr_number' => PurchaseRequest::generatePrNumber(),
+                'request_date' => date('Y-m-d'),
+                'status' => 'draft',
+                'created_by' => auth()->id(),
+            ]);
+            $newPr->save();
+
+            // Replicate items
+            foreach ($request->items as $item) {
+                $newItem = $item->replicate()->fill([
+                    'purchase_request_id' => $newPr->id,
+                ]);
+                $newItem->save();
+            }
+
+            return $newPr->id;
+        });
+
+        return redirect()->route('purchasing.requests.edit', $newPrId)
+            ->with('success', 'Purchase Request duplicated successfully. You can now edit the new draft.');
     }
 
     /**

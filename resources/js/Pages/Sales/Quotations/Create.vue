@@ -130,7 +130,7 @@ const submit = () => {
                             </button>
                         </div>
 
-                        <div class="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar relative pr-2">
+                        <div class="space-y-2 relative pr-2">
                              <!-- Header Labels -->
                              <div class="hidden sm:grid grid-cols-12 gap-3 px-3 py-2 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 rounded-lg sticky top-0 z-10">
                                   <div class="col-span-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Product</div>
@@ -140,7 +140,7 @@ const submit = () => {
                                   <div class="col-span-1"></div>
                              </div>
 
-                            <div v-for="(item, index) in form.items" :key="index" class="grid grid-cols-12 gap-3 items-center bg-slate-50 dark:bg-slate-800/10 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
+                            <div v-for="(item, index) in form.items" :key="index" :style="{ zIndex: 100 - index }" class="relative grid grid-cols-12 gap-3 items-center bg-slate-50 dark:bg-slate-800/10 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
                                 <div class="col-span-12 sm:col-span-5">
                                     <label class="sm:hidden block text-[10px] font-bold text-slate-500 uppercase mb-1">Product</label>
                                     <SearchableSelect

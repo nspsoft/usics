@@ -29,14 +29,23 @@ const productOptions = computed(() => {
     }));
 });
 
+const supplierOptions = computed(() => {
+    if (!props.suppliers || !Array.isArray(props.suppliers)) return [];
+    return props.suppliers.map(s => ({
+        id: s.id,
+        label: s.name,
+        ...s
+    }));
+});
+
 const isEdit = computed(() => !!props.purchaseOrder?.id);
 
 const form = useForm({
     po_number: props.poNumber || props.purchaseOrder?.po_number,
     supplier_id: props.purchaseOrder?.supplier_id || '',
     warehouse_id: props.purchaseOrder?.warehouse_id || '',
-    order_date: props.purchaseOrder?.order_date || new Date().toISOString().split('T')[0],
-    expected_date: props.purchaseOrder?.expected_date || '',
+    order_date: props.purchaseOrder?.order_date ? props.purchaseOrder.order_date.substring(0, 10) : new Date().toISOString().split('T')[0],
+    expected_date: props.purchaseOrder?.expected_date ? props.purchaseOrder.expected_date.substring(0, 10) : '',
     tax_percent: props.purchaseOrder?.tax_percent ?? 11,
     notes: props.purchaseOrder?.notes || '',
     items: props.purchaseOrder?.items?.map(item => ({
@@ -63,19 +72,17 @@ const refreshPoNumber = async () => {
     if (isEdit.value) return;
     if (!form.supplier_id || !form.order_date) return;
 
-    const supplier = props.suppliers?.find(s => String(s.id) === String(form.supplier_id));
-    if (!supplier?.code) return;
-
     try {
-        const res = await fetch(`${route('numbering.preview', 'purchase_order')}?SUPP_CODE=${encodeURIComponent(supplier.code)}&date=${encodeURIComponent(form.order_date)}`, {
+        const res = await fetch(`${route('purchasing.orders.generate-number')}?supplier_id=${form.supplier_id}&order_date=${form.order_date}`, {
             headers: { 'Accept': 'application/json' },
         });
         if (!res.ok) return;
         const data = await res.json();
-        if (data?.preview) {
-            form.po_number = data.preview;
+        if (data?.number) {
+            form.po_number = data.number;
         }
     } catch (e) {
+        console.error("Failed to fetch PO Number:", e);
     }
 };
 
@@ -143,15 +150,16 @@ const submit = () => {
                         
                         <div>
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">PO Number</label>
-                            <input type="text" v-model="form.po_number" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 py-2.5 text-slate-500 dark:text-slate-400 cursor-not-allowed" disabled />
+                            <input type="text" v-model="form.po_number" placeholder="(Auto Generated)" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" />
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Supplier</label>
-                            <select v-model="form.supplier_id" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" required>
-                                <option value="">Select Supplier</option>
-                                <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
-                            </select>
+                            <SearchableSelect
+                                v-model="form.supplier_id"
+                                :options="supplierOptions"
+                                placeholder="Search Supplier..."
+                            />
                         </div>
 
                         <div>
@@ -187,7 +195,7 @@ const submit = () => {
                             </button>
                         </div>
 
-                        <div class="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-2 relative">
+                        <div class="space-y-3 pr-2 relative">
                             <!-- Header Row -->
                             <div class="grid grid-cols-12 gap-3 px-3 py-2 mb-2 hidden sm:grid sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                                 <div class="col-span-12 sm:col-span-4">
@@ -205,7 +213,7 @@ const submit = () => {
                                 <div class="col-span-4 sm:col-span-1"></div>
                             </div>
 
-                            <div v-for="(item, index) in form.items" :key="index" class="grid grid-cols-12 gap-3 items-end bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-900 dark:bg-slate-800/50 transition-colors">
+                            <div v-for="(item, index) in form.items" :key="index" :style="{ zIndex: 100 - index }" class="relative grid grid-cols-12 gap-3 items-end bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-900 dark:bg-slate-800/50 transition-colors">
                                 <div class="col-span-12 sm:col-span-4">
                                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">Product</label>
                                     <SearchableSelect 

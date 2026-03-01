@@ -114,7 +114,7 @@ class GoodsReceiptController extends Controller
             ])->with('supplier')->orderByDesc('created_at')->get(),
             'suppliers' => Supplier::active()->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
-            'products' => Product::active()->with('unit')->orderBy('name')->get(),
+            'products' => Product::active()->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
         ]);
     }
 
@@ -132,7 +132,7 @@ class GoodsReceiptController extends Controller
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.qty_ordered' => 'required|numeric|min:0',
             'items.*.qty_received' => 'required|numeric|min:0.0001',
-            'items.*.unit_cost' => 'required|numeric|min:0',
+            'items.*.remark' => 'nullable|string|max:255',
         ]);
 
         // Quantity validation against PO
@@ -164,12 +164,20 @@ class GoodsReceiptController extends Controller
             ]);
 
             foreach ($validated['items'] as $item) {
+                // Auto-fill unit_cost from PO item price if available
+                $unitCost = 0;
+                if (!empty($item['po_item_id'])) {
+                    $poItem = \App\Models\PurchaseOrderItem::find($item['po_item_id']);
+                    $unitCost = $poItem ? $poItem->unit_price : 0;
+                }
+
                 $receipt->items()->create([
                     'purchase_order_item_id' => $item['po_item_id'],
                     'product_id' => $item['product_id'],
                     'qty_ordered' => $item['qty_ordered'],
                     'qty_received' => $item['qty_received'],
-                    'unit_cost' => $item['unit_cost'],
+                    'unit_cost' => $unitCost,
+                    'notes' => $item['remark'] ?? null,
                 ]);
             }
         });
@@ -198,6 +206,103 @@ class GoodsReceiptController extends Controller
         return back()->with('success', 'Goods Receipt completed and stock updated.');
     }
 
+    public function edit(GoodsReceipt $receipt): Response
+    {
+        if ($receipt->status === 'completed') {
+            abort(403, 'Completed receipts cannot be edited.');
+        }
+
+        $receipt->load(['purchaseOrder', 'supplier', 'warehouse', 'items.product', 'receivedBy']);
+
+        return Inertia::render('Purchasing/Receipts/Edit', [
+            'receipt' => $receipt,
+            'purchaseOrders' => PurchaseOrder::whereIn('status', [
+                PurchaseOrder::STATUS_APPROVED,
+                PurchaseOrder::STATUS_ORDERED,
+                PurchaseOrder::STATUS_ACKNOWLEDGED,
+                PurchaseOrder::STATUS_PARTIAL,
+            ])->with('supplier')->orderByDesc('created_at')->get(),
+            'suppliers' => Supplier::active()->orderBy('name')->get(),
+            'warehouses' => Warehouse::active()->orderBy('name')->get(),
+            'products' => Product::active()->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
+        ]);
+    }
+
+    public function update(Request $request, GoodsReceipt $receipt)
+    {
+        if ($receipt->status === 'completed') {
+            return back()->with('error', 'Completed receipts cannot be edited.');
+        }
+
+        $validated = $request->validate([
+            'receipt_date' => 'required|date',
+            'delivery_note_number' => 'nullable|string|max:100',
+            'notes' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'nullable|exists:goods_receipt_items,id',
+            'items.*.po_item_id' => 'nullable|exists:purchase_order_items,id',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.qty_ordered' => 'required|numeric|min:0',
+            'items.*.qty_received' => 'required|numeric|min:0.0001',
+            'items.*.remark' => 'nullable|string|max:255',
+        ]);
+
+        // Quantity validation against PO
+        if ($receipt->purchase_order_id) {
+            $po = PurchaseOrder::with('items')->find($receipt->purchase_order_id);
+            foreach ($validated['items'] as $item) {
+                if (isset($item['po_item_id'])) {
+                    $poItem = $po->items->where('id', $item['po_item_id'])->first();
+                    if ($poItem) {
+                        $remaining = $poItem->qty - ($poItem->qty_received - $poItem->qty_returned);
+                        $allowedMax = round($remaining * 1.1); // 10% tolerance rounded to whole number
+                        if ($item['qty_received'] > $allowedMax + 0.0001) { 
+                            return back()->with('error', "Cannot receive more than 110% of remaining quantity for product: {$poItem->product->name} (Remaining: {$remaining}, Max allowed: " . $allowedMax . ")")->withInput();
+                        }
+                    }
+                }
+            }
+        }
+
+        DB::transaction(function () use ($validated, $receipt) {
+            $receipt->update([
+                'receipt_date' => $validated['receipt_date'],
+                'delivery_note_number' => $validated['delivery_note_number'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'received_by' => auth()->id(),
+            ]);
+
+            $existingItemIds = [];
+            foreach ($validated['items'] as $item) {
+                if (isset($item['id'])) {
+                    $receiptItem = $receipt->items()->find($item['id']);
+                    if ($receiptItem) {
+                        $receiptItem->update([
+                            'qty_received' => $item['qty_received'],
+                        ]);
+                        $existingItemIds[] = $receiptItem->id;
+                    }
+                } else {
+                    $newItem = $receipt->items()->create([
+                        'purchase_order_item_id' => $item['po_item_id'] ?? null,
+                        'product_id' => $item['product_id'],
+                        'qty_ordered' => $item['qty_ordered'] ?? 0,
+                        'qty_received' => $item['qty_received'],
+                        'unit_cost' => !empty($item['po_item_id']) ? (\App\Models\PurchaseOrderItem::find($item['po_item_id'])?->unit_price ?? 0) : 0,
+                        'notes' => $item['remark'] ?? null,
+                    ]);
+                    $existingItemIds[] = $newItem->id;
+                }
+            }
+            
+            // Hapus item yang tidak ada di daftar array (dihapus user)
+            $receipt->items()->whereNotIn('id', $existingItemIds)->delete();
+        });
+
+        return redirect()->route('purchasing.receipts.show', $receipt->id)
+            ->with('success', 'Goods Receipt updated successfully.');
+    }
+
     public function destroy(GoodsReceipt $receipt)
     {
         if ($receipt->status === 'completed') {
@@ -209,7 +314,6 @@ class GoodsReceiptController extends Controller
         return redirect()->route('purchasing.receipts.index')
             ->with('success', 'Goods Receipt deleted successfully.');
     }
-
     public function getPoItems(PurchaseOrder $order)
     {
         $order->load(['items.product', 'goodsReceipts.items']);

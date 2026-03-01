@@ -9,6 +9,7 @@ import {
     CheckIcon,
     XMarkIcon,
     ArrowRightCircleIcon,
+    DocumentDuplicateIcon,
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -26,6 +27,15 @@ const reject = () => {
     if (!props.request?.id) return;
     if (confirm('Are you sure you want to reject this request?')) {
         router.post(`/purchasing/requests/${props.request.id}/reject`);
+    }
+};
+
+const duplicatePR = () => {
+    if (!props.request?.id) return;
+    if (confirm('Are you sure you want to duplicate this Purchase Request? A new draft will be created.')) {
+        router.post(`/purchasing/requests/${props.request.id}/duplicate`, {}, {
+            preserveScroll: true
+        });
     }
 };
 
@@ -74,6 +84,14 @@ const formatDate = (date) => {
                         <PrinterIcon class="h-4 w-4" />
                         Print
                     </a>
+
+                    <button
+                        @click="duplicatePR"
+                        class="hidden sm:inline-flex items-center gap-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-4 py-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                    >
+                        <DocumentDuplicateIcon class="h-4 w-4" />
+                        Duplicate
+                    </button>
 
                     <template v-if="request.status === 'draft'">
                          <button 

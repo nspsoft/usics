@@ -7,6 +7,7 @@ import {
     PencilSquareIcon,
     PrinterIcon,
     DocumentTextIcon,
+    DocumentDuplicateIcon,
     CheckIcon,
     PaperAirplaneIcon,
     XMarkIcon,
@@ -45,25 +46,44 @@ const submitAdjustment = (itemId) => {
 
 const submitPO = () => {
     if (confirm('Are you sure you want to submit this order for approval?')) {
-        router.post(route('purchasing.orders.submit', props.purchaseOrder.id));
+        router.post(route('purchasing.orders.submit', props.purchaseOrder.id), {}, {
+            preserveScroll: true,
+            onError: (errors) => console.error(errors)
+        });
     }
 };
 
 const approvePO = () => {
     if (confirm('Are you sure you want to approve this order?')) {
-        router.post(route('purchasing.orders.approve', props.purchaseOrder.id));
+        router.post(route('purchasing.orders.approve', props.purchaseOrder.id), {}, {
+            preserveScroll: true,
+            onError: (errors) => console.error(errors)
+        });
     }
 };
 
 const markOrdered = () => {
     if (confirm('Are you sure you want to mark this as ordered?')) {
-        router.post(route('purchasing.orders.mark-ordered', props.purchaseOrder.id));
+        router.post(route('purchasing.orders.mark-ordered', props.purchaseOrder.id), {}, {
+            preserveScroll: true,
+            onError: (errors) => console.error(errors)
+        });
     }
 };
 
 const cancelPO = () => {
-    if (confirm('Are you sure you want to cancel this order?')) {
-        router.post(route('purchasing.orders.cancel', props.purchaseOrder.id));
+    if (confirm('Are you sure you want to cancel this purchase order?')) {
+        router.post(`/purchasing/orders/${props.purchaseOrder.id}/cancel`, {}, {
+            preserveScroll: true
+        });
+    }
+};
+
+const duplicatePO = () => {
+    if (confirm('Are you sure you want to duplicate this Purchase Order? A new draft will be created.')) {
+        router.post(`/purchasing/orders/${props.purchaseOrder.id}/duplicate`, {}, {
+            preserveScroll: true
+        });
     }
 };
 
@@ -109,10 +129,29 @@ const formatDate = (date) => {
                 </Link>
 
                 <div class="flex items-center gap-3">
-                    <a :href="`/purchasing/orders/${purchaseOrder.id}/print`" target="_blank" class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-slate-900 dark:text-white transition-colors">
+                    <a :href="`/purchasing/orders/${purchaseOrder.id}/print`" target="_blank" class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                         <PrinterIcon class="h-4 w-4" />
                         Print
                     </a>
+
+                    <button
+                        @click="duplicatePO"
+                        class="inline-flex items-center gap-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-4 py-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                    >
+                        <DocumentDuplicateIcon class="h-4 w-4" />
+                        Duplicate
+                    </button>
+
+                    <Link
+                        v-if="['draft', 'submitted', 'approved', 'ordered', 'partial'].includes(purchaseOrder.status)"
+                        :href="`/purchasing/orders/${purchaseOrder.id}/edit`"
+                        @mouseenter="setHoverText('Edit Purchase Order')"
+                        @mouseleave="clearHoverText"
+                        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/25"
+                    >
+                        <PencilSquareIcon class="h-4 w-4" />
+                        Edit
+                    </Link>
 
                     <!-- Workflow Buttons -->
                     <template v-if="purchaseOrder.status === 'draft'">
@@ -125,15 +164,6 @@ const formatDate = (date) => {
                             <PaperAirplaneIcon class="h-4 w-4" />
                             Submit
                         </button>
-                        <Link
-                            :href="`/purchasing/orders/${purchaseOrder.id}/edit`"
-                            @mouseenter="setHoverText('Edit Purchase Order')"
-                            @mouseleave="clearHoverText"
-                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/25"
-                        >
-                            <PencilSquareIcon class="h-4 w-4" />
-                            Edit
-                        </Link>
                     </template>
 
                      <template v-if="purchaseOrder.status === 'submitted'">
@@ -180,7 +210,12 @@ const formatDate = (date) => {
                                 <DocumentTextIcon class="h-6 w-6 text-blue-400" />
                             </div>
                             <div>
-                                <h1 class="text-xl font-bold text-slate-900 dark:text-white">{{ purchaseOrder.po_number }}</h1>
+                                <h1 class="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                                    {{ purchaseOrder.po_number }}
+                                    <span v-if="purchaseOrder.revision > 0" class="px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-700 text-sm font-semibold border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20">
+                                        Rev. {{ purchaseOrder.revision }}
+                                    </span>
+                                </h1>
                                 <div class="flex items-center gap-2 mt-1">
                                     <span class="text-sm text-slate-500">Created by {{ purchaseOrder.created_by?.name }} on {{ formatDate(purchaseOrder.created_at) }}</span>
                                     <span 
