@@ -24,6 +24,7 @@ import {
     FunnelIcon,
     QrCodeIcon,
     CameraIcon,
+    ChevronDownIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 
@@ -73,17 +74,20 @@ const printReadiness = computed(() => {
 
 const isReadyToPrint = computed(() => printReadiness.value.every(c => c.ok));
 
-const handlePrint = () => {
+const printFormat = ref('a4');
+
+const handlePrint = (format = 'a4') => {
+    printFormat.value = format;
     if (!isReadyToPrint.value) {
         showPrintWarning.value = true;
     } else {
-        window.open(route('sales.deliveries.print', props.deliveryOrder.id), '_blank');
+        window.open(route('sales.deliveries.print', props.deliveryOrder.id) + '?format=' + format, '_blank');
     }
 };
 
 const forcePrint = () => {
     showPrintWarning.value = false;
-    window.open(route('sales.deliveries.print', props.deliveryOrder.id), '_blank');
+    window.open(route('sales.deliveries.print', props.deliveryOrder.id) + '?format=' + printFormat.value, '_blank');
 };
 
 const props = defineProps({
@@ -486,16 +490,30 @@ const handleSmartAction = () => {
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <!-- 1. Print SJ with readiness check -->
-                    <button 
-                        type="button"
-                        @click="handlePrint"
-                        class="relative flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
-                    >
-                        <PrinterIcon class="h-4 w-4" />
-                        PRINT SJ
-                        <span v-if="!isReadyToPrint" class="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full animate-pulse" title="Data belum lengkap"></span>
-                    </button>
+                    <!-- 1. Print SJ with readiness check (Dropdown) -->
+                    <div class="relative group z-50">
+                        <button 
+                            type="button"
+                            class="relative flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
+                        >
+                            <PrinterIcon class="h-4 w-4" />
+                            PRINT SJ
+                            <ChevronDownIcon class="h-3 w-3 opacity-60 ml-1" />
+                            <span v-if="!isReadyToPrint" class="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full animate-pulse" title="Data belum lengkap"></span>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div class="absolute right-0 top-full mt-2 w-48 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <div class="p-1">
+                                <button @click="handlePrint('a4')" class="w-full text-left px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                                    A4 (Standard)
+                                </button>
+                                <button @click="handlePrint('continuous')" class="w-full text-left px-4 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                                    Continuous Form
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     
 
                     <!-- 2. Save Changes (Only in Draft + Authorized Role) -->

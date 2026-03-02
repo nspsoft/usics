@@ -625,10 +625,14 @@ class DeliveryOrderController extends Controller
         ]);
     }
 
-    public function print(DeliveryOrder $deliveryOrder)
+    public function print(Request $request, DeliveryOrder $deliveryOrder)
     {
         $deliveryOrder->load(['salesOrder', 'customer', 'warehouse', 'items.product', 'items.unit']);
-        return view('print.surat-jalan', ['order' => $deliveryOrder]);
+        $format = $request->query('format', 'a4'); // Default to A4 if not provided
+        return view('print.surat-jalan', [
+            'order' => $deliveryOrder,
+            'format' => $format,
+        ]);
     }
 
     public function publicValidate($uuid)

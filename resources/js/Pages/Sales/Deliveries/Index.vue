@@ -554,9 +554,21 @@ const submitImport = () => {
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a :href="route('sales.deliveries.print', doOrder.id)" target="_blank" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors">
-                                        <PrinterIcon class="h-4 w-4" />
-                                    </a>
+                                    <div class="relative group">
+                                        <button class="flex items-center p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors">
+                                            <PrinterIcon class="h-4 w-4" />
+                                        </button>
+                                        <div class="absolute right-0 top-full pt-1 w-40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100]">
+                                            <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-lg p-1">
+                                                <a :href="route('sales.deliveries.print', doOrder.id) + '?format=a4'" target="_blank" class="block w-full text-left px-3 py-2 rounded-lg text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                                                    A4 (Standard)
+                                                </a>
+                                                <a :href="route('sales.deliveries.print', doOrder.id) + '?format=continuous'" target="_blank" class="block w-full text-left px-3 py-2 rounded-lg text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                                                    Continuous
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <Link :href="route('sales.deliveries.show', doOrder.id)" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors">
                                         <EyeIcon class="h-4 w-4" />
                                     </Link>

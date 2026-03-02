@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Surat Jalan - {{ $order->do_number }}</title>
     @php
-        $activeItemsCount = $order->items->where('qty_delivered', '>', 0)->count();
-        $paperSize = $activeItemsCount > 3 ? 'A4 portrait' : 'A5 landscape';
+        // A4 = 210mm x 297mm (Portrait)
+        // Continuous Form (Standard Half Letter) = 9.5in x 5.5in / A5 landscape
+        $paperSize = $format === 'continuous' ? '9.5in 5.5in' : 'A4 portrait';
     @endphp
     <style>
         @page {
