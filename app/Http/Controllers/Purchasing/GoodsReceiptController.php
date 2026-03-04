@@ -17,6 +17,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 use App\Exports\Purchasing\GoodsReceiptsExport;
+use App\Exports\Purchasing\GoodsReceiptDataExport;
 use App\Exports\Template\GoodsReceiptTemplateExport;
 use App\Imports\Purchasing\GoodsReceiptsImport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -28,8 +29,11 @@ class GoodsReceiptController extends Controller
         return Excel::download(new GoodsReceiptsExport, 'goods_receipts.xlsx');
     }
 
-    public function template()
+    public function template(Request $request)
     {
+        if ($request->with_data == '1') {
+            return Excel::download(new GoodsReceiptDataExport, 'goods_receipt_existing_data.xlsx');
+        }
         return Excel::download(new GoodsReceiptTemplateExport, 'goods_receipt_import_template.xlsx');
     }
 
@@ -37,10 +41,13 @@ class GoodsReceiptController extends Controller
     {
         $request->validate([
             'file' => 'required|mimes:xlsx,xls,csv',
+            'overwrite' => 'nullable|boolean',
         ]);
 
+        $overwrite = $request->boolean('overwrite', false);
+
         try {
-            Excel::import(new GoodsReceiptsImport, $request->file('file'));
+            Excel::import(new GoodsReceiptsImport($overwrite), $request->file('file'));
             return back()->with('success', 'Goods Receipts imported successfully.');
         } catch (\Exception $e) {
             return back()->with('error', 'Error importing file: ' . $e->getMessage());

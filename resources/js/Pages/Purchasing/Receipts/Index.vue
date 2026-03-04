@@ -41,6 +41,8 @@ const showFilters = ref(false);
 const showImportModal = ref(false);
 const importForm = useForm({
     file: null,
+    with_data: false,
+    overwrite: false,
 });
 
 const openImportModal = () => {
@@ -384,12 +386,40 @@ const formatDate = (date) => {
                     
                     <div class="mb-4">
                         <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
-                            Upload an Excel file (.xlsx, .xls) to import Goods Receipts. Rows with the same Supplier + Warehouse + Delivery Note will be grouped into one GRN.
+                            Upload an Excel file (.xlsx, .xls) to import Goods Receipts. Baris yang tidak memiliki GRN Number akan digrup berdasar Supplier + Warehouse + Delivery Note ke GRN baru.
                         </p>
                         
-                        <a :href="route('purchasing.receipts.template')" class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-500 mb-4 font-medium">
+                        <div class="mb-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    v-model="importForm.with_data"
+                                    class="rounded border-slate-300 dark:border-slate-700 text-blue-600 shadow-sm focus:ring-blue-500"
+                                >
+                                <span class="text-sm text-slate-700 dark:text-slate-300 font-medium">Include Existing Draft GRNs in Template</span>
+                            </label>
+                            <p class="text-xs text-slate-500 mt-1 ml-6">
+                                Exports active 'draft' GRNs into the template so you can easily modify their quantities or add items.
+                            </p>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    v-model="importForm.overwrite"
+                                    class="rounded border-slate-300 dark:border-slate-700 text-red-600 shadow-sm focus:ring-red-500"
+                                >
+                                <span class="text-sm text-slate-700 dark:text-slate-300 font-medium">Overwrite Existing GRN Data</span>
+                            </label>
+                            <p class="text-xs text-slate-500 mt-1 ml-6">
+                                If checked, uploading rows with an existing 'GRN Number' will <strong class="text-red-500">replace</strong> all items in that draft document. 
+                            </p>
+                        </div>
+
+                        <a :href="route('purchasing.receipts.template') + (importForm.with_data ? '?with_data=1' : '')" class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-500 mb-4 font-medium">
                             <ArrowDownTrayIcon class="h-4 w-4" />
-                            Download Template
+                            Download Template {{ importForm.with_data ? 'with Data' : '' }}
                         </a>
 
                         <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">
