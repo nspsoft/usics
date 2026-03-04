@@ -88,6 +88,7 @@ const showImportDropdown = ref(false);
 const aliasImportFile = ref(null);
 const includeData = ref(false);
 const aliasImporting = ref(false);
+const overwriteAlias = ref(false);
 
 const openAliasImport = () => {
     showImportDropdown.value = false;
@@ -109,11 +110,13 @@ const handleAliasImport = () => {
     aliasImporting.value = true;
     router.post(route('inventory.product-aliases.import'), {
         file: aliasImportFile.value,
+        overwrite: overwriteAlias.value,
     }, {
         onSuccess: () => {
             showAliasImportModal.value = false;
             aliasImportFile.value = null;
             aliasImporting.value = false;
+            overwriteAlias.value = false;
         },
         onError: () => {
             aliasImporting.value = false;
@@ -484,9 +487,35 @@ const closeUsageModal = () => {
                                         </label>
                                     </div>
                                 </div>
-                                <div class="mt-4 z-10 relative flex items-center gap-3 w-full">
+                            </div>
+                        </div>
+
+                        <!-- Overwrite Option -->
+                        <div class="mb-4">
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                <div class="flex items-center h-5">
+                                    <input 
+                                        v-model="overwriteAlias" 
+                                        type="checkbox" 
+                                        class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-red-600 focus:ring-red-500/50 focus:ring-offset-0"
+                                    />
+                                </div>
+                                <div class="flex-1">
+                                    <span class="block text-sm font-medium text-slate-600 dark:text-slate-300">Overwrite Existing Alias Data</span>
+                                    <p class="text-xs text-slate-500 mt-1">
+                                        Jika dicentang, baris dengan kombinasi Produk + Partner yang sudah ada akan <strong class="text-red-400">ditimpa</strong> (alias_sku & alias_name diperbarui).
+                                    </p>
+                                    <div v-if="overwriteAlias" class="mt-2 flex items-start gap-2 text-xs text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                                        <ExclamationTriangleIcon class="h-4 w-4 shrink-0" />
+                                        <span>Peringatan: Data Alias lama akan digantikan dengan data dari file Excel.</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="mt-2 z-10 relative flex items-center gap-3 w-full">
                                     <button 
-                                        @click="handleAliasImport"
+                                        @click="handleAliasImport()"
                                 :disabled="!aliasImportFile || aliasImporting"
                                 class="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
@@ -498,8 +527,6 @@ const closeUsageModal = () => {
                             >
                                 Cancel
                             </button>
-                        </div>
-                            </div>
                         </div>
                     </div>
                 </div>

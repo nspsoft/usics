@@ -47,10 +47,13 @@ class ProductPartnerController extends Controller
     {
         $request->validate([
             'file' => 'required|mimes:csv,txt,xlsx,xls',
+            'overwrite' => 'nullable|boolean',
         ]);
 
+        $overwrite = $request->boolean('overwrite', false);
+
         try {
-            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\ProductAliasImport, $request->file('file'));
+            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\ProductAliasImport($overwrite), $request->file('file'));
             return back()->with('success', 'Product Aliases imported successfully.');
         } catch (\Exception $e) {
             return back()->withErrors(['file' => 'Import failed: ' . $e->getMessage()]);

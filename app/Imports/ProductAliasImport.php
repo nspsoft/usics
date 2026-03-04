@@ -13,6 +13,12 @@ use Illuminate\Support\Facades\Log;
 
 class ProductAliasImport implements ToCollection, WithHeadingRow
 {
+    private $overwrite;
+
+    public function __construct(bool $overwrite = false)
+    {
+        $this->overwrite = $overwrite;
+    }
     public function collection(Collection $rows)
     {
         foreach ($rows as $row) {
@@ -52,17 +58,29 @@ class ProductAliasImport implements ToCollection, WithHeadingRow
                 }
 
                 // 3. Create or Update Alias
-                ProductPartner::updateOrCreate(
-                    [
+                $existingAlias = ProductPartner::where('product_id', $product->id)
+                    ->where('partner_type', $morphType)
+                    ->where('partner_id', $partnerId)
+                    ->first();
+
+                if ($existingAlias) {
+                    if ($this->overwrite) {
+                        $existingAlias->update([
+                            'alias_sku' => $row['alias_sku'] ?? null,
+                            'alias_name' => $row['alias_name'] ?? null,
+                        ]);
+                    } else {
+                        Log::info("ProductAliasImport: Skipping existing Alias for Product [{$product->sku}] and Partner [{$partnerName}] because Overwrite is disabled.");
+                    }
+                } else {
+                    ProductPartner::create([
                         'product_id' => $product->id,
                         'partner_type' => $morphType,
                         'partner_id' => $partnerId,
-                    ],
-                    [
                         'alias_sku' => $row['alias_sku'] ?? null,
                         'alias_name' => $row['alias_name'] ?? null,
-                    ]
-                );
+                    ]);
+                }
 
             } catch (\Exception $e) {
                 Log::error("ProductAliasImport: Error processing row " . json_encode($row) . ": " . $e->getMessage());
