@@ -301,13 +301,16 @@ class CustomerController extends Controller
             'file' => 'required|mimes:xlsx,xls,csv|max:2048',
         ]);
 
-        Excel::import(new CustomerImport, $request->file('file'));
+        Excel::import(new CustomerImport($request->boolean('overwrite')), $request->file('file'));
 
         return back()->with('success', 'Customers imported successfully.');
     }
 
-    public function template()
+    public function template(Request $request)
     {
+        if ($request->boolean('with_data')) {
+            return Excel::download(new \App\Exports\CustomerDataExport, 'customers_data_' . now()->format('Y-m-d') . '.xlsx');
+        }
         return Excel::download(new CustomerTemplateExport, 'customers_template.xlsx');
     }
 
