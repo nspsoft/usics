@@ -14,11 +14,11 @@ import {
     ShieldCheckIcon,
     DocumentPlusIcon,
     PencilSquareIcon,
-    TrashIcon,
     ChevronUpIcon,
     ChevronDownIcon,
     ArrowUpTrayIcon,
     ArrowDownTrayIcon,
+    ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 import debounce from 'lodash/debounce';
@@ -79,7 +79,11 @@ const deleteQuotation = (q) => {
 };
 
 const showImportModal = ref(false);
-const importForm = useForm({ file: null });
+const importForm = useForm({ 
+    file: null,
+    overwrite: false,
+});
+const includeData = ref(false);
 const fileInput = ref(null);
 
 const handleFileChange = (e) => {
@@ -368,14 +372,51 @@ const submitImport = () => {
                                 <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
                                     Upload an Excel file (.xlsx, .xls, .csv) to import Quotations. Rows with the same Customer Code + Quotation Date will be grouped into one Quotation.
                                 </p>
-                                <a href="/sales/quotations-template" class="inline-flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-400 transition-colors mb-4">
-                                    <ArrowDownTrayIcon class="h-4 w-4" /> Download Template
-                                </a>
+                                
+                                <div class="flex items-center gap-4 mb-4">
+                                    <a :href="`/sales/quotations-template?with_data=${includeData ? 1 : 0}`" class="inline-flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-400 transition-colors">
+                                        <ArrowDownTrayIcon class="h-4 w-4" /> Download Template
+                                    </a>
+                                    
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            id="include_data"
+                                            type="checkbox"
+                                            v-model="includeData"
+                                            class="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-slate-700 dark:border-slate-600"
+                                        />
+                                        <label for="include_data" class="text-xs text-slate-500 dark:text-slate-400 cursor-pointer select-none">
+                                            Include Existing Data
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                             <div class="mb-6">
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Select File</label>
                                 <input ref="fileInput" type="file" @change="handleFileChange" accept=".xlsx,.xls,.csv" class="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20 transition-all cursor-pointer" />
                                 <p v-if="importForm.errors.file" class="mt-1 text-sm text-red-500">{{ importForm.errors.file }}</p>
+                            </div>
+
+                            <div class="mb-6">
+                                <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                    <div class="flex items-center h-5">
+                                        <input 
+                                            v-model="importForm.overwrite" 
+                                            type="checkbox" 
+                                            class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-blue-500/50 focus:ring-offset-0"
+                                        />
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="block text-sm font-medium text-slate-600 dark:text-slate-300">Overwrite Existing Data</span>
+                                        <p class="text-xs text-slate-500 mt-1">
+                                            If checked, existing Draft or Sent quotations matching the Customer + Date will be overwritten (items replaced).
+                                        </p>
+                                        <div v-if="importForm.overwrite" class="mt-2 flex items-start gap-2 text-xs text-amber-500 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                                            <ExclamationTriangleIcon class="h-4 w-4 shrink-0" />
+                                            <span>Warning: This will delete and replace all items in matching existing quotations.</span>
+                                        </div>
+                                    </div>
+                                </label>
                             </div>
                             <div class="flex items-center justify-end gap-3">
                                 <button type="button" @click="showImportModal = false" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancel</button>

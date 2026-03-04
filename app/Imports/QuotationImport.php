@@ -16,6 +16,12 @@ class QuotationImport implements ToCollection, WithHeadingRow
     public int $importedCount = 0;
     public int $skippedCount = 0;
     public array $errors = [];
+    protected bool $overwrite;
+
+    public function __construct(bool $overwrite = false)
+    {
+        $this->overwrite = $overwrite;
+    }
 
     public function collection(Collection $rows)
     {
@@ -37,16 +43,43 @@ class QuotationImport implements ToCollection, WithHeadingRow
                     continue;
                 }
 
-                DB::transaction(function () use ($firstRow, $items, $customer) {
-                    $quotation = Quotation::create([
-                        'number'         => Quotation::generateNumber(),
-                        'customer_id'    => $customer->id,
-                        'quotation_date' => $firstRow['quotation_date'],
-                        'valid_until'    => $firstRow['valid_until'] ?? now()->addDays(30)->format('Y-m-d'),
-                        'status'         => 'draft',
-                        'notes'          => $firstRow['notes'] ?? null,
-                        'created_by'     => auth()->id(),
-                    ]);
+                DB::transaction(function () use ($firstRow, $items, $customer, $key) {
+                    $existingQuotation = Quotation::where('customer_id', $customer->id)
+                        ->whereDate('quotation_date', $firstRow['quotation_date'])
+                        ->first();
+
+                    if ($existingQuotation) {
+                        if (!$this->overwrite) {
+                            $this->skippedCount += $items->count();
+                            return; // Skip group
+                        }
+
+                        if (in_array($existingQuotation->status, ['accepted', 'converted'])) {
+                            $this->errors[] = "Cannot overwrite Accepted/Converted Quotation {$existingQuotation->number} for {$key}";
+                            $this->skippedCount += $items->count();
+                            return;
+                        }
+
+                        // Overwrite: Update header and recreate items
+                        $existingQuotation->update([
+                            'valid_until'    => $firstRow['valid_until'] ?? now()->addDays(30)->format('Y-m-d'),
+                            'notes'          => $firstRow['notes'] ?? null,
+                            'updated_by'     => auth()->id(), // Assuming you have updated_by, otherwise omit or use created_by
+                        ]);
+                        $existingQuotation->items()->delete();
+                        $quotation = $existingQuotation;
+                    } else {
+                        // Create new
+                        $quotation = Quotation::create([
+                            'number'         => Quotation::generateNumber(),
+                            'customer_id'    => $customer->id,
+                            'quotation_date' => $firstRow['quotation_date'],
+                            'valid_until'    => $firstRow['valid_until'] ?? now()->addDays(30)->format('Y-m-d'),
+                            'status'         => 'draft',
+                            'notes'          => $firstRow['notes'] ?? null,
+                            'created_by'     => auth()->id(),
+                        ]);
+                    }
 
                     foreach ($items as $row) {
                         $product = Product::where('sku', trim($row['product_code']))->first();

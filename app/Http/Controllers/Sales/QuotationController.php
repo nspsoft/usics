@@ -307,7 +307,7 @@ class QuotationController extends Controller
             'file' => 'required|mimes:xlsx,xls,csv|max:5120',
         ]);
 
-        $import = new QuotationImport;
+        $import = new QuotationImport($request->boolean('overwrite'));
         Excel::import($import, $request->file('file'));
 
         $message = "Import completed: {$import->importedCount} Quotation(s) created.";
@@ -321,8 +321,11 @@ class QuotationController extends Controller
         return back()->with($import->importedCount > 0 ? 'success' : 'error', $message);
     }
 
-    public function template()
+    public function template(Request $request)
     {
+        if ($request->boolean('with_data')) {
+            return Excel::download(new \App\Exports\QuotationDataExport, 'quotations_data_' . now()->format('Y-m-d') . '.xlsx');
+        }
         return Excel::download(new QuotationTemplateExport, 'quotations_template.xlsx');
     }
 }
