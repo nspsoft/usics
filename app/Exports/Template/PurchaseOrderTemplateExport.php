@@ -108,7 +108,7 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
                 $sheet->getStyle('A1:J1')->getFont()->setBold(true);
 
                 $sheet->getComment('A1')->getText()->createTextRun(
-                    'Optional. Nomor PO dari sistem lama. Jika dikosongkan, sistem akan membuat PO Number otomatis.'
+                    'Optional/Key. Jika terisi dan opsi Overwrite dicentang, maka file akan menimpa seluruh item di PO ini (khusus draft). Jika dikosongkan, sistem akan membuat PO Number otomatis.'
                 );
                 $sheet->getComment('B1')->getText()->createTextRun(
                     "Required. Tanggal PO dalam format YYYY-MM-DD atau tanggal Excel.\nBaris dengan Order Date + Supplier + Warehouse yang sama akan digabung menjadi satu PO."
@@ -139,7 +139,10 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
                 );
 
                 $redColor = new Color(Color::COLOR_RED);
-                $sheet->getStyle('B1:H1')->getFont()->setColor($redColor);
+                $blueColor = new Color(Color::COLOR_BLUE);
+                $sheet->getStyle('A1')->getFont()->setColor($blueColor);
+                $sheet->getStyle('B1')->getFont()->setColor($redColor);
+                $sheet->getStyle('D1:H1')->getFont()->setColor($redColor);
 
                 $spreadsheet = $sheet->getParent();
                 $instructionSheet = $spreadsheet->createSheet();
@@ -152,12 +155,13 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
                 $instructionSheet->setCellValue('A3', 'Langkah umum:');
                 $instructionSheet->setCellValue('A4', '1. Download template ini dari menu Purchase Orders > Import.');
                 $instructionSheet->setCellValue('A5', '2. Isi data mulai dari baris ke-2 di sheet utama.');
-                $instructionSheet->setCellValue('A6', '3. Baris dengan Order Date + Supplier Code + Warehouse Name yang sama akan digabung menjadi satu PO.');
-                $instructionSheet->setCellValue('A7', '4. Simpan file sebagai .xlsx lalu upload kembali di form Import.');
+                $instructionSheet->setCellValue('A6', '3. Bila PO Number dikosongkan: Baris dengan Order Date + Supplier Code + Warehouse Name yang sama akan digabung menjadi satu PO baru.');
+                $instructionSheet->setCellValue('A7', '4. Bila PO Number diisi dengan PO valid: Bila opsi Overwrite dicentang, sistem akan menimpa detail PO Draft tersebut secara menyeluruh.');
+                $instructionSheet->setCellValue('A8', '5. Simpan file sebagai .xlsx lalu upload kembali di form Import.');
 
-                $instructionSheet->setCellValue('A9', 'Keterangan kolom:');
-                $instructionSheet->setCellValue('A10', 'PO Number');
-                $instructionSheet->setCellValue('B10', 'Opsional. Nomor PO dari sistem lama. Jika dikosongkan, sistem akan membuat nomor otomatis.');
+                $instructionSheet->setCellValue('A10', 'Keterangan kolom:');
+                $instructionSheet->setCellValue('A11', 'PO Number');
+                $instructionSheet->setCellValue('B11', 'Kunci Penimpaan ATAU Opsional. Nomor dari sistem lama. Jika dikosongkan, sistem generate otomatis.');
                 $instructionSheet->setCellValue('A11', 'Order Date *');
                 $instructionSheet->setCellValue('B11', 'Wajib. Tanggal PO. Format YYYY-MM-DD atau tanggal Excel.');
                 $instructionSheet->setCellValue('A12', 'Expected Date');
