@@ -1239,15 +1239,18 @@ class DeliveryOrderController extends Controller
         ]);
 
         try {
-            Excel::import(new DeliveryOrderImport, $request->file('file'));
+            Excel::import(new DeliveryOrderImport($request->boolean('overwrite')), $request->file('file'));
             return back()->with('success', 'Delivery Orders imported successfully.');
         } catch (\Exception $e) {
             return back()->with('error', 'Import failed: ' . $e->getMessage());
         }
     }
 
-    public function template()
+    public function template(Request $request)
     {
+        if ($request->boolean('with_data')) {
+            return Excel::download(new \App\Exports\DeliveryOrderDataExport, 'delivery_orders_data_' . now()->format('Y-m-d') . '.xlsx');
+        }
         return Excel::download(new DeliveryOrderTemplateExport, 'delivery_orders_import_template.xlsx');
     }
     private function getRomanMonth($month)

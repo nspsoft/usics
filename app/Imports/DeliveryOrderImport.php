@@ -16,28 +16,52 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class DeliveryOrderImport implements ToCollection, WithHeadingRow
 {
+    protected bool $overwrite;
+
+    public function __construct(bool $overwrite = false)
+    {
+        $this->overwrite = $overwrite;
+    }
+
     public function collection(Collection $rows)
     {
-        // Group rows by SO Number
-        $grouped = $rows->groupBy('so_number');
+        // Group by DO Number if it exists, otherwise use SO Number.
+        // We use a custom grouping closure so new DOs and existing DOs are grouped correctly.
+        $grouped = $rows->groupBy(function ($item) {
+            $do = trim($item['do_number'] ?? '');
+            if ($do !== '') {
+                return 'DO__' . $do; // Prefix to distinguish
+            }
+            return 'SO__' . trim($item['so_number'] ?? '');
+        });
 
-        foreach ($grouped as $soNumber => $items) {
+        foreach ($grouped as $groupKey => $items) {
             try {
-                if (empty($soNumber)) continue;
+                if ($items->isEmpty()) continue;
+                $firstRow = $items->first();
+                $soNumber = trim($firstRow['so_number'] ?? '');
+                
+                $isUpdate = str_starts_with($groupKey, 'DO__');
+                $doNumberFromExcel = $isUpdate ? substr($groupKey, 4) : null;
 
-                $so = SalesOrder::where('so_number', $soNumber)
-                    ->whereIn('status', ['confirmed', 'processing', 'partial'])
-                    ->first();
+                $so = null;
+                if (!$isUpdate) { // Only check SO if we are potentially creating a new DO
+                    $so = SalesOrder::where('so_number', $soNumber)
+                        ->whereIn('status', ['confirmed', 'processing', 'partial'])
+                        ->first();
 
-                if (!$so) {
-                    Log::warning("DeliveryOrderImport: SO [{$soNumber}] not found or not in a deliverable status. Skipping.");
-                    continue;
+                    if (!$so) {
+                        Log::warning("DeliveryOrderImport: SO [{$soNumber}] not found or not in a deliverable status. Skipping.");
+                        continue;
+                    }
                 }
 
-                DB::transaction(function () use ($so, $items) {
+
+                DB::transaction(function () use ($so, $items, $isUpdate, $doNumberFromExcel) {
                     $firstRow = $items->first();
                     $deliveryDate = now()->toDateString();
-                    $doNumber = null;
+                    $doNumber = $doNumberFromExcel;
+                    $currentSo = $so; // Use a local variable for SO that might be updated
 
                     try {
                         $rawDate = $firstRow['delivery_date'] ?? null;
@@ -49,28 +73,56 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                             }
                         }
                     } catch (\Exception $e) {
-                        Log::warning("DeliveryOrderImport: Invalid delivery_date for SO [{$so->so_number}], using today(): " . $e->getMessage());
+                        Log::warning("DeliveryOrderImport: Invalid delivery_date, using today(): " . $e->getMessage());
                     }
 
-                    $rawDoNumber = $firstRow['do_number'] ?? null;
-                    if ($rawDoNumber && trim($rawDoNumber) !== '') {
-                        $doNumber = trim($rawDoNumber);
-                    } else {
-                        $lastDO = DeliveryOrder::orderBy('id', 'desc')->first();
-                        $doNumber = 'DO/' . date('Ymd') . '/' . str_pad(($lastDO ? $lastDO->id : 0) + 1, 4, '0', STR_PAD_LEFT);
+                    $existingDO = null;
+                    if ($isUpdate) {
+                        $existingDO = DeliveryOrder::where('do_number', $doNumberFromExcel)->first();
+                        if ($existingDO) {
+                            if (!$this->overwrite) {
+                                return; // skip
+                            }
+                            if (!in_array($existingDO->status, ['draft', 'picking', 'packed'])) {
+                                Log::warning("DeliveryOrderImport: Cannot overwrite DO {$existingDO->do_number} because status is {$existingDO->status}.");
+                                return; // skip
+                            }
+                            // Overwrite: Update headers, delete old items
+                            $existingDO->update([
+                                'delivery_date' => $deliveryDate,
+                            ]);
+                            $existingDO->items()->delete();
+                            $do = $existingDO;
+                            $currentSo = $existingDO->salesOrder; // Use SO from existing DO
+                        } else {
+                            // Even if prefix DO__ is there, if DO doesn't exist, we fall back to creating it if SO is valid
+                            if (!$currentSo) {
+                                Log::warning("DeliveryOrderImport: DO [{$doNumberFromExcel}] and SO [{$firstRow['so_number']}] not valid. Skipping.");
+                                return;
+                            }
+                            $isUpdate = false; 
+                        }
                     }
 
-                    $do = DeliveryOrder::create([
-                        'do_number' => $doNumber,
-                        'sales_order_id' => $so->id,
-                        'customer_id' => $so->customer_id,
-                        'warehouse_id' => $so->warehouse_id,
-                        'delivery_date' => $deliveryDate,
-                        'driver_name' => 'Imported',
-                        'vehicle_number' => '-',
-                        'shipping_address' => $so->shipping_address,
-                        'status' => 'draft',
-                    ]);
+                    if (!$existingDO) {
+                        // Create New
+                        if (!$doNumber) {
+                            $lastDO = DeliveryOrder::orderBy('id', 'desc')->first();
+                            $doNumber = 'DO/' . date('Ymd') . '/' . str_pad(($lastDO ? $lastDO->id : 0) + 1, 4, '0', STR_PAD_LEFT);
+                        }
+                        
+                        $do = DeliveryOrder::create([
+                            'do_number' => $doNumber,
+                            'sales_order_id' => $currentSo->id,
+                            'customer_id' => $currentSo->customer_id,
+                            'warehouse_id' => $currentSo->warehouse_id,
+                            'delivery_date' => $deliveryDate,
+                            'driver_name' => 'Imported',
+                            'vehicle_number' => '-',
+                            'shipping_address' => $currentSo->shipping_address,
+                            'status' => 'draft',
+                        ]);
+                    }
 
                     foreach ($items as $row) {
                         $product = Product::where('sku', $row['product_code'])->first();
@@ -80,12 +132,12 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                         }
 
                         // Find matching SO item
-                        $soItem = SalesOrderItem::where('sales_order_id', $so->id)
+                        $soItem = SalesOrderItem::where('sales_order_id', $currentSo->id)
                             ->where('product_id', $product->id)
                             ->first();
 
                         if (!$soItem) {
-                            Log::warning("DeliveryOrderImport: Product [{$row['product_code']}] not found in SO [{$so->so_number}]. Skipping item.");
+                            Log::warning("DeliveryOrderImport: Product [{$row['product_code']}] not found in SO [{$currentSo->so_number}]. Skipping item.");
                             continue;
                         }
 
@@ -101,7 +153,7 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                     }
                 });
             } catch (\Exception $e) {
-                Log::error("DeliveryOrderImport: Error processing SO [{$soNumber}]: " . $e->getMessage());
+                Log::error("DeliveryOrderImport: Error processing row: " . $e->getMessage());
             }
         }
     }
