@@ -207,15 +207,18 @@ class SupplierController extends Controller
         ]);
 
         try {
-            Excel::import(new SupplierImport, $request->file('file'));
+            Excel::import(new SupplierImport($request->boolean('overwrite')), $request->file('file'));
             return back()->with('success', 'Suppliers imported successfully.');
         } catch (\Exception $e) {
             return back()->with('error', 'Error importing file: ' . $e->getMessage());
         }
     }
 
-    public function template()
+    public function template(Request $request)
     {
+        if ($request->boolean('with_data')) {
+            return Excel::download(new \App\Exports\SupplierDataExport, 'suppliers_data_' . now()->format('Y-m-d') . '.xlsx');
+        }
         return Excel::download(new SupplierTemplateExport, 'suppliers_template.xlsx');
     }
 
@@ -231,15 +234,18 @@ class SupplierController extends Controller
         ]);
 
         try {
-            Excel::import(new SupplierContactImport, $request->file('file'));
+            Excel::import(new SupplierContactImport($request->boolean('overwrite')), $request->file('file'));
             return back()->with('success', 'Supplier contacts imported successfully.');
         } catch (\Exception $e) {
             return back()->with('error', 'Error importing file: ' . $e->getMessage());
         }
     }
 
-    public function templateContacts()
+    public function templateContacts(Request $request)
     {
+        if ($request->boolean('with_data')) {
+            return Excel::download(new \App\Exports\SupplierContactDataExport, 'supplier_contacts_data_' . now()->format('Y-m-d') . '.xlsx');
+        }
         return Excel::download(new SupplierContactTemplateExport, 'supplier_contacts_template.xlsx');
     }
 }

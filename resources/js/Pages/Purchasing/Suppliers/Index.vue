@@ -28,7 +28,9 @@ const sortField = ref(props.filters.sort || 'name');
 const sortDirection = ref(props.filters.direction || 'asc');
 const showImportModal = ref(false);
 const importType = ref('supplier'); // 'supplier' or 'contact'
+const includeData = ref(false);
 const importFile = ref(null);
+const overwriteData = ref(false);
 const importing = ref(false);
 
 const applyFilters = debounce(() => {
@@ -63,7 +65,8 @@ const handleImport = () => {
     
     importing.value = true;
     router.post('/purchasing/suppliers-import', {
-        file: importFile.value
+        file: importFile.value,
+        overwrite: overwriteData.value
     }, {
         onSuccess: () => {
             showImportModal.value = false;
@@ -82,7 +85,8 @@ const handleImportContacts = () => {
     
     importing.value = true;
     router.post('/purchasing/suppliers-contacts-import', {
-        file: importFile.value
+        file: importFile.value,
+        overwrite: overwriteData.value
     }, {
         onSuccess: () => {
             showImportModal.value = false;
@@ -230,12 +234,63 @@ const openMap = (address, city) => {
                             <p class="text-xs text-slate-600 mt-1">Maximum size: 2MB</p>
                             <div class="mt-4 z-10 relative">
                                 <a 
-                                    :href="importType === 'supplier' ? '/purchasing/suppliers-template' : '/purchasing/suppliers-contacts-template'"
+                                    :href="importType === 'supplier' 
+                                        ? (includeData ? '/purchasing/suppliers-template?with_data=1' : '/purchasing/suppliers-template') 
+                                        : (includeData ? '/purchasing/suppliers-contacts-template?with_data=1' : '/purchasing/suppliers-contacts-template')"
+                                    target="_blank"
                                     class="text-xs text-blue-400 hover:text-blue-300 underline"
                                 >
                                     Download Template
                                 </a>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Import Options -->
+                    <div class="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 rounded-xl p-4 mb-6 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl -mr-10 -mt-10"></div>
+                        
+                        <h4 class="text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                            <DocumentCheckIcon class="h-4 w-4" />
+                            Import Options
+                        </h4>
+                        
+                        <div class="space-y-4">
+                            <!-- Include Data Check -->
+                            <label class="flex items-start gap-3 cursor-pointer group">
+                                <div class="pt-0.5">
+                                    <input 
+                                        type="checkbox" 
+                                        v-model="includeData"
+                                        class="w-4 h-4 rounded border-indigo-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition-all dark:bg-slate-800 dark:border-slate-600"
+                                    >
+                                </div>
+                                <div class="flex-1">
+                                    <span class="block text-sm font-medium text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Include Existing {{ importType === 'supplier' ? 'Suppliers' : 'Contacts' }} in Template</span>
+                                    <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">Download template terisi data {{ importType === 'supplier' ? 'Profil Supplier' : 'Kontak PIC' }} dari database untuk mass-update/overwrite.</span>
+                                </div>
+                            </label>
+                            
+                            <!-- Overwrite Data Check -->
+                            <label class="flex items-start gap-3 cursor-pointer group">
+                                <div class="pt-0.5">
+                                    <input 
+                                        type="checkbox" 
+                                        v-model="overwriteData"
+                                        class="w-4 h-4 rounded border-amber-300 text-amber-600 shadow-sm focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50 transition-all dark:bg-slate-800 dark:border-slate-600"
+                                    >
+                                </div>
+                                <div class="flex-1">
+                                    <span class="block text-sm font-medium text-slate-700 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Overwrite Existing {{ importType === 'supplier' ? 'Profiles' : 'Contacts' }} Data</span>
+                                    <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-2">Jika dicentang, import akan merevisi data yang sudah ada di database jika {{ importType === 'supplier' ? 'Kode (Code)' : 'Internal ID / Nama' }} match.</span>
+                                    
+                                    <!-- Warning Banner -->
+                                    <div v-show="overwriteData" class="mt-2 text-xs p-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 flex items-start gap-2">
+                                        <ShieldCheckIcon class="h-4 w-4 shrink-0 mt-0.5" />
+                                        <span><strong>Peringatan!</strong> Setuju untuk mereplace spesifikasi {{ importType === 'supplier' ? 'perusahaan dan term payout supplier' : 'informasi contact detail PIC' }} secara menyeluruh.</span>
+                                    </div>
+                                </div>
+                            </label>
                         </div>
                     </div>
 
