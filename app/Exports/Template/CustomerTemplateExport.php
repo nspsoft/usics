@@ -2,6 +2,7 @@
 
 namespace App\Exports\Template;
 
+use App\Models\Customer;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -11,33 +12,18 @@ class CustomerTemplateExport implements FromCollection, WithHeadings, WithEvents
 {
     public function collection()
     {
-        return collect([
-            [
-                'CUST-001',             // Code
-                'PT. Maju Mundur',      // Name
-                'Budi Santoso',         // Contact Person
-                'regular',              // Type
-                'Jl. Sudirman No. 1',   // Address
-                'Jakarta',              // City
-                '021-1234567',          // Phone
-                'budi@example.com',     // Email
-                '12.345.678.9-001.000', // Tax ID (NPWP)
-                'Net 30',               // Payment Terms
-                30,                     // Payment Days
-            ],
-            [
-                'CUST-VIP-002',         // Code
-                'CV. Sejahtera Abadi',  // Name
-                'Siti Aminah',          // Contact Person
-                'vip',                  // Type
-                'Jl. Thamrin No. 99',   // Address
-                'Surabaya',             // City
-                '031-9876543',          // Phone
-                'siti@example.com',     // Email
-                '98.765.432.1-002.000', // Tax ID (NPWP)
-                'Cash',                 // Payment Terms
-                0,                      // Payment Days
-            ]
+        return Customer::all()->map(fn($c) => [
+            $c->code,
+            $c->name,
+            $c->contact_person,
+            $c->customer_type,
+            $c->address,
+            $c->city,
+            $c->phone,
+            $c->email,
+            $c->tax_id,
+            $c->payment_terms,
+            $c->payment_days,
         ]);
     }
 
