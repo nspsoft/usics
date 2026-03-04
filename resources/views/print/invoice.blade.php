@@ -376,7 +376,7 @@
             </div>
 
             <div class="signature-box">
-                <div>Cikarang, {{ $invoice->invoice_date->format('d F Y') }}</div>
+                <div style="margin-bottom: 15px;">Cikarang, {{ $invoice->invoice_date->format('d F Y') }}</div>
                 <div class="signature-space" style="position: relative;">
                     @if($invoice->emeterai_serial)
                     <div style="position: absolute; top: 5px; left: 50%; transform: translateX(-50%); text-align: center;">
