@@ -325,13 +325,16 @@ class CustomerController extends Controller
             'file' => 'required|mimes:xlsx,xls,csv|max:2048',
         ]);
 
-        Excel::import(new CustomerContactImport, $request->file('file'));
+        Excel::import(new CustomerContactImport($request->boolean('overwrite')), $request->file('file'));
 
         return back()->with('success', 'Customer contacts imported successfully.');
     }
 
-    public function templateContacts()
+    public function templateContacts(Request $request)
     {
+        if ($request->boolean('with_data')) {
+            return Excel::download(new \App\Exports\CustomerContactDataExport, 'customer_contacts_data_' . now()->format('Y-m-d') . '.xlsx');
+        }
         return Excel::download(new CustomerContactTemplateExport, 'customer_contacts_template.xlsx');
     }
 }

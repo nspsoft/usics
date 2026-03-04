@@ -10,6 +10,13 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 class CustomerContactImport implements ToCollection, WithHeadingRow
 {
+    protected bool $overwrite;
+
+    public function __construct(bool $overwrite = false)
+    {
+        $this->overwrite = $overwrite;
+    }
+
     public function collection(Collection $rows)
     {
         foreach ($rows as $row) {
@@ -49,6 +56,12 @@ class CustomerContactImport implements ToCollection, WithHeadingRow
             } else {
                 $match['name'] = $name;
                 $match['position'] = $position;
+            }
+
+            if (!$this->overwrite) {
+                if (CustomerContact::query()->where($match)->exists()) {
+                    continue;
+                }
             }
 
             CustomerContact::query()->updateOrCreate($match, [

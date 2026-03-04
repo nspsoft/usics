@@ -34,10 +34,11 @@ const search = ref(props.filters.search || '');
 const selectedType = ref(props.filters.type || '');
 const showImportModal = ref(false);
 const importType = ref('customer'); // 'customer' or 'contact'
-const importFile = ref(null);
 const importing = ref(false);
 const overwriteExisting = ref(false);
 const includeCustomerData = ref(false);
+const overwriteContact = ref(false);
+const includeContactData = ref(false);
 
 const applyFilters = debounce(() => {
     router.get('/sales/customers', {
@@ -83,12 +84,14 @@ const handleImportContacts = () => {
     
     importing.value = true;
     router.post('/sales/customers-contacts-import', {
-        file: importFile.value
+        file: importFile.value,
+        overwrite: overwriteContact.value,
     }, {
         onSuccess: () => {
             showImportModal.value = false;
             importFile.value = null;
             importing.value = false;
+            overwriteContact.value = false;
         },
         onError: () => {
             importing.value = false;
@@ -228,7 +231,7 @@ const openMap = (address, city) => {
                                 <a 
                                     :href="importType === 'customer' 
                                         ? `/sales/customers-template?with_data=${includeCustomerData ? 1 : 0}` 
-                                        : '/sales/customers-contacts-template'"
+                                        : `/sales/customers-contacts-template?with_data=${includeContactData ? 1 : 0}`"
                                     class="text-xs text-blue-400 hover:text-blue-300 underline"
                                 >
                                     Download Template
@@ -242,6 +245,18 @@ const openMap = (address, city) => {
                                         class="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-slate-700 dark:border-slate-600"
                                     />
                                     <label for="include_customer_data" class="text-xs text-slate-500 dark:text-slate-400 cursor-pointer select-none">
+                                        Include Existing Data
+                                    </label>
+                                </div>
+
+                                <div v-if="importType === 'contact'" class="flex items-center gap-2">
+                                    <input
+                                        id="include_contact_data"
+                                        type="checkbox"
+                                        v-model="includeContactData"
+                                        class="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-slate-700 dark:border-slate-600"
+                                    />
+                                    <label for="include_contact_data" class="text-xs text-slate-500 dark:text-slate-400 cursor-pointer select-none">
                                         Include Existing Data
                                     </label>
                                 </div>
@@ -266,6 +281,28 @@ const openMap = (address, city) => {
                                 <div v-if="overwriteExisting" class="mt-2 flex items-start gap-2 text-xs text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
                                     <ExclamationTriangleIcon class="h-4 w-4 shrink-0" />
                                     <span>Warning: This will replace existing customer details.</span>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div v-if="importType === 'contact'" class="mb-6">
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            <div class="flex items-center h-5">
+                                <input 
+                                    v-model="overwriteContact" 
+                                    type="checkbox" 
+                                    class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-blue-500/50 focus:ring-offset-0"
+                                />
+                            </div>
+                            <div class="flex-1">
+                                <span class="block text-sm font-medium text-slate-600 dark:text-slate-300">Overwrite Existing Data</span>
+                                <p class="text-xs text-slate-500 mt-1">
+                                    If checked, contacts with matching details (Email, Phone, or Name+Position) will be updated.
+                                </p>
+                                <div v-if="overwriteContact" class="mt-2 flex items-start gap-2 text-xs text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                                    <ExclamationTriangleIcon class="h-4 w-4 shrink-0" />
+                                    <span>Warning: This will replace existing contact details.</span>
                                 </div>
                             </div>
                         </label>
