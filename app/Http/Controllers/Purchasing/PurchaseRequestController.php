@@ -290,15 +290,18 @@ class PurchaseRequestController extends Controller
         ]);
 
         try {
-            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\PurchaseRequestsImport, $request->file('file'));
+            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\PurchaseRequestsImport($request->boolean('overwrite')), $request->file('file'));
             return back()->with('success', 'Purchase Requests imported successfully.');
         } catch (\Exception $e) {
             return back()->with('error', 'Error importing file: ' . $e->getMessage());
         }
     }
 
-    public function template()
+    public function template(Request $request)
     {
+        if ($request->boolean('with_data')) {
+            return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\PurchaseRequestDataExport, 'purchase_requests_data_' . now()->format('Y-m-d') . '.xlsx');
+        }
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\Template\PurchaseRequestTemplateExport, 'purchase_request_template.xlsx');
     }
 }

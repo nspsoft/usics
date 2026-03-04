@@ -34,8 +34,10 @@ const props = defineProps({
 });
 
 const showImportModal = ref(false);
+const includeData = ref(false);
 const importForm = useForm({
     file: null,
+    overwrite: false,
 });
 
 const applyFilters = debounce(() => {
@@ -308,16 +310,61 @@ const exportRequests = () => {
                     
                     <div class="mb-4">
                         <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
-                            Upload an Excel file (.xlsx, .xls) to import Purchase Requests. Rows with the same Date + Department + Requester will be grouped into one PR.
+                            Upload an Excel file (.xlsx, .xls) to import Purchase Requests.
                         </p>
                         
-                        <a :href="route('purchasing.requests.template')" class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-500 mb-4 font-medium">
+                        <div class="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 rounded-xl p-4 mb-4 relative overflow-hidden">
+                            <div class="absolute right-0 top-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl -mr-10 -mt-10"></div>
+                            
+                            <h4 class="text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                                <DocumentCheckIcon class="h-4 w-4" />
+                                Import Options
+                            </h4>
+                            
+                            <div class="space-y-4">
+                                <label class="flex items-start gap-3 cursor-pointer group">
+                                    <div class="pt-0.5">
+                                        <input 
+                                            type="checkbox" 
+                                            v-model="includeData"
+                                            class="w-4 h-4 rounded border-indigo-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition-all dark:bg-slate-800 dark:border-slate-600"
+                                        >
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="block text-sm font-medium text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Include Existing Draft PRs in Template</span>
+                                        <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">Download template yang otomatis terisi seluruh Purchase Request berstatus Draft di database saat ini.</span>
+                                    </div>
+                                </label>
+                                
+                                <label class="flex items-start gap-3 cursor-pointer group">
+                                    <div class="pt-0.5">
+                                        <input 
+                                            type="checkbox" 
+                                            v-model="importForm.overwrite"
+                                            class="w-4 h-4 rounded border-amber-300 text-amber-600 shadow-sm focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50 transition-all dark:bg-slate-800 dark:border-slate-600"
+                                        >
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="block text-sm font-medium text-slate-700 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Overwrite Existing PR Data</span>
+                                        <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-2">Jika file Excel menyertakan PR Number yang valid, sistem akan menghapus seluruh item lama pada PR tersebut lalu menimpanya dengan daftar item baru dari baris file ini.</span>
+                                        
+                                        <!-- Warning Banner -->
+                                        <div v-show="importForm.overwrite" class="mt-2 text-xs p-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 flex items-start gap-2">
+                                            <InformationCircleIcon class="h-4 w-4 shrink-0 mt-0.5" />
+                                            <span>Hanya Purchase Request yang masih berstatus <strong>Draft</strong> yang dizinkan untuk ditimpa paksa (Overwrite).</span>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <a :href="includeData ? route('purchasing.requests.template', { with_data: 1 }) : route('purchasing.requests.template')" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-500 mb-4 font-medium">
                             <ArrowDownTrayIcon class="h-4 w-4" />
                             Download Template
                         </a>
 
                         <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">
-                            Required columns: Date, Department, Requester, Product Code, Quantity.
+                            Required columns: Date, Department, Requester, Product Code, Quantity. Jika PR Number kosong, baris baru akan digrouping otomatis hari itu.
                         </p>
                         
                         <div class="flex items-center justify-center w-full">
