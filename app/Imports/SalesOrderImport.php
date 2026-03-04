@@ -18,6 +18,12 @@ class SalesOrderImport implements ToCollection, WithHeadingRow
     public int $importedCount = 0;
     public int $skippedCount = 0;
     public array $errors = [];
+    protected bool $overwrite;
+
+    public function __construct(bool $overwrite = false)
+    {
+        $this->overwrite = $overwrite;
+    }
 
     public function collection(Collection $rows)
     {
@@ -51,19 +57,47 @@ class SalesOrderImport implements ToCollection, WithHeadingRow
                     continue;
                 }
 
-                DB::transaction(function () use ($firstRow, $items, $customer, $warehouse) {
-                    $so = SalesOrder::create([
-                        'so_number'          => SalesOrder::generateSoNumber(),
-                        'customer_po_number' => $firstRow['customer_po'] ?? null,
-                        'customer_id'        => $customer->id,
-                        'warehouse_id'       => $warehouse->id,
-                        'order_date'         => $firstRow['order_date'],
-                        'status'             => 'draft',
-                        'discount_percent'   => 0,
-                        'tax_percent'        => 11,
-                        'notes'              => $firstRow['notes'] ?? null,
-                        'created_by'         => auth()->id(),
-                    ]);
+                DB::transaction(function () use ($firstRow, $items, $customer, $warehouse, $key) {
+                    $existingSO = SalesOrder::where('customer_id', $customer->id)
+                        ->where('customer_po_number', $firstRow['customer_po'] ?? null)
+                        ->whereDate('order_date', $firstRow['order_date'])
+                        ->first();
+
+                    if ($existingSO) {
+                        if (!$this->overwrite) {
+                            $this->skippedCount += $items->count();
+                            return; // Skip group
+                        }
+
+                        if (!in_array($existingSO->status, ['draft', 'waiting_po'])) {
+                            $this->errors[] = "Cannot overwrite SO {$existingSO->so_number} because status is {$existingSO->status} for group {$key}";
+                            $this->skippedCount += $items->count();
+                            return;
+                        }
+
+                        // Overwrite: Update headers, delete old items
+                        $existingSO->update([
+                            'warehouse_id'     => $warehouse->id,
+                            'notes'            => $firstRow['notes'] ?? null,
+                            'updated_by'       => auth()->id(), // assuming updated_by exists or fallback
+                        ]);
+                        $existingSO->items()->delete();
+                        $so = $existingSO;
+                    } else {
+                        // Create New
+                        $so = SalesOrder::create([
+                            'so_number'          => SalesOrder::generateSoNumber(),
+                            'customer_po_number' => $firstRow['customer_po'] ?? null,
+                            'customer_id'        => $customer->id,
+                            'warehouse_id'       => $warehouse->id,
+                            'order_date'         => $firstRow['order_date'],
+                            'status'             => 'draft',
+                            'discount_percent'   => 0,
+                            'tax_percent'        => 11,
+                            'notes'              => $firstRow['notes'] ?? null,
+                            'created_by'         => auth()->id(),
+                        ]);
+                    }
 
                     foreach ($items as $row) {
                         $product = Product::where('sku', trim($row['product_code']))->first();

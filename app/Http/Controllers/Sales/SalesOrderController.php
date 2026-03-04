@@ -502,7 +502,7 @@ class SalesOrderController extends Controller
             'file' => 'required|mimes:xlsx,xls,csv|max:5120',
         ]);
 
-        $import = new SalesOrderImport;
+        $import = new SalesOrderImport($request->boolean('overwrite'));
         Excel::import($import, $request->file('file'));
 
         $message = "Import completed: {$import->importedCount} Sales Order(s) created.";
@@ -516,8 +516,11 @@ class SalesOrderController extends Controller
         return back()->with($import->importedCount > 0 ? 'success' : 'error', $message);
     }
 
-    public function template()
+    public function template(Request $request)
     {
+        if ($request->boolean('with_data')) {
+            return Excel::download(new \App\Exports\SalesOrderDataExport, 'sales_orders_data_' . now()->format('Y-m-d') . '.xlsx');
+        }
         return Excel::download(new SalesOrderTemplateExport, 'sales_orders_template.xlsx');
     }
 }
