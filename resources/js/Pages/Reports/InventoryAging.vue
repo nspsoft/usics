@@ -115,20 +115,59 @@ const exportExcel = () => {
             <!-- Report Sheet -->
             <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-8 min-h-[50vh] rounded-2xl shadow-xl print:m-0 print:rounded-none print:shadow-none print:w-full print:p-0">
                 
-                <!-- Official Print Header -->
-                <div class="flex justify-between items-start border-b-4 border-slate-900 dark:border-slate-700 pb-6 mb-6 print:border-b-2 print:pb-4 print:mb-4">
-                    <div>
-                        <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-1 print:text-xl print:mb-0">INVENTORY AGING REPORT</h1>
-                        <p class="text-slate-600 dark:text-slate-400 font-mono text-sm italic print:text-[10px]">Analisis Masa Simpan & Pergerakan Stok Barang</p>
-                        <p class="text-slate-900 dark:text-slate-300 font-mono text-xs uppercase tracking-widest mt-2 font-black print:text-[8px] print:mt-1">ERP MANUFACTURING SYSTEM</p>
+                <!-- Official Print Header (Quotation Style) -->
+                <div class="hidden print:flex justify-between items-start mb-6 pb-4 border-b-2 border-slate-300">
+                    <!-- Left: Logo & Company -->
+                    <div class="flex gap-4">
+                        <img src="/images/jri-official-logo.png" alt="JIDOKA Logo" class="h-16 object-contain">
+                        <div>
+                            <div class="text-[#E21E26] font-black italic text-4xl leading-none tracking-tighter lowercase">jidoka</div>
+                            <div class="text-[#003680] font-black text-[15px] leading-tight mt-0.5">PT. JIDOKA RESULT INDONESIA</div>
+                            <div class="text-[11px] text-black mt-2 leading-relaxed">
+                                Kawasan Industri JABABEKA I, Jl. Jababeka II Blok C No. 19 L<br>
+                                Cikarang Utara, Bekasi 17530 Jawa Barat<br>
+                                Telp : +62 21 89383915
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-right">
-                        <div class="text-2xl font-black text-slate-900 dark:text-white tracking-tighter print:text-lg">PT. JIDOKA SYSTEM INDONESIA</div>
-                        <p class="text-slate-800 dark:text-slate-300 text-xs font-black uppercase tracking-widest mt-1 print:text-[8px]">Department Gudang & Logistik</p>
-                        <div class="mt-3 text-right text-xs text-slate-600 dark:text-slate-400 print:text-[9px] print:mt-2">
-                            <p class="font-semibold"><span class="inline-block w-16 text-left">Tanggal</span>: {{ date }}</p>
-                            <p class="font-semibold"><span class="inline-block w-16 text-left">Kategori</span>: {{ selectedCategory || 'Semua Kategori' }}</p>
-                            <p class="font-semibold"><span class="inline-block w-16 text-left">Status</span>: {{ getStatusLabel(selectedStatus || 'semua') }}</p>
+                    
+                    <!-- Right: Document Title & Info -->
+                    <div class="text-right flex flex-col items-end">
+                        <div class="text-[#000080] font-black italic text-3xl uppercase tracking-wider mb-4">INVENTORY AGING</div>
+                        
+                        <table class="text-xs text-black text-left">
+                            <tbody>
+                                <tr>
+                                    <td class="font-bold pr-4 py-0.5 uppercase tracking-wider">Date</td>
+                                    <td class="pr-2">:</td>
+                                    <td>{{ date }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="font-bold pr-4 py-0.5 uppercase tracking-wider">Category</td>
+                                    <td class="pr-2">:</td>
+                                    <td>{{ selectedCategory || 'All Categories' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="font-bold pr-4 py-0.5 uppercase tracking-wider">Status</td>
+                                    <td class="pr-2">:</td>
+                                    <td class="font-bold text-[#E21E26] uppercase tracking-wider">{{ getStatusLabel(selectedStatus || 'all') }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Web Header (Visible on Screen) -->
+                <div class="border-b border-slate-200 dark:border-slate-800 pb-6 mb-6 print:hidden">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold uppercase tracking-wide text-slate-900 dark:text-white">Inventory Aging Report</h1>
+                            <p class="text-sm text-slate-500 mt-1 dark:text-slate-400">Generated on {{ date }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-semibold text-slate-900 dark:text-white">ERP Manufacturing</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Category: {{ selectedCategory || 'All' }}</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Status: {{ getStatusLabel(selectedStatus || 'all') }}</p>
                         </div>
                     </div>
                 </div>
