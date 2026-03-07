@@ -35,6 +35,8 @@ class Warehouse extends Model
         'is_default',
         'allow_negative_stock',
         'is_active',
+        'grid_cols',
+        'grid_rows',
     ];
 
     protected $casts = [

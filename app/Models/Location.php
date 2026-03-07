@@ -21,7 +21,33 @@ class Location extends Model
         'level',
         'path',
         'is_active',
+        'pos_x',
+        'pos_y',
+        'width',
+        'height',
+        'capacity',
+        'color',
     ];
+
+    protected $appends = ['utilization_percent', 'total_stock_qty'];
+
+    /**
+     * Get utilization percentage of this location
+     */
+    public function getUtilizationPercentAttribute(): float
+    {
+        if ($this->capacity <= 0) return 0;
+        $totalQty = $this->productStocks->sum('qty_on_hand');
+        return min(100, round(($totalQty / $this->capacity) * 100, 1));
+    }
+
+    /**
+     * Get total stock quantity in this location
+     */
+    public function getTotalStockQtyAttribute(): float
+    {
+        return $this->productStocks->sum('qty_on_hand');
+    }
 
     protected $casts = [
         'level' => 'integer',

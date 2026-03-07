@@ -234,6 +234,9 @@ const getTypeLabel = (type) => {
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap text-right">
                                 <div class="flex items-center justify-end gap-2">
+                                    <Link :href="`/inventory/warehouses/${warehouse.id}/map`" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors" title="View Map">
+                                        <MapPinIcon class="h-4 w-4" />
+                                    </Link>
                                     <Link :href="`/inventory/warehouses/${warehouse.id}/edit`" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors">
                                         <PencilSquareIcon class="h-4 w-4" />
                                     </Link>

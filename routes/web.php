@@ -102,6 +102,9 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::post('/products-import', [ProductController::class, 'import'])->name('products.import');
     Route::get('/products-template', [ProductController::class, 'template'])->name('products.template');
     Route::resource('warehouses', WarehouseController::class);
+    Route::get('/warehouses/{warehouse}/map', [WarehouseController::class, 'map'])->name('warehouses.map');
+    Route::post('/warehouses/{warehouse}/update-layout', [WarehouseController::class, 'updateLayout'])->name('warehouses.update-layout');
+    Route::get('/locations/{location}/detail', [WarehouseController::class, 'locationDetail'])->name('locations.detail');
 
     Route::get('/movements', [App\Http\Controllers\Inventory\StockMovementController::class, 'index'])->name('movements.index');
 

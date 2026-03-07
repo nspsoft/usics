@@ -164,4 +164,93 @@ class WarehouseController extends Controller
         return redirect()->route('inventory.warehouses.index')
             ->with('success', 'Warehouse deleted successfully.');
     }
+
+    /**
+     * Display the warehouse map (visual layout).
+     */
+    public function map(Warehouse $warehouse): Response
+    {
+        $warehouse->load(['manager', 'locations.productStocks.product']);
+
+        // Compute summary stats
+        $locations = $warehouse->locations;
+        $totalCapacity = $locations->sum('capacity');
+        $totalStock = $locations->sum('total_stock_qty');
+        $avgUtilization = $locations->count() > 0
+            ? round($locations->avg('utilization_percent'), 1)
+            : 0;
+
+        return Inertia::render('Inventory/Warehouses/Map', [
+            'warehouse' => $warehouse,
+            'stats' => [
+                'total_locations' => $locations->count(),
+                'total_capacity' => $totalCapacity,
+                'total_stock' => $totalStock,
+                'avg_utilization' => $avgUtilization,
+            ],
+        ]);
+    }
+
+    /**
+     * Update layout positions of locations (drag & drop save).
+     */
+    public function updateLayout(Request $request, Warehouse $warehouse)
+    {
+        $validated = $request->validate([
+            'locations' => 'required|array',
+            'locations.*.id' => 'required|exists:locations,id',
+            'locations.*.pos_x' => 'required|integer|min:0',
+            'locations.*.pos_y' => 'required|integer|min:0',
+            'locations.*.width' => 'sometimes|integer|min:1',
+            'locations.*.height' => 'sometimes|integer|min:1',
+            'grid_cols' => 'sometimes|integer|min:4|max:24',
+            'grid_rows' => 'sometimes|integer|min:4|max:20',
+        ]);
+
+        // Update grid dimensions if provided
+        if (isset($validated['grid_cols']) || isset($validated['grid_rows'])) {
+            $warehouse->update([
+                'grid_cols' => $validated['grid_cols'] ?? $warehouse->grid_cols,
+                'grid_rows' => $validated['grid_rows'] ?? $warehouse->grid_rows,
+            ]);
+        }
+
+        // Update each location's position
+        foreach ($validated['locations'] as $loc) {
+            Location::where('id', $loc['id'])
+                ->where('warehouse_id', $warehouse->id)
+                ->update([
+                    'pos_x' => $loc['pos_x'],
+                    'pos_y' => $loc['pos_y'],
+                    'width' => $loc['width'] ?? 1,
+                    'height' => $loc['height'] ?? 1,
+                ]);
+        }
+
+        return back()->with('success', 'Layout saved successfully.');
+    }
+
+    /**
+     * Get detailed stock info for a specific location (AJAX).
+     */
+    public function locationDetail(Location $location)
+    {
+        $location->load(['productStocks.product.unit', 'warehouse']);
+
+        return response()->json([
+            'location' => $location,
+            'stocks' => $location->productStocks->map(function ($stock) {
+                return [
+                    'id' => $stock->id,
+                    'product_name' => $stock->product->name ?? '-',
+                    'sku' => $stock->product->sku ?? '-',
+                    'unit' => $stock->product->unit->code ?? 'Pcs',
+                    'qty_on_hand' => $stock->qty_on_hand,
+                    'qty_reserved' => $stock->qty_reserved,
+                    'available' => $stock->available_qty,
+                    'value' => $stock->value,
+                ];
+            }),
+        ]);
+    }
 }
