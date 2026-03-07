@@ -26,6 +26,7 @@ const editMode = ref(false);
 const saving = ref(false);
 const dragging = ref(null);
 const dragOffset = ref({ x: 0, y: 0 });
+const showHelp = ref(false);
 
 // Sidebar detail
 const selectedLocation = ref(null);
@@ -162,6 +163,11 @@ const typeLabel = (type) => {
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
+                    <!-- Help Button -->
+                    <button @click="showHelp = true" class="inline-flex items-center justify-center p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-blue-500 transition-colors" title="Cara Penggunaan">
+                        <InformationCircleIcon class="h-5 w-5" />
+                    </button>
+
                     <template v-if="editMode">
                         <button @click="editMode = false" class="inline-flex items-center gap-2 rounded-xl bg-slate-200 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
                             <XMarkIcon class="h-4 w-4" /> Cancel
@@ -406,6 +412,61 @@ const typeLabel = (type) => {
                     </div>
                 </Transition>
             </div>
+
+            <!-- Help / Instruction Modal -->
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0 scale-95"
+                enter-to-class="opacity-100 scale-100"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100 scale-100"
+                leave-to-class="opacity-0 scale-95"
+            >
+                <div v-if="showHelp" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/50 backdrop-blur-sm">
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                        <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                            <h3 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
+                                <InformationCircleIcon class="h-6 w-6 text-blue-500" /> 
+                                Panduan Penggunaan Warehouse Map
+                            </h3>
+                            <button @click="showHelp = false" class="p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                                <XMarkIcon class="h-5 w-5 text-slate-500" />
+                            </button>
+                        </div>
+                        <div class="p-6 text-sm text-slate-600 dark:text-slate-300 space-y-6">
+                            
+                            <div class="flex gap-4">
+                                <div class="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400 font-black">1</div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-base mb-1">Kenapa beberapa peta gudang terlihat sama / hanya ada 1 blok besar?</h4>
+                                    <p>Peta ini menggambarkan <strong>Master Data Lokasi (Rak/Bin)</strong> di dalam gudang. Jika sebuah gudang baru dibuat dan belum dibagi-bagi menjadi beberapa rak penyimpanan spesifik, sistem hanya akan membuat 1 lokasi bawaan ("General"/GEN).</p>
+                                    <p class="mt-2 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800 p-2 rounded-lg">💡 <strong>Solusi:</strong> Tambahkan lebih banyak rak/lokasi untuk gudang ini di pengaturan Master Data terlebih dahulu.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-4">
+                                <div class="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400 font-black">2</div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-base mb-1">Mengatur Tata Letak (Drag & Drop)</h4>
+                                    <p>Untuk mengatur posisi letak rak agar sesuai dengan kondisi fisik gudang, klik tombol <strong><ArrowsPointingOutIcon class="h-4 w-4 inline" /> Edit Layout</strong> di pojok kanan atas. Setelah itu, geser (drag) kotak rak ke posisi yang di inginkan pada grid canvas lantai, lalu klik <strong><CheckIcon class="h-4 w-4 inline" /> Save Layout</strong>.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-4">
+                                <div class="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400 font-black">3</div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-base mb-1">Melihat Daftar Barang di dalam Rak</h4>
+                                    <p>Klik kotak mana saja pada peta untuk seketika memunculkan Panel Detail di sisi kanan layar. Panel tersebut menunjukkan persentase pemakaian kapasitas rak ("Utilization") beserta semua daftar spesifik barang yang saat ini tersimpan di posisi tersebut.</p>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                            <button @click="showHelp = false" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 transition">Saya Mengerti</button>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
         </div>
     </AppLayout>
 </template>
