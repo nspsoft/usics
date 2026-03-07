@@ -48,6 +48,7 @@ const props = defineProps({
     stockByCategory: Array,
     stockByWarehouse: Array,
     recentMovements: Array,
+    lowStockItems: Array,
 });
 
 // --- Real-time Clock ---
@@ -327,6 +328,47 @@ const warehouseData = computed(() => ({
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Low Stock Alerts Row -->
+                <div v-if="lowStockItems && lowStockItems.length > 0" class="hud-panel border-rose-500/30">
+                    <div class="panel-header p-4 border-b border-rose-500/20 bg-rose-500/10 flex items-center justify-between">
+                        <h3 class="flex items-center gap-2 text-sm font-bold text-rose-400 tracking-widest uppercase glow-text">
+                            <BoltIcon class="h-4 w-4" /> Critical Low Stock Alerts
+                        </h3>
+                        <span class="px-3 py-1 bg-rose-500/20 text-rose-300 text-xs font-bold rounded border border-rose-500/30 animate-pulse">
+                            {{ lowStockItems.length }} ITEMS REQUIRE ATTENTION
+                        </span>
+                    </div>
+                    <div class="panel-body p-0 overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-[10px] text-rose-300 font-bold uppercase tracking-wider border-b border-rose-500/10 bg-rose-500/5">
+                                    <th class="p-3 pl-6">SKU</th>
+                                    <th class="p-3">Product Name</th>
+                                    <th class="p-3 text-center">Available Stock</th>
+                                    <th class="p-3 text-center">Reorder Point</th>
+                                    <th class="p-3 text-right pr-6">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-rose-500/10">
+                                <tr v-for="item in lowStockItems" :key="item.id" class="hover:bg-rose-500/5 transition-colors group">
+                                    <td class="p-3 pl-6 text-[10px] font-mono text-rose-200 border-l-2 border-transparent group-hover:border-rose-500">{{ item.sku }}</td>
+                                    <td class="p-3 text-xs font-bold text-white">{{ item.name }}</td>
+                                    <td class="p-3 text-center">
+                                        <span class="font-mono text-rose-400 font-bold text-lg glow-text">{{ formatNumber(item.available_stock) }}</span>
+                                        <span class="text-[10px] text-slate-500 ml-1">{{ item.unit }}</span>
+                                    </td>
+                                    <td class="p-3 text-center font-mono text-slate-400 text-xs">{{ formatNumber(item.reorder_point) }}</td>
+                                    <td class="p-3 text-right pr-6">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                            MUST REORDER
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 

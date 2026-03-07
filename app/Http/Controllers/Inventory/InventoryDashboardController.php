@@ -96,12 +96,28 @@ class InventoryDashboardController extends Controller
                 'date' => $m->created_at->format('d M Y H:i'),
             ]);
 
+        // 6. Low Stock Alerts
+        $lowStockItems = Product::active()
+            ->stockManaged()
+            ->with('unit')
+            ->lowStock()
+            ->get()
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'sku' => $p->sku,
+                'available_stock' => $p->available_stock,
+                'reorder_point' => $p->reorder_point,
+                'unit' => $p->unit->name ?? 'Pcs',
+            ]);
+
         return Inertia::render('Inventory/Dashboard', [
             'stats' => $stats,
             'trends' => $trends,
             'stockByCategory' => $stockByCategory,
             'stockByWarehouse' => $stockByWarehouse,
             'recentMovements' => $recentMovements,
+            'lowStockItems' => $lowStockItems,
         ]);
     }
 }
