@@ -21,7 +21,15 @@ export default defineConfig({
                 },
             },
         }),
-
+        VitePWA({
+            registerType: 'autoUpdate',
+            injectRegister: 'auto',
+            manifest: false, // We already have manifest.webmanifest in public folder
+            workbox: {
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+                navigateFallback: null
+            }
+        }),
     ],
     server: {
         host: 'erp.test',

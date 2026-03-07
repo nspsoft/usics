@@ -483,6 +483,11 @@ Route::middleware(['auth'])->prefix('hr')->name('hr.')->group(function () {
     Route::get('/payroll/{payroll}', [PayrollController::class, 'show'])->name('payroll.show');
     Route::get('/payroll/{payroll}/print', [PayrollController::class, 'print'])->name('payroll.print');
     Route::put('/payroll/{payroll}/status', [PayrollController::class, 'updateStatus'])->name('payroll.update-status');
+
+    // Leaves Management
+    Route::get('/leaves', [\App\Http\Controllers\HR\LeaveController::class, 'index'])->name('leaves.index');
+    Route::post('/leaves/{leave}/approve', [\App\Http\Controllers\HR\LeaveController::class, 'approve'])->name('leaves.approve');
+    Route::post('/leaves/{leave}/reject', [\App\Http\Controllers\HR\LeaveController::class, 'reject'])->name('leaves.reject');
 });
 
 // Warehouse (Loading Queue for Warehouse Staff)
@@ -562,6 +567,13 @@ Route::middleware(['auth'])->prefix('portal')->name('portal.')->group(function (
     Route::get('/supplier', fn () => Inertia::render('Blueprints/Portal', ['title' => 'Supplier Portal']))->name('supplier');
     Route::get('/customer', fn () => Inertia::render('Blueprints/Portal', ['title' => 'Customer Portal']))->name('customer');
     Route::get('/settings', fn () => Inertia::render('Blueprints/Portal', ['title' => 'Portal Settings']))->name('settings');
+});
+
+// Employee Self-Service (My Time-Off)
+Route::middleware(['auth'])->prefix('my-timeoff')->name('my-timeoff.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Employee\LeaveController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Employee\LeaveController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Employee\LeaveController::class, 'store'])->name('store');
 });
 
 // Settings

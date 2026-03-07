@@ -40,4 +40,14 @@ class Employee extends Model
     {
         return $this->belongsTo(Position::class);
     }
+
+    public function leaveBalances(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\HR\LeaveBalance::class);
+    }
+
+    public function leaves(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\HR\Leave::class);
+    }
 }
