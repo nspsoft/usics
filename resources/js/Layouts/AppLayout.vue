@@ -548,7 +548,7 @@ onUnmounted(() => {
         <!-- Mobile sidebar backdrop -->
         <div 
             v-if="sidebarOpen" 
-            class="fixed inset-0 z-40 bg-slate-900/80 backdrop-blur-sm lg:hidden transition-opacity duration-300"
+            class="fixed inset-0 z-40 bg-slate-900/80 backdrop-blur-sm lg:hidden transition-opacity duration-300 print:hidden"
             @click="closeSidebar"
         />
 
@@ -563,7 +563,7 @@ onUnmounted(() => {
         >
             <div 
                 v-if="sidebarOpen"
-                class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-white/5 lg:hidden"
+                class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-white/5 lg:hidden print:hidden"
             >
                 <div class="flex h-16 shrink-0 items-center justify-between px-6 border-b border-white/5 bg-slate-950">
                     <div class="flex items-center gap-3">
@@ -641,7 +641,7 @@ onUnmounted(() => {
 
         <!-- Desktop sidebar -->
         <div 
-            class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col transition-all duration-300"
+            class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col transition-all duration-300 print:hidden"
             :class="collapsed ? 'lg:w-20' : 'lg:w-64'"
         >
             <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-slate-950 border-r border-white/5 transition-all duration-300 relative">
@@ -789,7 +789,7 @@ onUnmounted(() => {
         <!-- Main content -->
         <div class="transition-all duration-300" :class="collapsed ? 'lg:pl-20' : 'lg:pl-64'">
             <!-- Top bar -->
-            <div class="sticky top-0 z-40 lg:z-[60] flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-300 px-4 shadow-sm dark:shadow-lg sm:gap-x-6 sm:px-6 lg:px-8 relative pointer-events-auto">
+            <div class="sticky top-0 z-40 lg:z-[60] flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-300 px-4 shadow-sm dark:shadow-lg sm:gap-x-6 sm:px-6 lg:px-8 relative pointer-events-auto print:hidden">
                 <!-- Futuristic Background Animation -->
                 <TechnoHeaderBg />
                 
@@ -988,7 +988,7 @@ onUnmounted(() => {
 
 
             <!-- Page header -->
-            <div v-if="renderHeader" class="mb-8">
+            <div v-if="renderHeader" class="mb-8 print:hidden">
                 <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ title }}</h1>
             </div>
 
