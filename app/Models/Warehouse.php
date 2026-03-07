@@ -37,7 +37,20 @@ class Warehouse extends Model
         'is_active',
         'grid_cols',
         'grid_rows',
+        'map_background_path',
     ];
+
+    protected $appends = ['map_background_url'];
+
+    /**
+     * Get the full URL to the map background image
+     */
+    public function getMapBackgroundUrlAttribute(): ?string
+    {
+        return $this->map_background_path 
+            ? \Illuminate\Support\Facades\Storage::url($this->map_background_path) 
+            : null;
+    }
 
     protected $casts = [
         'is_default' => 'boolean',

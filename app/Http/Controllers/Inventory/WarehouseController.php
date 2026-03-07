@@ -253,4 +253,50 @@ class WarehouseController extends Controller
             }),
         ]);
     }
+
+    /**
+     * Upload a background blueprint image for the map layout.
+     */
+    public function uploadBackgroundLayout(Request $request, Warehouse $warehouse)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120', // Max 5MB
+        ]);
+
+        if ($request->hasFile('image')) {
+            // Delete old background if exists
+            if ($warehouse->map_background_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($warehouse->map_background_path);
+            }
+
+            // Store new background
+            $path = $request->file('image')->store('warehouse_maps', 'public');
+            
+            $warehouse->update([
+                'map_background_path' => $path
+            ]);
+
+            return back()->with('success', 'Map background uploaded successfully.');
+        }
+
+        return back()->with('error', 'Failed to upload background image.');
+    }
+
+    /**
+     * Remove the current map background image.
+     */
+    public function removeBackgroundLayout(Warehouse $warehouse)
+    {
+        if ($warehouse->map_background_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($warehouse->map_background_path);
+            
+            $warehouse->update([
+                'map_background_path' => null
+            ]);
+            
+            return back()->with('success', 'Map background removed successfully.');
+        }
+
+        return back();
+    }
 }

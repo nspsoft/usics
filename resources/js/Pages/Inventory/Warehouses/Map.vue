@@ -12,6 +12,8 @@ import {
     XMarkIcon,
     InformationCircleIcon,
     ChevronRightIcon,
+    PhotoIcon,
+    TrashIcon,
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -134,6 +136,40 @@ const saveLayout = () => {
     });
 };
 
+// Background Image Upload
+const bgFileInput = ref(null);
+const uploadingBg = ref(false);
+
+const triggerBgUpload = () => {
+    bgFileInput.value?.click();
+};
+
+const handleBgUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    uploadingBg.value = true;
+    router.post(`/inventory/warehouses/${props.warehouse.id}/map-background`, {
+        image: file,
+        _method: 'POST',
+    }, {
+        forceFormData: true,
+        preserveState: true,
+        onFinish: () => {
+            uploadingBg.value = false;
+            if (bgFileInput.value) bgFileInput.value.value = '';
+        },
+    });
+};
+
+const removeBackground = () => {
+    if (confirm('Are you sure you want to remove the floor plan background?')) {
+        router.delete(`/inventory/warehouses/${props.warehouse.id}/map-background`, {
+            preserveState: true,
+        });
+    }
+};
+
 const formatNumber = (num) => {
     return Number(num || 0).toLocaleString('id-ID');
 };
@@ -149,6 +185,15 @@ const typeLabel = (type) => {
 
     <AppLayout title="Warehouse Map">
         <div class="max-w-[1600px] mx-auto">
+            <!-- Hidden File Input for Background Upload -->
+            <input 
+                type="file" 
+                ref="bgFileInput" 
+                class="hidden" 
+                accept="image/*" 
+                @change="handleBgUpload" 
+            />
+
             <!-- Top Nav -->
             <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
                 <div class="flex items-center gap-4">
@@ -169,6 +214,14 @@ const typeLabel = (type) => {
                     </button>
 
                     <template v-if="editMode">
+                        <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mr-2">
+                            <button @click="triggerBgUpload" :disabled="uploadingBg" class="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm transition-all disabled:opacity-50" title="Upload Blueprint Background">
+                                <PhotoIcon class="h-4 w-4" :class="uploadingBg ? 'animate-pulse' : ''" /> {{ uploadingBg ? 'Uploading...' : 'Set Background' }}
+                            </button>
+                            <button v-if="warehouse.map_background_url" @click="removeBackground" class="inline-flex items-center justify-center p-1.5 rounded-lg text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors" title="Remove Background">
+                                <TrashIcon class="h-4 w-4" />
+                            </button>
+                        </div>
                         <button @click="editMode = false" class="inline-flex items-center gap-2 rounded-xl bg-slate-200 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
                             <XMarkIcon class="h-4 w-4" /> Cancel
                         </button>
@@ -244,10 +297,17 @@ const typeLabel = (type) => {
                                 gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
                                 gridTemplateRows: `repeat(${gridRows}, 1fr)`,
                                 aspectRatio: `${gridCols} / ${gridRows}`,
+                                backgroundImage: warehouse.map_background_url ? `url('${warehouse.map_background_url}')` : 'none',
+                                backgroundSize: '100% 100%',
+                                backgroundPosition: 'center',
+                                backgroundRepeat: 'no-repeat',
                             }"
                             @drop="onGridDrop"
                             @dragover="onDragOver"
                         >
+                            <!-- Grid Background overlay (makes blueprint slightly dimmed) -->
+                            <div v-if="warehouse.map_background_url" class="absolute inset-0 bg-white/40 dark:bg-slate-950/60 mix-blend-overlay pointer-events-none"></div>
+
                             <!-- Grid Background Lines -->
                             <template v-for="row in gridRows" :key="'row-' + row">
                                 <template v-for="col in gridCols" :key="'cell-' + row + '-' + col">
