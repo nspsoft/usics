@@ -339,23 +339,23 @@ const formatNumber = (value) => new Intl.NumberFormat('id-ID').format(value);
                                 <ClockIcon class="h-4 w-4" /> Recent Opportunities
                             </h3>
                         </div>
-                        <div class="panel-body p-0 overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="text-[10px] text-slate-500 font-bold uppercase tracking-wider border-b border-white/10 bg-white/5">
-                                        <th class="p-3">Customer</th>
-                                        <th class="p-3">Deal Name</th>
-                                        <th class="p-3">Status</th>
-                                        <th class="p-3 text-right">Value</th>
+                        <div class="panel-body p-0 overflow-x-auto overflow-y-auto max-h-[350px] relative">
+                            <table class="w-full text-left border-collapse min-w-max">
+                                <thead class="sticky top-0 z-20 bg-[#0a0a16]/95 backdrop-blur-md shadow-sm shadow-white/5">
+                                    <tr class="text-[10px] text-slate-500 font-bold uppercase tracking-wider border-b border-white/10">
+                                        <th class="p-4 pl-6">Customer</th>
+                                        <th class="p-4">Deal Name</th>
+                                        <th class="p-4 text-center">Status</th>
+                                        <th class="p-4 text-right pr-6">Value</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-white/5">
                                     <tr v-for="deal in recent_deals" :key="deal.id" class="hover:bg-white/5 transition-colors group">
-                                        <td class="p-3 text-[10px] font-mono text-cyan-500/70 border-l-2 border-transparent group-hover:border-cyan-500 transition-colors">
+                                        <td class="p-4 pl-6 text-[10px] font-mono text-cyan-500/70 border-l-2 border-transparent group-hover:border-cyan-500 transition-colors">
                                             {{ deal.customer }}
                                         </td>
-                                        <td class="p-3 text-xs font-bold text-white uppercase">{{ deal.name }}</td>
-                                        <td class="p-3">
+                                        <td class="p-4 text-xs font-bold text-white uppercase">{{ deal.name }}</td>
+                                        <td class="p-4 text-center">
                                             <span class="px-2 py-0.5 text-[10px] font-bold border rounded uppercase"
                                                 :class="{
                                                     'bg-emerald-500/10 text-emerald-400 border-emerald-500/30': deal.status === 'closed_won',
@@ -366,7 +366,7 @@ const formatNumber = (value) => new Intl.NumberFormat('id-ID').format(value);
                                                 {{ deal.status.replace('_', ' ') }}
                                             </span>
                                         </td>
-                                        <td class="p-3 text-xs font-mono text-right text-white">{{ formatCurrency(deal.amount) }}</td>
+                                        <td class="p-4 pr-6 text-xs font-mono text-right text-white">{{ formatCurrency(deal.amount) }}</td>
                                     </tr>
                                 </tbody>
                             </table>
