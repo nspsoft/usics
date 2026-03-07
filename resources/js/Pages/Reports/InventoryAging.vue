@@ -6,6 +6,10 @@ import {
     PrinterIcon,
     ArrowLeftIcon,
     ArrowDownTrayIcon,
+    ClockIcon,
+    ExclamationCircleIcon,
+    ChartBarIcon,
+    ArchiveBoxIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 import { formatNumber } from '@/helpers';
@@ -67,7 +71,7 @@ const exportExcel = () => {
     <Head title="Inventory Aging Report" />
     
     <AppLayout title="Reports">
-        <div class="max-w-7xl mx-auto">
+        <div class="w-full">
             <!-- No Print Elements -->
             <div class="print:hidden mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <Link href="/inventory/dashboard" class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white shrink-0">
@@ -113,7 +117,7 @@ const exportExcel = () => {
             </div>
 
             <!-- Report Sheet -->
-            <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-8 min-h-[50vh] rounded-2xl shadow-xl print:m-0 print:rounded-none print:shadow-none print:w-full print:p-0 flex flex-col">
+            <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-4 sm:p-6 min-h-[50vh] rounded-2xl shadow-xl print:m-0 print:rounded-none print:shadow-none print:w-full print:p-0 flex flex-col">
                 
                 <!-- Official Print Header (Quotation Style) -->
                 <div class="hidden print:flex justify-between items-start mb-6 pb-4 border-b-2 border-slate-300">
@@ -244,6 +248,66 @@ const exportExcel = () => {
                 </div>
             </div>
         </div>
+
+        <!-- Panduan Inventory Aging -->
+        <div class="mt-12 print:hidden w-full">
+            <div class="flex items-center gap-2 mb-4 px-1">
+                <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Panduan Laporan Aging</span>
+                <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                            <ChartBarIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Fast Moving</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Produk dengan tingkat perputaran tinggi (di bawah 30 hari). Barang jenis ini laku keras dan perlu dijaga ketersediaannya.
+                    </p>
+                </div>
+
+                <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-500">
+                            <ClockIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Slow Moving</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Produk yang sudah lama tidak bergerak (30-90 Hari). Barang ini masih sesekali laku, tetapi memakan ruang kapasitas gudang.
+                    </p>
+                </div>
+
+                <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-rose-500/10 text-rose-500">
+                            <ExclamationCircleIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Dead Stock</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Stok mati tanpa ada pergerakan lebih dari 90 Hari. Direkomendasikan evaluasi untuk promo diskon atau cuci gudang (clearance).
+                    </p>
+                </div>
+                
+                <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-500">
+                            <ArchiveBoxIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-900 dark:text-slate-200 text-sm">Manajemen Inventaris</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Laporan ini merupakan parameter bagi Tim untuk menekan Holding Cost (biaya simpan) dari barang yang menumpuk di gudang terlalu lama.
+                    </p>
+                </div>
+            </div>
+        </div>
+
     </AppLayout>
 </template>
 
