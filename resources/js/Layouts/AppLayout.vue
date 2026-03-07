@@ -244,6 +244,7 @@ const navigation = [
             { name: 'Current Stock', href: '/inventory/stocks', icon: ClipboardDocumentListIcon, permission: 'inventory.current_stock.view' },
             { name: 'Warehouses', href: '/inventory/warehouses', icon: BuildingStorefrontIcon, permission: 'inventory.warehouses.view' },
             { name: 'Stock Movements', href: '/inventory/movements', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
+            { name: 'Stock Transfers', href: '/inventory/transfers', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Opname', href: '/inventory/opname', icon: ClipboardDocumentCheckIcon, permission: 'inventory.stock_opname.view' },
         ]
     },

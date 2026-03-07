@@ -114,6 +114,11 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::post('/adjustments/{adjustment}/complete', [App\Http\Controllers\Inventory\StockAdjustmentController::class, 'complete'])->name('adjustments.complete');
     Route::get('/stock-check', [App\Http\Controllers\Inventory\StockAdjustmentController::class, 'getStock'])->name('stock.check');
 
+    // Stock Transfers
+    Route::resource('transfers', App\Http\Controllers\Inventory\StockTransferController::class);
+    Route::post('/transfers/{transfer}/ship', [App\Http\Controllers\Inventory\StockTransferController::class, 'ship'])->name('transfers.ship');
+    Route::post('/transfers/{transfer}/receive', [App\Http\Controllers\Inventory\StockTransferController::class, 'receive'])->name('transfers.receive');
+
     // Stock Opname
     Route::resource('opname', App\Http\Controllers\Inventory\StockOpnameController::class);
     Route::post('/opname/{opname}/populate', [App\Http\Controllers\Inventory\StockOpnameController::class, 'populate'])->name('opname.populate');
