@@ -229,4 +229,97 @@ class ReportController extends Controller
             fn ($row) => [$row->number, $row->product->name, $row->planned_start, $row->status, $row->planned_qty, $row->actual_qty]
         ), 'production_report.xlsx');
     }
+
+    private function getInventoryAgingData(Request $request)
+    {
+        $category = $request->category;
+        $status = $request->status; // fast, slow, dead
+
+        $query = Product::with(['category', 'unit'])
+            ->where('is_active', true)
+            ->whereIn('type', ['product', 'consumable'])
+            ->addSelect(['last_out_date' => \App\Models\StockMovement::selectRaw('MAX(created_at)')
+                ->whereColumn('product_id', 'products.id')
+                ->where('type', 'out')
+            ])
+            ->with(['stocks' => function($q) {
+                $q->where('qty_on_hand', '>', 0);
+            }]);
+
+        if ($category) {
+            $query->whereHas('category', function($q) use ($category) {
+                $q->where('name', $category);
+            });
+        }
+
+        $now = now();
+
+        return $query->get()
+            ->filter(fn($p) => $p->stocks->sum('qty_on_hand') > 0) // Only items with stock
+            ->map(function ($p) use ($now) {
+                $qty = $p->stocks->sum('qty_on_hand');
+                $lastDate = $p->last_out_date ? \Carbon\Carbon::parse($p->last_out_date) : $p->created_at;
+                $daysInactive = $lastDate->diffInDays($now);
+                
+                $classification = 'fast';
+                if ($daysInactive > 90) {
+                    $classification = 'dead';
+                } elseif ($daysInactive >= 30) {
+                    $classification = 'slow';
+                }
+
+                return [
+                    'id' => $p->id,
+                    'sku' => $p->sku,
+                    'name' => $p->name,
+                    'category' => $p->category->name ?? '-',
+                    'qty' => $qty,
+                    'unit' => $p->unit->symbol ?? ($p->unit->name ?? 'pcs'),
+                    'last_out_date' => $p->last_out_date ? \Carbon\Carbon::parse($p->last_out_date)->format('Y-m-d') : '-',
+                    'days_inactive' => $daysInactive,
+                    'classification' => $classification, // 'fast', 'slow', 'dead'
+                ];
+            })
+            ->filter(function($item) use ($status) {
+                if ($status) {
+                    return $item['classification'] === $status;
+                }
+                return true;
+            })
+            ->values(); // Reset array keys
+    }
+
+    public function inventoryAging(Request $request): Response
+    {
+        $data = $this->getInventoryAgingData($request);
+
+        $categories = \App\Models\Category::orderBy('name')->pluck('name');
+
+        return Inertia::render('Reports/InventoryAging', [
+            'data' => $data,
+            'categories' => $categories,
+            'filters' => $request->only(['category', 'status']),
+            'date' => now()->format('d M Y H:i'),
+        ]);
+    }
+
+    public function exportInventoryAging(Request $request)
+    {
+        $data = $this->getInventoryAgingData($request);
+
+        return Excel::download(new ReportExport(
+            $data,
+            ['SKU', 'Product Name', 'Category', 'Stock Qty', 'Unit', 'Last Out Date', 'Days Inactive', 'Classification'],
+            fn ($row) => [
+                $row['sku'], 
+                $row['name'], 
+                $row['category'], 
+                $row['qty'], 
+                $row['unit'],
+                $row['last_out_date'], 
+                $row['days_inactive'], 
+                strtoupper($row['classification'])
+            ]
+        ), 'inventory_aging_report.xlsx');
+    }
 }

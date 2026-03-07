@@ -137,6 +137,10 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::get('/reports/export/sales', [App\Http\Controllers\ReportController::class, 'exportSales'])->name('reports.export.sales');
     Route::get('/reports/export/purchase', [App\Http\Controllers\ReportController::class, 'exportPurchase'])->name('reports.export.purchase');
     Route::get('/reports/export/production', [App\Http\Controllers\ReportController::class, 'exportProduction'])->name('reports.export.production');
+    
+    // Inventory Aging
+    Route::get('/reports/inventory-aging', [App\Http\Controllers\ReportController::class, 'inventoryAging'])->name('reports.inventory-aging');
+    Route::get('/reports/export/inventory-aging', [App\Http\Controllers\ReportController::class, 'exportInventoryAging'])->name('reports.export.inventory-aging');
 
     // Notifications
     Route::get('/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');

@@ -246,6 +246,7 @@ const navigation = [
             { name: 'Stock Movements', href: '/inventory/movements', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Transfers', href: '/inventory/transfers', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Opname', href: '/inventory/opname', icon: ClipboardDocumentCheckIcon, permission: 'inventory.stock_opname.view' },
+            { name: 'Inventory Aging', href: '/reports/inventory-aging', icon: ClockIcon, permission: 'inventory.reports.view' },
         ]
     },
     { 
