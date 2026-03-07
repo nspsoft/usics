@@ -21,7 +21,7 @@ const selectedCategory = ref(props.filters.category || '');
 const selectedStatus = ref(props.filters.status || '');
 
 const applyFilters = debounce(() => {
-    router.get('/reports/inventory-aging', {
+    router.get('/inventory/reports/inventory-aging', {
         category: selectedCategory.value || undefined,
         status: selectedStatus.value || undefined,
     }, {
@@ -59,7 +59,7 @@ const exportExcel = () => {
     if (selectedCategory.value) params.append('category', selectedCategory.value);
     if (selectedStatus.value) params.append('status', selectedStatus.value);
     
-    window.location.href = `/reports/export/inventory-aging?${params.toString()}`;
+    window.location.href = `/inventory/reports/export/inventory-aging?${params.toString()}`;
 };
 </script>
 
@@ -70,7 +70,7 @@ const exportExcel = () => {
         <div class="max-w-7xl mx-auto">
             <!-- No Print Elements -->
             <div class="print:hidden mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <Link href="/reports" class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white shrink-0">
+                <Link href="/inventory/dashboard" class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white shrink-0">
                     <ArrowLeftIcon class="h-4 w-4" />
                     Back
                 </Link>
