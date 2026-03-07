@@ -42,7 +42,7 @@ let html5QrCode = null;
 const items = ref(
     (props.opname.items || []).map(item => ({
         id: item.id,
-        product: item.product,
+        product: item.product || { name: 'Unknown Product', sku: '-' },
         qty_system: Number(item.qty_system),
         qty_physic: Number(item.qty_physic),
         qty_difference: Number(item.qty_difference),
