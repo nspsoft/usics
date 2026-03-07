@@ -243,7 +243,6 @@ const navigation = [
             { name: 'Unit Management', href: '/inventory/units', icon: ScaleIcon, permission: 'inventory.products.view' },
             { name: 'Current Stock', href: '/inventory/stocks', icon: ClipboardDocumentListIcon, permission: 'inventory.current_stock.view' },
             { name: 'Warehouses', href: '/inventory/warehouses', icon: BuildingStorefrontIcon, permission: 'inventory.warehouses.view' },
-            { name: 'Warehouse Map', href: '/inventory/warehouses', icon: MapIcon, permission: 'inventory.warehouses.view' },
             { name: 'Stock Movements', href: '/inventory/movements', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Transfers', href: '/inventory/transfers', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Opname', href: '/inventory/opname', icon: ClipboardDocumentCheckIcon, permission: 'inventory.stock_opname.view' },
