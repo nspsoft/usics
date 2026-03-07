@@ -381,15 +381,15 @@ const warehouseData = computed(() => ({
                                 <TruckIcon class="h-4 w-4" /> Recent Activities
                             </h3>
                         </div>
-                        <div class="panel-body p-0 overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="text-[10px] text-slate-500 font-bold uppercase tracking-wider border-b border-white/10 bg-white/5">
-                                        <th class="p-3">SKU</th>
-                                        <th class="p-3">Item</th>
-                                        <th class="p-3">Type</th>
-                                        <th class="p-3 text-right">Qty</th>
-                                        <th class="p-3 text-right">Date</th>
+                        <div class="panel-body p-0 overflow-x-auto overflow-y-auto max-h-[350px] relative">
+                            <table class="w-full text-left border-collapse min-w-max">
+                                <thead class="sticky top-0 z-20 bg-[#0a0a16]/95 backdrop-blur-md shadow-sm shadow-white/5">
+                                    <tr class="text-[10px] text-slate-500 font-bold uppercase tracking-wider border-b border-white/10">
+                                        <th class="p-4 pl-6">SKU</th>
+                                        <th class="p-4">Item</th>
+                                        <th class="p-4 text-center">Type</th>
+                                        <th class="p-4 text-right">Qty</th>
+                                        <th class="p-4 text-right pr-6">Date</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-white/5">
@@ -398,11 +398,11 @@ const warehouseData = computed(() => ({
                                         :key="move.id" 
                                         class="hover:bg-white/5 transition-colors group"
                                     >
-                                        <td class="p-3 text-[10px] font-mono text-cyan-500/70 border-l-2 border-transparent group-hover:border-cyan-500 transition-colors">
+                                        <td class="p-4 pl-6 text-[10px] font-mono text-cyan-500/70 border-l-2 border-transparent group-hover:border-cyan-500 transition-colors">
                                             {{ move.sku }}
                                         </td>
-                                        <td class="p-3 text-xs font-bold text-white uppercase">{{ move.product }}</td>
-                                        <td class="p-3">
+                                        <td class="p-4 text-xs font-bold text-white uppercase">{{ move.product }}</td>
+                                        <td class="p-4 text-center">
                                             <span 
                                                 class="px-2 py-0.5 text-[10px] font-bold border rounded uppercase"
                                                 :class="{
@@ -414,8 +414,8 @@ const warehouseData = computed(() => ({
                                                 {{ move.type }}
                                             </span>
                                         </td>
-                                        <td class="p-3 text-xs font-mono text-right text-white">{{ formatNumber(move.qty) }}</td>
-                                        <td class="p-3 text-[10px] text-slate-500 text-right">{{ move.date }}</td>
+                                        <td class="p-4 text-xs font-mono text-right text-white">{{ formatNumber(move.qty) }}</td>
+                                        <td class="p-4 pr-6 text-[10px] text-slate-500 text-right">{{ move.date }}</td>
                                     </tr>
                                 </tbody>
                             </table>
