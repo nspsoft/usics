@@ -69,10 +69,10 @@ class DatabaseBackupService
             'subcontract_order_items',
         ],
         'hr' => [
-            'employees',
-            'attendance',
-            'payrolls',
-            'payroll_items',
+            'hr_employees',
+            'hr_attendances',
+            'hr_payrolls',
+            'hr_payroll_items',
         ],
         'finance' => [
             'accounts',
@@ -142,7 +142,7 @@ class DatabaseBackupService
             'subcontract_order_items', 'subcontract_orders',
         ],
         'hr' => [
-            'attendance', 'payroll_items', 'payrolls',
+            'hr_attendances', 'hr_payroll_items', 'hr_payrolls',
         ],
         'finance' => [
             'journal_entries', 'journals',
@@ -337,7 +337,7 @@ class DatabaseBackupService
                 // Finance transactions
                 'journal_entries', 'journals',
                 // HR transactions
-                'attendance', 'payroll_items', 'payrolls',
+                'hr_attendances', 'hr_payroll_items', 'hr_payrolls',
                 // Notifications & logs
                 'notifications', 'activity_log',
             ];
