@@ -11,7 +11,7 @@ use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Warehouse;
 use App\Models\WorkOrder;
-use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -291,12 +291,30 @@ class ReportController extends Controller
 
     public function inventoryAging(Request $request): Response
     {
-        $data = $this->getInventoryAgingData($request);
+        $allData = $this->getInventoryAgingData($request);
+
+        // Manual Pagination setting
+        $perPage = 20;
+        $page = $request->input('page', 1);
+        $offset = ($page - 1) * $perPage;
+
+        $items = $allData->slice($offset, $perPage)->values();
+
+        $paginator = new LengthAwarePaginator(
+            $items,
+            $allData->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
 
         $categories = \App\Models\Category::orderBy('name')->pluck('name');
 
         return Inertia::render('Reports/InventoryAging', [
-            'data' => $data,
+            'data' => $paginator,
             'categories' => $categories,
             'filters' => $request->only(['category', 'status']),
             'date' => now()->format('d M Y H:i'),

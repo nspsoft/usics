@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
     PrinterIcon,
@@ -11,7 +11,7 @@ import debounce from 'lodash/debounce';
 import { formatNumber } from '@/helpers';
 
 const props = defineProps({
-    data: Array,
+    data: Object, // Changed to Object since it's a paginator now
     categories: Array,
     filters: Object,
     date: String,
@@ -113,7 +113,7 @@ const exportExcel = () => {
             </div>
 
             <!-- Report Sheet -->
-            <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-8 min-h-[50vh] rounded-2xl shadow-xl print:m-0 print:rounded-none print:shadow-none print:w-full print:p-0">
+            <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-8 min-h-[50vh] rounded-2xl shadow-xl print:m-0 print:rounded-none print:shadow-none print:w-full print:p-0 flex flex-col">
                 
                 <!-- Official Print Header (Quotation Style) -->
                 <div class="hidden print:flex justify-between items-start mb-6 pb-4 border-b-2 border-slate-300">
@@ -173,34 +173,34 @@ const exportExcel = () => {
                 </div>
 
                 <!-- Content -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
+                <div class="overflow-x-auto overflow-y-auto max-h-[600px] border border-slate-200 dark:border-slate-800 rounded-xl rounded-b-none border-b-0 print:border-none print:overflow-visible">
+                    <table class="w-full text-sm min-w-max">
+                        <thead class="bg-slate-50 dark:bg-slate-800/80 sticky top-0 z-20">
                             <tr class="border-b-2 border-slate-200 dark:border-slate-800">
-                                <th class="py-3 text-left font-bold text-slate-500 tracking-wider uppercase text-xs">SKU</th>
-                                <th class="py-3 text-left font-bold text-slate-500 tracking-wider uppercase text-xs">Product Name</th>
-                                <th class="py-3 text-left font-bold text-slate-500 tracking-wider uppercase text-xs">Category</th>
-                                <th class="py-3 text-right font-bold text-slate-500 tracking-wider uppercase text-xs">Stock Qty</th>
-                                <th class="py-3 text-center font-bold text-slate-500 tracking-wider uppercase text-xs">Last Out Date</th>
-                                <th class="py-3 text-center font-bold text-slate-500 tracking-wider uppercase text-xs">Days Inactive</th>
-                                <th class="py-3 text-right font-bold text-slate-500 tracking-wider uppercase text-xs">Classification</th>
+                                <th class="py-3 px-4 text-left font-bold text-slate-500 tracking-wider uppercase text-xs">SKU</th>
+                                <th class="py-3 px-4 text-left font-bold text-slate-500 tracking-wider uppercase text-xs">Product Name</th>
+                                <th class="py-3 px-4 text-left font-bold text-slate-500 tracking-wider uppercase text-xs">Category</th>
+                                <th class="py-3 px-4 text-right font-bold text-slate-500 tracking-wider uppercase text-xs">Stock Qty</th>
+                                <th class="py-3 px-4 text-center font-bold text-slate-500 tracking-wider uppercase text-xs">Last Out Date</th>
+                                <th class="py-3 px-4 text-center font-bold text-slate-500 tracking-wider uppercase text-xs">Days Inactive</th>
+                                <th class="py-3 px-4 text-right font-bold text-slate-500 tracking-wider uppercase text-xs">Classification</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr v-for="item in data" :key="item.id" class="break-inside-avoid hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                <td class="py-3 font-mono text-xs text-slate-500">{{ item.sku }}</td>
-                                <td class="py-3 font-bold text-slate-900 dark:text-white">{{ item.name }}</td>
-                                <td class="py-3 text-slate-500 text-xs">{{ item.category }}</td>
-                                <td class="py-3 text-right font-mono text-slate-900 dark:text-white">
+                            <tr v-for="item in data.data" :key="item.id" class="break-inside-avoid hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                <td class="py-3 px-4 font-mono text-xs text-slate-500">{{ item.sku }}</td>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">{{ item.name }}</td>
+                                <td class="py-3 px-4 text-slate-500 text-xs">{{ item.category }}</td>
+                                <td class="py-3 px-4 text-right font-mono text-slate-900 dark:text-white">
                                     {{ formatNumber(item.qty) }} <span class="text-[10px] text-slate-400">{{ item.unit }}</span>
                                 </td>
-                                <td class="py-3 text-center font-mono text-xs text-slate-500">{{ item.last_out_date }}</td>
-                                <td class="py-3 text-center">
+                                <td class="py-3 px-4 text-center font-mono text-xs text-slate-500">{{ item.last_out_date }}</td>
+                                <td class="py-3 px-4 text-center">
                                     <span class="font-mono font-bold" :class="item.days_inactive > 90 ? 'text-rose-500' : 'text-slate-900 dark:text-white'">
                                         {{ formatNumber(item.days_inactive) }}
                                     </span>
                                 </td>
-                                <td class="py-3 text-right">
+                                <td class="py-3 px-4 text-right">
                                     <span 
                                         class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border"
                                         :class="getStatusBadge(item.classification)"
@@ -209,17 +209,38 @@ const exportExcel = () => {
                                     </span>
                                 </td>
                             </tr>
-                            <tr v-if="data.length === 0">
-                                <td colspan="7" class="py-12 text-center text-slate-500 italic">No inventory records found for the selected filters.</td>
+                            <tr v-if="data.data.length === 0">
+                                <td colspan="7" class="py-12 px-4 text-center text-slate-500 italic">No inventory records found for the selected filters.</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination -->
+                <div v-if="data.last_page > 1" class="border border-t-0 border-slate-200 dark:border-slate-800 rounded-b-xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 print:hidden">
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                        Showing {{ data.from }} to {{ data.to }} of {{ data.total }}
+                    </p>
+                    <div class="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide w-full sm:w-auto">
+                        <Link
+                            v-for="(link, index) in data.links"
+                            :key="index"
+                            :href="link.url || '#'"
+                            class="px-3 py-1.5 rounded-lg text-sm transition-colors whitespace-nowrap shrink-0"
+                            :class="link.active 
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' 
+                                : link.url 
+                                    ? 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' 
+                                    : 'text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-50'"
+                            v-html="link.label"
+                        />
+                    </div>
+                </div>
 
                 <!-- Footer -->
-                <div class="mt-8 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-between text-xs text-slate-500 dark:text-slate-400 print:mt-12">
+                <div class="mt-auto pt-8 flex justify-between text-xs text-slate-500 dark:text-slate-400 print:mt-12 uppercase tracking-wider font-bold">
                     <p>Printed from ERP System</p>
-                    <p>Total Items: {{ data.length }}</p>
+                    <p>Total Items: {{ data.total }}</p>
                 </div>
             </div>
         </div>
