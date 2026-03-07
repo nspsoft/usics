@@ -71,11 +71,17 @@ Route::view('/features', 'features')->name('features');
 // Public WhatsApp Webhook (Exempt from CSRF in bootstrap/app.php)
 Route::post('/whatsapp/webhook', [App\Http\Controllers\Api\WhatsappWebhookController::class, 'handle'])->name('whatsapp.webhook');
 
-use App\Http\Controllers\BlueprintController;
+use App\Http\Controllers\Admin\BlueprintInteractiveController;
 
 // Dashboard (Protected)
 Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard')->middleware(['auth']);
-Route::get('/project/blueprint', [BlueprintController::class, 'index'])->name('blueprint.index')->middleware(['auth']);
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/project/blueprint', [BlueprintInteractiveController::class, 'index'])->name('blueprint.index');
+    Route::post('/project/blueprint', [BlueprintInteractiveController::class, 'store'])->name('blueprint.store');
+    Route::put('/project/blueprint/{id}', [BlueprintInteractiveController::class, 'update'])->name('blueprint.update');
+    Route::delete('/project/blueprint/{id}', [BlueprintInteractiveController::class, 'destroy'])->name('blueprint.destroy');
+});
 
 // Inventory Module
 Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(function () {
