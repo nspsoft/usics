@@ -341,15 +341,15 @@ const warehouseData = computed(() => ({
                             {{ lowStockItems.length }} ITEMS REQUIRE ATTENTION
                         </span>
                     </div>
-                    <div class="panel-body p-0 overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="text-[10px] text-rose-300 font-bold uppercase tracking-wider border-b border-rose-500/10 bg-rose-500/5">
-                                    <th class="p-3 pl-6">SKU</th>
-                                    <th class="p-3">Product Name</th>
-                                    <th class="p-3 text-center">Available Stock</th>
-                                    <th class="p-3 text-center">Reorder Point</th>
-                                    <th class="p-3 text-right pr-6">Status</th>
+                    <div class="panel-body p-0 overflow-x-auto overflow-y-auto max-h-[350px] relative">
+                        <table class="w-full text-left border-collapse min-w-max">
+                            <thead class="sticky top-0 z-20 bg-[#0a0a16]/95 backdrop-blur-md shadow-sm shadow-rose-900/20">
+                                <tr class="text-[10px] text-rose-300 font-bold uppercase tracking-wider border-b border-rose-500/20">
+                                    <th class="p-4 pl-6">SKU</th>
+                                    <th class="p-4">Product Name</th>
+                                    <th class="p-4 text-center">Available Stock</th>
+                                    <th class="p-4 text-center">Reorder Point</th>
+                                    <th class="p-4 text-right pr-6">Status</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-rose-500/10">
