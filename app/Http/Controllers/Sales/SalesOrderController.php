@@ -570,15 +570,20 @@ class SalesOrderController extends Controller
         $import = new SalesOrderImport($request->boolean('overwrite'));
         Excel::import($import, $request->file('file'));
 
-        $message = "Import completed: {$import->importedCount} Sales Order(s) created.";
+        $message = "Import selesai: {$import->importedCount} SO baru dibuat";
+        if ($import->updatedCount > 0) {
+            $message .= ", {$import->updatedCount} SO diupdate";
+        }
+        $message .= ".";
         if ($import->skippedCount > 0) {
-            $message .= " {$import->skippedCount} row(s) skipped.";
+            $message .= " {$import->skippedCount} baris dilewati.";
         }
         if (!empty($import->errors)) {
             $message .= ' Errors: ' . implode('; ', array_slice($import->errors, 0, 5));
         }
 
-        return back()->with($import->importedCount > 0 ? 'success' : 'error', $message);
+        $hasSuccess = ($import->importedCount > 0 || $import->updatedCount > 0);
+        return back()->with($hasSuccess ? 'success' : 'error', $message);
     }
 
     public function template(Request $request)
