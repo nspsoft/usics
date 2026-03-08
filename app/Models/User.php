@@ -41,6 +41,11 @@ class User extends Authenticatable
         return $this->belongsTo(Supplier::class);
     }
 
+    public function employee()
+    {
+        return $this->hasOne(Employee::class);
+    }
+
     public function getIsSupplierAttribute()
     {
         return !is_null($this->supplier_id);
