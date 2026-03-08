@@ -71,24 +71,24 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                 $doNumberFromExcel = $isUpdate ? substr($groupKey, 4) : null;
 
                 $so = null;
-                if (!$isUpdate) { // Only check SO if we are potentially creating a new DO
+                // Kita perlu mendapatkan SO dari database jika SO Number ada di Excel
+                if ($soNumber) {
                     $so = SalesOrder::where('so_number', $soNumber)
                         ->whereIn('status', ['confirmed', 'processing', 'partial'])
                         ->first();
-
-                    if (!$so) {
-                        $this->errors[] = "SO [{$soNumber}] not found or not in a deliverable status. Skipping.";
-                        $this->skippedCount += $items->count();
-                        continue;
-                    }
                 }
 
+                if (!$isUpdate && !$so) {
+                    $this->errors[] = "SO [{$soNumber}] not found or not in a deliverable status. Skipping.";
+                    $this->skippedCount += $items->count();
+                    continue;
+                }
 
-                DB::transaction(function () use ($so, $items, $isUpdate, $doNumberFromExcel) {
+                DB::transaction(function () use ($so, $items, $isUpdate, $doNumberFromExcel, $soNumber) {
                     $firstRow = $items->first();
                     $deliveryDate = now()->toDateString();
                     $doNumber = $doNumberFromExcel;
-                    $currentSo = $so; // Use a local variable for SO that might be updated
+                    $currentSo = $so; 
 
                     try {
                         $rawDate = $firstRow['delivery_date'] ?? null;
@@ -102,10 +102,13 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
 
                     $existingDO = null;
                     $isUpdating = false;
+                    
                     if ($isUpdate) {
                         $existingDO = DeliveryOrder::where('do_number', $doNumberFromExcel)->first();
+                        
                         if ($existingDO) {
                             if (!$this->overwrite) {
+                                $this->errors[] = "DO [{$doNumberFromExcel}] already exists. Overwrite not enabled. Skipping.";
                                 $this->skippedCount += $items->count();
                                 return; // skip
                             }
@@ -119,13 +122,12 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                                 'delivery_date' => $deliveryDate,
                             ]);
                             $existingDO->items()->delete();
-                            $do = $existingDO;
+                            $existingDO = $existingDO->fresh(); // Reload relations
                             $currentSo = $existingDO->salesOrder; // Use SO from existing DO
                             $isUpdating = true;
                         } else {
-                            // Even if prefix DO__ is there, if DO doesn't exist, we fall back to creating it if SO is valid
                             if (!$currentSo) {
-                                $this->errors[] = "DO [{$doNumberFromExcel}] and SO [{$firstRow['so_number']}] not valid. Skipping.";
+                                $this->errors[] = "DO [{$doNumberFromExcel}] not found and SO [{$soNumber}] is invalid. Skipping.";
                                 $this->skippedCount += $items->count();
                                 return;
                             }
@@ -135,12 +137,18 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
 
                     if (!$existingDO) {
                         // Create New
+                        if (!$currentSo) {
+                            $this->errors[] = "Cannot create DO without a valid SO. Skipping.";
+                            $this->skippedCount += $items->count();
+                            return;
+                        }
+
                         if (!$doNumber) {
                             $lastDO = DeliveryOrder::orderBy('id', 'desc')->first();
                             $doNumber = 'DO/' . date('Ymd') . '/' . str_pad(($lastDO ? $lastDO->id : 0) + 1, 4, '0', STR_PAD_LEFT);
                         }
                         
-                        $do = DeliveryOrder::create([
+                        $existingDO = DeliveryOrder::create([
                             'do_number' => $doNumber,
                             'sales_order_id' => $currentSo->id,
                             'customer_id' => $currentSo->customer_id,
@@ -174,7 +182,7 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                             continue;
                         }
 
-                        $do->items()->create([
+                        $existingDO->items()->create([
                             'sales_order_item_id' => $soItem->id,
                             'product_id' => $product->id,
                             'qty_ordered' => $soItem->qty,
