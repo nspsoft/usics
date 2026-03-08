@@ -1239,8 +1239,16 @@ class DeliveryOrderController extends Controller
         ]);
 
         try {
-            Excel::import(new DeliveryOrderImport($request->boolean('overwrite')), $request->file('file'));
-            return back()->with('success', 'Delivery Orders imported successfully.');
+            $import = new DeliveryOrderImport($request->boolean('overwrite'));
+            Excel::import($import, $request->file('file'));
+            
+            $msg = "Import selesai. Created: {$import->importedCount}, Updated: {$import->updatedCount}, Skipped: {$import->skippedCount}.";
+            if (!empty($import->errors)) {
+                $msg .= " Beberapa issues: " . implode(', ', array_slice($import->errors, 0, 3));
+                if (count($import->errors) > 3) $msg .= " (dan lainnya)";
+                return back()->with('warning', $msg);
+            }
+            return back()->with('success', $msg);
         } catch (\Exception $e) {
             return back()->with('error', 'Import failed: ' . $e->getMessage());
         }

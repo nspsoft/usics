@@ -16,11 +16,37 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class DeliveryOrderImport implements ToCollection, WithHeadingRow
 {
+    public int $importedCount = 0;
+    public int $updatedCount = 0;
+    public int $skippedCount = 0;
+    public array $errors = [];
     protected bool $overwrite;
 
     public function __construct(bool $overwrite = false)
     {
         $this->overwrite = $overwrite;
+    }
+
+    /**
+     * Parse date from Excel - handles both serial numbers and string formats.
+     */
+    protected function parseDate($value): ?string
+    {
+        if (empty($value)) return null;
+
+        if (is_numeric($value) && $value > 25569) {
+            try {
+                return Carbon::instance(ExcelDate::excelToDateTimeObject($value))->format('Y-m-d');
+            } catch (\Exception $e) {
+                return null;
+            }
+        }
+
+        try {
+            return Carbon::parse($value)->format('Y-m-d');
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     public function collection(Collection $rows)
@@ -51,7 +77,8 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                         ->first();
 
                     if (!$so) {
-                        Log::warning("DeliveryOrderImport: SO [{$soNumber}] not found or not in a deliverable status. Skipping.");
+                        $this->errors[] = "SO [{$soNumber}] not found or not in a deliverable status. Skipping.";
+                        $this->skippedCount += $items->count();
                         continue;
                     }
                 }
@@ -65,26 +92,26 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
 
                     try {
                         $rawDate = $firstRow['delivery_date'] ?? null;
-                        if ($rawDate !== null && $rawDate !== '') {
-                            if (is_numeric($rawDate)) {
-                                $deliveryDate = ExcelDate::excelToDateTimeObject($rawDate)->format('Y-m-d');
-                            } else {
-                                $deliveryDate = Carbon::parse($rawDate)->format('Y-m-d');
-                            }
+                        $parsedDate = $this->parseDate($rawDate);
+                        if ($parsedDate) {
+                            $deliveryDate = $parsedDate;
                         }
                     } catch (\Exception $e) {
                         Log::warning("DeliveryOrderImport: Invalid delivery_date, using today(): " . $e->getMessage());
                     }
 
                     $existingDO = null;
+                    $isUpdating = false;
                     if ($isUpdate) {
                         $existingDO = DeliveryOrder::where('do_number', $doNumberFromExcel)->first();
                         if ($existingDO) {
                             if (!$this->overwrite) {
+                                $this->skippedCount += $items->count();
                                 return; // skip
                             }
                             if (!in_array($existingDO->status, ['draft', 'picking', 'packed'])) {
-                                Log::warning("DeliveryOrderImport: Cannot overwrite DO {$existingDO->do_number} because status is {$existingDO->status}.");
+                                $this->errors[] = "Cannot overwrite DO {$existingDO->do_number} because status is {$existingDO->status}.";
+                                $this->skippedCount += $items->count();
                                 return; // skip
                             }
                             // Overwrite: Update headers, delete old items
@@ -94,10 +121,12 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                             $existingDO->items()->delete();
                             $do = $existingDO;
                             $currentSo = $existingDO->salesOrder; // Use SO from existing DO
+                            $isUpdating = true;
                         } else {
                             // Even if prefix DO__ is there, if DO doesn't exist, we fall back to creating it if SO is valid
                             if (!$currentSo) {
-                                Log::warning("DeliveryOrderImport: DO [{$doNumberFromExcel}] and SO [{$firstRow['so_number']}] not valid. Skipping.");
+                                $this->errors[] = "DO [{$doNumberFromExcel}] and SO [{$firstRow['so_number']}] not valid. Skipping.";
+                                $this->skippedCount += $items->count();
                                 return;
                             }
                             $isUpdate = false; 
@@ -125,9 +154,12 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                     }
 
                     foreach ($items as $row) {
-                        $product = Product::where('sku', $row['product_code'])->first();
+                        if (empty($row['product_code'])) continue;
+
+                        $product = Product::where('sku', trim($row['product_code']))->first();
                         if (!$product) {
-                            Log::warning("DeliveryOrderImport: Product [{$row['product_code']}] not found. Skipping item.");
+                            $this->errors[] = "Product [{$row['product_code']}] not found. Skipping item.";
+                            $this->skippedCount++;
                             continue;
                         }
 
@@ -137,7 +169,8 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                             ->first();
 
                         if (!$soItem) {
-                            Log::warning("DeliveryOrderImport: Product [{$row['product_code']}] not found in SO [{$currentSo->so_number}]. Skipping item.");
+                            $this->errors[] = "Product [{$row['product_code']}] not found in SO [{$currentSo->so_number}]. Skipping item.";
+                            $this->skippedCount++;
                             continue;
                         }
 
@@ -151,9 +184,15 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                             'notes' => $row['notes'] ?? null,
                         ]);
                     }
+                    
+                    if ($isUpdating) {
+                        $this->updatedCount++;
+                    } else {
+                        $this->importedCount++;
+                    }
                 });
             } catch (\Exception $e) {
-                Log::error("DeliveryOrderImport: Error processing row: " . $e->getMessage());
+                $this->errors[] = "Error processing row: " . $e->getMessage();
             }
         }
     }
