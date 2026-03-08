@@ -631,6 +631,68 @@ const formatDateShort = (date) => {
                         <Pagination :links="forecasts.links" />
                     </div>
                 </div>
+
+                <!-- Sales Operations Guide -->
+                <div class="mt-8 relative hidden md:block">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-slate-200/60 dark:border-slate-700/60"></div>
+                    </div>
+                    <div class="relative flex justify-center">
+                        <span class="bg-[#F8FAFC] dark:bg-[#0F172A] px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase">
+                            Sales Operations Guide
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 hidden md:grid">
+                    <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-400">
+                                <ChartBarIcon class="h-5 w-5" />
+                            </div>
+                            <h4 class="font-bold text-slate-200 text-sm">Target vs Actual</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Compare your <strong>Expected Forecasts</strong> with the <strong>Actual PO Quantities</strong> received to identify gaps and adjust plans proactively.
+                        </p>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-2.5 rounded-xl bg-purple-500/10 text-purple-400">
+                                <SparklesIcon class="h-5 w-5" />
+                            </div>
+                            <h4 class="font-bold text-slate-200 text-sm">AI Driven Insights</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Utilize the built-in <strong>AI Analysis</strong> tool for intelligent recommendations on stock demands, seasonal trends, and risk management.
+                        </p>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                                <CheckCircleIcon class="h-5 w-5" />
+                            </div>
+                            <h4 class="font-bold text-slate-200 text-sm">Forecast Accuracy</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Monitor your <strong>Accuracy Rate (%)</strong> to evaluate prediction performances. Green bars indicate high precision relative to sales actualization.
+                        </p>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
+                                <ExclamationTriangleIcon class="h-5 w-5" />
+                            </div>
+                            <h4 class="font-bold text-slate-200 text-sm">Data Management</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Need to restart? Safely perform a <strong>Clear Data</strong> operation to reset targeted metrics before importing new revisions for current periods.
+                        </p>
+                    </div>
+                </div>
             </div>
 
         <!-- Import Modal -->
