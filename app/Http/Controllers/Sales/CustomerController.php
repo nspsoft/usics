@@ -143,7 +143,7 @@ class CustomerController extends Controller
     {
         $customer->load(['salesOrders' => function ($q) {
             $q->latest()->limit(10);
-        }]);
+        }, 'contacts']);
 
         return Inertia::render('Sales/Customers/Show', [
             'customer' => $customer,

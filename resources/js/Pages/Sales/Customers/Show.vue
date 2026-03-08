@@ -166,6 +166,37 @@ const getStatusBadge = (status) => {
                             </div>
                         </div>
                     </div>
+
+                    <!-- Additional Contacts -->
+                    <div v-if="customer.contacts && customer.contacts.length > 0" class="rounded-3xl glass-card overflow-hidden shadow-xl">
+                        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20 flex items-center justify-between">
+                            <h3 class="flex items-center gap-2 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Additional Contacts</h3>
+                            <span class="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{{ customer.contacts.length }}</span>
+                        </div>
+                        <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <div v-for="contact in customer.contacts" :key="contact.id" class="p-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-500/20 flex items-center justify-center">
+                                        <UserIcon class="h-4 w-4 text-violet-400" />
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-900 dark:text-white">{{ contact.name }}</p>
+                                        <p v-if="contact.position" class="text-[10px] font-semibold text-violet-400 uppercase tracking-wider">{{ contact.position }}</p>
+                                    </div>
+                                </div>
+                                <div class="ml-12 space-y-1">
+                                    <div v-if="contact.phone" class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                        <PhoneIcon class="h-3.5 w-3.5" />
+                                        <span>{{ contact.phone }}</span>
+                                    </div>
+                                    <div v-if="contact.email" class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                        <EnvelopeIcon class="h-3.5 w-3.5" />
+                                        <span>{{ contact.email }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Sales Orders History -->
