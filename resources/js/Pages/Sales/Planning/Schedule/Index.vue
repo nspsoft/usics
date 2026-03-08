@@ -1,8 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import Pagination from '@/Components/Pagination.vue';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { 
     MagnifyingGlassIcon, 
     ArrowUpTrayIcon, 
@@ -34,6 +34,23 @@ const sortField = ref(props.filters.sort || 'delivery_date');
 const sortDirection = ref(props.filters.direction || 'asc');
 const importModalOpen = ref(false);
 const fileInput = ref(null);
+const flashMessage = ref(null);
+const flashType = ref('success');
+
+const page = usePage();
+
+// Watch for flash messages from Inertia
+watch(() => page.props.flash, (flash) => {
+    if (flash?.success) {
+        flashMessage.value = flash.success;
+        flashType.value = 'success';
+        setTimeout(() => flashMessage.value = null, 8000);
+    } else if (flash?.error) {
+        flashMessage.value = flash.error;
+        flashType.value = 'error';
+        setTimeout(() => flashMessage.value = null, 8000);
+    }
+}, { deep: true, immediate: true });
 
 const form = useForm({
     file: null,
@@ -75,7 +92,14 @@ const closeImportModal = () => {
 const submitImport = () => {
     if (form.file) {
         form.post(route('sales.planning.schedule.import'), {
-            onSuccess: () => closeImportModal(),
+            onSuccess: () => {
+                closeImportModal();
+            },
+            onError: (errors) => {
+                if (errors.file) {
+                    alert(errors.file);
+                }
+            },
         });
     }
 };
@@ -205,6 +229,19 @@ const downloadExcel = async () => {
         </template>
 
         <div class="p-4 sm:p-6 lg:p-8">
+            <!-- Flash Message -->
+            <Transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 -translate-y-2">
+                <div v-if="flashMessage" class="mb-4 p-4 rounded-xl flex items-center justify-between gap-3 shadow-md" :class="flashType === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400'">
+                    <div class="flex items-center gap-3">
+                        <CheckCircleIcon v-if="flashType === 'success'" class="h-5 w-5 shrink-0" />
+                        <ExclamationTriangleIcon v-else class="h-5 w-5 shrink-0" />
+                        <span class="text-sm font-medium">{{ flashMessage }}</span>
+                    </div>
+                    <button @click="flashMessage = null" class="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                        <XMarkIcon class="h-4 w-4" />
+                    </button>
+                </div>
+            </Transition>
             <!-- Main Container -->
             <div class="glass-card rounded-2xl overflow-hidden p-6">
                 <!-- Actions Row -->

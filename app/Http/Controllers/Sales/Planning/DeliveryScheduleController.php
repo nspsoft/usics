@@ -61,8 +61,26 @@ class DeliveryScheduleController extends Controller
         ]);
 
         try {
-            Excel::import(new DeliveryScheduleImport($request->sales_name), $request->file('file'));
-            return back()->with('success', 'Delivery Schedule imported successfully.');
+            $import = new DeliveryScheduleImport($request->sales_name);
+            Excel::import($import, $request->file('file'));
+
+            $imported = $import->getImportedCount();
+            $skipped = $import->getSkippedCount();
+            $failures = $import->failures();
+
+            if ($imported === 0 && $skipped === 0 && $failures->isEmpty()) {
+                return back()->with('error', 'File kosong atau tidak ada data yang bisa diproses. Pastikan format heading sesuai template.');
+            }
+
+            $message = "Import berhasil: {$imported} jadwal disimpan.";
+            if ($skipped > 0) {
+                $message .= " {$skipped} baris dilewati (customer/product tidak ditemukan atau format tanggal salah).";
+            }
+            if ($failures->isNotEmpty()) {
+                $message .= " {$failures->count()} baris gagal validasi.";
+            }
+
+            return back()->with($imported > 0 ? 'success' : 'error', $message);
         } catch (\Exception $e) {
             return back()->with('error', 'Error importing file: ' . $e->getMessage());
         }
