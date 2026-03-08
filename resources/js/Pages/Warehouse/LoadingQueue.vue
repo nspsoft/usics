@@ -420,5 +420,67 @@ const getLoadedCount = (order) => {
                 </div>
             </Transition>
         </Teleport>
+
+        <!-- Loading Queue Operations Guide -->
+        <div class="mt-8 relative hidden md:block">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                <div class="w-full border-t border-slate-200/60 dark:border-slate-700/60"></div>
+            </div>
+            <div class="relative flex justify-center">
+                <span class="bg-[#F8FAFC] dark:bg-[#0F172A] px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase">
+                    Loading Queue Operations Guide
+                </span>
+            </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 hidden md:grid mb-8">
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-500">
+                        <ClockIcon class="h-5 w-5" />
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Staging Process</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Verify physical items on the warehouse floor before marking them as <strong>Picking</strong>. This initializes the loading sequence protocol into the fleet.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-400">
+                        <CheckCircleIcon class="h-5 w-5" />
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Line-Item Check</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Once picking commences, click <strong>Manage Items</strong> to perform a granular barcode scan or manual checklist of goods actively bound for shipment.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-rose-500/10 text-rose-400">
+                        <CubeIcon class="h-5 w-5" />
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Short Shipments</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    If items are damaged or unavailable during loading, use the <strong>Revise Qty</strong> function. Deficits will automatically revert to the origin Sales Order backlog.
+                </p>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                        <TruckIcon class="h-5 w-5" />
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Handover Seal</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Progressing an order to <strong>Packed</strong> finalizes the warehouse's responsibility. It moves the authorization gate over to the Dispatch Panel.
+                </p>
+            </div>
+        </div>
     </AppLayout>
 </template>
