@@ -125,11 +125,14 @@ const closeAiModal = () => {
     if (aiFilePreview.value) URL.revokeObjectURL(aiFilePreview.value);
 };
 
+const aiFileIsPdf = ref(false);
+
 const handleAiFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
         aiFile.value = file;
-        aiFilePreview.value = URL.createObjectURL(file);
+        aiFileIsPdf.value = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        aiFilePreview.value = aiFileIsPdf.value ? null : URL.createObjectURL(file);
     }
 };
 
@@ -141,14 +144,23 @@ const extractMatrix = async () => {
     formData.append('file', aiFile.value);
     try {
         const response = await axios.post(route('sales.planning.schedule.extract-matrix'), formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+            headers: { 'Content-Type': 'multipart/form-data' },
+            maxRedirects: 0,
         });
         if (response.data.success) {
             extractedData.value = response.data.data;
             aiStep.value = 2;
+        } else {
+            aiError.value = response.data.message || 'Gagal mengekstrak data.';
         }
     } catch (err) {
-        aiError.value = err.response?.data?.message || 'Gagal mengekstrak data.';
+        if (err.response?.status === 419) {
+            aiError.value = 'Sesi telah kedaluwarsa. Silakan refresh halaman dan coba lagi.';
+        } else if (err.response?.data?.message?.includes('GET method')) {
+            aiError.value = 'Terjadi kesalahan redirect di server. Pastikan route:clear sudah dijalankan di production.';
+        } else {
+            aiError.value = err.response?.data?.message || 'Gagal mengekstrak data. Periksa koneksi dan konfigurasi AI.';
+        }
     } finally {
         isExtracting.value = false;
     }
@@ -381,18 +393,33 @@ const saveBulk = async () => {
                     <div v-if="aiStep === 1" class="p-8 flex-1 overflow-y-auto">
                         <div @click="$refs.aiFileInput.click()" class="w-full h-80 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group relative overflow-hidden">
                             <input ref="aiFileInput" type="file" class="hidden" accept="image/*,.pdf" @change="handleAiFileSelect" />
-                            <template v-if="!aiFilePreview">
+                            <template v-if="!aiFile">
                                 <div class="p-6 rounded-full bg-slate-50 dark:bg-slate-800 group-hover:bg-amber-500/10 transition-colors">
                                     <ArrowUpTrayIcon class="h-12 w-12 text-slate-400 group-hover:text-amber-500 transition-colors" />
                                 </div>
                                 <div class="text-center">
-                                    <p class="text-lg font-semibold text-slate-700 dark:text-slate-200">Upload gambar jadwal delivery</p>
+                                    <p class="text-lg font-semibold text-slate-700 dark:text-slate-200">Upload gambar/PDF jadwal delivery</p>
                                     <p class="text-sm text-slate-500 mt-1">PDF, PNG, JPG atau WebP (Max 5MB)</p>
                                 </div>
                             </template>
+                            <!-- PDF Preview -->
+                            <template v-else-if="aiFileIsPdf">
+                                <div class="flex flex-col items-center gap-3">
+                                    <div class="p-5 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400">
+                                        <svg class="h-16 w-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
+                                        </svg>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-sm font-bold text-slate-800 dark:text-white">{{ aiFile.name }}</p>
+                                        <p class="text-xs text-slate-500 mt-1">{{ (aiFile.size / 1024).toFixed(0) }} KB • PDF Document</p>
+                                    </div>
+                                </div>
+                            </template>
+                            <!-- Image Preview -->
                             <img v-else :src="aiFilePreview" class="w-full h-full object-contain p-4" />
-                            <div v-if="aiFilePreview" class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/50 to-transparent flex justify-center">
-                                <span class="bg-white/90 dark:bg-slate-800/90 py-1.5 px-3 rounded-full text-xs font-bold shadow-sm backdrop-blur-sm">Ganti Gambar</span>
+                            <div v-if="aiFile" class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/50 to-transparent flex justify-center">
+                                <span class="bg-white/90 dark:bg-slate-800/90 py-1.5 px-3 rounded-full text-xs font-bold shadow-sm backdrop-blur-sm">Ganti File</span>
                             </div>
                         </div>
                         <div v-if="aiError" class="mt-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-500">
@@ -411,10 +438,19 @@ const saveBulk = async () => {
                         <div class="w-1/3 border-r border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-6 overflow-hidden flex flex-col">
                             <div class="flex items-center justify-between mb-4">
                                 <h4 class="text-sm font-bold text-slate-500 flex items-center gap-2"><EyeIcon class="h-4 w-4" /> REFERENSI</h4>
-                                <a :href="aiFilePreview" target="_blank" class="text-blue-500 hover:text-blue-600"><ArrowsPointingOutIcon class="h-4 w-4" /></a>
                             </div>
-                            <div class="flex-1 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-950">
-                                <img :src="aiFilePreview" class="w-full h-full object-contain" />
+                            <div class="flex-1 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-950 flex items-center justify-center">
+                                <template v-if="aiFileIsPdf">
+                                    <div class="flex flex-col items-center gap-3 p-6">
+                                        <div class="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500">
+                                            <svg class="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                                            </svg>
+                                        </div>
+                                        <p class="text-xs font-bold text-slate-600 dark:text-slate-400 text-center">{{ aiFile?.name }}</p>
+                                    </div>
+                                </template>
+                                <img v-else :src="aiFilePreview" class="w-full h-full object-contain" />
                             </div>
                             <div class="mt-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-400 italic">
                                 💡 Bandingkan hasil ekstraksi di tabel dengan gambar asli sebelum menyimpan.
