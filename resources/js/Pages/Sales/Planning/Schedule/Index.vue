@@ -408,6 +408,70 @@ const downloadExcel = async () => {
                     <Pagination :links="schedules.links" />
                 </div>
             </div>
+
+            <!-- Delivery Operations Guide -->
+            <div class="mt-8 relative hidden md:block">
+                <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div class="w-full border-t border-slate-200/60 dark:border-slate-700/60"></div>
+                </div>
+                <div class="relative flex justify-center">
+                    <span class="bg-[#F8FAFC] dark:bg-[#0F172A] px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase">
+                        Delivery Operations Guide
+                    </span>
+                </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 hidden md:grid">
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-500">
+                            <SparklesIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">AI Matrix Extractor</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Instantly digitize documents by uploading PDFs or images. The <strong>Gemini AI</strong> will automatically extract table data into structured schedule formats.
+                    </p>
+                </div>
+
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                            </svg>
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Schedule Comparison</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Use the <strong>View Comparison</strong> tool to evaluate gaps between planned Delivery Schedules and real Actual Delivery Orders execution.
+                    </p>
+                </div>
+
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                            <CalendarDaysIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Status Tracking</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Keep track of priorities. Items are automatically tagged as <strong>Upcoming</strong> (next 7 days) or <strong>Delayed</strong> if past due.
+                    </p>
+                </div>
+                
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-400">
+                            <ArrowUpTrayIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Batch Operations</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Manage large quantities of schedule updates simply by using the <strong>Import</strong> and <strong>Export Excel</strong> capabilities simultaneously.
+                    </p>
+                </div>
+            </div>
         </div>
 
         <!-- AI Matrix Extractor Modal -->
