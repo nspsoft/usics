@@ -24,7 +24,7 @@ class WarehouseLoadingController extends Controller
                 $q->where('warehouse_id', $warehouseId);
             })
             ->orderBy('delivery_date')
-            ->get();
+            ->paginate(10)->withQueryString();
 
         $warehouses = Warehouse::orderBy('name')->get(['id', 'name']);
 

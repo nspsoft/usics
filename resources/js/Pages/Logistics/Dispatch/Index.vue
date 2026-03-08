@@ -12,7 +12,7 @@ import {
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    deliveryOrders: Array,
+    deliveryOrders: Object,
     vehicles: Array,
     filters: Object,
 });
@@ -63,7 +63,7 @@ const formatDate = (date) => {
     <Head title="Logistics Dispatch" />
 
     <AppLayout title="Dispatch Panel">
-        <div class="max-w-7xl mx-auto">
+        <div class="max-w-[1700px] mx-auto">
             <!-- Header -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
@@ -72,7 +72,7 @@ const formatDate = (date) => {
                 </div>
                 <div class="flex items-center gap-2 bg-indigo-500/10 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-500/20">
                     <TruckIcon class="h-4 w-4" />
-                    {{ deliveryOrders.length }} Siap Kirim
+                    {{ deliveryOrders.total }} Siap Kirim
                 </div>
             </div>
 
@@ -94,18 +94,18 @@ const formatDate = (date) => {
             </div>
 
             <!-- Empty State -->
-            <div v-if="deliveryOrders.length === 0" class="text-center py-16 glass-card rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div v-if="deliveryOrders.data.length === 0" class="text-center py-16 glass-card rounded-2xl border border-slate-200 dark:border-slate-800">
                 <TruckIcon class="h-12 w-12 text-slate-300 mx-auto mb-4" />
                 <p class="text-slate-500 text-sm">Tidak ada DO berstatus Packed yang siap dikirim.</p>
                 <p class="text-xs text-slate-400 mt-1">DO akan muncul setelah proses loading selesai di Loading Queue.</p>
             </div>
 
             <!-- Dispatch Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                 <div
-                    v-for="order in deliveryOrders"
+                    v-for="order in deliveryOrders.data"
                     :key="order.id"
-                    class="glass-card rounded-2xl p-5 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all hover:shadow-lg"
+                    class="glass-card rounded-2xl p-4 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all hover:shadow-lg"
                 >
                     <div class="flex items-start justify-between mb-3">
                         <div>
@@ -151,6 +151,27 @@ const formatDate = (date) => {
                             <TruckIcon class="h-4 w-4" /> BERANGKATKAN
                         </span>
                     </button>
+                </div>
+            </div>
+
+            <!-- Pagination Support -->
+            <div v-if="deliveryOrders.last_page > 1" class="border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between mt-6 glass-card rounded-2xl">
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Showing {{ deliveryOrders.from }} to {{ deliveryOrders.to }} of {{ deliveryOrders.total }} orders
+                </p>
+                <div class="flex items-center gap-2">
+                    <Link
+                        v-for="link in deliveryOrders.links"
+                        :key="link.label"
+                        :href="link.url || '#'"
+                        class="px-3 py-1.5 rounded-lg text-sm transition-colors"
+                        :class="link.active 
+                            ? 'bg-blue-600 text-slate-900 dark:text-white' 
+                            : link.url 
+                                ? 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 hover:text-slate-900 dark:text-white' 
+                                : 'text-slate-400 dark:text-slate-600 cursor-not-allowed'"
+                        v-html="link.label"
+                    />
                 </div>
             </div>
         </div>

@@ -21,7 +21,7 @@ class DispatchController extends Controller
                 });
             })
             ->orderBy('delivery_date')
-            ->get();
+            ->paginate(10)->withQueryString();
 
         $vehicles = Vehicle::where('is_active', true)->orderBy('license_plate')->get();
 

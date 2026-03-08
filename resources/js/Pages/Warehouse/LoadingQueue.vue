@@ -13,7 +13,7 @@ import {
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    deliveryOrders: Array,
+    deliveryOrders: Object,
     warehouses: Array,
     filters: Object,
 });
@@ -63,7 +63,7 @@ const updateItemQty = (item) => {
         onSuccess: () => {
             // Update local state to reflect change without full reload if possible, 
             // but Inertia will reload the props anyway.
-            const updatedOrder = page.props.deliveryOrders.find(o => o.id === selectedOrder.value.id);
+            const updatedOrder = page.props.deliveryOrders.data.find(o => o.id === selectedOrder.value.id);
             if (updatedOrder) selectedOrder.value = updatedOrder;
         },
         onFinish: () => processingId.value = null,
@@ -80,8 +80,8 @@ const applyFilters = () => {
     });
 };
 
-const draftOrders = computed(() => props.deliveryOrders.filter(o => o.status === 'draft'));
-const pickingOrders = computed(() => props.deliveryOrders.filter(o => o.status === 'picking'));
+const draftOrders = computed(() => props.deliveryOrders.data.filter(o => o.status === 'draft'));
+const pickingOrders = computed(() => props.deliveryOrders.data.filter(o => o.status === 'picking'));
 
 const startLoading = (order) => {
     if (!confirm('📦 START LOADING\n\nItems for DO ' + order.do_number + ' will start being picked and loaded.\n\nContinue?')) return;
@@ -123,7 +123,7 @@ const toggleItemLoaded = (item) => {
     }, {
         preserveScroll: true,
         onSuccess: () => {
-            const updatedOrder = page.props.deliveryOrders.find(o => o.id === selectedOrder.value.id);
+            const updatedOrder = page.props.deliveryOrders.data.find(o => o.id === selectedOrder.value.id);
             if (updatedOrder) selectedOrder.value = updatedOrder;
         },
     });
@@ -145,7 +145,7 @@ const getLoadedCount = (order) => {
     <Head title="Warehouse Loading Queue" />
 
     <AppLayout title="Loading Queue">
-        <div class="max-w-7xl mx-auto">
+        <div class="max-w-[1700px] mx-auto">
             <!-- Header -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
@@ -200,11 +200,11 @@ const getLoadedCount = (order) => {
                     <div v-if="draftOrders.length === 0" class="text-center py-12 text-slate-400 text-sm glass-card rounded-2xl border border-slate-200 dark:border-slate-800">
                         Tidak ada DO yang menunggu loading.
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                         <div
                             v-for="order in draftOrders"
                             :key="order.id"
-                            class="glass-card rounded-2xl p-5 border border-slate-200 dark:border-slate-800 hover:border-amber-300 dark:hover:border-amber-700 transition-all hover:shadow-lg group"
+                            class="glass-card rounded-2xl p-4 border border-slate-200 dark:border-slate-800 hover:border-amber-300 dark:hover:border-amber-700 transition-all hover:shadow-lg group"
                         >
                             <div class="flex items-start justify-between mb-3">
                                 <div>
@@ -259,11 +259,11 @@ const getLoadedCount = (order) => {
                     <div v-if="pickingOrders.length === 0" class="text-center py-12 text-slate-400 text-sm glass-card rounded-2xl border border-slate-200 dark:border-slate-800">
                         Tidak ada DO yang sedang diloading.
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                         <div
                             v-for="order in pickingOrders"
                             :key="order.id"
-                            class="glass-card rounded-2xl p-5 border-2 border-blue-300 dark:border-blue-700 hover:shadow-lg transition-all bg-blue-50/30 dark:bg-blue-900/10"
+                            class="glass-card rounded-2xl p-4 border-2 border-blue-300 dark:border-blue-700 hover:shadow-lg transition-all bg-blue-50/30 dark:bg-blue-900/10"
                         >
                             <div class="flex items-start justify-between mb-3">
                                 <div>
@@ -327,6 +327,27 @@ const getLoadedCount = (order) => {
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Pagination Support -->
+            <div v-if="deliveryOrders.last_page > 1" class="border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between mt-6 glass-card rounded-2xl">
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Showing {{ deliveryOrders.from }} to {{ deliveryOrders.to }} of {{ deliveryOrders.total }} orders
+                </p>
+                <div class="flex items-center gap-2">
+                    <Link
+                        v-for="link in deliveryOrders.links"
+                        :key="link.label"
+                        :href="link.url || '#'"
+                        class="px-3 py-1.5 rounded-lg text-sm transition-colors"
+                        :class="link.active 
+                            ? 'bg-blue-600 text-slate-900 dark:text-white' 
+                            : link.url 
+                                ? 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 hover:text-slate-900 dark:text-white' 
+                                : 'text-slate-400 dark:text-slate-600 cursor-not-allowed'"
+                        v-html="link.label"
+                    />
                 </div>
             </div>
         </div>
