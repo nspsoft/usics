@@ -78,6 +78,8 @@ import {
     AdjustmentsHorizontalIcon,
     CircleStackIcon,
     TrophyIcon,
+    CalendarIcon,
+    CalendarDaysIcon as CalendarAltIcon,
 } from '@heroicons/vue/24/outline';
 import TechnoHeaderBg from '@/Components/TechnoHeaderBg.vue';
 
@@ -168,6 +170,7 @@ const hasPermission = (permission) => {
 
 const navigation = [
     { name: 'Dashboard', href: '/', icon: HomeIcon, current: true },
+    { name: 'My Time-Off', href: '/my-timeoff', icon: CalendarIcon, current: false },
     { 
         name: 'Sales', 
         href: '#', 
@@ -333,6 +336,7 @@ const navigation = [
         children: [
             { name: 'Employee Directory', href: '/hr/employees', icon: IdentificationIcon, permission: 'hr_payroll.employee_directory.view' },
             { name: 'Attendance', href: '/hr/attendance', icon: ClockIcon, permission: 'hr_payroll.attendance.view' },
+            { name: 'Leave Management', href: '/hr/leaves', icon: CalendarAltIcon, permission: 'hr_payroll.attendance.view' },
             { name: 'Payroll', href: '/hr/payroll', icon: BanknotesIcon, permission: 'hr_payroll.payroll.view' },
         ]
     },
