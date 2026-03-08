@@ -175,13 +175,15 @@ class SalesOrderImport implements ToCollection, WithHeadingRow
 
         // ── CREATE MODE: Group by Customer + PO + Date (existing logic) ──
         if ($createRows->isNotEmpty()) {
-            $grouped = $createRows->filter(function ($row) {
+            $filteredCreates = $createRows->filter(function ($row) {
                 return !empty($row['customer_code']) && !empty($row['order_date']) && !empty($row['product_code']);
-            })->groupBy(function ($row) {
-                return $row['customer_code'] . '|' . ($row['customer_po'] ?? '') . '|' . $row['order_date'];
             });
 
-            foreach ($grouped as $key => $items) {
+            $groupedCreates = $filteredCreates->groupBy(function ($row) {
+                return $row['customer_code'] . '|' . ($row['customer_po'] ?? '') . '|' . $this->parseDate($row['order_date']);
+            });
+
+            foreach ($groupedCreates as $key => $items) {
                 try {
                     $firstRow = $items->first();
 
