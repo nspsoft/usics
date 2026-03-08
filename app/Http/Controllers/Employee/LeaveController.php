@@ -17,17 +17,21 @@ class LeaveController extends Controller
     {
         $employee = auth()->user()->employee;
         
+        if (!$employee) {
+            return redirect()->route('dashboard')->with('error', 'You are not registered as an employee.');
+        }
+
         $year = Carbon::now()->year;
 
-        $balances = $employee ? LeaveBalance::with('leaveType')
+        $balances = LeaveBalance::with('leaveType')
             ->where('employee_id', $employee->id)
             ->where('year', $year)
-            ->get() : collect([]);
+            ->get();
 
-        $leaves = $employee ? Leave::with('leaveType')
+        $leaves = Leave::with('leaveType')
             ->where('employee_id', $employee->id)
             ->orderBy('created_at', 'desc')
-            ->get() : collect([]);
+            ->get();
 
         // Calculate pending vs approved
         $stats = [
@@ -39,7 +43,6 @@ class LeaveController extends Controller
             'balances' => $balances,
             'leaves' => $leaves,
             'stats' => $stats,
-            'is_employee' => $employee ? true : false,
         ]);
     }
 
@@ -47,7 +50,7 @@ class LeaveController extends Controller
     {
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return redirect()->route('my-timeoff.index')->with('error', 'You are not registered as an employee, so you cannot request time-off.');
+            return redirect()->route('dashboard')->with('error', 'You are not registered as an employee.');
         }
 
         $leaveTypes = LeaveType::where('is_active', true)->get();
