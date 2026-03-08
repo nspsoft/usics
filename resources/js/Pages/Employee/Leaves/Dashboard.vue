@@ -19,6 +19,10 @@ const props = defineProps({
     balances: Array,
     leaves: Array,
     stats: Object,
+    is_employee: {
+        type: Boolean,
+        default: true
+    }
 });
 
 const formatDate = (date) => {
@@ -166,8 +170,8 @@ const submitAttendance = () => {
                 </div>
             </div>
 
-            <!-- Action Buttons for Mobile PWA -->
-            <div class="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 z-50 flex flex-col items-end gap-3">
+            <!-- Action Buttons for Mobile PWA (Only for Employees) -->
+            <div v-if="is_employee" class="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 z-50 flex flex-col items-end gap-3">
                 <button @click="showAttendanceModal = true" class="flex items-center justify-center w-12 h-12 bg-orange-500 text-white rounded-full shadow-lg hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none" title="Izin Jam">
                     <ClockIcon class="w-6 h-6" />
                 </button>
@@ -176,6 +180,13 @@ const submitAttendance = () => {
                 </Link>
             </div>
             
+            <div v-if="!is_employee" class="mt-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 flex items-start gap-3">
+                <ExclamationTriangleIcon class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                    <h4 class="text-sm font-bold text-amber-800 dark:text-amber-400">View Only Mode</h4>
+                    <p class="text-xs text-amber-700 dark:text-amber-500 mt-1">You are viewing this page as an Administrator. You cannot submit leave requests because your account is not tied to an employee profile.</p>
+                </div>
+            </div>
         </div>
 
         <!-- Attendance Exception Request Modal -->
