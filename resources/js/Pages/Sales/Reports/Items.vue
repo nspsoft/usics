@@ -212,6 +212,15 @@ const getStatusBadge = (status) => {
                                     </span>
                                 </div>
                             </th>
+                            <th @click="sort('sales_orders.delivery_date')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
+                                <div class="flex items-center gap-1">
+                                    Delivery Date
+                                    <span v-if="sortField === 'sales_orders.delivery_date'">
+                                        <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
+                                        <ChevronDownIcon v-else class="h-3 w-3" />
+                                    </span>
+                                </div>
+                            </th>
                             <th @click="sort('customer_name')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
                                 <div class="flex items-center gap-1">
                                     Customer
@@ -249,6 +258,9 @@ const getStatusBadge = (status) => {
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
                                 {{ formatDate(item.sales_order?.order_date) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
+                                {{ formatDate(item.sales_order?.delivery_date) }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
                                 <div class="font-medium text-slate-900 dark:text-white">{{ item.sales_order?.customer?.name }}</div>

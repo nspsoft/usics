@@ -443,6 +443,15 @@ const calculateWidth = (value, total) => {
                                     </span>
                                 </div>
                             </th>
+                            <th @click="sort('delivery_date')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors group">
+                                <div class="flex items-center gap-1">
+                                    Delivery Date
+                                    <span v-if="sortField === 'delivery_date'" class="text-blue-600 dark:text-blue-400">
+                                        <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
+                                        <ChevronDownIcon v-else class="h-3 w-3" />
+                                    </span>
+                                </div>
+                            </th>
                             <th @click="sort('items_count')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-4 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors group">
                                 <div class="flex items-center justify-center gap-1">
                                     Items
@@ -571,6 +580,9 @@ const calculateWidth = (value, total) => {
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap">
                                 <span class="text-sm text-slate-600 dark:text-slate-300">{{ formatDate(so.order_date) }}</span>
+                            </td>
+                            <td class="px-4 py-2 whitespace-nowrap">
+                                <span class="text-sm text-slate-600 dark:text-slate-300">{{ formatDate(so.delivery_date) }}</span>
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap text-center text-sm text-slate-600 dark:text-slate-300">
                                 {{ so.items_count }}
