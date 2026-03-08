@@ -302,6 +302,72 @@ const getStatusBadge = (status) => {
             </div>
         </div>
 
+        <!-- PO Items Operations Guide -->
+        <div class="mt-8 relative hidden md:block">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                <div class="w-full border-t border-slate-200/60 dark:border-slate-700/60"></div>
+            </div>
+            <div class="relative flex justify-center">
+                <span class="bg-[#F8FAFC] dark:bg-[#0F172A] px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase">
+                    PO Items Operations Guide
+                </span>
+            </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 hidden md:grid mb-8">
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="16" y1="4" x2="16" y2="20"></line><line x1="8" y1="4" x2="8" y2="20"></line><line x1="3" y1="4" x2="21" y2="4"></line><line x1="3" y1="20" x2="21" y2="20"></line>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Fulfillment Status</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Instantly monitor whether an item’s <strong>Ordered</strong> quantity matches the <strong>Received</strong> count. The <strong>Balance</strong> indicator highlights outstanding stocks.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-rose-500/10 text-rose-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Return Tracking</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Spot discrepancies by observing the <strong>Returned</strong> column to see if any portions of an ordered item were rejected back to the supplier.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                        <EyeIcon class="h-5 w-5" />
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Detailed Overview</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Click the <strong>Eye Icon</strong> under Actions to view deep unit pricing, total subtotal valuation, and the target warehouse for that specific SKU.
+                </p>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
+                        <FunnelIcon class="h-5 w-5" />
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Targeted Filtering</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Use the robust <strong>Filters</strong> to narrow down records by specific statuses (e.g. partial, received) or specific supplier delivery dates.
+                </p>
+            </div>
+        </div>
+
         <!-- Details Modal -->
         <Modal :show="showDetailModal" @close="showDetailModal = false" maxWidth="2xl">
             <div class="p-6">

@@ -305,6 +305,72 @@ const getStatusBadge = (status) => {
             </div>
         </div>
 
+        <!-- GR Items Operations Guide -->
+        <div class="mt-8 relative hidden md:block">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                <div class="w-full border-t border-slate-200/60 dark:border-slate-700/60"></div>
+            </div>
+            <div class="relative flex justify-center">
+                <span class="bg-[#F8FAFC] dark:bg-[#0F172A] px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase">
+                    GR Items Operations Guide
+                </span>
+            </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 hidden md:grid mb-8">
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-orange-500/10 text-orange-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Receipt Quality</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Compare the initial <strong>Received</strong> amounts against what was ultimately <strong>Accepted</strong> or <strong>Rejected</strong> post-inspection.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Traceability</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Click the <strong>PO Number</strong> or <strong>GRN Number</strong> to cross-reference with the original order documents easily for deeper audits.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-purple-500/10 text-purple-400">
+                        <EyeIcon class="h-5 w-5" />
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Meta Information</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Use the <strong>Eye Icon</strong> to reveal hidden item configurations like associated <em>Batch Numbers</em> or inspector <em>Notes</em>.
+                </p>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                        <ArrowDownTrayIcon class="h-5 w-5" />
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Data Extraction</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Bulk extract these receipt performances to Excel for external vendor evaluations or localized warehouse counting reconciliation.
+                </p>
+            </div>
+        </div>
+
         <!-- Details Modal -->
         <Modal :show="showDetailModal" @close="showDetailModal = false" maxWidth="2xl">
             <div class="p-6">
