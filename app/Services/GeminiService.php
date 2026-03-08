@@ -615,8 +615,12 @@ Keep the analysis practical, data-driven, and focused on actionable insights. Us
         $fileData = base64_encode(file_get_contents($filePath));
         $prompt = $this->getDeliveryScheduleMatrixPrompt();
 
+        // Use longer timeout for thinking models (gemini-2.5-*)
+        $isThinkingModel = str_contains($this->model, '2.5');
+        $timeout = $isThinkingModel ? 300 : 120;
+
         try {
-            $response = Http::timeout(120)->post("{$this->baseUrl}?key={$this->apiKey}", [
+            $payload = [
                 'contents' => [
                     [
                         'parts' => [
@@ -626,7 +630,16 @@ Keep the analysis practical, data-driven, and focused on actionable insights. Us
                     ]
                 ],
                 'generationConfig' => ['response_mime_type' => 'application/json']
-            ]);
+            ];
+
+            // For thinking models, limit thinking budget to speed up response
+            if ($isThinkingModel) {
+                $payload['generationConfig']['thinkingConfig'] = [
+                    'thinkingBudget' => 1024,
+                ];
+            }
+
+            $response = Http::timeout($timeout)->post("{$this->baseUrl}?key={$this->apiKey}", $payload);
 
             Log::info('Matrix Extraction Response Status: ' . $response->status());
             return $this->parseResponse($response);
