@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class SalesOrderImport implements ToCollection, WithHeadingRow
 {
@@ -24,6 +26,30 @@ class SalesOrderImport implements ToCollection, WithHeadingRow
     public function __construct(bool $overwrite = false)
     {
         $this->overwrite = $overwrite;
+    }
+
+    /**
+     * Parse date from Excel - handles both serial numbers and string formats.
+     */
+    protected function parseDate($value): ?string
+    {
+        if (empty($value)) return null;
+
+        // If numeric (Excel serial number like 45355)
+        if (is_numeric($value) && $value > 25569) {
+            try {
+                return Carbon::instance(ExcelDate::excelToDateTimeObject($value))->format('Y-m-d');
+            } catch (\Exception $e) {
+                return null;
+            }
+        }
+
+        // If already a string date, try to parse it
+        try {
+            return Carbon::parse($value)->format('Y-m-d');
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     public function collection(Collection $rows)
@@ -59,10 +85,10 @@ class SalesOrderImport implements ToCollection, WithHeadingRow
                         // Update SO-level fields if provided
                         $soUpdates = [];
                         if (!empty($firstRow['order_date'])) {
-                            $soUpdates['order_date'] = $firstRow['order_date'];
+                            $soUpdates['order_date'] = $this->parseDate($firstRow['order_date']);
                         }
                         if (!empty($firstRow['delivery_date'])) {
-                            $soUpdates['delivery_date'] = $firstRow['delivery_date'];
+                            $soUpdates['delivery_date'] = $this->parseDate($firstRow['delivery_date']);
                         }
                         if (!empty($firstRow['notes'])) {
                             $soUpdates['notes'] = $firstRow['notes'];
@@ -179,7 +205,7 @@ class SalesOrderImport implements ToCollection, WithHeadingRow
                     DB::transaction(function () use ($firstRow, $items, $customer, $warehouse, $key) {
                         $existingSO = SalesOrder::where('customer_id', $customer->id)
                             ->where('customer_po_number', $firstRow['customer_po'] ?? null)
-                            ->whereDate('order_date', $firstRow['order_date'])
+                            ->whereDate('order_date', $this->parseDate($firstRow['order_date']))
                             ->first();
 
                         if ($existingSO) {
@@ -196,7 +222,7 @@ class SalesOrderImport implements ToCollection, WithHeadingRow
 
                             $existingSO->update([
                                 'warehouse_id'  => $warehouse->id,
-                                'delivery_date' => $firstRow['delivery_date'] ?? null,
+                                'delivery_date' => $this->parseDate($firstRow['delivery_date'] ?? null),
                                 'notes'         => $firstRow['notes'] ?? null,
                             ]);
                             $existingSO->items()->delete();
@@ -207,8 +233,8 @@ class SalesOrderImport implements ToCollection, WithHeadingRow
                                 'customer_po_number' => $firstRow['customer_po'] ?? null,
                                 'customer_id'        => $customer->id,
                                 'warehouse_id'       => $warehouse->id,
-                                'order_date'         => $firstRow['order_date'],
-                                'delivery_date'      => $firstRow['delivery_date'] ?? null,
+                                'order_date'         => $this->parseDate($firstRow['order_date']),
+                                'delivery_date'      => $this->parseDate($firstRow['delivery_date'] ?? null),
                                 'status'             => 'draft',
                                 'discount_percent'   => 0,
                                 'tax_percent'        => 11,
