@@ -316,6 +316,74 @@ const getStatusBadge = (status) => {
             </div>
         </div>
 
+        <!-- SO Items Operations Guide -->
+        <div class="mt-8 relative hidden md:block">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                <div class="w-full border-t border-slate-200/60 dark:border-slate-700/60"></div>
+            </div>
+            <div class="relative flex justify-center">
+                <span class="bg-[#F8FAFC] dark:bg-[#0F172A] px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase">
+                    SO Items Operations Guide
+                </span>
+            </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 hidden md:grid mb-8">
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Fulfillment Tracking</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Monitor the progress of your orders by comparing <strong>Ordered</strong> quantities with <strong>Delivered</strong>, <strong>Returned</strong>, and outstanding <strong>Balance</strong>.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-purple-500/10 text-purple-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Invoicing Status</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Keep track of items that have already been <strong>Invoiced</strong> against what has been delivered to ensure accurate financial reporting.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Advanced Filters</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Use the robust <strong>Filtering</strong> system to quickly isolate specific items by Customer, Status, or Date Range for precise data analysis.
+                </p>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
+                        <ArrowDownTrayIcon class="h-5 w-5" />
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Data Export</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Need further processing? You can always <strong>Export to Excel</strong> to share item-level fulfillment reports with your operational teams.
+                </p>
+            </div>
+        </div>
+
         <!-- Details Modal -->
         <Modal :show="showDetailModal" @close="showDetailModal = false" maxWidth="2xl">
             <div class="p-6">

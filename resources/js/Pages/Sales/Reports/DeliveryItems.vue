@@ -293,5 +293,71 @@ const getStatusClass = (status) => {
                 <Pagination :links="items.links" />
             </div>
         </div>
+
+        <!-- DO Items Operations Guide -->
+        <div class="mt-8 relative hidden md:block">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                <div class="w-full border-t border-slate-200/60 dark:border-slate-700/60"></div>
+            </div>
+            <div class="relative flex justify-center">
+                <span class="bg-[#F8FAFC] dark:bg-[#0F172A] px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase">
+                    DO Items Operations Guide
+                </span>
+            </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 hidden md:grid mb-8">
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-orange-500/10 text-orange-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Delivery Performance</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Compare Scheduled Deliveries <strong>(Qty DO)</strong> against the Actual Handover <strong>(Qty Act)</strong> to monitor logistical fulfillment accuracy.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-rose-500/10 text-rose-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Discrepancy Checks</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Instantly spot missing or delayed shipments via the <strong>Delay</strong> indicator. Negative numbers represent shortfalls requiring attention.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
+                        <EyeIcon class="h-5 w-5" />
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Detailed Monitoring</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Track individual item shipments from <strong>Draft</strong>, progressively moving to <strong>Shipped</strong> down to final <strong>Delivered</strong> statuses.
+                </p>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                        <ArrowDownTrayIcon class="h-5 w-5" />
+                    </div>
+                    <h4 class="font-bold text-slate-200 text-sm">Data Extraction</h4>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Utilize the <strong>Export to Excel</strong> button to download these specific item records for warehouse auditing and dispatch summaries.
+                </p>
+            </div>
+        </div>
     </AppLayout>
 </template>
