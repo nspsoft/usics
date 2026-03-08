@@ -747,4 +747,21 @@ class DeliveryScheduleController extends Controller
             ], 500);
         }
     }
+
+    public function exportExtraction(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'month_year' => 'nullable|string',
+        ]);
+
+        $export = new \App\Exports\AiMatrixExtractionExport(
+            $request->items,
+            $request->month_year ?? ''
+        );
+
+        $filename = 'ai_extraction_schedule_' . now()->format('YmdHis') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download($export, $filename);
+    }
 }

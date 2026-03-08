@@ -18,6 +18,7 @@ import {
     EyeIcon,
     ArrowsPointingOutIcon,
     TrashIcon,
+    ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber } from '@/helpers';
 import axios from 'axios';
@@ -168,32 +169,25 @@ const extractMatrix = async () => {
 
 const removeItem = (index) => extractedData.value.items.splice(index, 1);
 
-const saveBulk = async () => {
-    // Filter only matched items (with product_id and customer_id)
-    const matchedItems = extractedData.value.items.filter(item => item.product_id && item.customer_id);
-    const skippedCount = extractedData.value.items.length - matchedItems.length;
-
-    if (matchedItems.length === 0) {
-        alert('Tidak ada item yang bisa disimpan. Semua item belum terdaftar di master data.');
-        return;
-    }
-
-    if (skippedCount > 0 && !confirm(`${matchedItems.length} item akan disimpan.\n${skippedCount} item dilewati karena belum terdaftar.\n\nLanjutkan?`)) {
-        return;
-    }
-
+const downloadExcel = async () => {
     isSaving.value = true;
     try {
-        const response = await axios.post(route('sales.planning.schedule.store-bulk'), {
-            items: matchedItems
-        });
-        if (response.data.success) {
-            alert(response.data.message);
-            closeAiModal();
-            router.reload();
-        }
+        const response = await axios.post(route('sales.planning.schedule.export-extraction'), {
+            items: extractedData.value.items,
+            month_year: extractedData.value.month_year || '',
+        }, { responseType: 'blob' });
+
+        // Trigger file download
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `ai_extraction_schedule_${Date.now()}.xlsx`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
     } catch (err) {
-        alert(err.response?.data?.message || 'Gagal menyimpan data.');
+        alert(err.response?.data?.message || 'Gagal mengunduh Excel.');
     } finally {
         isSaving.value = false;
     }
@@ -478,9 +472,9 @@ const saveBulk = async () => {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <button @click="aiStep = 1" class="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm">Ganti Gambar</button>
-                                    <button @click="saveBulk" :disabled="isSaving || extractedData.items.length === 0" class="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 disabled:opacity-50 flex items-center gap-2">
-                                        <template v-if="isSaving"><ArrowPathIcon class="h-4 w-4 animate-spin" /> Menyimpan...</template>
-                                        <template v-else><CheckCircleIcon class="h-4 w-4" /> Konfirmasi & Simpan</template>
+                                    <button @click="downloadExcel" :disabled="isSaving || extractedData.items.length === 0" class="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 disabled:opacity-50 flex items-center gap-2">
+                                        <template v-if="isSaving"><ArrowPathIcon class="h-4 w-4 animate-spin" /> Mengunduh...</template>
+                                        <template v-else><ArrowDownTrayIcon class="h-4 w-4" /> Download Excel</template>
                                     </button>
                                 </div>
                             </div>
