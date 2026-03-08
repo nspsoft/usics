@@ -35,6 +35,7 @@ const selectedType = ref(props.filters.type || '');
 const showImportModal = ref(false);
 const importType = ref('customer'); // 'customer' or 'contact'
 const importing = ref(false);
+const importFile = ref(null);
 const overwriteExisting = ref(false);
 const includeCustomerData = ref(false);
 const overwriteContact = ref(false);
