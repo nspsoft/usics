@@ -1,6 +1,6 @@
 <script setup>
-import { ref, watch } from 'vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { ref, watch, computed } from 'vue';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
     PlusIcon,
@@ -18,6 +18,7 @@ import {
     ChevronDownIcon,
     ArrowUpTrayIcon,
     ExclamationTriangleIcon,
+    CheckCircleIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 import Pagination from '@/Components/Pagination.vue';
@@ -63,6 +64,62 @@ const selectedCustomer = ref(props.filters.customer || '');
 const sortField = ref(props.filters.sort || 'created_at');
 const sortDirection = ref(props.filters.direction || 'desc');
 const showFilters = ref(false);
+const selectedIds = ref([]);
+const bulkConfirming = ref(false);
+const flashMessage = ref(null);
+const flashType = ref('success');
+
+const page = usePage();
+
+watch(() => page.props.flash, (flash) => {
+    if (flash?.success) {
+        flashMessage.value = flash.success;
+        flashType.value = 'success';
+        setTimeout(() => flashMessage.value = null, 8000);
+    } else if (flash?.error) {
+        flashMessage.value = flash.error;
+        flashType.value = 'error';
+        setTimeout(() => flashMessage.value = null, 8000);
+    }
+}, { deep: true, immediate: true });
+
+const draftOrders = computed(() => props.salesOrders.data.filter(so => so.status === 'draft'));
+const allDraftsSelected = computed(() => draftOrders.value.length > 0 && draftOrders.value.every(so => selectedIds.value.includes(so.id)));
+
+const toggleAll = () => {
+    if (allDraftsSelected.value) {
+        selectedIds.value = [];
+    } else {
+        selectedIds.value = draftOrders.value.map(so => so.id);
+    }
+};
+
+const toggleOne = (id) => {
+    const idx = selectedIds.value.indexOf(id);
+    if (idx > -1) {
+        selectedIds.value.splice(idx, 1);
+    } else {
+        selectedIds.value.push(id);
+    }
+};
+
+const bulkConfirm = () => {
+    if (selectedIds.value.length === 0) return;
+    if (!confirm(`Apakah Anda yakin ingin meng-confirm ${selectedIds.value.length} Sales Order?`)) return;
+    
+    bulkConfirming.value = true;
+    router.post('/sales/orders/bulk-confirm', {
+        ids: selectedIds.value,
+    }, {
+        onSuccess: () => {
+            selectedIds.value = [];
+            bulkConfirming.value = false;
+        },
+        onError: () => {
+            bulkConfirming.value = false;
+        },
+    });
+};
 
 const applyFilters = debounce(() => {
     router.get('/sales/orders', {
@@ -306,11 +363,50 @@ const calculateWidth = (value, total) => {
             </div>
         </Transition>
 
+        <!-- Flash Message -->
+        <Transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 -translate-y-2">
+            <div v-if="flashMessage" class="mb-4 p-4 rounded-xl flex items-center justify-between gap-3 shadow-md" :class="flashType === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400'">
+                <div class="flex items-center gap-3">
+                    <CheckCircleIcon v-if="flashType === 'success'" class="h-5 w-5 shrink-0" />
+                    <ExclamationTriangleIcon v-else class="h-5 w-5 shrink-0" />
+                    <span class="text-sm font-medium">{{ flashMessage }}</span>
+                </div>
+                <button @click="flashMessage = null" class="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+        </Transition>
+
+        <!-- Bulk Action Bar -->
+        <Transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 -translate-y-2">
+            <div v-if="selectedIds.length > 0" class="mb-4 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between gap-3">
+                <span class="text-sm font-medium text-blue-700 dark:text-blue-400">
+                    {{ selectedIds.length }} order dipilih
+                </span>
+                <div class="flex items-center gap-2">
+                    <button @click="selectedIds = []" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        Batal Pilih
+                    </button>
+                    <button 
+                        @click="bulkConfirm" 
+                        :disabled="bulkConfirming"
+                        class="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-500 disabled:opacity-50 transition-all shadow-sm"
+                    >
+                        <CheckBadgeIcon class="h-4 w-4" />
+                        {{ bulkConfirming ? 'Confirming...' : 'Confirm All' }}
+                    </button>
+                </div>
+            </div>
+        </Transition>
+
         <div class="rounded-2xl glass-card overflow-hidden">
             <div class="overflow-x-auto overflow-y-auto max-h-[600px]">
                 <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
                     <thead>
                         <tr class="border-b border-slate-200 dark:border-slate-700">
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-3 py-3 text-center shadow-sm w-10">
+                                <input type="checkbox" :checked="allDraftsSelected" @change="toggleAll" class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500/50 cursor-pointer" title="Select all draft orders" />
+                            </th>
                             <th @click="sort('so_number')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-sm cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors group">
                                 <div class="flex items-center gap-1">
                                     SO Number
@@ -439,6 +535,15 @@ const calculateWidth = (value, total) => {
                             :key="so.id"
                             class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors"
                         >
+                            <td class="px-3 py-2 whitespace-nowrap text-center w-10">
+                                <input 
+                                    v-if="so.status === 'draft'"
+                                    type="checkbox" 
+                                    :checked="selectedIds.includes(so.id)" 
+                                    @change="toggleOne(so.id)" 
+                                    class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500/50 cursor-pointer" 
+                                />
+                            </td>
                             <td class="px-4 py-2 whitespace-nowrap">
                                 <div class="flex items-center gap-3">
                                     <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800">
@@ -559,7 +664,7 @@ const calculateWidth = (value, total) => {
                             </td>
                         </tr>
                         <tr v-if="salesOrders.data.length === 0">
-                            <td colspan="11" class="px-4 py-12 text-center">
+                            <td colspan="15" class="px-4 py-12 text-center">
                                 <DocumentTextIcon class="mx-auto h-12 w-12 text-slate-600" />
                                 <h3 class="mt-2 text-sm font-medium text-slate-600 dark:text-slate-300">No sales orders found</h3>
                                 <p class="mt-1 text-sm text-slate-500">Create a new sales order to get started.</p>

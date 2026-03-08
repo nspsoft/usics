@@ -341,6 +341,38 @@ class SalesOrderController extends Controller
         return back()->with('success', 'Sales Order confirmed.');
     }
 
+    public function bulkConfirm(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:sales_orders,id',
+        ]);
+
+        $orders = SalesOrder::whereIn('id', $request->ids)->get();
+        $confirmed = 0;
+        $skipped = 0;
+
+        foreach ($orders as $order) {
+            if ($order->status === 'draft') {
+                $order->update([
+                    'status' => 'confirmed',
+                    'confirmed_by' => auth()->id(),
+                    'confirmed_at' => now(),
+                ]);
+                $confirmed++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        $message = "{$confirmed} Sales Order berhasil di-confirm.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} dilewati (bukan status draft).";
+        }
+
+        return back()->with($confirmed > 0 ? 'success' : 'error', $message);
+    }
+
     public function cancel(SalesOrder $order)
     {
         if (in_array($order->status, ['delivered', 'cancelled'])) {

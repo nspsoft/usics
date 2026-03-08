@@ -256,6 +256,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::get('/customers-contacts-template', [CustomerController::class, 'templateContacts'])->name('customers.contacts.template');
     Route::resource('orders', SalesOrderController::class);
     Route::post('/orders/{order}/confirm', [SalesOrderController::class, 'confirm'])->name('orders.confirm');
+    Route::post('/orders/bulk-confirm', [SalesOrderController::class, 'bulkConfirm'])->name('orders.bulk-confirm');
     Route::post('/orders/{order}/cancel', [SalesOrderController::class, 'cancel'])->name('orders.cancel');
     Route::put('/orders/items/{item}/qty', [SalesOrderController::class, 'updateItemQty'])->name('orders.update-item-qty');
     Route::get('/orders/{order}/print', [SalesOrderController::class, 'print'])->name('orders.print');
