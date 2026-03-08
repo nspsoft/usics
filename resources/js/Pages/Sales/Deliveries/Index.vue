@@ -240,11 +240,37 @@ watch([search, selectedStatus, invoiceStatus], () => {
 // Import modal state
 const showImportModal = ref(false);
 const includeData = ref(false);
+const page = usePage();
+const flashSuccess = computed(() => page.props.flash?.success);
+const flashWarning = computed(() => page.props.flash?.warning);
+const flashError = computed(() => page.props.flash?.error);
+
 const importForm = useForm({ file: null, overwrite: false });
 const onFileChange = (e) => { importForm.file = e.target.files[0]; };
+
+const closeImportModal = () => {
+    showImportModal.value = false;
+    importForm.reset();
+    importForm.clearErrors();
+    page.props.flash.success = null;
+    page.props.flash.warning = null;
+    page.props.flash.error = null;
+};
+
 const submitImport = () => {
     importForm.post(route('sales.deliveries.import'), {
-        onSuccess: () => { showImportModal.value = false; importForm.reset(); },
+        preserveScroll: true,
+        onSuccess: (pageObj) => { 
+            // Modal tidak otomatis ditutup agar user bisa membaca report (warning/error/success yang panjang)
+            // User harus menutup secara manual setelah membaca.
+            if (!pageObj.props.flash.error && !pageObj.props.flash.warning) {
+                 setTimeout(closeImportModal, 5000); // tutup otomatis jika bersihan (hanya success biasa)
+            }
+            importForm.reset('file');
+        },
+        onError: () => {
+            // Biarkan modal tetap terbuka untuk melihat error validasi
+        },
         forceFormData: true,
     });
 };
@@ -800,6 +826,49 @@ const submitImport = () => {
                         </div>
                         <div class="text-xs text-slate-500 dark:text-slate-400">
                             <strong>Note:</strong> Pastikan format kolom sesuai dengan template.
+                        </div>
+
+                        <!-- Flash Messages (Inside Modal) -->
+                        <div v-if="flashError" class="rounded-xl bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <XMarkIcon class="h-5 w-5 text-red-400" aria-hidden="true" />
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-red-800 dark:text-red-300">Import Failed</h3>
+                                    <div class="mt-2 text-sm text-red-700 dark:text-red-400">
+                                        {{ flashError }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="flashWarning" class="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-4 border border-amber-200 dark:border-amber-800">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <ShieldExclamationIcon class="h-5 w-5 text-amber-400" aria-hidden="true" />
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-amber-800 dark:text-amber-300">Import Completed with Warnings</h3>
+                                    <div class="mt-2 text-sm text-amber-700 dark:text-amber-400 whitespace-pre-line">
+                                        {{ flashWarning }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="flashSuccess" class="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-4 border border-emerald-200 dark:border-emerald-800">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <CheckBadgeIcon class="h-5 w-5 text-emerald-400" aria-hidden="true" />
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-emerald-800 dark:text-emerald-300">Import Successful</h3>
+                                    <div class="mt-2 text-sm text-emerald-700 dark:text-emerald-400 whitespace-pre-line">
+                                        {{ flashSuccess }}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 rounded-xl p-4 mt-4 relative overflow-hidden">
