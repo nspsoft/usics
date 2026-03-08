@@ -146,6 +146,72 @@ const getStatusColor = (status) => {
                     </button>
                 </div>
             </div>
+
+            <!-- Campaign Operations Guide -->
+            <div class="mt-8 relative hidden md:block">
+                <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div class="w-full border-t border-slate-200/60 dark:border-white/10"></div>
+                </div>
+                <div class="relative flex justify-center">
+                    <span class="bg-[#F8FAFC] dark:bg-[#0F172A] px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase">
+                        Campaign Operations Guide
+                    </span>
+                </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 hidden md:grid mb-8">
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-purple-500/10 text-purple-500">
+                            <MegaphoneIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Campaign Launch</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Initiate marketing efforts by creating campaigns spanning from <strong>Email</strong> blasts to <strong>Social Media</strong> push and <strong>Events</strong>.
+                    </p>
+                </div>
+
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-500">
+                            <CalendarIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Timeline Management</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Define strict <strong>Start</strong> and <strong>End Dates</strong> to restrict your marketing cycles and accurately review periodic reach performances.
+                    </p>
+                </div>
+
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Budget Allocation</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Set a <strong>Budget</strong> ceiling per campaign. By cross-referencing this against leads generated, you can compute Cost-Per-Acquisition metrics.
+                    </p>
+                </div>
+                
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-orange-500/10 text-orange-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Lifecycle Tracking</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Transition statuses manually from <strong>Planned</strong> to <strong>Active</strong> upon execution, and formally set to <strong>Completed</strong> upon closure.
+                    </p>
+                </div>
+            </div>
         </div>
 
         <!-- Create/Edit Modal -->

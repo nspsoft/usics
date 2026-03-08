@@ -172,6 +172,72 @@ const getStageColor = (stage) => {
                     </div>
                 </div>
             </div>
+
+            <!-- Opportunity Operations Guide -->
+            <div class="mt-8 relative hidden md:block">
+                <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div class="w-full border-t border-slate-200/60 dark:border-white/10"></div>
+                </div>
+                <div class="relative flex justify-center">
+                    <span class="bg-[#F8FAFC] dark:bg-[#0F172A] px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase">
+                        Opportunity Operations Guide
+                    </span>
+                </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 hidden md:grid mb-8">
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500">
+                            <CurrencyDollarIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Pipeline Valuation</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Assign an estimated monetary <strong>Value</strong> to every opportunity to forecast potential revenue and prioritize high-worth deals effectively.
+                    </p>
+                </div>
+
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-500">
+                            <ChartBarIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Stage Progression</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Update stages systematically from <strong>Prospecting</strong> through <strong>Negotiation</strong>, reflecting the current engagement maturity with the client.
+                    </p>
+                </div>
+
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line>
+                            </svg>
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Probability Index</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Adjust the <strong>Probability (%)</strong> percentage based on client interest levels. This weighting refines realistic sales forecasting metrics.
+                    </p>
+                </div>
+                
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Win/Loss Analysis</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Conclude deals accurately as either <strong>Closed Won</strong> to proceed to ordering, or <strong>Closed Lost</strong> to close the cycle loop.
+                    </p>
+                </div>
+            </div>
         </div>
 
         <!-- Create/Edit Modal -->

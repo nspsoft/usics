@@ -159,6 +159,70 @@ const getStatusColor = (status) => {
                     </div>
                 </div>
             </div>
+
+            <!-- Leads Operations Guide -->
+            <div class="mt-8 relative hidden md:block">
+                <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div class="w-full border-t border-slate-200/60 dark:border-white/10"></div>
+                </div>
+                <div class="relative flex justify-center">
+                    <span class="bg-[#F8FAFC] dark:bg-[#0F172A] px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase">
+                        Leads Operations Guide
+                    </span>
+                </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 hidden md:grid mb-8">
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-500">
+                            <UserPlusIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Prospecting</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Input new potential buyers into the system and initially mark their status as <strong>New</strong> to start the qualification funnel.
+                    </p>
+                </div>
+
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-yellow-500/10 text-yellow-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Lead Qualification</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Assess the viability of each lead. Update their status to <strong>Contacted</strong> once reached out, and <strong>Qualified</strong> when they meet purchasing criteria.
+                    </p>
+                </div>
+
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-purple-500/10 text-purple-400">
+                            <FunnelIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Source Tracking</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Always record the <strong>Source</strong> of your leads (e.g., LinkedIn, Website) to evaluate the highest yielding acquisition channels.
+                    </p>
+                </div>
+                
+                <div class="glass-card rounded-2xl p-5 shadow-sm hover:border-slate-600 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2.5 rounded-xl bg-rose-500/10 text-rose-400">
+                            <TrashIcon class="h-5 w-5" />
+                        </div>
+                        <h4 class="font-bold text-slate-200 text-sm">Conversion Path</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        A lead marked as <strong>Lost</strong> signifies an ended pursuit. Focus on Qualified leads to seamlessly convert them into actual Sales Opportunities.
+                    </p>
+                </div>
+            </div>
         </div>
 
         <!-- Create/Edit Modal (Simplified) -->
