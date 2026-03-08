@@ -169,10 +169,23 @@ const extractMatrix = async () => {
 const removeItem = (index) => extractedData.value.items.splice(index, 1);
 
 const saveBulk = async () => {
+    // Filter only matched items (with product_id and customer_id)
+    const matchedItems = extractedData.value.items.filter(item => item.product_id && item.customer_id);
+    const skippedCount = extractedData.value.items.length - matchedItems.length;
+
+    if (matchedItems.length === 0) {
+        alert('Tidak ada item yang bisa disimpan. Semua item belum terdaftar di master data.');
+        return;
+    }
+
+    if (skippedCount > 0 && !confirm(`${matchedItems.length} item akan disimpan.\n${skippedCount} item dilewati karena belum terdaftar.\n\nLanjutkan?`)) {
+        return;
+    }
+
     isSaving.value = true;
     try {
         const response = await axios.post(route('sales.planning.schedule.store-bulk'), {
-            items: extractedData.value.items
+            items: matchedItems
         });
         if (response.data.success) {
             alert(response.data.message);
