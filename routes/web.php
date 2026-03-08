@@ -259,6 +259,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::post('/orders/bulk-confirm', [SalesOrderController::class, 'bulkConfirm'])->name('orders.bulk-confirm');
     Route::post('/orders/{order}/cancel', [SalesOrderController::class, 'cancel'])->name('orders.cancel');
     Route::put('/orders/items/{item}/qty', [SalesOrderController::class, 'updateItemQty'])->name('orders.update-item-qty');
+    Route::put('/orders/items/{item}/price', [SalesOrderController::class, 'updateItemPrice'])->name('orders.update-item-price');
     Route::get('/orders/{order}/print', [SalesOrderController::class, 'print'])->name('orders.print');
     Route::post('/orders/create-from-ai', [SalesOrderController::class, 'createFromAi'])->name('orders.create-from-ai');
     Route::get('/orders/check-po', [SalesOrderController::class, 'checkPo'])->name('orders.check-po');

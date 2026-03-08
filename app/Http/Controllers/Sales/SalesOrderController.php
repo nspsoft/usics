@@ -429,6 +429,39 @@ class SalesOrderController extends Controller
         return back()->with('success', 'Quantity updated and logged successfully.');
     }
 
+    public function updateItemPrice(Request $request, \App\Models\SalesOrderItem $item)
+    {
+        $validated = $request->validate([
+            'unit_price' => 'required|numeric|min:0',
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        $oldPrice = $item->unit_price;
+        $newPrice = $validated['unit_price'];
+
+        if ($oldPrice == $newPrice) {
+            return back();
+        }
+
+        DB::transaction(function () use ($item, $newPrice, $validated, $oldPrice) {
+            $item->update(['unit_price' => $newPrice]);
+            
+            // Recalculate totals for the parent SO
+            $item->salesOrder->calculateTotals();
+
+            // Log the price change
+            if (!empty($validated['reason'])) {
+                activity()
+                    ->performedOn($item)
+                    ->causedBy(auth()->user())
+                    ->withProperties(['old_price' => $oldPrice, 'new_price' => $newPrice, 'reason' => $validated['reason']])
+                    ->log("Revised price from {$oldPrice} to {$newPrice}. Reason: " . $validated['reason']);
+            }
+        });
+
+        return back()->with('success', 'Harga berhasil direvisi.');
+    }
+
 
     public function createInvoice(SalesOrder $order)
     {

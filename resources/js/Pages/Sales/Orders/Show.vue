@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
     ArrowLeftIcon,
@@ -10,7 +10,8 @@ import {
     CheckCircleIcon,
     DocumentTextIcon,
     CheckIcon,
-    XMarkIcon
+    XMarkIcon,
+    CurrencyDollarIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 
@@ -39,6 +40,32 @@ const submitAdjustment = (itemId) => {
         preserveScroll: true,
         onSuccess: () => {
             editingItemId.value = null;
+        }
+    });
+};
+
+// ─── Price Editing ───
+const editingPriceItemId = ref(null);
+const priceForm = useForm({
+    unit_price: 0,
+    reason: ''
+});
+
+const startPriceEditing = (item) => {
+    editingPriceItemId.value = item.id;
+    priceForm.unit_price = parseFloat(item.unit_price) || 0;
+    priceForm.reason = '';
+};
+
+const cancelPriceEditing = () => {
+    editingPriceItemId.value = null;
+};
+
+const submitPriceRevision = (itemId) => {
+    priceForm.put(route('sales.orders.update-item-price', itemId), {
+        preserveScroll: true,
+        onSuccess: () => {
+            editingPriceItemId.value = null;
         }
     });
 };
@@ -168,8 +195,52 @@ const getStatusClass = (status) => {
                                             <div class="font-medium text-slate-900 dark:text-white">{{ item.product?.name || 'Unknown Item' }}</div>
                                             <div class="text-xs text-slate-500 font-mono">{{ item.product?.sku || '#' + item.product_id }}</div>
                                         </td>
-                                        <td class="px-6 py-4 text-right">
-                                            {{ formatCurrency(item.unit_price) }}
+                                        <td class="px-6 py-4 text-right min-w-[200px]">
+                                            <div v-if="editingPriceItemId === item.id" class="flex flex-col gap-2">
+                                                <div class="flex items-center gap-2 justify-end">
+                                                    <input 
+                                                        v-model="priceForm.unit_price"
+                                                        type="number"
+                                                        step="any"
+                                                        class="w-28 rounded-lg border-0 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 py-1 font-bold text-right"
+                                                        @keyup.enter="submitPriceRevision(item.id)"
+                                                    />
+                                                    <div class="flex items-center gap-1">
+                                                        <button 
+                                                            @click="submitPriceRevision(item.id)"
+                                                            class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors"
+                                                            title="Save"
+                                                        >
+                                                            <CheckIcon class="h-4 w-4" />
+                                                        </button>
+                                                        <button 
+                                                            @click="cancelPriceEditing"
+                                                            class="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                                                            title="Cancel"
+                                                        >
+                                                            <XMarkIcon class="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <input 
+                                                    v-model="priceForm.reason"
+                                                    type="text"
+                                                    placeholder="Alasan revisi harga..."
+                                                    class="w-full rounded-lg border-0 bg-slate-50 dark:bg-slate-800 text-[10px] text-slate-500 dark:text-slate-400 focus:ring-1 focus:ring-blue-500/50 py-1 italic"
+                                                />
+                                                <div v-if="priceForm.errors.unit_price" class="text-[9px] text-red-500 font-bold uppercase">{{ priceForm.errors.unit_price }}</div>
+                                            </div>
+                                            <div v-else class="flex items-center justify-end gap-2 group">
+                                                <span>{{ formatCurrency(item.unit_price) }}</span>
+                                                <button 
+                                                    v-if="salesOrder.status !== 'cancelled'"
+                                                    @click="startPriceEditing(item)"
+                                                    class="p-1 rounded-md text-blue-500 bg-blue-500/5 hover:bg-blue-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                                    title="Revisi Harga"
+                                                >
+                                                    <PencilSquareIcon class="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4 text-center font-bold text-slate-900 dark:text-white min-w-[200px]">
                                             <div v-if="editingItemId === item.id" class="flex flex-col gap-2">
