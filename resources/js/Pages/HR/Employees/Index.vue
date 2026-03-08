@@ -64,6 +64,7 @@ const form = useForm({
     joining_date: new Date().toISOString().split('T')[0],
     employment_status: 'probation',
     basic_salary: 0,
+    profile_picture: null,
 });
 
 const openModal = (employee = null) => {
@@ -79,6 +80,7 @@ const openModal = (employee = null) => {
         form.joining_date = employee.joining_date;
         form.employment_status = employee.employment_status;
         form.basic_salary = employee.basic_salary;
+        form.profile_picture = null;
     } else {
         form.reset();
         form.joining_date = new Date().toISOString().split('T')[0];
@@ -88,7 +90,11 @@ const openModal = (employee = null) => {
 
 const submitForm = () => {
     if (editingEmployee.value) {
-        form.put(route('hr.employees.update', editingEmployee.value.id), {
+        form.transform((data) => ({
+            ...data,
+            _method: 'put',
+        })).post(route('hr.employees.update', editingEmployee.value.id), {
+            preserveScroll: true,
             onSuccess: () => {
                 showModal.value = false;
                 form.reset();
@@ -96,6 +102,7 @@ const submitForm = () => {
         });
     } else {
         form.post(route('hr.employees.store'), {
+            preserveScroll: true,
             onSuccess: () => {
                 showModal.value = false;
                 form.reset();
@@ -223,7 +230,10 @@ const getStatusBadge = (status) => {
                     </div>
 
                     <div class="flex items-center gap-5 mb-6">
-                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-2xl font-black text-slate-900 dark:text-white shadow-lg shadow-indigo-500/20">
+                        <div v-if="employee.profile_picture" class="w-16 h-16 rounded-2xl overflow-hidden shadow-lg shadow-indigo-500/20 border border-slate-200 dark:border-slate-700">
+                            <img :src="`/storage/${employee.profile_picture}`" alt="Avatar" class="w-full h-full object-cover" />
+                        </div>
+                        <div v-else class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-2xl font-black text-slate-900 dark:text-white shadow-lg shadow-indigo-500/20">
                             {{ employee.full_name.charAt(0).toUpperCase() }}
                         </div>
                         <div>
@@ -454,6 +464,17 @@ const getStatusBadge = (status) => {
                                             <div class="space-y-2 md:col-span-2">
                                                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Address</label>
                                                 <textarea v-model="form.address" rows="3" class="block w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 transition-all"></textarea>
+                                            </div>
+
+                                            <div class="space-y-2 md:col-span-2">
+                                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Profile Picture (Optional)</label>
+                                                <input 
+                                                    type="file" 
+                                                    @input="form.profile_picture = $event.target.files[0]"
+                                                    class="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 transition-all cursor-pointer" 
+                                                    accept="image/*"
+                                                />
+                                                <p v-if="form.errors.profile_picture" class="text-[10px] text-red-500 italic">{{ form.errors.profile_picture }}</p>
                                             </div>
                                         </div>
                                     </div>

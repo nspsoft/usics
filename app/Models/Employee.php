@@ -50,4 +50,9 @@ class Employee extends Model
     {
         return $this->hasMany(\App\Models\HR\Leave::class);
     }
+
+    public function attendanceRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\HR\AttendanceRequest::class);
+    }
 }

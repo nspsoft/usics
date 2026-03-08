@@ -488,6 +488,10 @@ Route::middleware(['auth'])->prefix('hr')->name('hr.')->group(function () {
     Route::get('/leaves', [\App\Http\Controllers\HR\LeaveController::class, 'index'])->name('leaves.index');
     Route::post('/leaves/{leave}/approve', [\App\Http\Controllers\HR\LeaveController::class, 'approve'])->name('leaves.approve');
     Route::post('/leaves/{leave}/reject', [\App\Http\Controllers\HR\LeaveController::class, 'reject'])->name('leaves.reject');
+
+    // Attendance Requests Management
+    Route::post('/attendance-requests/{attendanceRequest}/approve', [\App\Http\Controllers\HR\AttendanceRequestController::class, 'approve'])->name('attendance-requests.approve');
+    Route::post('/attendance-requests/{attendanceRequest}/reject', [\App\Http\Controllers\HR\AttendanceRequestController::class, 'reject'])->name('attendance-requests.reject');
 });
 
 // Warehouse (Loading Queue for Warehouse Staff)
@@ -574,6 +578,9 @@ Route::middleware(['auth'])->prefix('my-timeoff')->name('my-timeoff.')->group(fu
     Route::get('/', [\App\Http\Controllers\Employee\LeaveController::class, 'index'])->name('index');
     Route::get('/create', [\App\Http\Controllers\Employee\LeaveController::class, 'create'])->name('create');
     Route::post('/', [\App\Http\Controllers\Employee\LeaveController::class, 'store'])->name('store');
+    
+    // Attendance Exception Request
+    Route::post('/attendance-request', [\App\Http\Controllers\Employee\AttendanceRequestController::class, 'store'])->name('attendance-request.store');
 });
 
 // Settings

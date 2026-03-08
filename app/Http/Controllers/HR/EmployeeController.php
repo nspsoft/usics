@@ -13,6 +13,7 @@ use Inertia\Response;
 use App\Exports\EmployeeExport;
 use App\Imports\EmployeeImport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Storage;
 
 class EmployeeController extends Controller
 {
@@ -89,7 +90,13 @@ class EmployeeController extends Controller
             'joining_date' => 'required|date',
             'employment_status' => 'required|in:permanent,contract,probation,internship',
             'basic_salary' => 'required|numeric|min:0',
+            'profile_picture' => 'nullable|image|max:2048', // max 2MB
         ]);
+
+        if ($request->hasFile('profile_picture')) {
+            $path = $request->file('profile_picture')->store('employees', 'public');
+            $validated['profile_picture'] = $path;
+        }
 
         Employee::create($validated);
 
@@ -110,7 +117,17 @@ class EmployeeController extends Controller
             'employment_status' => 'required|in:permanent,contract,probation,internship',
             'basic_salary' => 'required|numeric|min:0',
             'is_active' => 'required|boolean',
+            'profile_picture' => 'nullable|image|max:2048',
         ]);
+
+        if ($request->hasFile('profile_picture')) {
+            // Delete old picture if exists
+            if ($employee->profile_picture) {
+                Storage::disk('public')->delete($employee->profile_picture);
+            }
+            $path = $request->file('profile_picture')->store('employees', 'public');
+            $validated['profile_picture'] = $path;
+        }
 
         $employee->update($validated);
 

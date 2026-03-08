@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Carbon\Carbon;
+use App\Models\HR\AttendanceRequest;
 
 use App\Imports\AttendanceImport;
 use App\Exports\AttendanceTemplateExport;
@@ -38,8 +39,19 @@ class AttendanceController extends Controller
             $query->where('status', $request->status);
         }
 
+        $requestsQuery = AttendanceRequest::with(['employee.department'])
+            ->orderBy('created_at', 'desc');
+
+        if ($request->search) {
+            $requestsQuery->whereHas('employee', function ($q) use ($request) {
+                $q->where('full_name', 'like', "%{$request->search}%")
+                  ->orWhere('nik', 'like', "%{$request->search}%");
+            });
+        }
+
         return Inertia::render('HR/Attendance/Index', [
             'attendances' => $query->paginate(15)->withQueryString(),
+            'attendanceRequests' => $requestsQuery->paginate(10, ['*'], 'requests_page')->withQueryString(),
             'departments' => Department::all(),
             'filters' => $request->only(['search', 'date', 'status']),
         ]);

@@ -22,9 +22,12 @@ import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } fro
 
 const props = defineProps({
     attendances: Object,
+    attendanceRequests: Object,
     departments: Array,
     filters: Object,
 });
+
+const activeTab = ref('logs'); // 'logs' or 'requests'
 
 const page = usePage();
 const search = ref(props.filters.search);
@@ -103,6 +106,24 @@ const getStatusColor = (status) => {
     };
     return colors[status] || 'text-slate-700 dark:text-slate-400 bg-slate-500/10 border-slate-500/20';
 };
+
+const rejectRequestForm = useForm({
+    rejection_reason: ''
+});
+
+const approveRequest = (requestId) => {
+    if (confirm('Setujui kompensasi izin absensi ini?')) {
+        router.post(route('attendance-requests.approve', requestId), {}, { preserveScroll: true });
+    }
+};
+
+const rejectRequest = (requestId) => {
+    const reason = prompt('Masukkan alasan penolakan:');
+    if (reason) {
+        rejectRequestForm.rejection_reason = reason;
+        rejectRequestForm.post(route('attendance-requests.reject', requestId), { preserveScroll: true });
+    }
+};
 </script>
 
 <template>
@@ -135,7 +156,7 @@ const getStatusColor = (status) => {
             <!-- Stats & Quick Actions -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <!-- Self Clocking Panel (Demo) -->
-                <div class="lg:col-span-2 bg-indigo-50 dark:bg-gradient-to-br dark:from-indigo-600/20 dark:to-purple-600/10 border border-indigo-100 dark:border-indigo-500/20 rounded-[2.5rem] p-8 relative overflow-hidden group transition-colors">
+                <div class="lg:col-span-2 bg-indigo-50 dark:bg-slate-900/50 dark:bg-gradient-to-br dark:from-indigo-600/20 dark:to-purple-600/10 border border-indigo-100 dark:border-indigo-500/20 rounded-[2.5rem] p-8 relative overflow-hidden group transition-colors">
                     <div class="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                         <ClockIcon class="h-32 w-32 text-indigo-400 dark:text-indigo-400" />
                     </div>
@@ -202,18 +223,24 @@ const getStatusColor = (status) => {
             <!-- Management Table -->
             <div class="glass-card rounded-[2.5rem] overflow-hidden shadow-xl">
                 <div class="p-8 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div class="flex items-center gap-3">
-                        <FunnelIcon class="h-5 w-5 text-indigo-400" />
-                        <span class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Management Logs</span>
+                    <div class="flex items-center gap-6">
+                        <div class="flex items-center gap-3">
+                            <FunnelIcon class="h-5 w-5 text-indigo-400" />
+                            <span class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Management</span>
+                        </div>
+                        <div class="flex bg-slate-100 dark:bg-slate-900 rounded-xl p-1">
+                            <button @click="activeTab = 'logs'" :class="['px-4 py-2 rounded-lg text-xs font-bold transition-all', activeTab === 'logs' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300']">Daily Logs</button>
+                            <button @click="activeTab = 'requests'" :class="['px-4 py-2 rounded-lg text-xs font-bold transition-all', activeTab === 'requests' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300']">Exception Requests</button>
+                        </div>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-4">
+                    <div v-show="activeTab === 'logs'" class="flex flex-wrap items-center gap-4">
                         <div class="relative w-full md:w-64">
                             <MagnifyingGlassIcon class="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                            <input v-model="search" type="text" placeholder="Search employee..." class="w-full bg-white dark:bg-slate-950 border-0 rounded-xl py-2.5 pl-10 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50" />
+                            <input v-model="search" type="text" placeholder="Search employee..." class="w-full bg-white dark:bg-slate-900 border-0 rounded-xl py-2.5 pl-10 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50" />
                         </div>
-                        <input v-model="date" type="date" class="bg-white dark:bg-slate-950 border-0 rounded-xl py-2.5 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50" />
-                        <select v-model="status" class="bg-white dark:bg-slate-950 border-0 rounded-xl py-2.5 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50">
+                        <input v-model="date" type="date" class="bg-white dark:bg-slate-900 border-0 rounded-xl py-2.5 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50" />
+                        <select v-model="status" class="bg-white dark:bg-slate-900 border-0 rounded-xl py-2.5 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50">
                             <option value="">All Status</option>
                             <option value="present">Present</option>
                             <option value="late">Late</option>
@@ -288,11 +315,84 @@ const getStatusColor = (status) => {
                     </table>
                 </div>
 
-                <!-- Footer / Pagination -->
-                <div class="px-8 py-6 bg-white dark:bg-slate-950/20 border-t border-slate-200 dark:border-slate-800 flex justify-center">
+                <!-- Exception Requests Table -->
+                <div v-show="activeTab === 'requests'" class="overflow-x-auto overflow-y-auto max-h-[600px]">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-950/30">
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Employee</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Date & Type</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Reason</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-center">Status</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tr v-for="req in attendanceRequests.data" :key="req.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
+                                <td class="px-8 py-5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-500 border border-orange-200 dark:border-orange-800/30">
+                                            <ExclamationCircleIcon class="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-bold text-slate-900 dark:text-white">{{ req.employee?.full_name }}</div>
+                                            <div class="text-[10px] text-slate-500 font-mono font-bold">{{ req.employee?.department?.name }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-8 py-5">
+                                    <div class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ req.request_date }} ({{ req.request_time.substring(0,5) }})</div>
+                                    <div class="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">{{ req.type.replace('_', ' ') }}</div>
+                                </td>
+                                <td class="px-8 py-5">
+                                    <div class="text-xs text-slate-600 dark:text-slate-400 max-w-xs truncate" :title="req.reason">{{ req.reason }}</div>
+                                    <a v-if="req.attachment_path" :href="`/storage/${req.attachment_path}`" target="_blank" class="text-[10px] text-indigo-500 hover:underline mt-1 inline-block">View Attachment</a>
+                                </td>
+                                <td class="px-8 py-5 text-center">
+                                    <span :class="['px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider', 
+                                        req.status === 'approved' ? 'text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-400' : 
+                                        req.status === 'rejected' ? 'text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-400' : 
+                                        'text-orange-700 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400']">
+                                        {{ req.status }}
+                                    </span>
+                                </td>
+                                <td class="px-8 py-5 text-right space-x-2">
+                                    <template v-if="req.status === 'pending'">
+                                        <button @click="approveRequest(req.id)" class="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-500 rounded-lg transition-colors">Approve</button>
+                                        <button @click="rejectRequest(req.id)" class="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors">Reject</button>
+                                    </template>
+                                </td>
+                            </tr>
+                            <tr v-if="!attendanceRequests.data.length">
+                                <td colspan="5" class="px-8 py-16 text-center">
+                                    <div class="text-slate-500 text-sm italic">No exception requests found.</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer / Pagination for Logs -->
+                <div v-show="activeTab === 'logs'" class="px-8 py-6 bg-white dark:bg-slate-950/20 border-t border-slate-200 dark:border-slate-800 flex justify-center">
                     <nav class="flex gap-1">
                         <Link
                             v-for="(link, i) in attendances.links"
+                            :key="i"
+                            :href="link.url || '#'"
+                            class="px-4 py-2 rounded-xl text-sm font-bold transition-all"
+                            :class="[
+                                link.active ? 'bg-indigo-600 text-slate-900 dark:text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 hover:text-slate-900 dark:text-white',
+                                !link.url ? 'opacity-50 cursor-not-allowed' : ''
+                            ]"
+                            v-html="link.label"
+                        />
+                    </nav>
+                </div>
+                <!-- Pagination for Requests -->
+                <div v-show="activeTab === 'requests'" class="px-8 py-6 bg-white dark:bg-slate-950/20 border-t border-slate-200 dark:border-slate-800 flex justify-center">
+                    <nav class="flex gap-1">
+                        <Link
+                            v-for="(link, i) in attendanceRequests.links"
                             :key="i"
                             :href="link.url || '#'"
                             class="px-4 py-2 rounded-xl text-sm font-bold transition-all"

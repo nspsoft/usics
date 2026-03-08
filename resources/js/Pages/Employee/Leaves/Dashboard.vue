@@ -2,13 +2,16 @@
 import { ref } from 'vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Modal from '@/Components/Modal.vue';
+import InputError from '@/Components/InputError.vue';
 import { 
     CalendarDaysIcon, 
     PlusIcon, 
     CheckCircleIcon, 
     ClockIcon, 
     XCircleIcon,
-    ArrowRightIcon
+    ArrowRightIcon,
+    ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline';
 import moment from 'moment';
 
@@ -36,6 +39,25 @@ const getStatusIcon = (status) => {
         case 'rejected': return XCircleIcon;
         default: return ClockIcon;
     }
+};
+
+const showAttendanceModal = ref(false);
+const attendanceForm = useForm({
+    type: 'late_arrival',
+    request_date: '',
+    request_time: '',
+    reason: '',
+    attachment: null,
+});
+
+const submitAttendance = () => {
+    attendanceForm.post(route('my-timeoff.attendance-request.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showAttendanceModal.value = false;
+            attendanceForm.reset();
+        },
+    });
 };
 </script>
 
@@ -144,13 +166,72 @@ const getStatusIcon = (status) => {
                 </div>
             </div>
 
-            <!-- Floating Action Button (FAB) for Mobile PWA -->
-            <div class="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 z-50">
-                <Link :href="route('my-timeoff.create')" class="flex items-center justify-center w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+            <!-- Action Buttons for Mobile PWA -->
+            <div class="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 z-50 flex flex-col items-end gap-3">
+                <button @click="showAttendanceModal = true" class="flex items-center justify-center w-12 h-12 bg-orange-500 text-white rounded-full shadow-lg hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none" title="Izin Jam">
+                    <ClockIcon class="w-6 h-6" />
+                </button>
+                <Link :href="route('my-timeoff.create')" class="flex items-center justify-center w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none" title="Cuti Baru">
                     <PlusIcon class="w-6 h-6" />
                 </Link>
             </div>
             
         </div>
+
+        <!-- Attendance Exception Request Modal -->
+        <Modal :show="showAttendanceModal" @close="showAttendanceModal = false" maxWidth="md">
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-4">
+                    <ExclamationTriangleIcon class="w-5 h-5 text-orange-500" /> Pengajuan Izin Jam
+                </h3>
+
+                <form @submit.prevent="submitAttendance" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Tipe Izin</label>
+                        <select v-model="attendanceForm.type" class="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <option value="late_arrival">Datang Terlambat</option>
+                            <option value="early_dismissal">Pulang Lebih Awal</option>
+                            <option value="forgot_clock_in">Lupa Absen</option>
+                        </select>
+                        <InputError :message="attendanceForm.errors.type" class="mt-1" />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Tanggal</label>
+                            <input type="date" v-model="attendanceForm.request_date" required class="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <InputError :message="attendanceForm.errors.request_date" class="mt-1" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Jam</label>
+                            <input type="time" v-model="attendanceForm.request_time" required class="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <InputError :message="attendanceForm.errors.request_time" class="mt-1" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Alasan Keterlambatan / Pulang Cepat</label>
+                        <textarea v-model="attendanceForm.reason" rows="3" required class="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
+                        <InputError :message="attendanceForm.errors.reason" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Lampiran Bukti (Opsional)</label>
+                        <input type="file" @input="attendanceForm.attachment = $event.target.files[0]" class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                        <InputError :message="attendanceForm.errors.attachment" class="mt-1" />
+                    </div>
+
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button type="button" @click="showAttendanceModal = false" class="px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Batal
+                        </button>
+                        <button type="submit" :disabled="attendanceForm.processing" class="inline-flex justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Kirim Pengajuan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
     </AppLayout>
 </template>
