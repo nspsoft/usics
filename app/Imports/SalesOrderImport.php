@@ -38,7 +38,7 @@ class SalesOrderImport implements ToCollection, WithHeadingRow
 
             foreach ($grouped as $soNumber => $items) {
                 try {
-                    $so = SalesOrder::where('so_number', trim($soNumber))->first();
+                    $so = SalesOrder::withCount('invoices')->where('so_number', trim($soNumber))->first();
                     if (!$so) {
                         $this->errors[] = "SO not found: {$soNumber}";
                         $this->skippedCount += $items->count();
@@ -51,7 +51,9 @@ class SalesOrderImport implements ToCollection, WithHeadingRow
                         continue;
                     }
 
-                    DB::transaction(function () use ($so, $items) {
+                    $hasInvoices = $so->invoices_count > 0;
+
+                    DB::transaction(function () use ($so, $items, $hasInvoices) {
                         $firstRow = $items->first();
 
                         // Update SO-level fields if provided
@@ -73,8 +75,14 @@ class SalesOrderImport implements ToCollection, WithHeadingRow
                         }
 
                         // Update item-level fields (match by product SKU)
+                        // If SO has invoices, block price/qty changes to prevent inconsistency
+                        if ($hasInvoices) {
+                            $this->errors[] = "SO {$so->so_number} sudah memiliki Invoice. Hanya Order Date, Delivery Date, PO, dan Notes yang diupdate. Harga & qty tidak diubah.";
+                        }
+
                         foreach ($items as $row) {
                             if (empty($row['product_code'])) continue;
+                            if ($hasInvoices) continue; // Skip item updates if has invoices
 
                             $product = Product::where('sku', trim($row['product_code']))->first();
                             if (!$product) {

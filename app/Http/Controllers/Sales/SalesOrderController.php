@@ -436,6 +436,12 @@ class SalesOrderController extends Controller
             'reason' => 'nullable|string|max:255',
         ]);
 
+        // Block price changes if SO has invoices
+        $so = $item->salesOrder;
+        if ($so->invoices()->exists()) {
+            return back()->with('error', 'Tidak bisa merevisi harga karena SO ini sudah memiliki Invoice.');
+        }
+
         $oldPrice = $item->unit_price;
         $newPrice = $validated['unit_price'];
 

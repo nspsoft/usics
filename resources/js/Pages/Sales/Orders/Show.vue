@@ -233,7 +233,7 @@ const getStatusClass = (status) => {
                                             <div v-else class="flex items-center justify-end gap-2 group">
                                                 <span>{{ formatCurrency(item.unit_price) }}</span>
                                                 <button 
-                                                    v-if="salesOrder.status !== 'cancelled'"
+                                                    v-if="salesOrder.status !== 'cancelled' && (!salesOrder.invoices || salesOrder.invoices.length === 0)"
                                                     @click="startPriceEditing(item)"
                                                     class="p-1 rounded-md text-blue-500 bg-blue-500/5 hover:bg-blue-500/10 transition-all opacity-0 group-hover:opacity-100"
                                                     title="Revisi Harga"
