@@ -197,6 +197,13 @@ class EmailService
             'password' => $settings['smtp_password'],
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
+            'stream' => [
+                'ssl' => [
+                    'allow_self_signed' => true,
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ],
+            ],
         ]);
 
         Config::set('mail.from.address', $settings['from_address']);
