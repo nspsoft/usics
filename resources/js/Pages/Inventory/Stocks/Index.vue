@@ -127,20 +127,23 @@ const getStockStatus = (stock) => {
         return Math.max(0, suggestion); // Ensure non-negative
     };
 
-    // Critical: Available <= Min Stock
-    if (available <= minStock && minStock > 0) {
+    // Critical: Available < 0 (Negative Stock) OR (Available <= Min Stock AND Min Stock > 0)
+    if (available < 0 || (minStock > 0 && available <= minStock)) {
         const qtyToOrder = getReorderSuggestion();
+        // If suggestion is 0 but we have negative stock, suggest at least enough to cover the deficit
+        const finalQty = (available < 0 && qtyToOrder === 0) ? Math.abs(available) : qtyToOrder;
+        
         return {
-            label: `URGENT: Reorder ${formatNumber(qtyToOrder)}`,
+            label: `URGENT: Reorder ${formatNumber(finalQty)}`,
             class: 'bg-red-500/10 text-red-500 ring-red-500/20 hover:bg-red-500 hover:text-slate-900 dark:text-white cursor-pointer',
             textClass: 'text-red-500 font-bold',
             isCritical: true,
-            reorderQty: qtyToOrder
+            reorderQty: finalQty
         };
     }
 
-    // Warning: Available <= Reorder Point
-    if (available <= reorderPoint && reorderPoint > 0) {
+    // Warning: Available <= Reorder Point (Only if reorder point > 0 and we haven't hit URGENT yet)
+    if (reorderPoint > 0 && available <= reorderPoint) {
         const qtyToOrder = getReorderSuggestion();
         return {
             label: `Reorder ${formatNumber(qtyToOrder)}`,

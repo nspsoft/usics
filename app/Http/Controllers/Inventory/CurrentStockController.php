@@ -22,7 +22,8 @@ class CurrentStockController extends Controller
             ->join('products', 'product_stocks.product_id', '=', 'products.id')
             ->whereNull('products.deleted_at')
             ->whereHas('warehouse')
-            ->select('product_stocks.*') // Keep primary selection on stocks
+            ->selectRaw('MIN(product_stocks.id) as id, product_stocks.product_id, product_stocks.warehouse_id, SUM(qty_on_hand) as qty_on_hand, SUM(qty_reserved) as qty_reserved')
+            ->groupBy('product_stocks.product_id', 'product_stocks.warehouse_id')
             ->when($request->search, function ($q, $search) {
                 $q->whereHas('product', function ($p) use ($search) {
                     $p->where('name', 'like', "%{$search}%")
@@ -31,7 +32,7 @@ class CurrentStockController extends Controller
                 });
             })
             ->when($request->warehouse_id, function ($q, $warehouse) {
-                $q->where('warehouse_id', $warehouse);
+                $q->where('product_stocks.warehouse_id', $warehouse);
             })
             ->when($request->category, function ($q, $category) {
                 $q->whereHas('product', function ($p) use ($category) {
@@ -56,12 +57,11 @@ class CurrentStockController extends Controller
             $query->orderBy('products.sku', $direction);
         } elseif ($sort === 'warehouse_name') {
             $query->join('warehouses', 'product_stocks.warehouse_id', '=', 'warehouses.id')
-                  ->orderBy('warehouses.name', $direction)
-                  ->select('product_stocks.*'); // Ensure we keep main table columns
+                  ->orderBy('warehouses.name', $direction);
         } elseif ($sort === 'qty_on_hand') {
             $query->orderBy('qty_on_hand', $direction);
         } elseif ($sort === 'available') {
-            $query->orderByRaw('(qty_on_hand - qty_reserved) ' . $direction);
+            $query->orderByRaw('(SUM(qty_on_hand) - SUM(qty_reserved)) ' . $direction);
         } else {
             $query->orderBy('products.name', 'asc')
                   ->orderBy('warehouse_id', 'asc');
