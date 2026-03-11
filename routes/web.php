@@ -636,12 +636,6 @@ Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(functi
     Route::delete('/workflow/{workflow}', [App\Http\Controllers\Settings\WorkflowController::class, 'destroy'])->name('workflow.destroy');
     Route::post('/workflow/{workflow}/toggle', [App\Http\Controllers\Settings\WorkflowController::class, 'toggle'])->name('workflow.toggle');
     
-    // Import & Export
-    Route::get('/io', [App\Http\Controllers\Settings\ImportExportController::class, 'index'])->name('io');
-    Route::get('/io/template/{type}', [App\Http\Controllers\Settings\ImportExportController::class, 'downloadTemplate'])->name('io.template');
-    Route::get('/io/export/{type}', [App\Http\Controllers\Settings\ImportExportController::class, 'export'])->name('io.export');
-    Route::post('/io/import/{type}', [App\Http\Controllers\Settings\ImportExportController::class, 'import'])->name('io.import');
-    Route::post('/io/preview/{type}', [App\Http\Controllers\Settings\ImportExportController::class, 'preview'])->name('io.preview');
     
     // Database Management
     Route::get('/database', [App\Http\Controllers\Settings\DatabaseManagementController::class, 'index'])->name('database');
