@@ -11,6 +11,7 @@ import ProductPartnerManager from './Partials/ProductPartnerManager.vue';
 import { ref } from 'vue';
 
 const activeTab = ref('details');
+const showFullImage = ref(false);
 
 const props = defineProps({
     product: Object,
@@ -250,12 +251,19 @@ const getItemTypeLabel = (type) => {
                     <!-- Product Photo Card -->
                     <div class="rounded-2xl glass-card overflow-hidden">
                         <div class="p-6">
-                            <div v-if="product.image" class="aspect-square w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                            <div v-if="product.image" class="aspect-square w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 group relative">
                                 <img
                                     :src="`/storage/${product.image}`"
                                     :alt="product.name"
-                                    class="w-full h-full object-cover"
+                                    class="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                                    @click="showFullImage = true"
                                 />
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                    <span class="text-white text-sm font-medium flex items-center gap-2">
+                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" /></svg>
+                                        View Full
+                                    </span>
+                                </div>
                             </div>
                             <div v-else class="aspect-square w-full rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center text-slate-400">
                                 <CubeIcon class="h-16 w-16 mb-2 text-slate-300 dark:text-slate-600" />
@@ -317,6 +325,16 @@ const getItemTypeLabel = (type) => {
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Full Image Modal -->
+        <div v-if="showFullImage && product.image" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click="showFullImage = false">
+            <div class="relative max-w-5xl max-h-[90vh] p-4">
+                <button @click="showFullImage = false" class="absolute -top-12 right-0 text-white hover:text-slate-300 transition-colors z-50">
+                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <img :src="`/storage/${product.image}`" :alt="product.name" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" @click.stop />
             </div>
         </div>
     </AppLayout>
