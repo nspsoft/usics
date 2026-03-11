@@ -57,8 +57,10 @@ const form = useForm({
 
 const submit = () => {
     if (isEditing.value) {
-        form.post(`/inventory/products/${props.product.id}`, {
+        form.transform((data) => ({
+            ...data,
             _method: 'put',
+        })).post(`/inventory/products/${props.product.id}`, {
             forceFormData: true,
         });
     } else {
