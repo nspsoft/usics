@@ -13,7 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use Intervention\Image\ImageManagerStatic as Image;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ProductExport;
 use App\Imports\ProductImport;
@@ -291,14 +292,11 @@ class ProductController extends Controller
         }
 
         // Resize and convert to WebP
-        $image = Image::make($file)
-            ->resize(800, 800, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            })
-            ->encode('webp', 80);
+        $manager = new ImageManager(new Driver());
+        $image = $manager->read($file->getRealPath());
+        $image->scaleDown(width: 800, height: 800);
 
-        Storage::disk('public')->put($path, $image);
+        Storage::disk('public')->put($path, (string) $image->toWebp(80));
 
         return $path;
     }
