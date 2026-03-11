@@ -42,6 +42,14 @@ const selectedEmail = ref(null);
 const searchQuery = ref(props.filters.search || '');
 const activeFilter = ref('inbox'); // 'inbox', 'sent', 'done', 'trash', 'po', 'urgent'
 
+// Initialize activeFilter based on props
+if (props.filters.status) {
+    activeFilter.value = props.filters.status === 'read' ? 'done' : props.filters.status;
+} else if (props.filters.intent) {
+    if (props.filters.intent === 'purchase_order') activeFilter.value = 'po';
+    // 'urgent' would be handled by urgency score, not intent strictly
+}
+
 // Formatting Functions
 const formatDate = (dateString) => {
     const date = moment(dateString);
@@ -119,7 +127,7 @@ const performSearch = (filter = null) => {
         data: { 
             search: searchQuery.value,
             intent: ['po', 'urgent'].includes(activeFilter.value) ? (activeFilter.value === 'po' ? 'purchase_order' : null) : null,
-            status: activeFilter.value === 'sent' ? 'sent' : (activeFilter.value === 'done' ? 'read' : null) // Example mapping
+            status: ['sent', 'trash'].includes(activeFilter.value) ? activeFilter.value : (activeFilter.value === 'done' ? 'read' : null)
         },
         preserveState: true, 
         preserveScroll: true,
