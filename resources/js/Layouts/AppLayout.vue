@@ -375,7 +375,6 @@ const navigation = [
             { name: 'Regional & Tax', href: '/settings/regional', icon: GlobeAltIcon, permission: 'settings.regional_&_tax.view' },
             { name: 'System Preferences', href: '/settings/preferences', icon: AdjustmentsHorizontalIcon, permission: 'settings.system_preferences.view' },
             { name: 'Workflow Approval', href: '/settings/workflow', icon: CheckBadgeIcon, permission: 'settings.workflow_approval.view' },
-            { name: 'Import & Export', href: '/settings/io', icon: ArrowPathIcon, permission: 'settings.import_&_export.view' },
             { name: 'Database Management', href: '/settings/database', icon: CircleStackIcon, permission: 'settings.database_management.view' },
             { name: 'Activity Logs', href: '/admin/activity-logs', icon: ClipboardDocumentListIcon, permission: 'settings.activity_logs.view' },
             { name: 'WhatsApp Bot', href: '/settings/whatsapp', icon: ChatBubbleLeftRightIcon, permission: 'settings.company_profile.view' },
