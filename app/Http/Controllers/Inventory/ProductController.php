@@ -10,8 +10,10 @@ use App\Models\Warehouse;
 use App\Models\Customer;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Intervention\Image\ImageManagerStatic as Image;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ProductExport;
 use App\Imports\ProductImport;
@@ -117,9 +119,15 @@ class ProductController extends Controller
             'track_serial' => 'boolean',
             'track_batch' => 'boolean',
             'is_active' => 'boolean',
+            'photo' => 'nullable|image|max:10240', // 10MB max
         ]);
 
         $product = Product::create($validated);
+
+        if ($request->hasFile('photo')) {
+            $path = $this->handleImageUpload($request->file('photo'));
+            $product->update(['image' => $path]);
+        }
 
         // Create initial stock records for selected warehouses
         if ($request->has('initial_stocks')) {
@@ -196,9 +204,24 @@ class ProductController extends Controller
             'track_serial' => 'boolean',
             'track_batch' => 'boolean',
             'is_active' => 'boolean',
+            'photo' => 'nullable|image|max:10240',
+            'remove_photo' => 'boolean',
         ]);
 
         $product->update($validated);
+
+        if ($request->boolean('remove_photo')) {
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+            $product->update(['image' => null]);
+        } elseif ($request->hasFile('photo')) {
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+            $path = $this->handleImageUpload($request->file('photo'));
+            $product->update(['image' => $path]);
+        }
 
         return redirect()->route('inventory.products.index')
             ->with('success', 'Product updated successfully.');
@@ -252,5 +275,31 @@ class ProductController extends Controller
         return response()->json([
             'usage' => $product->getUsageSummary()
         ]);
+    }
+
+    /**
+     * Handle image upload and compression
+     */
+    private function handleImageUpload($file): string
+    {
+        $filename = 'product_' . time() . '_' . uniqid() . '.webp';
+        $path = 'product-photos/' . $filename;
+
+        // Ensure directory exists
+        if (!Storage::disk('public')->exists('product-photos')) {
+            Storage::disk('public')->makeDirectory('product-photos');
+        }
+
+        // Resize and convert to WebP
+        $image = Image::make($file)
+            ->resize(800, 800, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            })
+            ->encode('webp', 80);
+
+        Storage::disk('public')->put($path, $image);
+
+        return $path;
     }
 }

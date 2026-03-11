@@ -24,6 +24,9 @@ const supplierOptions = computed(() => props.suppliers?.map(s => ({ id: s.id, la
 
 const isEditing = computed(() => !!props.product);
 
+const photoPreview = ref(null);
+const existingImage = ref(props.product?.image || null);
+
 const form = useForm({
     sku: props.product?.sku || '',
     name: props.product?.name || '',
@@ -47,14 +50,50 @@ const form = useForm({
     track_serial: props.product?.track_serial || false,
     track_batch: props.product?.track_batch || false,
     is_active: props.product?.is_active ?? true,
+    photo: null,
+    remove_photo: false,
     initial_stocks: props.product?.stocks || [],
 });
 
 const submit = () => {
     if (isEditing.value) {
-        form.put(`/inventory/products/${props.product.id}`);
+        form.post(`/inventory/products/${props.product.id}`, {
+            _method: 'put',
+            forceFormData: true,
+        });
     } else {
-        form.post('/inventory/products');
+        form.post('/inventory/products', {
+            forceFormData: true,
+        });
+    }
+};
+
+const onPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    form.photo = file;
+    form.remove_photo = false;
+    const reader = new FileReader();
+    reader.onload = (ev) => { photoPreview.value = ev.target.result; };
+    reader.readAsDataURL(file);
+};
+
+const removePhoto = () => {
+    form.photo = null;
+    form.remove_photo = true;
+    photoPreview.value = null;
+    existingImage.value = null;
+};
+
+const onDrop = (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        form.photo = file;
+        form.remove_photo = false;
+        const reader = new FileReader();
+        reader.onload = (ev) => { photoPreview.value = ev.target.result; };
+        reader.readAsDataURL(file);
     }
 };
 
@@ -531,6 +570,52 @@ watch([() => form.cost_price, profitMargin, autoCalculate], ([newCost, newMargin
 
                 <!-- Sidebar -->
                 <div class="xl:col-span-4 space-y-6">
+                    <!-- Product Photo -->
+                    <div class="rounded-2xl glass-card">
+                        <div class="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
+                            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Product Photo</h2>
+                        </div>
+                        <div class="p-6">
+                            <div
+                                v-if="!photoPreview && !existingImage"
+                                class="relative flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 hover:border-blue-500/50 transition-colors cursor-pointer"
+                                @dragover.prevent
+                                @drop="onDrop"
+                            >
+                                <input
+                                    type="file"
+                                    @change="onPhotoChange"
+                                    class="absolute inset-0 opacity-0 cursor-pointer"
+                                    accept="image/*"
+                                />
+                                <PhotoIcon class="h-12 w-12 text-slate-500 mb-3" />
+                                <p class="text-sm text-slate-500 dark:text-slate-400 font-medium text-center">Click or drag photo to upload</p>
+                                <p class="text-xs text-slate-500 mt-1">JPG, PNG max 10MB</p>
+                            </div>
+                            <div v-else class="relative">
+                                <img
+                                    :src="photoPreview || `/storage/${existingImage}`"
+                                    class="w-full aspect-square object-cover rounded-xl border border-slate-200 dark:border-slate-700"
+                                    alt="Product photo"
+                                />
+                                <div class="absolute top-2 right-2 flex gap-2">
+                                    <label class="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-300 hover:text-blue-500 cursor-pointer transition-colors shadow-sm">
+                                        <PhotoIcon class="h-4 w-4" />
+                                        <input type="file" @change="onPhotoChange" class="hidden" accept="image/*" />
+                                    </label>
+                                    <button
+                                        type="button"
+                                        @click="removePhoto"
+                                        class="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-300 hover:text-red-500 transition-colors shadow-sm"
+                                    >
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <p v-if="form.errors.photo" class="mt-2 text-sm text-red-400">{{ form.errors.photo }}</p>
+                        </div>
+                    </div>
+
                     <!-- Status -->
                     <div class="rounded-2xl glass-card">
                         <div class="border-b border-slate-200 dark:border-slate-800 px-6 py-4">

@@ -247,6 +247,23 @@ const getItemTypeLabel = (type) => {
 
                 <!-- Sidebar -->
                 <div class="space-y-6">
+                    <!-- Product Photo Card -->
+                    <div class="rounded-2xl glass-card overflow-hidden">
+                        <div class="p-6">
+                            <div v-if="product.image" class="aspect-square w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                                <img
+                                    :src="`/storage/${product.image}`"
+                                    :alt="product.name"
+                                    class="w-full h-full object-cover"
+                                />
+                            </div>
+                            <div v-else class="aspect-square w-full rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center text-slate-400">
+                                <CubeIcon class="h-16 w-16 mb-2 text-slate-300 dark:text-slate-600" />
+                                <span class="text-sm font-medium">No Photo</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Status Card -->
                     <div class="rounded-2xl glass-card overflow-hidden">
                         <div class="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
