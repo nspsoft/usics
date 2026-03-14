@@ -336,10 +336,8 @@
                             With kind regards<br><br><br>
                         </div>
 
-                        <div style="margin-top: 40px; position: relative;">
-                            <img src="/images/signature-nanang.png" style="height: 100px; margin-bottom: -30px; margin-left: -20px;" alt="Signature">
-                            <br>
-                            <span class="font-bold" style="text-decoration: underline; font-size: 11pt; position: relative; z-index: 10;">Nanang Mulyana</span><br>
+                        <div style="margin-top: 40px;">
+                            <span class="font-bold" style="text-decoration: underline; font-size: 11pt;">Nanang Mulyana</span><br>
                             Marketing Departement
                         </div>
                     </div>
