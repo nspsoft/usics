@@ -16,6 +16,7 @@
             color: #000;
             margin: 0;
             padding: 20px;
+            background: #fff;
         }
         table {
             width: 100%;
@@ -113,62 +114,6 @@
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
 
-        .totals-section {
-            margin-top: -1px; /* Align with items table border */
-        }
-        .totals-section td {
-            border: 1px solid #000;
-            padding: 5px;
-        }
-        .totals-label {
-            width: 75%;
-            text-align: right;
-            font-weight: bold;
-        }
-        .totals-value {
-            width: 25%;
-            text-align: right;
-            font-weight: bold;
-        }
-
-        .footer-section {
-            margin-top: 20px;
-        }
-        .footer-boxes {
-            width: 100%;
-        }
-        .terms-box {
-            width: 55%;
-            border: 1px solid #000;
-            padding: 10px;
-            vertical-align: top;
-        }
-        .signature-box {
-            width: 45%;
-            border: 1px solid #000;
-            border-left: none;
-            padding: 0;
-            vertical-align: top;
-        }
-        .signature-table {
-            height: 100%;
-        }
-        .signature-table td {
-            border: 1px solid #000;
-            text-align: center;
-            height: 20px;
-            font-size: 9px;
-            padding: 3px;
-        }
-        .signature-space {
-            height: 80px !important;
-        }
-        .signature-name {
-            font-weight: bold;
-            font-style: italic;
-            border-top: 1px solid #000;
-        }
-        
         .clear { clear: both; }
 
         @media print {
@@ -177,7 +122,7 @@
         }
     </style>
 </head>
-<body>
+<body class="jidoka-print-document">
     <div class="no-print" style="margin-bottom: 20px; text-align: right;">
         <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer; background: #0055A5; color: white; border: none; border-radius: 5px;">Print Document</button>
     </div>
@@ -306,28 +251,28 @@
 
 
     <!-- Footer / Bottom Section -->
-    <div class="footer-section">
-        <table width="100%">
+    <div style="margin-top: 30px; clear: both;">
+        <table width="100%" style="border: none;">
             <tr>
-                <td width="70%" style="vertical-align: top;">
+                <td width="70%" style="vertical-align: top; border: none; padding: 0;">
                     <div style="font-size: 10pt; line-height: 1.6;">
                         <span class="font-bold">Note :</span><br>
                         Price above Exclude Tax (PPn 11%)<br>
-                        <table cellpadding="0" cellspacing="0" style="width: auto; margin-top: 2px;">
+                        <table cellpadding="0" cellspacing="0" style="width: auto; margin-top: 2px; border: none;">
                             <tr>
-                                <td width="110">Term of Payment</td>
-                                <td width="15">:</td>
-                                <td>1 Month after Invoice received</td>
+                                <td width="110" style="border: none;">Term of Payment</td>
+                                <td width="15" style="border: none;">:</td>
+                                <td style="border: none;">1 Month after Invoice received</td>
                             </tr>
                             <tr>
-                                <td>Lead time</td>
-                                <td>:</td>
-                                <td>14 days after PO received</td>
+                                <td style="border: none;">Lead time</td>
+                                <td style="border: none;">:</td>
+                                <td style="border: none;">14 days after PO received</td>
                             </tr>
                             <tr>
-                                <td>Expired</td>
-                                <td>:</td>
-                                <td>This quotation will up date 2 weeks after send to Customer</td>
+                                <td style="border: none;">Expired</td>
+                                <td style="border: none;">:</td>
+                                <td style="border: none;">This quotation will up date 2 weeks after send to Customer</td>
                             </tr>
                         </table>
                         
@@ -336,17 +281,19 @@
                             With kind regards<br><br><br>
                         </div>
 
-                        <div style="margin-top: 40px; position: relative;">
-                            <img src="/images/signature-nanang.png" style="height: 100px; margin-bottom: -30px; margin-left: -20px;" alt="Signature">
-                            <br>
-                            <span class="font-bold" style="text-decoration: underline; font-size: 11pt; position: relative; z-index: 10;">Nanang Mulyana</span><br>
+                        <div style="margin-top: 40px;">
+                            <span class="font-bold" style="text-decoration: underline; font-size: 11pt;">Nanang Mulyana</span><br>
                             Marketing Departement
                         </div>
                     </div>
                 </td>
-                <td width="30%" style="vertical-align: bottom; text-align: right;">
+                <td width="30%" style="vertical-align: bottom; text-align: right; border: none; padding: 0;">
                     <div style="text-align: center; float: right; margin-bottom: 10px;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode(route('sales.quotations.public-validate', $quotation->public_uuid ?: $quotation->id)) }}" style="width: 100px; height: 100px;">
+                        {{-- QR Code using Google Charts to avoid potential interference from AI Extractor which might trigger on 'v1' URLs --}}
+                        @php
+                            $validationUrl = route('sales.quotations.public-validate', $quotation->public_uuid ?: $quotation->id);
+                        @endphp
+                        <img src="https://chart.googleapis.com/chart?chs=100x100&cht=qr&chl={{ urlencode($validationUrl) }}&choe=UTF-8" style="width: 100px; height: 100px; display: inline-block;">
                         <div style="font-size: 9pt; font-weight: bold; margin-top: 5px; color: #0055A5;">SCAN FOR VALIDATION</div>
                         <div style="font-size: 8pt; color: #555;">Official JIDOKA Document</div>
                     </div>
