@@ -312,7 +312,7 @@
                 <td width="70%" style="vertical-align: top;">
                     <div style="font-size: 10pt; line-height: 1.6;">
                         <span class="font-bold">Note :</span><br>
-                        Price above Exclude Tax (PPn 10%)<br>
+                        Price above Exclude Tax (PPn 11%)<br>
                         <table cellpadding="0" cellspacing="0" style="width: auto; margin-top: 2px;">
                             <tr>
                                 <td width="110">Term of Payment</td>
