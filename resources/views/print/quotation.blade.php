@@ -284,7 +284,7 @@
             <!-- Grand Total -->
             <tr class="font-bold" style="background-color: #f9f9f9;">
                 <td colspan="5" class="text-right" style="padding: 10px 8px;">GRAND TOTAL</td>
-                <td class="text-right" style="font-size: 11pt;">IDR {{ number_format($quotation->total, 0, ',', '.') }}</td>
+                <td class="text-right" style="font-size: 11pt;">IDR {{ number_format($quotation->subtotal - $quotation->discount, 0, ',', '.') }}</td>
             </tr>
         </tbody>
     </table>
