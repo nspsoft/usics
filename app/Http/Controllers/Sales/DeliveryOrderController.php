@@ -201,6 +201,9 @@ class DeliveryOrderController extends Controller
                     
                     $soItem->increment('qty_invoiced', $qtyToInvoice);
                 }
+                
+                // Refresh the invoice status for the DO
+                $do->refreshInvoiceStatus();
             }
 
             $invoice->calculateTotals();

@@ -19,7 +19,10 @@ class SalesInvoiceController extends Controller
     public function index(Request $request): Response
     {
         $query = SalesInvoice::with(['salesOrder.customer'])
-            ->withCount('items')
+            ->withCount(['items', 'items as do_count' => function ($query) {
+                $query->select(\Illuminate\Support\Facades\DB::raw('count(distinct delivery_order_id)'))
+                      ->whereNotNull('delivery_order_id');
+            }])
             ->when($request->search, function ($q, $search) {
                 $q->where(function ($q) use ($search) {
                     $q->where('invoice_number', 'like', "%{$search}%")
@@ -34,6 +37,15 @@ class SalesInvoiceController extends Controller
             })
             ->when($request->status, function ($q, $status) {
                 $q->where('status', $status);
+            })
+            ->when($request->customer_id, function ($q, $customerId) {
+                $q->where('customer_id', $customerId);
+            })
+            ->when($request->date_from, function ($q, $dateFrom) {
+                $q->whereDate('invoice_date', '>=', $dateFrom);
+            })
+            ->when($request->date_to, function ($q, $dateTo) {
+                $q->whereDate('invoice_date', '<=', $dateTo);
             });
 
         $sort = $request->input('sort', 'invoice_date');
@@ -50,9 +62,11 @@ class SalesInvoiceController extends Controller
         $invoices = $query->paginate(20)
             ->withQueryString();
 
+        $customers = \App\Models\Customer::orderBy('name', 'asc')->get(['id', 'name']);
+
         return Inertia::render('Sales/Invoices/Index', [
             'invoices' => $invoices,
-            'filters' => $request->only(['search', 'status']),
+            'filters' => $request->only(['search', 'status', 'customer_id', 'date_from', 'date_to', 'sort', 'direction']),
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'issued', 'label' => 'Issued'],
@@ -60,6 +74,7 @@ class SalesInvoiceController extends Controller
                 ['value' => 'paid', 'label' => 'Paid'],
                 ['value' => 'cancelled', 'label' => 'Cancelled'],
             ],
+            'customers' => $customers,
         ]);
     }
 
