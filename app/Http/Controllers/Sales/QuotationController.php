@@ -168,16 +168,14 @@ class QuotationController extends Controller
         if ($quotation->status === 'sent') {
              $baseNumber = $quotation->number;
              // Remove existing revision suffix if any to get base
-             if (strpos($baseNumber, '/REV-') !== false) {
-                 $baseNumber = substr($baseNumber, 0, strpos($baseNumber, '/REV-'));
-             }
+             $baseNumber = preg_replace('/(\/REV-|\/R)\d+$/', '', $baseNumber);
              
              // Increment revision
              $newRevision = ($quotation->revision ?? 0) + 1;
              
              $updateData['status'] = 'draft';
              $updateData['revision'] = $newRevision;
-             $updateData['number'] = $baseNumber . '/REV-' . $newRevision;
+             $updateData['number'] = $baseNumber . '/R' . $newRevision;
         }
 
         DB::transaction(function () use ($updateData, $validated, $quotation) {
