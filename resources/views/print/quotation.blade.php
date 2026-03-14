@@ -236,6 +236,21 @@
                 </td>
             </tr>
         </table>
+        
+        <div style="margin-top: 15px;">
+            <table class="customer-table">
+                <tr>
+                    <td style="width: 40px;">Attn</td>
+                    <td style="width: 15px;">:</td>
+                    <td>{{ $quotation->customer->contact_person ?? '-' }}</td>
+                </tr>
+            </table>
+            <div style="margin-top: 8px;">
+                Dear Sirs,<br>
+                It's a great pleasure for us to propose our best price quotation of this Product<br>
+                to suit your requirements as mentioned below :
+            </div>
+        </div>
     </div>
 
     <!-- Items Table -->
@@ -297,6 +312,7 @@
                 <td width="70%" style="vertical-align: top;">
                     <div style="font-size: 10pt; line-height: 1.6;">
                         <span class="font-bold">Note :</span><br>
+                        Price above Exclude Tax (PPn 10%)<br>
                         <table cellpadding="0" cellspacing="0" style="width: auto; margin-top: 2px;">
                             <tr>
                                 <td width="110">Term of Payment</td>
@@ -317,7 +333,7 @@
                         
                         <div style="margin-top: 15px;">
                             Looking forwards to hearing from you soon<br>
-                            With kind regards
+                            With kind regards<br><br><br>
                         </div>
 
                         <div style="margin-top: 40px;">
