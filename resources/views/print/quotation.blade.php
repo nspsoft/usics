@@ -289,11 +289,10 @@
                 </td>
                 <td width="30%" style="vertical-align: bottom; text-align: right; border: none; padding: 0;">
                     <div style="text-align: center; float: right; margin-bottom: 10px;">
-                        {{-- QR Code using Google Charts to avoid potential interference from AI Extractor which might trigger on 'v1' URLs --}}
                         @php
                             $validationUrl = route('sales.quotations.public-validate', $quotation->public_uuid ?: $quotation->id);
                         @endphp
-                        <img src="https://chart.googleapis.com/chart?chs=100x100&cht=qr&chl={{ urlencode($validationUrl) }}&choe=UTF-8" style="width: 100px; height: 100px; display: inline-block;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode($validationUrl) }}" style="width: 100px; height: 100px; display: inline-block;">
                         <div style="font-size: 9pt; font-weight: bold; margin-top: 5px; color: #0055A5;">SCAN FOR VALIDATION</div>
                         <div style="font-size: 8pt; color: #555;">Official JIDOKA Document</div>
                     </div>
