@@ -146,7 +146,7 @@ class PurchaseRequestController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, PurchaseRequest $purchaseRequest)
+    public function update(Request $request, $id)
     {
         $validated = $request->validate([
             'request_date' => 'required|date',
@@ -158,6 +158,8 @@ class PurchaseRequestController extends Controller
             'items.*.qty' => 'required|numeric|min:0.0001',
             'items.*.description' => 'nullable|string',
         ]);
+
+        $purchaseRequest = PurchaseRequest::findOrFail($id);
 
         DB::transaction(function () use ($validated, $purchaseRequest) {
             $purchaseRequest->update([
