@@ -221,7 +221,7 @@ const exportRequests = () => {
                                         <Link :href="`/purchasing/requests/${request.id}`" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors">
                                             <EyeIcon class="h-4 w-4" />
                                         </Link>
-                                        <Link v-if="request.status === 'draft'" :href="`/purchasing/requests/${request.id}/edit`" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors">
+                                        <Link v-if="request.status === 'draft' || request.status === 'approved'" :href="`/purchasing/requests/${request.id}/edit`" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors">
                                             <PencilSquareIcon class="h-4 w-4" />
                                         </Link>
                                         <button @click="deleteRequest(request.id)" class="p-2 text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 rounded-lg transition-colors">

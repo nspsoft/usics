@@ -26,8 +26,7 @@ class PurchaseOrderItemController extends Controller
                 $q->where(function ($sub) use ($search) {
                     $sub->whereHas('product', function ($p) use ($search) {
                         $p->where('name', 'like', "%{$search}%")
-                          ->orWhere('sku', 'like', "%{$search}%")
-                          ->orWhere('code', 'like', "%{$search}%");
+                          ->orWhere('sku', 'like', "%{$search}%");
                     })
                     ->orWhereHas('purchaseOrder', function ($po) use ($search) {
                         $po->where('po_number', 'like', "%{$search}%")
