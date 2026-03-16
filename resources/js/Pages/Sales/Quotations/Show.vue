@@ -71,9 +71,12 @@ const getStatusBadge = (status) => {
                     <button v-if="quotation.status === 'sent'" @click="rejectQuotation" class="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-red-500">
                         <XCircleIcon class="h-4 w-4" /> Reject
                     </button>
+                    <!-- Convert to SO disabled -->
+                    <!--
                     <button v-if="quotation.status === 'accepted'" @click="convertToSO" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 shadow-lg shadow-blue-500/20">
                         <CheckCircleIcon class="h-4 w-4" /> Convert to Sales Order
                     </button>
+                    -->
                 </div>
             </div>
 
