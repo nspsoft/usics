@@ -382,7 +382,7 @@
                         </tr>
                         <tr class="font-bold italic">
                             <td style="padding: 5px;">
-                                {{ $purchaseOrder->approvedBy->name ?? $purchaseOrder->createdBy->name ?? 'Administrator' }}
+                                {{ ($name = $purchaseOrder->approvedBy->name ?? $purchaseOrder->createdBy->name ?? 'Jahrudin') == 'Admin' ? 'Jahrudin' : (str_contains(strtolower($name), 'admin') ? 'Jahrudin' : $name) }}
                             </td>
                             <td style="padding: 5px;">Ely Susanti</td>
                             <td style="padding: 5px;">

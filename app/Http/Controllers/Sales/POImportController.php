@@ -96,9 +96,9 @@ class POImportController extends Controller
                     }
                 }
 
-                // 2. If no SKU match, try fuzzy name match (simple contains)
+                // 2. If no SKU match, try full-text name match (exact, case-insensitive)
                 if (!$matchedProduct) {
-                    $matchedProduct = Product::where('name', 'like', "%{$description}%")
+                    $matchedProduct = Product::whereRaw('LOWER(name) = ?', [strtolower($description)])
                         ->active()
                         ->first();
                 }

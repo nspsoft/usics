@@ -220,11 +220,15 @@ class CustomerController extends Controller
         if ($request->has('contacts')) {
             $contacts = collect((array) $request->contacts)
                 ->map(function ($c) {
-                    $contact = (array) $c;
-                    $contact['name'] = trim((string) ($contact['name'] ?? ''));
-                    $contact['email'] = strtolower(trim((string) ($contact['email'] ?? '')));
-                    $contact['phone'] = preg_replace('/\D+/', '', (string) ($contact['phone'] ?? ''));
-                    $contact['position'] = trim((string) ($contact['position'] ?? ''));
+                    $raw = (array) $c;
+                    $contact = [];
+                    if (isset($raw['id'])) {
+                        $contact['id'] = $raw['id'];
+                    }
+                    $contact['name'] = trim((string) ($raw['name'] ?? ''));
+                    $contact['email'] = strtolower(trim((string) ($raw['email'] ?? '')));
+                    $contact['phone'] = preg_replace('/\D+/', '', (string) ($raw['phone'] ?? ''));
+                    $contact['position'] = trim((string) ($raw['position'] ?? ''));
                     if ($contact['email'] === '') {
                         $contact['email'] = null;
                     }
@@ -244,19 +248,18 @@ class CustomerController extends Controller
 
             $seen = [];
             foreach ($contacts as $contactData) {
-                $key = ($contactData['email'] ?? null)
-                    ? 'email:' . $contactData['email']
-                    : (($contactData['phone'] ?? null)
-                        ? 'phone:' . $contactData['phone']
-                        : 'name:' . strtolower((string) ($contactData['name'] ?? '')) . '|pos:' . strtolower((string) ($contactData['position'] ?? '')));
+                $contactData = (array) $contactData;
+                $key = ($contactData['name'] ?? '') . '|' . ($contactData['email'] ?? '') . '|' . ($contactData['phone'] ?? '');
 
                 if (isset($seen[$key])) {
-                    continue;
+                    continue; // Skip duplicate contacts
                 }
                 $seen[$key] = true;
 
                 if (isset($contactData['id'])) {
-                    $customer->contacts()->where('id', $contactData['id'])->update($contactData);
+                    $updateData = $contactData;
+                    unset($updateData['id']);
+                    $customer->contacts()->where('id', $contactData['id'])->update($updateData);
                     continue;
                 }
 
