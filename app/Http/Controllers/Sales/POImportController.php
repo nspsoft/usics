@@ -85,20 +85,10 @@ class POImportController extends Controller
                 
                 $matchedProduct = null;
 
-                // 1. Try Token-based Matching (Is SKU inside Description?)
-                // Sort products by SKU length descending to match longest code first (e.g. match 'ABC-123' before 'ABC')
-                foreach ($products as $product) {
-                    $sku = strtoupper($product->sku);
-                    // Check if SKU is a substring of description
-                    if (str_contains($normalizedDesc, $sku)) {
-                        $matchedProduct = $product;
-                        break; // Found the best match (assuming unique SKUs)
-                    }
-                }
-
-                // 2. If no SKU match, try full-text name match (exact, case-insensitive)
-                if (!$matchedProduct) {
-                    $matchedProduct = Product::whereRaw('LOWER(name) = ?', [strtolower($description)])
+                // Exact Name Match (ignore case & spaces) - product name must match exactly
+                if (!empty($description)) {
+                    $normalizedInput = strtolower(preg_replace('/\s+/', '', trim($description)));
+                    $matchedProduct = Product::whereRaw("LOWER(REPLACE(REPLACE(REPLACE(name, ' ', ''), '\t', ''), '\r', '')) = ?", [$normalizedInput])
                         ->active()
                         ->first();
                 }
