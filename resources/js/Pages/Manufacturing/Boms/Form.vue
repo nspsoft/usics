@@ -293,7 +293,7 @@ onMounted(() => {
 
                     <!-- Right Column: Components List -->
                     <div class="xl:col-span-8 space-y-8" id="components-section">
-                        <div class="glass-card rounded-3xl shadow-sm overflow-hidden" :class="{'ring-2 ring-blue-500 shadow-2xl shadow-blue-500/20 z-10': showTutorial && tutorialSteps[currentStep].target === 'components-section'}">
+                        <div class="glass-card rounded-3xl shadow-sm !overflow-visible" :class="{'ring-2 ring-blue-500 shadow-2xl shadow-blue-500/20 z-10': showTutorial && tutorialSteps[currentStep].target === 'components-section'}">
                             <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                                     <Bars3Icon class="h-4 w-4" />
@@ -309,7 +309,7 @@ onMounted(() => {
                                 </button>
                             </div>
 
-                            <div class="overflow-x-auto max-h-[400px] overflow-y-auto custom-scrollbar relative">
+                            <div class="custom-scrollbar relative !overflow-visible">
                                 <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
                                     <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm">
                                         <tr class="bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50">
@@ -321,7 +321,7 @@ onMounted(() => {
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                                        <tr v-for="(comp, index) in form.components" :key="index" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
+                                        <tr v-for="(comp, index) in form.components" :key="index" class="relative hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors" :style="{ zIndex: 100 - index }">
                                             <td class="px-6 py-3">
                                                 <SearchableSelect 
                                                     v-model="comp.product_id"

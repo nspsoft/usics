@@ -14,6 +14,7 @@ git reset --hard origin/main
 composer install --no-dev --optimize-autoloader
 
 $PHP_BIN artisan migrate --force
+$PHP_BIN artisan purchase-order:fix-creator
 
 if [ -f package-lock.json ]; then
   npm ci

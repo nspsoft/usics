@@ -425,7 +425,7 @@ onMounted(() => {
 
                     <!-- Right Column: Shipped Items -->
                     <div class="xl:col-span-8 space-y-6 relative z-20">
-                        <div class="glass-card rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm min-h-[400px]">
+                        <div class="glass-card rounded-2xl !overflow-visible border border-slate-200 dark:border-slate-800 shadow-sm min-h-[400px]">
                             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/30 flex justify-between items-center">
                                 <div class="flex items-center gap-3">
                                     <h3 class="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-widest">Items to Ship</h3>
@@ -464,7 +464,7 @@ onMounted(() => {
                                 </div>
                             </div>
 
-                            <div class="overflow-x-auto relative">
+                            <div class="!overflow-visible relative">
                                 <table class="w-full text-left">
                                     <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm">
                                         <tr>

@@ -359,7 +359,7 @@
                             </td>
                             <td style="padding: 5px;">-</td>
                             <td style="padding: 5px;">
-                                {{ $salesOrder->createdBy->name ?? 'Admin' }}
+                                Agus Suprianto
                             </td>
                         </tr>
                     </table>

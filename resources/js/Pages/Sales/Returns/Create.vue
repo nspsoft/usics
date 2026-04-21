@@ -180,7 +180,7 @@ onMounted(() => {
                     </div>
 
                     <!-- Column 2 & 3: Items -->
-                    <div class="xl:col-span-8 glass-card rounded-2xl p-6 flex flex-col">
+                    <div class="xl:col-span-8 glass-card rounded-2xl p-6 flex flex-col !overflow-visible">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Items Returned</h3>
                             <button type="button" @click="addItem" class="text-sm font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1">
@@ -188,7 +188,7 @@ onMounted(() => {
                             </button>
                         </div>
 
-                        <div class="flex-1 space-y-3 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar relative">
+                        <div class="flex-1 space-y-3 !overflow-visible max-h-[600px] pr-2 custom-scrollbar relative">
                             <!-- Header Row -->
                             <div class="grid grid-cols-12 gap-3 px-3 py-2 mb-2 hidden sm:grid sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                                 <div class="col-span-12 sm:col-span-4">

@@ -384,7 +384,7 @@
                             <td style="padding: 5px;">Jahrudin</td>
                             <td style="padding: 5px;">Ely Susanti</td>
                             <td style="padding: 5px;">
-                                {{ $purchaseOrder->createdBy->name ?? 'Admin JICOS' }}
+                                Agus Suprianto
                             </td>
                         </tr>
                     </table>

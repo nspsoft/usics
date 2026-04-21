@@ -122,7 +122,7 @@ const submit = () => {
                         </div>
                     </div>
 
-                    <div class="xl:col-span-8 glass-card rounded-2xl p-6">
+                    <div class="xl:col-span-8 glass-card rounded-2xl p-6 !overflow-visible">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Items</h3>
                             <button type="button" @click="addItem" class="text-sm font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1">
@@ -130,7 +130,7 @@ const submit = () => {
                             </button>
                         </div>
 
-                        <div class="space-y-2 relative pr-2">
+                        <div class="space-y-2 relative pr-2 !overflow-visible">
                              <!-- Header Labels -->
                              <div class="hidden sm:grid grid-cols-12 gap-3 px-3 py-2 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 rounded-lg sticky top-0 z-10">
                                   <div class="col-span-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Product</div>

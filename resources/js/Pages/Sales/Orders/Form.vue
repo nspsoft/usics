@@ -253,14 +253,14 @@ const submit = async () => {
                         </div>
 
                         <!-- Items -->
-                        <div class="rounded-2xl glass-card overflow-hidden">
+                        <div class="rounded-2xl glass-card !overflow-visible">
                             <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
                                 <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Order Items</h3>
                                 <button type="button" @click="addItem" class="text-sm text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1">
                                     <PlusIcon class="h-4 w-4" /> Add Item
                                 </button>
                             </div>
-                            <div class="overflow-x-auto relative">
+                            <div class="relative !overflow-visible">
                                 <table class="w-full text-left text-sm text-slate-500 dark:text-slate-400">
                                     <thead class="bg-white dark:bg-slate-950 text-slate-200 sticky top-0 z-10">
                                         <tr>
@@ -274,7 +274,7 @@ const submit = async () => {
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                                        <tr v-for="(item, index) in form.items" :key="index">
+                                        <tr v-for="(item, index) in form.items" :key="index" class="relative" :style="{ zIndex: 100 - index }">
                                             <td class="px-4 py-2">
                                                 <SearchableSelect
                                                     v-model="item.product_id"
