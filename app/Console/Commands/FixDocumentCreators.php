@@ -21,32 +21,44 @@ class FixDocumentCreators extends Command
      *
      * @var string
      */
-    protected $description = 'Automatically update Purchase Orders and Sales Orders created by Admin to Agus Suprianto';
+    protected $description = 'Automatically update Purchase Orders and Sales Orders created by Admin/Santi to Agus Suprianto';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $adminId = 2; // User: Admin
-        $targetId = 11; // User: Agus Suprianto (agus)
+        // Define emails for safer identification across environments
+        $adminEmail = 'admin@jidoka.co.id';
+        $santiEmail = 'santi@jidoka.co.id';
+        $targetEmail = 'agus@jidoka.co.id';
 
-        // Verify users exist
-        $admin = User::find($adminId);
-        $target = User::find($targetId);
+        $admin = User::where('email', $adminEmail)->first();
+        $santi = User::where('email', $santiEmail)->first();
+        $target = User::where('email', $targetEmail)->first();
 
         if (!$target) {
-            $this->error("Target user (ID {$targetId}) not found.");
+            $this->error("Target user ({$targetEmail}) not found. Skipping update.");
             return 1;
         }
 
+        $sourceIds = array_filter([
+            $admin ? $admin->id : null,
+            $santi ? $santi->id : null,
+        ]);
+
+        if (empty($sourceIds)) {
+            $this->warn("No source users (Admin/Santi) found. Nothing to update.");
+            return 0;
+        }
+
         // Update Purchase Orders
-        $poCount = PurchaseOrder::where('created_by', $adminId)->update(['created_by' => $targetId]);
-        $this->info("Updated {$poCount} Purchase Orders.");
+        $poCount = PurchaseOrder::whereIn('created_by', $sourceIds)->update(['created_by' => $target->id]);
+        $this->info("Updated {$poCount} Purchase Orders to {$target->name}.");
 
         // Update Sales Orders
-        $soCount = SalesOrder::where('created_by', $adminId)->update(['created_by' => $targetId]);
-        $this->info("Updated {$soCount} Sales Orders.");
+        $soCount = SalesOrder::whereIn('created_by', $sourceIds)->update(['created_by' => $target->id]);
+        $this->info("Updated {$soCount} Sales Orders to {$target->name}.");
 
         return 0;
     }
