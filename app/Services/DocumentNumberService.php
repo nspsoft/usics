@@ -115,4 +115,30 @@ class DocumentNumberService
 
         return str_replace(array_keys($replacements), array_values($replacements), $config->format);
     }
+
+    /**
+     * Sync current number based on a manual input
+     */
+    public function sync(string $code, string $manualNumber): void
+    {
+        DB::transaction(function () use ($code, $manualNumber) {
+            $config = DocumentNumbering::where('code', $code)->lockForUpdate()->first();
+            if (!$config) return;
+
+            // Try to extract the number part from the manual string
+            // We assume the number is at the end or we can find it by matching the format
+            // A simple way is to take the last N digits where N is padding
+            $padding = $config->padding;
+            
+            // Check if the manual number actually contains digits at the expected position
+            // Usually the sequence is at the end or we can use regex
+            if (preg_match('/(\d+)$/', $manualNumber, $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $config->current_number) {
+                    $config->current_number = $num;
+                    $config->save();
+                }
+            }
+        });
+    }
 }

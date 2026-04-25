@@ -171,7 +171,7 @@ class PurchaseOrderController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'po_number' => 'nullable|string|max:100',
+            'po_number' => 'nullable|string|max:100|unique:purchase_orders,po_number',
             'supplier_id' => 'required|exists:suppliers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'order_date' => 'required|date',
@@ -192,13 +192,17 @@ class PurchaseOrderController extends Controller
             $supplier = Supplier::findOrFail($validated['supplier_id']);
 
             // Use user-provided PO number if available, otherwise auto-generate
-            $poNumber = !empty($validated['po_number'])
-                ? $validated['po_number']
-                : app(DocumentNumberService::class)->generate(
+            if (!empty($validated['po_number'])) {
+                $poNumber = $validated['po_number'];
+                // Sync the counter so next auto-generation continues from here
+                app(DocumentNumberService::class)->sync('purchase_order', $poNumber);
+            } else {
+                $poNumber = app(DocumentNumberService::class)->generate(
                     'purchase_order',
                     ['SUPP_CODE' => $supplier->code ?? ''],
                     $validated['order_date']
                 );
+            }
 
             $po = PurchaseOrder::create([
                 'po_number' => $poNumber,
@@ -336,6 +340,7 @@ class PurchaseOrderController extends Controller
         }
 
         $validated = $request->validate([
+            'po_number' => 'required|string|max:100|unique:purchase_orders,po_number,' . $order->id,
             'supplier_id' => 'required|exists:suppliers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'order_date' => 'required|date',
@@ -355,6 +360,7 @@ class PurchaseOrderController extends Controller
 
         DB::transaction(function () use ($validated, $order) {
         $updateData = [
+            'po_number' => $validated['po_number'],
             'supplier_id' => $validated['supplier_id'],
             'warehouse_id' => $validated['warehouse_id'],
             'order_date' => $validated['order_date'],
@@ -363,6 +369,9 @@ class PurchaseOrderController extends Controller
             'tax_percent' => $validated['tax_percent'] ?? 11,
             'notes' => $validated['notes'] ?? null,
         ];
+
+        // Sync the counter if changed manually
+        app(DocumentNumberService::class)->sync('purchase_order', $validated['po_number']);
 
         // Handle revision if status is finalized (approved/ordered/partial)
         if (in_array($order->status, ['approved', 'ordered', 'partial'])) {
