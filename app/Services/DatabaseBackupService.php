@@ -286,13 +286,7 @@ class DatabaseBackupService
             Schema::disableForeignKeyConstraints();
             
             // Execute the SQL
-            $statements = $this->parseSqlStatements($sql);
-            
-            foreach ($statements as $statement) {
-                if (trim($statement)) {
-                    DB::unprepared($statement);
-                }
-            }
+            DB::unprepared($sql);
             
             Schema::enableForeignKeyConstraints();
             
@@ -712,7 +706,8 @@ class DatabaseBackupService
                 foreach ($rows as $row) {
                     $values = array_map(function ($val) {
                         if (is_null($val)) return 'NULL';
-                        return "'" . addslashes($val) . "'";
+                        // Use PDO::quote for safe escaping
+                        return DB::connection()->getPdo()->quote($val);
                     }, (array) $row);
                     
                     $valueList = implode(', ', $values);
@@ -727,17 +722,7 @@ class DatabaseBackupService
         return $sql;
     }
 
-    protected function parseSqlStatements(string $sql): array
-    {
-        // Remove comments
-        $sql = preg_replace('/--.*$/m', '', $sql);
-        $sql = preg_replace('/\/\*.*?\*\//s', '', $sql);
-        
-        // Split by semicolon
-        $statements = preg_split('/;\s*$/m', $sql);
-        
-        return array_filter($statements, fn($s) => trim($s) !== '');
-    }
+    // parseSqlStatements removed as we now use DB::unprepared on the full content
 
     protected function compressBackup(string $filepath): bool
     {

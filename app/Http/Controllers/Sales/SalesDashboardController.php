@@ -69,7 +69,7 @@ class SalesDashboardController extends Controller
             ->whereYear('sales_orders.order_date', now()->year)
             ->groupBy('customers.name')
             ->orderByDesc('total_revenue')
-            ->limit(5)
+            ->limit(10)
             ->get();
 
         // 5. Recent Orders

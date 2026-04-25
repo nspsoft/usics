@@ -413,7 +413,7 @@ const customerData = computed(() => ({
                                 <UserCircleIcon class="h-4 w-4" /> Top Client Revenue
                             </h3>
                         </div>
-                        <div class="panel-body p-4 h-[300px]">
+                        <div class="panel-body p-4 h-[500px]">
                             <Bar 
                                 :data="customerData" 
                                 :options="{ 
