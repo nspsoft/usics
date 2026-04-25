@@ -39,7 +39,8 @@ const props = defineProps({
 
 const startDate = ref(props.filters.start_date);
 const endDate = ref(props.filters.end_date);
-const chartMode = ref('global'); // 'global', 'users', 'cumulative'
+const chartType = ref('global'); // 'global' or 'users'
+const isAccumulated = ref(false);
 
 const updateFilters = () => {
     router.get(route('admin.activity-logs.dashboard'), {
@@ -52,53 +53,45 @@ const updateFilters = () => {
 const trendData = computed(() => {
     const labels = props.stats.trend.map(d => d.date);
     
-    if (chartMode.value === 'global') {
+    if (chartType.value === 'global') {
+        let data = props.stats.trend.map(d => d.count);
+        if (isAccumulated.value) {
+            let sum = 0;
+            data = data.map(v => { sum += v; return sum; });
+        }
         return {
             labels,
             datasets: [{
-                label: 'Global Activity',
-                data: props.stats.trend.map(d => d.count),
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                label: isAccumulated.value ? 'Cumulative Global' : 'Global Activity',
+                data: data,
+                borderColor: isAccumulated.value ? '#10b981' : '#3b82f6',
+                backgroundColor: isAccumulated.value ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
                 fill: true,
                 tension: 0.4,
                 pointRadius: 4,
                 pointHoverRadius: 6,
             }]
         };
-    } else if (chartMode.value === 'users') {
+    } else {
         const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
         return {
             labels,
-            datasets: props.stats.trendByUser.map((user, index) => ({
-                label: user.user_name,
-                data: labels.map(date => user.data[date] || 0),
-                borderColor: colors[index % colors.length],
-                backgroundColor: 'transparent',
-                tension: 0.4,
-                pointRadius: 3,
-                borderWidth: 2
-            }))
-        };
-    } else {
-        // Cumulative mode
-        let sum = 0;
-        const cumulativeData = props.stats.trend.map(d => {
-            sum += d.count;
-            return sum;
-        });
-        return {
-            labels,
-            datasets: [{
-                label: 'Cumulative Activity',
-                data: cumulativeData,
-                borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-            }]
+            datasets: props.stats.trendByUser.map((user, index) => {
+                let data = labels.map(date => user.data[date] || 0);
+                if (isAccumulated.value) {
+                    let sum = 0;
+                    data = data.map(v => { sum += v; return sum; });
+                }
+                return {
+                    label: user.user_name,
+                    data: data,
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: 'transparent',
+                    tension: 0.4,
+                    pointRadius: 3,
+                    borderWidth: 2
+                };
+            })
         };
     }
 });
@@ -135,7 +128,7 @@ const chartOptions = computed(() => ({
     maintainAspectRatio: false,
     plugins: {
         legend: {
-            display: chartMode.value === 'users' || chartMode.value === 'cumulative',
+            display: chartType.value === 'users' || isAccumulated.value,
             position: 'top',
             align: 'end',
             labels: {
@@ -298,25 +291,28 @@ const breakdownData = computed(() => {
                             <p class="text-xs text-slate-500 mt-1" v-if="chartMode === 'users'">Menampilkan data 5 user teraktif.</p>
                         </div>
                         <div class="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                            <div class="flex items-center gap-1 border-r border-slate-200 dark:border-slate-700 pr-2 mr-1">
+                                <button 
+                                    @click="chartType = 'global'"
+                                    :class="chartType === 'global' ? 'bg-white dark:bg-slate-900 text-blue-500 shadow-sm' : 'text-slate-500'"
+                                    class="px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all"
+                                >
+                                    Global
+                                </button>
+                                <button 
+                                    @click="chartType = 'users'"
+                                    :class="chartType === 'users' ? 'bg-white dark:bg-slate-900 text-blue-500 shadow-sm' : 'text-slate-500'"
+                                    class="px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all"
+                                >
+                                    Per User
+                                </button>
+                            </div>
                             <button 
-                                @click="chartMode = 'global'"
-                                :class="chartMode === 'global' ? 'bg-white dark:bg-slate-900 text-blue-500 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
-                                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
+                                @click="isAccumulated = !isAccumulated"
+                                :class="isAccumulated ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-500'"
+                                class="px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center gap-1"
                             >
-                                Global
-                            </button>
-                            <button 
-                                @click="chartMode = 'users'"
-                                :class="chartMode === 'users' ? 'bg-white dark:bg-slate-900 text-blue-500 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
-                                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-                            >
-                                Per User
-                            </button>
-                            <button 
-                                @click="chartMode = 'cumulative'"
-                                :class="chartMode === 'cumulative' ? 'bg-white dark:bg-slate-900 text-blue-500 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
-                                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-                            >
+                                <ArrowPathIcon v-if="isAccumulated" class="h-3 w-3 animate-spin" />
                                 Accumulation
                             </button>
                         </div>
