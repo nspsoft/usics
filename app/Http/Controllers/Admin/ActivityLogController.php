@@ -149,10 +149,20 @@ class ActivityLogController extends Controller
             ->orderBy('created_at', 'desc');
 
         if ($request->search) {
-            $query->where('description', 'like', "%{$request->search}%")
-                ->orWhereHas('causer', function ($q) use ($request) {
-                    $q->where('name', 'like', "%{$request->search}%");
-                });
+            $query->where(function($q) use ($request) {
+                $q->where('description', 'like', "%{$request->search}%")
+                  ->orWhereHas('causer', function ($sq) use ($request) {
+                      $sq->where('name', 'like', "%{$request->search}%");
+                  });
+            });
+        }
+
+        if ($request->user_id) {
+            $query->where('causer_id', $request->user_id);
+        }
+
+        if ($request->event) {
+            $query->where('event', $request->event);
         }
 
         if ($request->subject_type) {
@@ -210,10 +220,22 @@ class ActivityLogController extends Controller
             ->sortBy('value')
             ->values();
 
+        $users = User::select('id', 'name')->orderBy('name')->get();
+        
+        $events = Activity::select('event')
+            ->distinct()
+            ->whereNotNull('event')
+            ->get()
+            ->pluck('event')
+            ->sort()
+            ->values();
+
         return Inertia::render('Admin/ActivityLogs/Index', [
             'logs' => $logs,
-            'filters' => $request->only(['search', 'subject_type', 'start_date', 'end_date']),
+            'filters' => $request->only(['search', 'subject_type', 'start_date', 'end_date', 'user_id', 'event']),
             'subjectTypes' => $subjectTypes,
+            'users' => $users,
+            'events' => $events,
         ]);
     }
 

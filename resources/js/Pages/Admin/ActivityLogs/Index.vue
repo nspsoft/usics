@@ -18,10 +18,14 @@ const props = defineProps({
     logs: Object,
     filters: Object,
     subjectTypes: Array,
+    users: Array,
+    events: Array,
 });
 
 const search = ref(props.filters.search || '');
 const subjectType = ref(props.filters.subject_type || '');
+const userId = ref(props.filters.user_id || '');
+const eventFilter = ref(props.filters.event || '');
 const startDate = ref(props.filters.start_date || '');
 const endDate = ref(props.filters.end_date || '');
 
@@ -29,6 +33,8 @@ const applyFilters = debounce(() => {
     router.get('/admin/activity-logs', {
         search: search.value || undefined,
         subject_type: subjectType.value || undefined,
+        user_id: userId.value || undefined,
+        event: eventFilter.value || undefined,
         start_date: startDate.value || undefined,
         end_date: endDate.value || undefined,
     }, {
@@ -37,7 +43,7 @@ const applyFilters = debounce(() => {
     });
 }, 300);
 
-watch([search, subjectType, startDate, endDate], applyFilters);
+watch([search, subjectType, userId, eventFilter, startDate, endDate], applyFilters);
 
 const handleExport = () => {
     const params = new URLSearchParams({
@@ -180,13 +186,13 @@ const formatChanges = (log) => {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-slate-50/50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 bg-slate-50/50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                 <div class="relative">
                     <MagnifyingGlassIcon class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                     <input
                         v-model="search"
                         type="search"
-                        placeholder="Search description or user..."
+                        placeholder="Search description..."
                         class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2 pl-9 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/50 transition-all"
                     />
                 </div>
@@ -198,6 +204,26 @@ const formatChanges = (log) => {
                     <option value="">All Models</option>
                     <option v-for="type in subjectTypes" :key="type.value" :value="type.value">
                         {{ type.value }}
+                    </option>
+                </select>
+
+                <select
+                    v-model="userId"
+                    class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 transition-all"
+                >
+                    <option value="">All Users</option>
+                    <option v-for="user in users" :key="user.id" :value="user.id">
+                        {{ user.name }}
+                    </option>
+                </select>
+
+                <select
+                    v-model="eventFilter"
+                    class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 transition-all"
+                >
+                    <option value="">All Events</option>
+                    <option v-for="event in events" :key="event" :value="event">
+                        {{ event.toUpperCase() }}
                     </option>
                 </select>
 
