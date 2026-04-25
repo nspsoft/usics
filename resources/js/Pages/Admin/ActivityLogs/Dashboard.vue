@@ -73,7 +73,10 @@ const trendData = computed(() => {
             }]
         };
     } else {
-        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+        const colors = [
+            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+            '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#6366f1'
+        ];
         return {
             labels,
             datasets: props.stats.trendByUser.map((user, index) => {
@@ -189,7 +192,7 @@ const breakdownData = computed(() => {
     
     const data = props.stats.actionByUser[selectedAction.value] || [];
     // Sort by count descending
-    const sorted = [...data].sort((a, b) => b.count - a.count).slice(0, 5);
+    const sorted = [...data].sort((a, b) => b.count - a.count).slice(0, 10);
     
     return {
         labels: sorted.map(item => item.user_name),
@@ -289,7 +292,7 @@ const breakdownData = computed(() => {
                     <div class="flex items-center justify-between mb-8">
                         <div>
                             <h4 class="text-lg font-bold text-slate-900 dark:text-white">Daily Activity Trend</h4>
-                            <p class="text-xs text-slate-500 mt-1" v-if="chartMode === 'users'">Menampilkan data 5 user teraktif.</p>
+                            <p class="text-xs text-slate-500 mt-1" v-if="chartType === 'users'">Menampilkan data 10 user teraktif.</p>
                         </div>
                         <div class="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
                             <div class="flex items-center gap-1 border-r border-slate-200 dark:border-slate-700 pr-2 mr-1">

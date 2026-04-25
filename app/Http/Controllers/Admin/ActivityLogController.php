@@ -32,7 +32,7 @@ class ActivityLogController extends Controller
             ->selectRaw('causer_id, count(*) as total')
             ->groupBy('causer_id')
             ->orderByDesc('total')
-            ->limit(5)
+            ->limit(10)
             ->pluck('causer_id');
 
         $trendByUser = Activity::whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
@@ -72,7 +72,7 @@ class ActivityLogController extends Controller
             ->whereNotNull('causer_id')
             ->groupBy('causer_id')
             ->orderByDesc('count')
-            ->limit(5)
+            ->limit(10)
             ->get()
             ->map(fn($item) => [
                 'name' => User::find($item->causer_id)?->name ?? 'Unknown',
