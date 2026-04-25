@@ -11,7 +11,7 @@ import {
     BellAlertIcon,
     ArrowLeftIcon
 } from '@heroicons/vue/24/outline';
-import { Line, Pie, Bar } from 'vue-chartjs';
+import { Line, Doughnut, Bar } from 'vue-chartjs';
 import {
     Chart as ChartJS,
     Title,
@@ -163,7 +163,7 @@ const pieOptions = computed(() => ({
     plugins: {
         legend: {
             position: 'bottom',
-            labels: { color: '#94a3b8', boxWidth: 12, padding: 15 }
+            labels: { color: '#94a3b8', boxWidth: 12, padding: 15, usePointStyle: true }
         },
         tooltip: {
             callbacks: {
@@ -171,6 +171,7 @@ const pieOptions = computed(() => ({
             }
         }
     },
+    cutout: '70%',
     onClick: (event, elements) => {
         if (elements.length > 0) {
             const index = elements[0].index;
@@ -329,7 +330,7 @@ const breakdownData = computed(() => {
                     </div>
                     
                     <div v-if="!selectedAction" class="h-80 transition-all">
-                        <Pie :data="eventData" :options="pieOptions" />
+                        <Doughnut :data="eventData" :options="pieOptions" />
                     </div>
 
                     <div v-else class="h-80 transition-all">
