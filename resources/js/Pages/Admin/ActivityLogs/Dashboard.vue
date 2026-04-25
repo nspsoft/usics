@@ -39,7 +39,7 @@ const props = defineProps({
 
 const startDate = ref(props.filters.start_date);
 const endDate = ref(props.filters.end_date);
-const chartMode = ref('global'); // 'global' or 'users'
+const chartMode = ref('global'); // 'global', 'users', 'cumulative'
 
 const updateFilters = () => {
     router.get(route('admin.activity-logs.dashboard'), {
@@ -66,7 +66,7 @@ const trendData = computed(() => {
                 pointHoverRadius: 6,
             }]
         };
-    } else {
+    } else if (chartMode.value === 'users') {
         const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
         return {
             labels,
@@ -79,6 +79,26 @@ const trendData = computed(() => {
                 pointRadius: 3,
                 borderWidth: 2
             }))
+        };
+    } else {
+        // Cumulative mode
+        let sum = 0;
+        const cumulativeData = props.stats.trend.map(d => {
+            sum += d.count;
+            return sum;
+        });
+        return {
+            labels,
+            datasets: [{
+                label: 'Cumulative Activity',
+                data: cumulativeData,
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            }]
         };
     }
 });
@@ -115,7 +135,7 @@ const chartOptions = computed(() => ({
     maintainAspectRatio: false,
     plugins: {
         legend: {
-            display: chartMode.value === 'users',
+            display: chartMode.value === 'users' || chartMode.value === 'cumulative',
             position: 'top',
             align: 'end',
             labels: {
@@ -291,6 +311,13 @@ const breakdownData = computed(() => {
                                 class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
                             >
                                 Per User
+                            </button>
+                            <button 
+                                @click="chartMode = 'cumulative'"
+                                :class="chartMode === 'cumulative' ? 'bg-white dark:bg-slate-900 text-blue-500 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+                                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
+                            >
+                                Accumulation
                             </button>
                         </div>
                     </div>
