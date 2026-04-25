@@ -184,7 +184,10 @@ class DatabaseBackupService
             Storage::put($filepath, $sql);
             
             // Compress if possible
-            $this->compressBackup($filepath);
+            if ($this->compressBackup($filepath)) {
+                $filename .= '.gz';
+                $filepath .= '.gz';
+            }
             
             $this->logSuccess('Full backup created', $filename);
             
@@ -231,6 +234,12 @@ class DatabaseBackupService
             
             // Store the backup
             Storage::put($filepath, $sql);
+            
+            // Compress if possible
+            if ($this->compressBackup($filepath)) {
+                $filename .= '.gz';
+                $filepath .= '.gz';
+            }
             
             $this->logSuccess('Partial backup created', $filename);
             
@@ -730,14 +739,16 @@ class DatabaseBackupService
         return array_filter($statements, fn($s) => trim($s) !== '');
     }
 
-    protected function compressBackup(string $filepath): void
+    protected function compressBackup(string $filepath): bool
     {
         if (function_exists('gzencode') && Storage::exists($filepath)) {
             $content = Storage::get($filepath);
             $compressed = gzencode($content, 9);
             Storage::put($filepath . '.gz', $compressed);
             Storage::delete($filepath);
+            return true;
         }
+        return false;
     }
 
     protected function formatBytes(int $bytes): string
