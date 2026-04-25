@@ -26,6 +26,29 @@ class ActivityLogController extends Controller
             ->orderBy('date')
             ->get();
 
+        // 1b. Activity Trend per User (Top 5 users)
+        $topUserIds = Activity::whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->whereNotNull('causer_id')
+            ->selectRaw('causer_id, count(*) as total')
+            ->groupBy('causer_id')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->pluck('causer_id');
+
+        $trendByUser = Activity::whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->whereIn('causer_id', $topUserIds)
+            ->selectRaw('DATE(created_at) as date, causer_id, count(*) as count')
+            ->groupBy('date', 'causer_id')
+            ->get()
+            ->groupBy('causer_id')
+            ->map(function($items, $userId) {
+                return [
+                    'user_id' => $userId,
+                    'user_name' => User::find($userId)?->name ?? 'Unknown',
+                    'data' => $items->pluck('count', 'date')
+                ];
+            })->values();
+
         // 2. Action Distribution
         $events = Activity::whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
             ->selectRaw('event, count(*) as count')
@@ -89,6 +112,7 @@ class ActivityLogController extends Controller
         return Inertia::render('Admin/ActivityLogs/Dashboard', [
             'stats' => [
                 'trend' => $trend,
+                'trendByUser' => $trendByUser,
                 'events' => $events,
                 'topUsers' => $topUsers,
                 'modules' => $modules,

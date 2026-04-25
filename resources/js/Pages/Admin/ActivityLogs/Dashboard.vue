@@ -39,6 +39,7 @@ const props = defineProps({
 
 const startDate = ref(props.filters.start_date);
 const endDate = ref(props.filters.end_date);
+const chartMode = ref('global'); // 'global' or 'users'
 
 const updateFilters = () => {
     router.get(route('admin.activity-logs.dashboard'), {
@@ -48,19 +49,39 @@ const updateFilters = () => {
 };
 
 // Chart Data: Activity Trend
-const trendData = computed(() => ({
-    labels: props.stats.trend.map(d => d.date),
-    datasets: [{
-        label: 'Daily Actions',
-        data: props.stats.trend.map(d => d.count),
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-    }]
-}));
+const trendData = computed(() => {
+    const labels = props.stats.trend.map(d => d.date);
+    
+    if (chartMode.value === 'global') {
+        return {
+            labels,
+            datasets: [{
+                label: 'Global Activity',
+                data: props.stats.trend.map(d => d.count),
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            }]
+        };
+    } else {
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+        return {
+            labels,
+            datasets: props.stats.trendByUser.map((user, index) => ({
+                label: user.user_name,
+                data: labels.map(date => user.data[date] || 0),
+                borderColor: colors[index % colors.length],
+                backgroundColor: 'transparent',
+                tension: 0.4,
+                pointRadius: 3,
+                borderWidth: 2
+            }))
+        };
+    }
+});
 
 // Chart Data: Action Distribution
 const eventData = computed(() => ({
@@ -89,12 +110,25 @@ const moduleData = computed(() => ({
     }]
 }));
 
-const chartOptions = {
+const chartOptions = computed(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
         legend: {
-            display: false
+            display: chartMode.value === 'users',
+            position: 'top',
+            align: 'end',
+            labels: {
+                color: '#94a3b8',
+                boxWidth: 10,
+                usePointStyle: true,
+                pointStyle: 'circle',
+                font: { size: 10 }
+            }
+        },
+        tooltip: {
+            mode: 'index',
+            intersect: false,
         }
     },
     scales: {
@@ -108,7 +142,7 @@ const chartOptions = {
             ticks: { color: '#64748b' }
         }
     }
-};
+}));
 
 const pieOptions = {
     responsive: true,
@@ -203,14 +237,28 @@ const pieOptions = {
                 </div>
             </div>
 
-            <!-- Main Charts Row -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 <div class="lg:col-span-2 bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border border-white dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none p-8 rounded-[2.5rem]">
                     <div class="flex items-center justify-between mb-8">
-                        <h4 class="text-lg font-bold text-slate-900 dark:text-white">Daily Activity Trend</h4>
-                        <div class="flex items-center gap-2">
-                            <span class="w-3 h-3 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50"></span>
-                            <span class="text-xs text-slate-500 font-medium">Activity Frequency</span>
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-900 dark:text-white">Daily Activity Trend</h4>
+                            <p class="text-xs text-slate-500 mt-1" v-if="chartMode === 'users'">Menampilkan data 5 user teraktif.</p>
+                        </div>
+                        <div class="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                            <button 
+                                @click="chartMode = 'global'"
+                                :class="chartMode === 'global' ? 'bg-white dark:bg-slate-900 text-blue-500 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+                                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
+                            >
+                                Global
+                            </button>
+                            <button 
+                                @click="chartMode = 'users'"
+                                :class="chartMode === 'users' ? 'bg-white dark:bg-slate-900 text-blue-500 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+                                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
+                            >
+                                Per User
+                            </button>
                         </div>
                     </div>
                     <div class="h-80">
