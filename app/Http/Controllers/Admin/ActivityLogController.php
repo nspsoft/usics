@@ -10,9 +10,99 @@ use App\Models\User;
 use App\Exports\ActivityLogExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ActivityLogController extends Controller
 {
+    public function dashboard(Request $request)
+    {
+        $startDate = $request->start_date ? Carbon::parse($request->start_date) : now()->subDays(30);
+        $endDate = $request->end_date ? Carbon::parse($request->end_date) : now();
+
+        // 1. Activity Trend (Daily)
+        $trend = Activity::whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->selectRaw('DATE(created_at) as date, count(*) as count')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        // 2. Action Distribution
+        $events = Activity::whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->selectRaw('event, count(*) as count')
+            ->groupBy('event')
+            ->get()
+            ->map(function($item) {
+                // Map Spatie events to readable names
+                $event = $item->event ?: 'system';
+                if ($item->log_name === 'auth') {
+                    $event = 'access';
+                }
+                return [
+                    'label' => ucfirst($event),
+                    'count' => $item->count
+                ];
+            });
+
+        // 3. Top Active Users
+        $topUsers = Activity::whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->selectRaw('causer_id, count(*) as count')
+            ->whereNotNull('causer_id')
+            ->groupBy('causer_id')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->get()
+            ->map(fn($item) => [
+                'name' => User::find($item->causer_id)?->name ?? 'Unknown',
+                'count' => $item->count
+            ]);
+
+        // 4. Module Activity (Subject Types)
+        $modules = Activity::whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->whereNotNull('subject_type')
+            ->selectRaw('subject_type, count(*) as count')
+            ->groupBy('subject_type')
+            ->orderByDesc('count')
+            ->limit(6)
+            ->get()
+            ->map(fn($item) => [
+                'name' => class_basename($item->subject_type),
+                'count' => $item->count
+            ]);
+
+        // 5. Recent High-Impact Changes (Deletions or large updates)
+        $recentHighImpact = Activity::with('causer')
+            ->whereIn('event', ['deleted', 'restored'])
+            ->orWhere(function($q) {
+                $q->where('event', 'updated')->where('description', 'like', '%status%');
+            })
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get()
+            ->map(fn($log) => [
+                'id' => $log->id,
+                'user' => $log->causer?->name ?? 'System',
+                'description' => $log->description,
+                'time' => $log->created_at->diffForHumans(),
+                'subject' => class_basename($log->subject_type)
+            ]);
+
+        return Inertia::render('Admin/ActivityLogs/Dashboard', [
+            'stats' => [
+                'trend' => $trend,
+                'events' => $events,
+                'topUsers' => $topUsers,
+                'modules' => $modules,
+                'recent' => $recentHighImpact,
+                'total' => Activity::count(),
+                'today' => Activity::whereDate('created_at', today())->count(),
+            ],
+            'filters' => [
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+            ]
+        ]);
+    }
+
     public function index(Request $request)
     {
         $query = Activity::with('causer')

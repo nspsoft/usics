@@ -8,6 +8,7 @@ import {
     Bars3Icon,
     ArrowDownTrayIcon,
     TrashIcon,
+    ChartBarIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 import { formatNumber } from '@/helpers';
@@ -155,6 +156,13 @@ const formatChanges = (log) => {
                 </div>
                 
                 <div class="flex items-center gap-3">
+                    <Link
+                        :href="route('admin.activity-logs.dashboard')"
+                        class="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                    >
+                        <ChartBarIcon class="h-4 w-4" />
+                        <span>Dashboard Analytics</span>
+                    </Link>
                     <button
                         @click="handleExport"
                         class="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95"

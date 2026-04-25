@@ -663,6 +663,7 @@ Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(functi
 
 // Admin
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+    Route::get('/activity-logs/dashboard', [App\Http\Controllers\Admin\ActivityLogController::class, 'dashboard'])->name('activity-logs.dashboard');
     Route::get('/activity-logs/export', [App\Http\Controllers\Admin\ActivityLogController::class, 'export'])->name('activity-logs.export');
     Route::post('/activity-logs/reset', [App\Http\Controllers\Admin\ActivityLogController::class, 'reset'])->name('activity-logs.reset');
     Route::resource('activity-logs', App\Http\Controllers\Admin\ActivityLogController::class)->only(['index', 'show']);
