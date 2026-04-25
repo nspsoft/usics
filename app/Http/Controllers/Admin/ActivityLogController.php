@@ -109,11 +109,27 @@ class ActivityLogController extends Controller
                 'subject' => class_basename($log->subject_type)
             ]);
 
+        // 6. Action Breakdown by User (for drilldown)
+        $actionByUser = Activity::whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->selectRaw('event, causer_id, count(*) as count')
+            ->whereNotNull('causer_id')
+            ->groupBy('event', 'causer_id')
+            ->get()
+            ->map(function($item) {
+                $event = $item->event ?: 'system';
+                return [
+                    'event' => ucfirst($event),
+                    'user_name' => User::find($item->causer_id)?->name ?? 'Unknown',
+                    'count' => $item->count
+                ];
+            })->groupBy('event');
+
         return Inertia::render('Admin/ActivityLogs/Dashboard', [
             'stats' => [
                 'trend' => $trend,
                 'trendByUser' => $trendByUser,
                 'events' => $events,
+                'actionByUser' => $actionByUser,
                 'topUsers' => $topUsers,
                 'modules' => $modules,
                 'recent' => $recentHighImpact,

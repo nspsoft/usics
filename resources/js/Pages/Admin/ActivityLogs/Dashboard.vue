@@ -144,16 +144,49 @@ const chartOptions = computed(() => ({
     }
 }));
 
-const pieOptions = {
+const pieOptions = computed(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
         legend: {
             position: 'bottom',
             labels: { color: '#94a3b8', boxWidth: 12, padding: 15 }
+        },
+        tooltip: {
+            callbacks: {
+                label: (context) => ` ${context.label}: ${context.raw} actions (Click to breakdown)`
+            }
+        }
+    },
+    onClick: (event, elements) => {
+        if (elements.length > 0) {
+            const index = elements[0].index;
+            selectedAction.value = props.stats.events[index].label;
+        } else {
+            selectedAction.value = null;
         }
     }
-};
+}));
+
+const selectedAction = ref(null);
+
+const breakdownData = computed(() => {
+    if (!selectedAction.value) return null;
+    
+    const data = props.stats.actionByUser[selectedAction.value] || [];
+    // Sort by count descending
+    const sorted = [...data].sort((a, b) => b.count - a.count).slice(0, 5);
+    
+    return {
+        labels: sorted.map(item => item.user_name),
+        datasets: [{
+            label: `Users - ${selectedAction.value}`,
+            data: sorted.map(item => item.count),
+            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+            borderRadius: 8
+        }]
+    };
+});
 </script>
 
 <template>
@@ -267,9 +300,20 @@ const pieOptions = {
                 </div>
 
                 <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border border-white dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none p-8 rounded-[2.5rem]">
-                    <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-8">Action Distribution</h4>
-                    <div class="h-80">
+                    <div class="flex items-center justify-between mb-8">
+                        <h4 class="text-lg font-bold text-slate-900 dark:text-white">Action Distribution</h4>
+                        <button v-if="selectedAction" @click="selectedAction = null" class="text-[10px] font-bold text-blue-500 hover:underline">Reset</button>
+                    </div>
+                    
+                    <div v-if="!selectedAction" class="h-80 transition-all">
                         <Pie :data="eventData" :options="pieOptions" />
+                    </div>
+
+                    <div v-else class="h-80 transition-all">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold uppercase">{{ selectedAction }} BREAKDOWN</span>
+                        </div>
+                        <Bar :data="breakdownData" :options="chartOptions" />
                     </div>
                 </div>
             </div>
