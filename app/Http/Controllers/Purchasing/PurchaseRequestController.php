@@ -72,6 +72,7 @@ class PurchaseRequestController extends Controller
         return Inertia::render('Purchasing/Requests/Form', [
             'products' => Product::active()->where('is_purchased', true)->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->get(),
+            'users' => \App\Models\User::orderBy('name')->get(),
             'user' => auth()->user(),
             'prefill' => $prefill,
         ]);
@@ -139,6 +140,7 @@ class PurchaseRequestController extends Controller
             'request' => $request,
             'products' => Product::active()->where('is_purchased', true)->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->get(),
+            'users' => \App\Models\User::orderBy('name')->get(),
             'user' => auth()->user(),
         ]);
     }

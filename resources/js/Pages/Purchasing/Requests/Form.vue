@@ -13,6 +13,7 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 const props = defineProps({
     products: Array,
     departments: Array,
+    users: Array,
     user: Object,
     request: Object, // Optional, for edit mode
     prefill: Object, // Optional, for initial data
@@ -114,13 +115,7 @@ const submit = () => {
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Requester</label>
                             <select v-model="form.requester" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" required>
                                 <option value="">Select Requester</option>
-                                <option value="Nanang">Nanang</option>
-                                <option value="Amur">Amur</option>
-                                <option value="Andi">Andi</option>
-                                <option value="Jahrudin">Jahrudin</option>
-                                <option value="Agus">Agus</option>
-                                <option value="Santi">Santi</option>
-                                <option value="Moris">Moris</option>
+                                <option v-for="u in users" :key="u.id" :value="u.name">{{ u.name }}</option>
                             </select>
                         </div>
                     </div>
