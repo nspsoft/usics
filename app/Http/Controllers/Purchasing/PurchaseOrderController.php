@@ -161,7 +161,7 @@ class PurchaseOrderController extends Controller
         $date = $request->input('order_date');
         $supplier = $supplierId ? Supplier::find($supplierId) : null;
         return response()->json([
-            'number' => PurchaseOrder::generatePoNumber($supplier, $date)
+            'number' => PurchaseOrder::previewPoNumber($supplier, $date)
         ]);
     }
 
