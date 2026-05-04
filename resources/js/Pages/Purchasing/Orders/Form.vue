@@ -40,12 +40,18 @@ const supplierOptions = computed(() => {
 
 const isEdit = computed(() => !!props.purchaseOrder?.id);
 
+const getLocalDateString = (dateInput) => {
+    const d = dateInput ? new Date(dateInput) : new Date();
+    if (isNaN(d.getTime())) return '';
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+};
+
 const form = useForm({
     po_number: props.poNumber || props.purchaseOrder?.po_number,
     supplier_id: props.purchaseOrder?.supplier_id || '',
     warehouse_id: props.purchaseOrder?.warehouse_id || '',
-    order_date: props.purchaseOrder?.order_date ? props.purchaseOrder.order_date.substring(0, 10) : new Date().toISOString().split('T')[0],
-    expected_date: props.purchaseOrder?.expected_date ? props.purchaseOrder.expected_date.substring(0, 10) : '',
+    order_date: props.purchaseOrder?.order_date ? getLocalDateString(props.purchaseOrder.order_date) : getLocalDateString(),
+    expected_date: props.purchaseOrder?.expected_date ? getLocalDateString(props.purchaseOrder.expected_date) : '',
     tax_percent: props.purchaseOrder?.tax_percent ?? 11,
     notes: props.purchaseOrder?.notes || '',
     items: props.purchaseOrder?.items?.map(item => ({
