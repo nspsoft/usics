@@ -88,9 +88,9 @@
         .items-table td {
             border-right: 1pt solid #000;
             border-left: 1pt solid #000;
-            padding: 5px;
+            padding: 3px 5px;
             vertical-align: top;
-            font-size: 9pt;
+            font-size: 8.5pt;
         }
         /* No internal horizontal lines */
         .items-table tr.item-row td {
@@ -140,6 +140,9 @@
             white-space: nowrap;
         }
         .sig-space { height: 80px; vertical-align: bottom; font-weight: bold; font-style: italic; }
+        .footer-container {
+            margin-top: 15px;
+        }
 
         @media print {
             .no-print { display: none; }
@@ -265,31 +268,32 @@
             @foreach($purchaseOrder->items as $index => $item)
             @php $totalQty += $item->qty; @endphp
             <tr class="item-row">
-                <td class="text-center" style="padding-top: 10px;">{{ $index + 1 }}</td>
-                <td style="padding-top: 10px;">
+                <td class="text-center">{{ $index + 1 }}</td>
+                <td>
                     <div class="font-bold">{{ $item->product_alias_name ?? $item->product->name ?? '-' }}</div>
                     @if($item->product_alias_sku)
                         <div style="font-size: 8pt; font-family: monospace;">{{ $item->product_alias_sku }}</div>
                     @endif
                     <div style="font-size: 8pt; color: #333;">{{ $item->description ?? $item->product->description ?? ' ' }}</div>
                 </td>
-                <td class="text-center" style="padding-top: 10px;">{{ number_format($item->qty, 0, ',', '.') }}</td>
-                <td class="text-center" style="padding-top: 10px;">{{ $item->unit->name ?? 'PCs' }}</td>
-                <td class="text-right" style="padding-top: 10px;">
+                <td class="text-center">{{ number_format($item->qty, 0, ',', '.') }}</td>
+                <td class="text-center">{{ $item->unit->name ?? 'PCs' }}</td>
+                <td class="text-right">
                     <div style="float: left; padding-left: 5px;">IDR</div>
                     <div style="float: right; padding-right: 5px;">{{ number_format($item->unit_price, 0, ',', '.') }}</div>
                 </td>
-                <td class="text-right" style="padding-top: 10px;">
+                <td class="text-right">
                      <div style="float: left; padding-left: 5px;">IDR</div>
                      <div style="float: right; padding-right: 5px;">{{ number_format($item->qty * $item->unit_price, 0, ',', '.') }}</div>
                 </td>
-                <td class="italic" style="font-size: 8pt; padding-top: 10px;">{{ $item->notes ?? '' }}</td>
+                <td class="italic" style="font-size: 8pt;">{{ $item->notes ?? '' }}</td>
             </tr>
             @endforeach
             
-            <!-- Spacer Row (Adjusted for better bottom spacing) -->
+            <!-- Dynamic Spacer Row (Compact) -->
+            @php $remainingRows = max(0, 5 - count($purchaseOrder->items)); @endphp
             <tr class="item-row">
-                <td style="height: 220px;"></td>
+                <td style="height: {{ $remainingRows * 20 }}px;"></td>
                 <td></td><td></td><td></td><td></td><td></td><td></td>
             </tr>
 
@@ -324,73 +328,80 @@
         </tbody>
     </table>
 
-    <!-- Footer Boxes -->
-    <table class="footer-boxes">
-        <tr>
-            <td class="box-cell" width="55%">
-                <div class="font-bold">Please deliver to :</div>
-                <div style="margin-top: 5px; font-weight: bold;">PT. JIDOKA RESULT INDONESIA</div>
-                <div>Jl. Pinang Blok F16 - Nomor 18C Delta Silicon 3</div>
-                <div>Kawasan Industri Lippo - Cikarang, Desa Cicau, Kecamatan Cikarang Pusat</div>
-                <div>Kabupaten Bekasi, Provinsi Jawa Barat</div>
-            </td>
-            <td class="box-cell" style="border-right: none;">
-                <div class="font-bold italic">Remarks :</div>
-                <div class="italic" style="margin-top: 5px;">
-                    {!! nl2br(e($purchaseOrder->notes ?? '-')) !!}
-                </div>
-                <div style="height: 10px;"></div>
-                <div class="font-bold italic">Terms of payment :</div>
-                <div class="italic" style="margin-top: 5px;">
-                    - Term of Payment {{ $purchaseOrder->payment_terms ?? '30' }} Days after invoice Received
-                </div>
-            </td>
-        </tr>
-    </table>
-
-    <!-- Signatures -->
-    <div class="signatures-section">
-        <!-- 
-           Image 4: Top row: Supplier (Left Box) --- Authorized | Checked | Prepared (Right Box Combined)
-        -->
-        <table width="100%">
+    <div class="footer-container">
+        <!-- Footer Boxes -->
+        <table class="footer-boxes">
             <tr>
-                <td width="20%" style="vertical-align: top;">
-                    <table class="sig-table">
-                        <tr><td class="sig-header">Supplier</td></tr>
-                        <tr><td class="italic" style="border-bottom: none; text-align: left; padding-left: 5px;">Date :</td></tr>
-                        <tr><td class="sig-space"></td></tr>
-                    </table>
+                <td class="box-cell" width="55%">
+                    <div class="font-bold">PLEASE DELIVER TO :</div>
+                    <div style="margin-top: 5px; font-weight: bold;">PT. JIDOKA RESULT INDONESIA</div>
+                    <div style="font-size: 8pt;">
+                        Jl. Pinang Blok F16 - Nomor 18C Delta Silicon 3<br>
+                        Kawasan Industri Lippo - Cikarang, Desa Cicau, Cikarang Pusat<br>
+                        Kabupaten Bekasi, Jawa Barat
+                    </div>
                 </td>
-                <td width="20%"></td>
-                <td width="60%" style="vertical-align: top;">
-                    <table class="sig-table">
-                        <tr>
-                            <td width="33%">Authorized</td>
-                            <td width="33%">Checked</td>
-                            <td width="33%">Prepared</td>
-                        </tr>
-                        <tr>
-                            <td class="italic">Date : {{ $purchaseOrder->approved_at ? \Carbon\Carbon::parse($purchaseOrder->approved_at)->format('d-m-Y') : \Carbon\Carbon::parse($purchaseOrder->order_date)->format('d-m-Y') }}</td>
-                            <td class="italic">Date : {{ \Carbon\Carbon::parse($purchaseOrder->order_date)->format('d-m-Y') }}</td>
-                            <td class="italic">Date : {{ \Carbon\Carbon::parse($purchaseOrder->order_date)->format('d-m-Y') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="height: 60px;"></td>
-                            <td style="height: 60px;"></td>
-                            <td style="height: 60px;"></td>
-                        </tr>
-                        <tr class="font-bold italic">
-                            <td style="padding: 5px;">Jahrudin</td>
-                            <td style="padding: 5px;">Ely Susanti</td>
-                            <td style="padding: 5px;">
-                                Agus Suprianto
-                            </td>
-                        </tr>
-                    </table>
+                <td class="box-cell" style="border-right: none;">
+                    <div class="font-bold italic">REMARKS :</div>
+                    <div class="italic" style="margin-top: 3px; font-size: 7.5pt;">
+                        {!! nl2br(e($purchaseOrder->notes ?? '-')) !!}
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <span class="font-bold italic">TERMS OF PAYMENT :</span>
+                        <span class="italic" style="font-size: 7.5pt;">{{ $purchaseOrder->payment_terms ?? '30' }} Days after invoice received</span>
+                    </div>
                 </td>
             </tr>
         </table>
+
+        <!-- Signatures Integrated into Footer -->
+        <div class="signatures-section">
+            <table width="100%">
+                <tr>
+                    <td width="22%" style="vertical-align: top;">
+                        <table class="sig-table">
+                            <tr><td class="font-bold">SUPPLIER</td></tr>
+                            <tr><td class="italic" style="border-bottom: none; text-align: left; padding: 5px 5px 0 5px; font-size: 7pt;">Confirmed Date:</td></tr>
+                            <tr>
+                                <td class="sig-space">
+                                    <br><br><br>
+                                    <span style="font-weight: normal; font-size: 7pt;">(Signature & Stamp)</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td width="3%"></td>
+                    <td width="75%" style="vertical-align: top;">
+                        <table class="sig-table">
+                            <tr>
+                                <td width="33%" class="font-bold">AUTHORIZED</td>
+                                <td width="33%" class="font-bold">CHECKED</td>
+                                <td width="33%" class="font-bold">PREPARED</td>
+                            </tr>
+                            <tr>
+                                <td class="italic" style="font-size: 7pt;">Date: {{ $purchaseOrder->approved_at ? \Carbon\Carbon::parse($purchaseOrder->approved_at)->format('d-m-Y') : '__________' }}</td>
+                                <td class="italic" style="font-size: 7pt;">Date: {{ \Carbon\Carbon::parse($purchaseOrder->order_date)->format('d-m-Y') }}</td>
+                                <td class="italic" style="font-size: 7pt;">Date: {{ \Carbon\Carbon::parse($purchaseOrder->order_date)->format('d-m-Y') }}</td>
+                            </tr>
+                            <tr>
+                                <td class="sig-space">
+                                    ( Jahrudin )<br>
+                                    <span style="font-weight: normal; font-size: 7pt;">Director</span>
+                                </td>
+                                <td class="sig-space">
+                                    ( Ely Susanti )<br>
+                                    <span style="font-weight: normal; font-size: 7pt;">Purchasing Mgr</span>
+                                </td>
+                                <td class="sig-space">
+                                    ( Agus Suprianto )<br>
+                                    <span style="font-weight: normal; font-size: 7pt;">Purchasing Dept</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
 
 </body>

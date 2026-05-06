@@ -19,6 +19,7 @@ import {
     ChevronDownIcon,
     ArrowDownTrayIcon,
     ArrowUpTrayIcon,
+    TrashIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 import Pagination from '@/Components/Pagination.vue';
@@ -112,6 +113,11 @@ const formatDate = (date) => {
         return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     } catch (e) {
         return date;
+    }
+};
+const deleteReceipt = (id) => {
+    if (confirm('Are you sure you want to delete this draft receipt?')) {
+        router.delete(route('purchasing.receipts.destroy', id));
     }
 };
 </script>
@@ -300,9 +306,19 @@ const formatDate = (date) => {
                                     <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium" :class="getStatusBadge(receipt.status)">{{ receipt.status?.toUpperCase() }}</span>
                                 </td>
                                 <td class="px-4 py-2 whitespace-nowrap text-right">
-                                    <Link :href="`/purchasing/receipts/${receipt.id}`" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors">
-                                        <EyeIcon class="h-4 w-4" />
-                                    </Link>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <Link :href="`/purchasing/receipts/${receipt.id}`" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors">
+                                            <EyeIcon class="h-4 w-4" />
+                                        </Link>
+                                        <button 
+                                            v-if="receipt.status === 'draft'"
+                                            @click="deleteReceipt(receipt.id)"
+                                            class="p-2 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            title="Delete Draft"
+                                        >
+                                            <TrashIcon class="h-4 w-4" />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             <tr v-if="receipts.data && receipts.data.length === 0">

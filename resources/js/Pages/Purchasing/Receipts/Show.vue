@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon, TruckIcon, DocumentTextIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon, TruckIcon, DocumentTextIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 
 const props = defineProps({
@@ -34,6 +34,11 @@ const getStatusBadge = (status) => {
         completed: 'bg-emerald-500/20 text-emerald-400',
     };
     return badges[status] || 'bg-slate-500/20 text-slate-500 dark:text-slate-400';
+};
+const deleteReceipt = () => {
+    if (confirm('Are you sure you want to delete this draft receipt?')) {
+        router.delete(route('purchasing.receipts.destroy', props.receipt.id));
+    }
 };
 </script>
 
@@ -68,6 +73,13 @@ const getStatusBadge = (status) => {
                         class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-emerald-500 shadow-lg shadow-emerald-900/20"
                     >
                         <CheckCircleIcon class="h-4 w-4" /> Complete & Update Stock
+                    </button>
+                    <button 
+                        v-if="receipt.status === 'draft'"
+                        @click="deleteReceipt"
+                        class="inline-flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-2 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                    >
+                        <TrashIcon class="h-4 w-4" /> Delete Draft
                     </button>
                     <Link
                         v-if="canBeInvoiced"
