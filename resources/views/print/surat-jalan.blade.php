@@ -16,11 +16,11 @@
         }
         body {
             font-family: Arial, sans-serif;
-            font-size: 9pt;
-            line-height: 1.25;
+            font-size: 8pt;
+            line-height: 1.15;
             color: #000;
             margin: 0;
-            padding: 15px;
+            padding: 10px 20px;
         }
         table {
             width: 100%;
@@ -30,7 +30,7 @@
             margin-bottom: 10px;
         }
         .company-logo-text {
-            font-size: 26pt;
+            font-size: 22pt;
             font-weight: 900;
             font-style: italic;
             color: #E21E26;
@@ -38,14 +38,14 @@
             margin: 0;
         }
         .company-full-name {
-            font-size: 10pt;
+            font-size: 9pt;
             font-weight: 800;
             color: #003680;
-            margin: -5px 0 5px 0;
+            margin: -4px 0 3px 0;
         }
         .company-address {
-            font-size: 8pt;
-            line-height: 1.3;
+            font-size: 7.5pt;
+            line-height: 1.25;
         }
         .doc-title {
             text-align: left;
@@ -55,15 +55,14 @@
             padding-bottom: 5px;
             padding-left: 5px;
         }
-        .meta-table {
-            width: 320px;
-            float: left;
-            margin-top: 0;
+        .meta-container {
+            width: 300px;
+            float: right;
+            text-align: left;
         }
-        .meta-table td {
-            padding: 3px 0;
-            font-size: 10pt;
-            vertical-align: bottom;
+        .meta-table {
+            width: 100%;
+            margin-top: 2px;
         }
         .meta-label {
             width: 80px;
@@ -75,23 +74,23 @@
             text-align: center;
         }
         .meta-value {
-            border-bottom: 1px dotted #000;
-            min-width: 160px;
+            border-bottom: 0.25pt solid #000;
+            width: 100%;
             text-align: left;
-            padding-left: 10px;
+            padding-left: 12px;
             font-weight: bold;
         }
 
         .sold-to-section {
-            margin-top: 15px;
-            margin-bottom: 10px;
+            margin-top: 5px;
+            margin-bottom: 5px;
         }
         .sold-to-box {
             border: 1.2px solid #0055A5;
-            border-radius: 12px;
-            padding: 10px 15px;
+            border-radius: 10px;
+            padding: 5px 12px;
             width: 320px;
-            min-height: 70px;
+            min-height: 60px;
         }
         .box-title {
             font-weight: 800;
@@ -105,18 +104,16 @@
         }
         .items-table th {
             border: 1px solid #0055A5;
-            padding: 6px;
+            padding: 4px;
             font-weight: bold;
             text-align: center;
+            font-size: 8.5pt;
         }
         .items-table td {
             border-left: 1px solid #0055A5;
             border-right: 1px solid #0055A5;
-            padding: 4px 6px;
+            padding: 2px 6px;
             vertical-align: top;
-        }
-        .items-table tr:last-child td {
-            padding-bottom: 40px; /* Space for empty area */
         }
         
         .clear { clear: both; }
@@ -153,41 +150,42 @@
                 </div>
                 <div class="company-address">
                     Kawasan Industri JABABEKA I<br>
-                    Jl. Jababeka II Blok C No. 19 L<br>
-                    Pasir gombong, Cikarang Utara, Bekasi 17530 Jawa Barat<br>
-                    Telp : 021 8938 3915, Fax. : 021 - 8938 3915<br>
+                    Jl. Jababeka II Blok C No. 19 L, Pasir gombong, Cikarang Utara<br>
+                    Bekasi 17530 Jawa Barat. Telp : 021 8938 3915<br>
                     e_mail : jidoka.pt@yahoo.com
                 </div>
             </td>
             <td width="45%" style="vertical-align: top;">
-                <div class="doc-title" style="font-size: 20pt; font-weight: 900; color: #1a1a1a;">DELIVERY ORDER</div>
-                <table class="meta-table">
-                    <tr>
-                        <td class="meta-label">No</td>
-                        <td class="meta-separator">:</td>
-                        <td class="meta-value">{{ $order->do_number }}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-label">Date</td>
-                        <td class="meta-separator">:</td>
-                        <td class="meta-value">{{ $order->delivery_date->format('F d, Y') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-label">PO No</td>
-                        <td class="meta-separator">:</td>
-                        <td class="meta-value">{{ $order->salesOrder->customer_po_number ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-label">Verhicle No</td>
-                        <td class="meta-separator">:</td>
-                        <td class="meta-value">{{ $order->vehicle_number ?? '-' }}</td>
-                    </tr>
-                </table>
+                <div class="meta-container">
+                    <div class="doc-title" style="font-size: 19pt; font-weight: 900; color: #1a1a1a; padding-left: 0; line-height: 1;">DELIVERY ORDER</div>
+                    <table class="meta-table">
+                        <tr>
+                            <td width="90" style="padding: 1px 0; white-space: nowrap; text-align: left; font-size: 9pt;">No</td>
+                            <td width="15" style="text-align: center; font-size: 9pt;">:</td>
+                            <td class="meta-value" style="font-size: 9pt;">{{ $order->do_number }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 1px 0; white-space: nowrap; text-align: left; font-size: 9pt;">Date</td>
+                            <td style="text-align: center; font-size: 9pt;">:</td>
+                            <td class="meta-value" style="font-size: 9pt;">{{ $order->delivery_date->format('F d, Y') }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 1px 0; white-space: nowrap; text-align: left; font-size: 9pt;">PO No</td>
+                            <td style="text-align: center; font-size: 9pt;">:</td>
+                            <td class="meta-value" style="font-size: 9pt;">{{ $order->salesOrder->customer_po_number ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 1px 0; white-space: nowrap; text-align: left; font-size: 9pt;">Vehicle No</td>
+                            <td style="text-align: center; font-size: 9pt;">:</td>
+                            <td class="meta-value" style="font-size: 9pt;">{{ $order->vehicle_number ?? '-' }}</td>
+                        </tr>
+                    </table>
+                </div>
             </td>
         </tr>
     </table>
 
-    <hr style="border: 0; border-top: 2px double #000; margin: 10px 0;">
+    <hr style="border: 0; border-top: 2px double #000; margin: 5px 0;">
 
     <table class="sold-to-section">
         <tr>
@@ -234,9 +232,17 @@
             </tr>
             @endif
             @endforeach
-            <!-- Placeholder for border bottom -->
+            <!-- Dynamic Spacer Row -->
+            @php $remainingRows = max(0, 10 - $no); @endphp
+            <tr class="item-row">
+                <td style="height: {{ $remainingRows * 15 }}px; border-left: 1px solid #0055A5; border-right: 1px solid #0055A5;"></td>
+                <td style="border-left: 1px solid #0055A5; border-right: 1px solid #0055A5;"></td>
+                <td style="border-left: 1px solid #0055A5; border-right: 1px solid #0055A5;"></td>
+                <td style="border-left: 1px solid #0055A5; border-right: 1px solid #0055A5;"></td>
+                <td style="border-left: 1px solid #0055A5; border-right: 1px solid #0055A5;"></td>
+            </tr>
             <tr>
-                <td colspan="5" style="border-top: none; border-bottom: 1px solid #0055A5; height: 1px; padding: 0;"></td>
+                <td colspan="5" style="border-top: 1px solid #0055A5; padding: 0;"></td>
             </tr>
         </tbody>
     </table>
@@ -244,22 +250,25 @@
     <div class="footer-section">
         <table style="width: 100%; border: none;">
             <tr>
-                <td width="33%" style="vertical-align: top; border: none;">
-                    <div style="margin-bottom: 10px;">
+                <td width="30%" style="vertical-align: top; border: none;">
+                    <div style="font-size: 8pt; line-height: 1.4; color: #444;">
                         Goods received in good Order and Condition<br>
                         Goods sold are not returnable
                     </div>
-                    <div class="signature-name" style="margin-top: 45px;">Company stamp and Signature</div>
+                    <div style="margin-top: 45px; border-top: 1px solid #000; width: 180px; text-align: center; font-size: 8pt;">
+                        Recipient Signature & Stamp
+                    </div>
                 </td>
-                <td width="34%" style="vertical-align: top; text-align: center; border: none;">
-                    <div style="font-weight: 600;">PT. Jidoka Result Indonesia</div>
-                    <div class="signature-name" style="margin-top: 60px;">Authorized Signature</div>
+                <td width="40%" style="vertical-align: top; text-align: center; border: none;">
+                    <div style="font-weight: bold; font-size: 9pt;">PT. Jidoka Result Indonesia</div>
+                    <div style="margin-top: 60px; border-top: 1px solid #000; width: 180px; margin-left: auto; margin-right: auto; text-align: center; font-size: 8pt;">
+                        Authorized Signature
+                    </div>
                 </td>
-                <td width="33%" style="vertical-align: top; text-align: right; border: none;">
+                <td width="30%" style="vertical-align: top; text-align: right; border: none;">
                     <div style="display: inline-block; text-align: center;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode(route('sales.deliveries.public-validate', $order->public_uuid ?: $order->id)) }}" style="width: 70px; height: 70px; border: 1px solid #f1f5f9; padding: 2px;">
-                        <div style="font-size: 8pt; font-weight: bold; margin-top: 4px; color: #003680; line-height: 1;">SCAN FOR VALIDATION</div>
-                        <div style="font-size: 7pt; color: #666; margin-top: 3px;">Official JIDOKA Form</div>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ urlencode(route('sales.deliveries.public-validate', $order->public_uuid ?: $order->id)) }}" style="width: 65px; height: 65px; padding: 2px; border: 1px solid #eee;">
+                        <div style="font-size: 7.5pt; font-weight: bold; margin-top: 4px; color: #003680;">VERIFIED DO</div>
                     </div>
                 </td>
             </tr>
