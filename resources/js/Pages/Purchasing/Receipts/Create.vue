@@ -22,6 +22,22 @@ const productOptions = computed(() =>
     }))
 );
 
+const supplierOptions = computed(() =>
+    props.suppliers.map(s => ({
+        id: s.id,
+        label: s.name,
+        ...s
+    }))
+);
+
+const purchaseOrderOptions = computed(() =>
+    props.purchaseOrders.map(po => ({
+        id: po.id,
+        label: `${po.po_number} - ${po.supplier?.name || '-'}`,
+        ...po
+    }))
+);
+
 const form = useForm({
     purchase_order_id: props.purchaseOrder?.id || null,
     supplier_id: props.purchaseOrder?.supplier_id || '',
@@ -111,18 +127,21 @@ const submit = () => {
                         
                         <div>
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Purchase Order (Optional)</label>
-                            <select v-model="form.purchase_order_id" @change="onPOChange(form.purchase_order_id)" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50">
-                                <option :value="null">Select PO (Optional)</option>
-                                <option v-for="po in purchaseOrders" :key="po.id" :value="po.id">{{ po.po_number }} - {{ po.supplier?.name }}</option>
-                            </select>
+                            <SearchableSelect
+                                v-model="form.purchase_order_id"
+                                :options="purchaseOrderOptions"
+                                placeholder="Search PO (Optional)..."
+                                @change="(po) => onPOChange(po?.id)"
+                            />
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Supplier</label>
-                            <select v-model="form.supplier_id" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" required>
-                                <option value="">Select Supplier</option>
-                                <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
-                            </select>
+                            <SearchableSelect
+                                v-model="form.supplier_id"
+                                :options="supplierOptions"
+                                placeholder="Search Supplier..."
+                            />
                         </div>
 
                         <div>
