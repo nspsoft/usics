@@ -86,6 +86,17 @@ const getStatusClass = (status) => {
     };
     return classes[status] || 'bg-slate-500/10 text-slate-500 border-slate-500/20';
 };
+
+const exportUrl = computed(() => {
+    return route('sales.deliveries.items.export', {
+        search: search.value || undefined,
+        status: status.value || undefined,
+        customer: customer.value || undefined,
+        date_range: (dateFrom.value && dateTo.value) ? [dateFrom.value, dateTo.value] : undefined,
+        sort: sort.value || undefined,
+        direction: direction.value || undefined,
+    });
+});
 </script>
 
 <template>
@@ -116,7 +127,7 @@ const getStatusClass = (status) => {
 
             <div class="flex flex-wrap items-center gap-2 shrink-0">
                 <a 
-                    :href="route('sales.deliveries.items.export', filters)"
+                    :href="exportUrl"
                     class="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all group"
                 >
                     <ArrowDownTrayIcon class="h-5 w-5 text-emerald-500 group-hover:scale-110 transition-transform" />

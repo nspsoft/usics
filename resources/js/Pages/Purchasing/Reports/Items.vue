@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
@@ -91,6 +91,24 @@ const getStatusBadge = (status) => {
     };
     return badges[status] || 'bg-slate-500/10 text-slate-500 border-slate-500/20';
 };
+
+const exportUrl = computed(() => {
+    const params = new URLSearchParams();
+
+    if (search.value) params.set('search', search.value);
+    if (selectedStatus.value) params.set('status', selectedStatus.value);
+    if (selectedSupplier.value) params.set('supplier', selectedSupplier.value);
+    if (dateFrom.value && dateTo.value) {
+        params.set('date_range[0]', dateFrom.value);
+        params.set('date_range[1]', dateTo.value);
+    }
+
+    if (sortField.value) params.set('sort', sortField.value);
+    if (sortDirection.value) params.set('direction', sortDirection.value);
+
+    const qs = params.toString();
+    return qs ? `/purchasing/orders/items/export?${qs}` : '/purchasing/orders/items/export';
+});
 </script>
 
 <template>
@@ -120,7 +138,7 @@ const getStatusBadge = (status) => {
             
             <div class="flex items-center gap-2 shrink-0">
                 <a
-                    href="/purchasing/orders/items/export"
+                    :href="exportUrl"
                     class="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all group"
                 >
                     <ArrowDownTrayIcon class="h-5 w-5 text-emerald-500 group-hover:scale-110 transition-transform" />

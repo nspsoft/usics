@@ -193,7 +193,8 @@ class ReportController extends Controller
         return Excel::download(new ReportExport(
             $data,
             ['Date', 'Number', 'Customer', 'Status', 'Total', 'Tax'],
-            fn ($row) => [$row->order_date, $row->number, $row->customer->name, $row->status, $row->total, $row->tax]
+            fn ($row) => [$row->order_date, $row->number, $row->customer->name, $row->status, $row->total, $row->tax],
+            'SALES SUMMARY REPORT'
         ), 'sales_report.xlsx');
     }
 
@@ -210,7 +211,8 @@ class ReportController extends Controller
         return Excel::download(new ReportExport(
             $data,
             ['Date', 'Number', 'Supplier', 'Status', 'Total', 'Tax'],
-            fn ($row) => [$row->order_date, $row->number, $row->supplier->name, $row->status, $row->total, $row->tax]
+            fn ($row) => [$row->order_date, $row->number, $row->supplier->name, $row->status, $row->total, $row->tax],
+            'PURCHASE SUMMARY REPORT'
         ), 'purchase_report.xlsx');
     }
 
@@ -227,7 +229,8 @@ class ReportController extends Controller
         return Excel::download(new ReportExport(
             $data,
             ['Number', 'Product', 'Start', 'Status', 'Planned Qty', 'Actual Qty'],
-            fn ($row) => [$row->number, $row->product->name, $row->planned_start, $row->status, $row->planned_qty, $row->actual_qty]
+            fn ($row) => [$row->number, $row->product->name, $row->planned_start, $row->status, $row->planned_qty, $row->actual_qty],
+            'PRODUCTION SUMMARY REPORT'
         ), 'production_report.xlsx');
     }
 
@@ -338,7 +341,8 @@ class ReportController extends Controller
                 $row['last_out_date'], 
                 $row['days_inactive'], 
                 strtoupper($row['classification'])
-            ]
+            ],
+            'INVENTORY AGING REPORT'
         ), 'inventory_aging_report.xlsx');
     }
 }
