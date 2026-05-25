@@ -425,7 +425,7 @@ onMounted(() => {
 
                     <!-- Right Column: Shipped Items -->
                     <div class="xl:col-span-8 space-y-6 relative z-20">
-                        <div class="glass-card rounded-2xl !overflow-visible border border-slate-200 dark:border-slate-800 shadow-sm min-h-[400px]">
+                        <div class="glass-card rounded-2xl !overflow-visible border border-slate-200 dark:border-slate-800 shadow-sm min-h-[400px] relative z-20">
                             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/30 flex justify-between items-center">
                                 <div class="flex items-center gap-3">
                                     <h3 class="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-widest">Items to Ship</h3>
@@ -575,7 +575,7 @@ onMounted(() => {
                         </div>
 
                         <!-- Footer Actions -->
-                        <div class="flex items-center justify-between glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-lg">
+                        <div class="flex items-center justify-between glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-lg relative z-0">
                             <div class="text-xs text-slate-500 italic">
                                 * Pastikan armada dan Qty kirim sudah sesuai sebelum menyimpan Draft.
                             </div>
