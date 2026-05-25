@@ -27,7 +27,10 @@ export default defineConfig({
             manifest: false, // We already have manifest.webmanifest in public folder
             workbox: {
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-                navigateFallback: null
+                cleanupOutdatedCaches: true,
+                clientsClaim: true,
+                navigateFallback: null,
+                skipWaiting: true,
             }
         }),
     ],

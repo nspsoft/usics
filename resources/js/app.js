@@ -11,7 +11,12 @@ const appName = import.meta.env.VITE_APP_NAME || 'ERP Manufacturing';
 
 // Initialize PWA Service Worker
 if ('serviceWorker' in navigator) {
-    registerSW({
+    let updateSW = () => {};
+    updateSW = registerSW({
+        immediate: true,
+        onNeedRefresh() {
+            updateSW(true);
+        },
         onOfflineReady() {},
     });
 }
