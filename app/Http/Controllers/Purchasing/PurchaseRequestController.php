@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchasing;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\PurchaseRequest;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -94,25 +95,45 @@ class PurchaseRequestController extends Controller
             'items.*.description' => 'nullable|string',
         ]);
 
-        DB::transaction(function () use ($validated) {
-            $pr = PurchaseRequest::create([
-                'pr_number' => PurchaseRequest::generatePrNumber(),
-                'request_date' => $validated['request_date'],
-                'department' => $validated['department'],
-                'requester' => $validated['requester'],
-                'status' => 'draft',
-                'notes' => $validated['notes'] ?? null,
-                'created_by' => auth()->id(),
-            ]);
+        $attempt = 0;
+        $maxAttempts = 5;
 
-            foreach ($validated['items'] as $item) {
-                $pr->items()->create([
-                    'product_id' => $item['product_id'],
-                    'qty' => $item['qty'],
-                    'description' => $item['description'] ?? null,
-                ]);
+        while (true) {
+            try {
+                DB::transaction(function () use ($validated) {
+                    $pr = PurchaseRequest::create([
+                        'pr_number' => PurchaseRequest::generatePrNumber(),
+                        'request_date' => $validated['request_date'],
+                        'department' => $validated['department'],
+                        'requester' => $validated['requester'],
+                        'status' => 'draft',
+                        'notes' => $validated['notes'] ?? null,
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    foreach ($validated['items'] as $item) {
+                        $pr->items()->create([
+                            'product_id' => $item['product_id'],
+                            'qty' => $item['qty'],
+                            'description' => $item['description'] ?? null,
+                        ]);
+                    }
+                });
+
+                break;
+            } catch (QueryException $e) {
+                $errorCode = $e->errorInfo[1] ?? null;
+                $isDuplicatePrNumber = $errorCode === 1062 && str_contains($e->getMessage(), 'purchase_requests_pr_number_unique');
+
+                if ($isDuplicatePrNumber && $attempt < ($maxAttempts - 1)) {
+                    $attempt++;
+                    usleep(200000 * $attempt);
+                    continue;
+                }
+
+                throw $e;
             }
-        });
+        }
 
         return redirect()->route('purchasing.requests.index')
             ->with('success', 'Purchase Request created successfully.');

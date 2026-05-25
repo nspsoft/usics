@@ -52,7 +52,7 @@ class PurchaseRequest extends Model
         // Format: PR/YYYY/MM/XXXX
         $prefix = 'PR/' . date('Y/m/');
         $lastPr = self::where('pr_number', 'like', $prefix . '%')
-            ->orderBy('id', 'desc')
+            ->orderBy('pr_number', 'desc')
             ->first();
 
         if (!$lastPr) {
