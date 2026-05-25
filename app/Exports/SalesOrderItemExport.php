@@ -33,7 +33,7 @@ class SalesOrderItemExport implements FromQuery, WithHeadings, WithMapping, Shou
     {
         return SalesOrderItem::query()
             ->with(['salesOrder.customer', 'salesOrder.warehouse', 'product', 'unit'])
-            ->leftJoin('sales_orders', 'sales_order_items.sales_order_id', '=', 'sales_orders.id')
+            ->join('sales_orders', 'sales_order_items.sales_order_id', '=', 'sales_orders.id')
             ->select('sales_order_items.*')
             ->when($this->filters['search'] ?? null, function ($q, $search) {
                 $q->where(function ($sub) use ($search) {
@@ -88,21 +88,21 @@ class SalesOrderItemExport implements FromQuery, WithHeadings, WithMapping, Shou
     public function map($item): array
     {
         return [
-            $item->salesOrder->so_number,
-            $item->salesOrder->order_date ? $item->salesOrder->order_date->format('Y-m-d') : '-',
-            $item->salesOrder->customer->name ?? '-',
-            $item->salesOrder->customer_po_number ?? '-',
-            $item->product->sku ?? '-',
-            $item->product->name ?? '-',
+            $item->salesOrder?->so_number ?? '-',
+            $item->salesOrder?->order_date ? $item->salesOrder->order_date->format('Y-m-d') : '-',
+            $item->salesOrder?->customer?->name ?? '-',
+            $item->salesOrder?->customer_po_number ?? '-',
+            $item->product?->sku ?? '-',
+            $item->product?->name ?? '-',
             $item->qty,
             $item->qty_delivered,
             $item->qty_returned,
             $item->remaining_qty,
             $item->qty_invoiced,
-            $item->unit->name ?? '-',
+            $item->unit?->name ?? '-',
             $item->unit_price,
             $item->subtotal,
-            ucfirst($item->salesOrder->status),
+            $item->salesOrder?->status ? ucfirst($item->salesOrder->status) : '-',
         ];
     }
 
