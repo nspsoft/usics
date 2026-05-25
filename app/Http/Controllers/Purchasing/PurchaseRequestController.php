@@ -123,7 +123,11 @@ class PurchaseRequestController extends Controller
                 break;
             } catch (QueryException $e) {
                 $errorCode = $e->errorInfo[1] ?? null;
-                $isDuplicatePrNumber = $errorCode === 1062 && str_contains($e->getMessage(), 'purchase_requests_pr_number_unique');
+                $message = $e->getMessage();
+                $isDuplicatePrNumber = $errorCode === 1062
+                    && (str_contains($message, 'purchase_requests_pr_number_unique')
+                        || str_contains($message, 'Duplicate entry')
+                        || str_contains($message, 'pr_number'));
 
                 if ($isDuplicatePrNumber && $attempt < ($maxAttempts - 1)) {
                     $attempt++;

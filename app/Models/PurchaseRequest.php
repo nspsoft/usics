@@ -51,7 +51,7 @@ class PurchaseRequest extends Model
     {
         // Format: PR/YYYY/MM/XXXX
         $prefix = 'PR/' . date('Y/m/');
-        $lastPr = self::where('pr_number', 'like', $prefix . '%')
+        $lastPr = self::withTrashed()->where('pr_number', 'like', $prefix . '%')
             ->orderBy('pr_number', 'desc')
             ->first();
 
