@@ -121,7 +121,7 @@ const submit = () => {
                     </div>
 
                     <!-- Items -->
-                    <div class="xl:col-span-8 glass-card rounded-2xl p-6">
+                    <div class="xl:col-span-8 glass-card rounded-2xl p-6 relative z-20">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Items Requested</h3>
                             <button type="button" @click="addItem" class="text-sm font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1">
@@ -172,7 +172,7 @@ const submit = () => {
                     </div>
                 </div>
 
-                <div class="glass-card rounded-2xl p-6">
+                <div class="glass-card rounded-2xl p-6 relative z-0">
                     <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Notes / Justification</label>
                     <textarea v-model="form.notes" rows="3" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" placeholder="Why is this purchase needed?"></textarea>
                 </div>
