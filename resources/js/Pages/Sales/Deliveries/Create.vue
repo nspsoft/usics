@@ -487,7 +487,8 @@ onMounted(() => {
                                     </thead>
                                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
                                         <tr v-for="(item, index) in filteredItems" :key="item.sales_order_item_id || index" 
-                                            class="transition-colors"
+                                            class="relative transition-colors"
+                                            :style="{ zIndex: 1000 - index }"
                                             :class="[
                                                 hasSalesOrder 
                                                     ? (item.include ? 'bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20' : 'opacity-40 hover:opacity-60 hover:bg-slate-50 dark:hover:bg-slate-800/20') 
@@ -502,7 +503,7 @@ onMounted(() => {
                                                     @change="onItemToggle(item)"
                                                 />
                                             </td>
-                                            <td class="px-6 py-4 min-w-[250px]">
+                                            <td class="px-6 py-4 min-w-[250px] relative">
                                                 <div v-if="hasSalesOrder">
                                                     <div class="text-sm font-bold text-slate-900 dark:text-white">{{ item.name }}</div>
                                                     <div class="text-[10px] text-slate-500 font-mono">{{ item.sku }}</div>
