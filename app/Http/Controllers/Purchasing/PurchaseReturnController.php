@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchasing;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductStock;
+use App\Models\GoodsReceipt;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseReturn;
 use App\Models\StockMovement;
@@ -62,12 +63,91 @@ class PurchaseReturnController extends Controller
                 ->find($request->purchase_order_id);
         }
 
+        $prefill = null;
+
+        if ($request->goods_receipt_id) {
+            $receipt = GoodsReceipt::with([
+                'purchaseOrder.goodsReceipts.items',
+                'purchaseOrder.returns.items',
+                'supplier',
+                'warehouse',
+                'items.product',
+                'items.purchaseOrderItem',
+            ])->findOrFail($request->goods_receipt_id);
+
+            $purchaseOrder = $receipt->purchaseOrder ?? $purchaseOrder;
+
+            $returnableByProduct = [];
+
+            if ($purchaseOrder) {
+                $receivedByProduct = $purchaseOrder->goodsReceipts
+                    ->flatMap(fn ($gr) => $gr->items)
+                    ->groupBy('product_id')
+                    ->map(fn ($items) => (float) $items->sum('qty_received'));
+
+                $returnedByProduct = $purchaseOrder->returns
+                    ->flatMap(fn ($r) => $r->items)
+                    ->groupBy('product_id')
+                    ->map(fn ($items) => (float) $items->sum('qty'));
+
+                foreach ($receivedByProduct as $productId => $receivedQty) {
+                    $returnedQty = (float) ($returnedByProduct[$productId] ?? 0);
+                    $returnableByProduct[$productId] = max(0, $receivedQty - $returnedQty);
+                }
+            }
+
+            $items = [];
+            foreach ($receipt->items as $grItem) {
+                $product = $grItem->product;
+                if (!$product) {
+                    continue;
+                }
+
+                $defaultQty = (float) $grItem->qty_received;
+                $productId = (int) $grItem->product_id;
+
+                if (array_key_exists($productId, $returnableByProduct)) {
+                    $allowed = (float) $returnableByProduct[$productId];
+                    if ($allowed <= 0) {
+                        continue;
+                    }
+                    $defaultQty = min($defaultQty, $allowed);
+                    $returnableByProduct[$productId] = max(0, $allowed - $defaultQty);
+                }
+
+                if ($defaultQty <= 0) {
+                    continue;
+                }
+
+                $unitPrice = (float) ($grItem->purchaseOrderItem?->unit_price ?? $grItem->unit_cost ?? 0);
+
+                $items[] = [
+                    'product_id' => $productId,
+                    'name' => $product->name ?? 'Unknown',
+                    'sku' => $product->sku ?? '-',
+                    'qty' => $defaultQty,
+                    'unit_price' => $unitPrice,
+                ];
+            }
+
+            $prefill = [
+                'goods_receipt_id' => $receipt->id,
+                'grn_number' => $receipt->grn_number,
+                'purchase_order_id' => $receipt->purchase_order_id,
+                'supplier_id' => $receipt->supplier_id,
+                'warehouse_id' => $receipt->warehouse_id,
+                'reason' => "Correction for GRN {$receipt->grn_number}",
+                'items' => $items,
+            ];
+        }
+
         return Inertia::render('Purchasing/Returns/Create', [
             'purchaseOrder' => $purchaseOrder,
             'purchaseOrders' => PurchaseOrder::whereIn('status', ['received', 'completed', 'partial'])->with('supplier')->orderByDesc('created_at')->get(),
             'suppliers' => Supplier::orderBy('name')->get(['id', 'name']),
             'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
             'products' => Product::orderBy('name')->get(['id', 'name', 'sku'])->each->setAppends([]),
+            'prefill' => $prefill,
         ]);
     }
 

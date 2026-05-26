@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon, TruckIcon, DocumentTextIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon, TruckIcon, DocumentTextIcon, PencilSquareIcon, TrashIcon, ArrowUturnLeftIcon } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 
 const props = defineProps({
@@ -87,6 +87,13 @@ const deleteReceipt = () => {
                         class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20"
                     >
                         <DocumentTextIcon class="h-4 w-4" /> Create Invoice
+                    </Link>
+                    <Link
+                        v-if="receipt.status === 'completed'"
+                        :href="route('purchasing.purchase-returns.create', { goods_receipt_id: receipt.id })"
+                        class="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 shadow-lg shadow-amber-900/20"
+                    >
+                        <ArrowUturnLeftIcon class="h-4 w-4" /> Create Return (Correction)
                     </Link>
                 </div>
             </div>

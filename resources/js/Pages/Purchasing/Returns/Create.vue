@@ -15,17 +15,18 @@ const props = defineProps({
     suppliers: Array,
     warehouses: Array,
     products: Array,
+    prefill: Object,
 });
 
 import axios from 'axios';
 
 const form = useForm({
-    purchase_order_id: props.purchaseOrder?.id || null,
-    supplier_id: props.purchaseOrder?.supplier_id || '',
-    warehouse_id: props.purchaseOrder?.warehouse_id || '',
+    purchase_order_id: props.prefill?.purchase_order_id ?? props.purchaseOrder?.id ?? null,
+    supplier_id: props.prefill?.supplier_id ?? props.purchaseOrder?.supplier_id ?? '',
+    warehouse_id: props.prefill?.warehouse_id ?? props.purchaseOrder?.warehouse_id ?? '',
     return_date: new Date().toISOString().split('T')[0],
-    reason: '',
-    items: props.purchaseOrder?.items?.map(item => ({
+    reason: props.prefill?.reason ?? '',
+    items: props.prefill?.items ?? props.purchaseOrder?.items?.map(item => ({
         product_id: item.product_id,
         name: item.product?.name || 'Unknown',
         sku: item.product?.sku || '-',
@@ -100,6 +101,15 @@ const submit = () => {
             </Link>
 
             <form @submit.prevent="submit" class="space-y-6">
+                <div v-if="prefill?.goods_receipt_id" class="glass-card rounded-2xl p-4">
+                    <div class="text-sm font-semibold text-slate-900 dark:text-white">
+                        Prefill dari Goods Receipt: <span class="font-mono">{{ prefill.grn_number }}</span>
+                    </div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Draft Purchase Return ini dibuat untuk koreksi receipt yang sudah completed. Silakan sesuaikan qty yang benar-benar ingin diretur.
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
                     <div class="xl:col-span-4 glass-card rounded-2xl p-6 space-y-4">
                         <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Return Info</h3>
