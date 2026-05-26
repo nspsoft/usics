@@ -202,6 +202,195 @@ class GoodsReceiptController extends Controller
         ]);
     }
 
+    public function reassignPoForm(GoodsReceipt $receipt): Response
+    {
+        if ($receipt->status !== GoodsReceipt::STATUS_COMPLETED) {
+            return redirect()->route('purchasing.receipts.edit', $receipt->id);
+        }
+
+        $receipt->load(['purchaseOrder', 'supplier', 'warehouse', 'items.product']);
+
+        $requiredProducts = $receipt->items
+            ->map(fn ($item) => (int) $item->product_id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $purchaseOrdersQuery = PurchaseOrder::where('supplier_id', $receipt->supplier_id)
+            ->where('warehouse_id', $receipt->warehouse_id)
+            ->when($receipt->purchase_order_id, fn ($q) => $q->where('id', '!=', $receipt->purchase_order_id))
+            ->whereIn('status', [
+                PurchaseOrder::STATUS_APPROVED,
+                PurchaseOrder::STATUS_ORDERED,
+                PurchaseOrder::STATUS_ACKNOWLEDGED,
+                PurchaseOrder::STATUS_PARTIAL,
+                PurchaseOrder::STATUS_RECEIVED,
+            ])
+            ->with('supplier:id,name')
+            ->orderByDesc('created_at');
+
+        foreach ($requiredProducts as $productId) {
+            $purchaseOrdersQuery->whereHas('items', function ($q) use ($productId) {
+                $q->where('product_id', $productId);
+            });
+        }
+
+        $purchaseOrders = $purchaseOrdersQuery
+            ->with(['items' => function ($q) use ($requiredProducts) {
+                $q->whereIn('product_id', $requiredProducts);
+            }])
+            ->get(['id', 'po_number', 'supplier_id', 'warehouse_id'])
+            ->filter(function ($po) use ($receipt) {
+                $itemsByProduct = $po->items->keyBy('product_id');
+
+                foreach ($receipt->items as $grItem) {
+                    $poItem = $itemsByProduct->get((int) $grItem->product_id);
+                    if (!$poItem) {
+                        return false;
+                    }
+
+                    $remaining = (float) ($poItem->qty - ($poItem->qty_received - $poItem->qty_returned));
+                    if ((float) $grItem->qty_received > $remaining + 0.0001) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            ->values();
+
+        return Inertia::render('Purchasing/Receipts/ReassignPO', [
+            'receipt' => $receipt,
+            'purchaseOrders' => $purchaseOrders,
+        ]);
+    }
+
+    public function reassignPo(Request $request, GoodsReceipt $receipt)
+    {
+        if ($receipt->status !== GoodsReceipt::STATUS_COMPLETED) {
+            return back()->with('error', 'Only completed receipts can be reassigned.');
+        }
+
+        $validated = $request->validate([
+            'purchase_order_id' => 'required|exists:purchase_orders,id',
+        ]);
+
+        $hasInvoiced = $receipt->items()->whereRaw('COALESCE(qty_invoiced, 0) > 0')->exists();
+        if ($hasInvoiced) {
+            return back()->with('error', 'Cannot change PO: this receipt has already been partially/fully invoiced.');
+        }
+
+        if ((int) ($validated['purchase_order_id'] ?? 0) === (int) ($receipt->purchase_order_id ?? 0)) {
+            return back()->with('error', 'Target PO is the same as current PO.');
+        }
+
+        try {
+            DB::transaction(function () use ($receipt, $validated) {
+            $receipt->load(['items.purchaseOrderItem', 'items.product', 'purchaseOrder.items']);
+
+            $oldPo = $receipt->purchaseOrder;
+            $newPo = PurchaseOrder::with('items.product')->findOrFail($validated['purchase_order_id']);
+
+            if ((int) $newPo->supplier_id !== (int) $receipt->supplier_id) {
+                throw new \RuntimeException('Cannot change PO: supplier mismatch.');
+            }
+
+            if ((int) $newPo->warehouse_id !== (int) $receipt->warehouse_id) {
+                throw new \RuntimeException('Cannot change PO: warehouse mismatch.');
+            }
+
+            $newPoItemsByProduct = $newPo->items->keyBy('product_id');
+            $missingProducts = [];
+            $insufficientProducts = [];
+
+            foreach ($receipt->items as $grItem) {
+                $productId = (int) $grItem->product_id;
+                $newPoItem = $newPoItemsByProduct->get($productId);
+
+                if (!$newPoItem) {
+                    $missingProducts[] = $grItem->product?->sku ?? (string) $productId;
+                    continue;
+                }
+
+                $remaining = (float) ($newPoItem->qty - ($newPoItem->qty_received - $newPoItem->qty_returned));
+                if ((float) $grItem->qty_received > $remaining + 0.0001) {
+                    $insufficientProducts[] = ($grItem->product?->sku ?? (string) $productId) . " (need {$grItem->qty_received}, remaining {$remaining})";
+                }
+            }
+
+            if (!empty($missingProducts)) {
+                throw new \RuntimeException('Cannot change PO: products not found in target PO: ' . implode(', ', $missingProducts));
+            }
+
+            if (!empty($insufficientProducts)) {
+                throw new \RuntimeException('Cannot change PO: insufficient remaining qty in target PO: ' . implode('; ', $insufficientProducts));
+            }
+
+            if ($oldPo) {
+                $oldPo->loadMissing('items.product');
+
+                foreach ($receipt->items as $grItem) {
+                    $oldPoItem = $grItem->purchaseOrderItem;
+                    if ($oldPoItem) {
+                        $oldPoItem->qty_received = max(0, (float) $oldPoItem->qty_received - (float) $grItem->qty_received);
+                        $oldPoItem->save();
+                    }
+                }
+
+                $oldPo->refresh();
+                $allReceived = $oldPo->items->every(fn ($item) => $item->qty_received >= $item->qty - 0.0001);
+                $someReceived = $oldPo->items->some(fn ($item) => $item->qty_received > 0);
+
+                if ($allReceived) {
+                    $oldPo->status = PurchaseOrder::STATUS_RECEIVED;
+                } elseif ($someReceived) {
+                    $oldPo->status = PurchaseOrder::STATUS_PARTIAL;
+                } else {
+                    if (!in_array($oldPo->status, [PurchaseOrder::STATUS_DRAFT, PurchaseOrder::STATUS_SUBMITTED, PurchaseOrder::STATUS_APPROVED, PurchaseOrder::STATUS_ORDERED, PurchaseOrder::STATUS_ACKNOWLEDGED], true)) {
+                        $oldPo->status = PurchaseOrder::STATUS_APPROVED;
+                    }
+                }
+                $oldPo->save();
+            }
+
+            foreach ($receipt->items as $grItem) {
+                $productId = (int) $grItem->product_id;
+                $newPoItem = $newPoItemsByProduct->get($productId);
+
+                $newPoItem->qty_received += (float) $grItem->qty_received;
+                $newPoItem->save();
+
+                $grItem->purchase_order_item_id = $newPoItem->id;
+                $grItem->save();
+            }
+
+            $newPo->refresh();
+            $allReceived = $newPo->items->every(fn ($item) => $item->qty_received >= $item->qty - 0.0001);
+            $someReceived = $newPo->items->some(fn ($item) => $item->qty_received > 0);
+
+            if ($allReceived) {
+                $newPo->status = PurchaseOrder::STATUS_RECEIVED;
+            } elseif ($someReceived) {
+                $newPo->status = PurchaseOrder::STATUS_PARTIAL;
+            }
+            $newPo->save();
+
+            $receipt->purchase_order_id = $newPo->id;
+            $receipt->save();
+            });
+        } catch (\Throwable $e) {
+            if ($e instanceof \RuntimeException) {
+                return back()->with('error', $e->getMessage());
+            }
+
+            report($e);
+            return back()->with('error', 'Cannot change PO: unexpected error.');
+        }
+
+        return redirect()->route('purchasing.receipts.show', $receipt->id)
+            ->with('success', 'Linked PO updated successfully.');
+    }
+
     public function complete(GoodsReceipt $receipt)
     {
         if ($receipt->status === 'completed') {

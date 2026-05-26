@@ -26,13 +26,13 @@ const form = useForm({
     warehouse_id: props.prefill?.warehouse_id ?? props.purchaseOrder?.warehouse_id ?? '',
     return_date: new Date().toISOString().split('T')[0],
     reason: props.prefill?.reason ?? '',
-    items: props.prefill?.items ?? props.purchaseOrder?.items?.map(item => ({
+    items: props.prefill?.items ?? (props.purchaseOrder?.items?.map(item => ({
         product_id: item.product_id,
         name: item.product?.name || 'Unknown',
         sku: item.product?.sku || '-',
         qty: item.qty,
         unit_price: item.unit_price,
-    })) || [],
+    })) ?? []),
 });
 
 const addItem = () => {

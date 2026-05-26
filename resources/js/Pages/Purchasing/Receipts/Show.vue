@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon, TruckIcon, DocumentTextIcon, PencilSquareIcon, TrashIcon, ArrowUturnLeftIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, PrinterIcon, CheckCircleIcon, TruckIcon, DocumentTextIcon, PencilSquareIcon, TrashIcon, ArrowUturnLeftIcon, LinkIcon } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 
 const props = defineProps({
@@ -94,6 +94,13 @@ const deleteReceipt = () => {
                         class="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 shadow-lg shadow-amber-900/20"
                     >
                         <ArrowUturnLeftIcon class="h-4 w-4" /> Create Return (Correction)
+                    </Link>
+                    <Link
+                        v-if="receipt.status === 'completed'"
+                        :href="route('purchasing.receipts.reassign-po', receipt.id)"
+                        class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-slate-900 dark:text-white transition-colors"
+                    >
+                        <LinkIcon class="h-4 w-4" /> Change Linked PO
                     </Link>
                 </div>
             </div>
