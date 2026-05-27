@@ -168,6 +168,62 @@ const hasPermission = (permission) => {
     return auth.permissions?.includes(permission);
 };
 
+const mobileNavCatalog = {
+    home: { name: 'Home', href: '/', icon: HomeIcon },
+    menu: { name: 'Menu', action: 'openMenu', icon: Bars3Icon },
+    sales: { name: 'Sales', href: '/sales/dashboard', icon: CurrencyDollarIcon, permission: 'sales_crm.view' },
+    purchasing: { name: 'Purchasing', href: '/purchasing/dashboard', icon: ShoppingCartIcon, permission: 'purchasing.view' },
+    inventory: { name: 'Inventory', href: '/inventory/dashboard', icon: CubeIcon, permission: 'inventory.view' },
+    finance: { name: 'Finance', href: '/finance/dashboard', icon: BanknotesIcon, permission: 'finance.view' },
+    profile: { name: 'Profile', href: '/profile', icon: UserCircleIcon },
+};
+
+const mobileNavByRole = {
+    'Super Admin': ['home', 'sales', 'purchasing', 'inventory', 'finance'],
+    Finance: ['home', 'finance', 'purchasing', 'sales', 'profile'],
+    Purchasing: ['home', 'purchasing', 'inventory', 'finance', 'profile'],
+    Sales: ['home', 'sales', 'purchasing', 'finance', 'profile'],
+    Inventory: ['home', 'inventory', 'purchasing', 'finance', 'profile'],
+    default: ['home', 'menu', 'purchasing', 'finance', 'profile'],
+};
+
+const mobileNavItems = computed(() => {
+    const roles = page.props.auth?.roles ?? [];
+    const matchedRole = roles.find((r) => Object.prototype.hasOwnProperty.call(mobileNavByRole, r));
+    const keys = mobileNavByRole[matchedRole ?? 'default'] ?? mobileNavByRole.default;
+
+    const result = [];
+    for (const key of keys) {
+        const item = mobileNavCatalog[key];
+        if (!item) continue;
+        if (item.permission && !hasPermission(item.permission)) continue;
+        if (!result.some((x) => (x.href && item.href && x.href === item.href) || (x.action && item.action && x.action === item.action))) {
+            result.push(item);
+        }
+        if (result.length === 5) break;
+    }
+
+    const fallbackKeys = mobileNavByRole.default;
+    for (const key of fallbackKeys) {
+        if (result.length === 5) break;
+        const item = mobileNavCatalog[key];
+        if (!item) continue;
+        if (item.permission && !hasPermission(item.permission)) continue;
+        if (!result.some((x) => (x.href && item.href && x.href === item.href) || (x.action && item.action && x.action === item.action))) {
+            result.push(item);
+        }
+    }
+
+    return result.slice(0, 5);
+});
+
+const isMobileNavActive = (href) => {
+    if (!href) return false;
+    const url = page.url ?? '';
+    if (href === '/') return url === '/' || url === '';
+    return url.startsWith(href);
+};
+
 const navigation = [
     { name: 'Dashboard', href: '/', icon: HomeIcon, current: true },
     { 
@@ -986,7 +1042,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Page content -->
-            <div class="py-8 px-4 sm:px-6 lg:px-8 relative">
+            <div class="pt-8 pb-24 lg:pb-8 px-4 sm:px-6 lg:px-8 relative">
 
 
             <!-- Page header -->
@@ -998,6 +1054,35 @@ onUnmounted(() => {
             <main>
                 <slot />
             </main>
+
+            <div class="fixed bottom-0 left-0 right-0 z-[70] lg:hidden print:hidden">
+                <div class="mx-auto max-w-screen-sm px-3 pb-3">
+                    <div class="grid grid-cols-5 gap-2 rounded-2xl border border-white/10 bg-slate-950/90 backdrop-blur shadow-xl shadow-black/30 px-2 py-2">
+                        <template v-for="item in mobileNavItems" :key="item.name">
+                            <button
+                                v-if="item.action === 'openMenu'"
+                                type="button"
+                                @click="sidebarOpen = true"
+                                class="flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[10px] font-bold tracking-widest uppercase transition"
+                                :class="'text-slate-300 hover:bg-white/5'"
+                            >
+                                <component :is="item.icon" class="h-6 w-6" />
+                                <span class="truncate max-w-full">{{ item.name }}</span>
+                            </button>
+
+                            <Link
+                                v-else
+                                :href="item.href"
+                                class="flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[10px] font-bold tracking-widest uppercase transition"
+                                :class="isMobileNavActive(item.href) ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20' : 'text-slate-300 hover:bg-white/5'"
+                            >
+                                <component :is="item.icon" class="h-6 w-6" />
+                                <span class="truncate max-w-full">{{ item.name }}</span>
+                            </Link>
+                        </template>
+                    </div>
+                </div>
+            </div>
 
             <!-- Flash Notifications -->
             <div 
