@@ -32,14 +32,17 @@ class FinanceDashboardController extends Controller
         $opex = $expenses - $cogs;
 
         // 3. Cash Flow Trend (Last 30 Days)
-        $cashId = Coa::where('code', '1110')->first()->id;
-        $cashFlow = JournalItem::where('coa_id', $cashId)
-            ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
-            ->where('journals.date', '>=', Carbon::now()->subDays(30))
-            ->selectRaw('DATE(journals.date) as date, SUM(debit) as inflow, SUM(credit) as outflow')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+        $cashCoa = Coa::where('code', '1110')->first();
+        $cashFlow = collect();
+        if ($cashCoa) {
+            $cashFlow = JournalItem::where('coa_id', $cashCoa->id)
+                ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+                ->where('journals.date', '>=', Carbon::now()->subDays(30))
+                ->selectRaw('DATE(journals.date) as date, SUM(debit) as inflow, SUM(credit) as outflow')
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get();
+        }
 
         // 4. Monthly Performance (Revenue vs Expenses - Last 6 Months)
         $monthlyPerformance = JournalItem::whereHas('coa', function($q) {

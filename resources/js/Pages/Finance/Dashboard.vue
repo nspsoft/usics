@@ -56,7 +56,7 @@ const navigationTabs = [
     { name: 'Financial Hub', href: '/finance/dashboard', active: true },
     { name: 'General Ledger', href: '/finance/ledger', active: false },
     { name: 'Profit & Loss', href: '/finance/reports', active: false },
-    { name: 'AP & AR', href: '/finance/ap_&_ar_monitoring', active: false },
+    { name: 'AP & AR', href: '/finance/payment-monitoring', active: false },
     { name: 'Costing Engine', href: '/costing/production', active: false },
 ];
 
