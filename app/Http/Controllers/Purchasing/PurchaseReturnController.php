@@ -163,7 +163,7 @@ class PurchaseReturnController extends Controller
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.qty' => 'required|numeric|gt:0',
-            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.unit_price' => 'nullable|numeric|min:0',
         ]);
 
         return DB::transaction(function() use ($request) {
@@ -184,11 +184,22 @@ class PurchaseReturnController extends Controller
 
             $totalAmount = 0;
             foreach ($request->items as $item) {
-                $totalPrice = $item['qty'] * $item['unit_price'];
+                $unitPrice = (float) ($item['unit_price'] ?? 0);
+                if (!empty($request->purchase_order_id)) {
+                    $poItem = \App\Models\PurchaseOrderItem::query()
+                        ->where('purchase_order_id', $request->purchase_order_id)
+                        ->where('product_id', $item['product_id'])
+                        ->first();
+                    if ($poItem) {
+                        $unitPrice = (float) $poItem->unit_price;
+                    }
+                }
+
+                $totalPrice = (float) $item['qty'] * $unitPrice;
                 $purchaseReturn->items()->create([
                     'product_id' => $item['product_id'],
                     'qty' => $item['qty'],
-                    'unit_price' => $item['unit_price'],
+                    'unit_price' => $unitPrice,
                     'total_price' => $totalPrice,
                 ]);
                 $totalAmount += $totalPrice;

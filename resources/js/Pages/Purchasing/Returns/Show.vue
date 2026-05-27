@@ -8,7 +8,7 @@ import {
     DocumentTextIcon,
     InformationCircleIcon,
 } from '@heroicons/vue/24/outline';
-import { formatNumber, formatCurrency } from '@/helpers';
+import { formatNumber } from '@/helpers';
 
 const props = defineProps({
     purchaseReturn: Object,
@@ -103,8 +103,6 @@ const formatDate = (date) => {
                                 <tr class="bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 text-left">
                                     <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Product</th>
                                     <th class="px-6 py-3 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Qty</th>
-                                    <th class="px-6 py-3 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Price</th>
-                                    <th class="px-6 py-3 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -114,16 +112,8 @@ const formatDate = (date) => {
                                         <div class="text-xs text-slate-500 font-mono">{{ item.product?.sku || '-' }}</div>
                                     </td>
                                     <td class="px-6 py-4 text-sm text-right text-slate-600 dark:text-slate-300">{{ formatNumber(item.qty || 0) }}</td>
-                                    <td class="px-6 py-4 text-sm text-right text-slate-600 dark:text-slate-300">{{ formatCurrency(item.unit_price) }}</td>
-                                    <td class="px-6 py-4 text-sm text-right text-slate-900 dark:text-white font-medium">{{ formatCurrency(item.total_price) }}</td>
                                 </tr>
                             </tbody>
-                            <tfoot>
-                                <tr class="bg-slate-50 dark:bg-slate-800/20">
-                                    <td colspan="3" class="px-6 py-4 text-sm font-bold text-right text-slate-500 dark:text-slate-400 uppercase">Grand Total</td>
-                                    <td class="px-6 py-4 text-lg font-bold text-right text-slate-900 dark:text-white">{{ formatCurrency(purchaseReturn.total_amount) }}</td>
-                                </tr>
-                            </tfoot>
                         </table>
                     </div>
 
