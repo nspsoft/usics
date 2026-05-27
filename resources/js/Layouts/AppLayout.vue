@@ -169,6 +169,7 @@ const hasPermission = (permission) => {
 };
 
 const quickActionsOpen = ref(false);
+const roleBasedMobileNavEnabled = false;
 
 const mobileNavCatalog = {
     home: { name: 'Home', href: '/', icon: HomeIcon },
@@ -218,6 +219,7 @@ const quickActionsByRole = {
 
 const resolvedRoleKey = computed(() => {
     const roles = page.props.auth?.roles ?? [];
+    if (!roleBasedMobileNavEnabled) return 'default';
     const matchedRole = roles.find((r) => Object.prototype.hasOwnProperty.call(mobileNavByRole, r));
     return matchedRole ?? 'default';
 });
