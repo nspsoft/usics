@@ -149,17 +149,17 @@ const submit = () => {
                         <div class="space-y-3 pr-2 relative">
                             <!-- Header Row -->
                             <div class="grid grid-cols-12 gap-3 px-3 py-2 mb-2 hidden sm:grid sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-                                <div class="col-span-12 sm:col-span-8">
+                                <div class="col-span-12 sm:col-span-9">
                                     <span class="text-[10px] font-bold text-slate-500 uppercase">Product</span>
                                 </div>
-                                <div class="col-span-4 sm:col-span-3 text-right pr-2">
+                                <div class="col-span-4 sm:col-span-2 text-right pr-2">
                                     <span class="text-[10px] font-bold text-slate-500 uppercase">Qty</span>
                                 </div>
                                 <div class="col-span-4 sm:col-span-1"></div>
                             </div>
 
                             <div v-for="(item, index) in form.items" :key="index" :style="{ zIndex: 100 - index }" class="relative grid grid-cols-12 gap-3 items-end bg-slate-50 dark:bg-slate-800/30 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-900 dark:bg-slate-800/50 transition-colors">
-                                <div class="col-span-12 sm:col-span-8">
+                                <div class="col-span-12 sm:col-span-9">
                                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">Product</label>
                                     <select 
                                         :value="item.product_id" 
@@ -171,7 +171,7 @@ const submit = () => {
                                         <option v-for="p in products" :key="p.id" :value="p.id">[{{ p.sku }}] {{ p.name }}</option>
                                     </select>
                                 </div>
-                                <div class="col-span-8 sm:col-span-3">
+                                <div class="col-span-8 sm:col-span-2">
                                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">Qty</label>
                                     <input type="number" v-model="item.qty" min="1" step="any" class="w-full rounded-lg border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 text-right" required />
                                 </div>
