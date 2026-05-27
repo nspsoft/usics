@@ -70,7 +70,7 @@ class DeliveryScheduleController extends Controller
         $overdueCount = $overduePOs->count();
         $completedThisMonth = PurchaseOrder::whereNotNull('expected_date')
             ->whereBetween('expected_date', [$startOfMonth, $endOfMonth])
-            ->whereIn('status', ['received', 'completed'])
+            ->where('status', PurchaseOrder::STATUS_RECEIVED)
             ->count();
         $onTimeRate = ($totalExpected + $completedThisMonth) > 0
             ? round(($completedThisMonth / ($totalExpected + $completedThisMonth)) * 100, 1)

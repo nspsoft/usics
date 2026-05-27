@@ -148,6 +148,24 @@ class PurchaseInvoiceController extends Controller
                 ]);
 
                 foreach ($validated['items'] as $item) {
+                    $grItem = \App\Models\GoodsReceiptItem::query()
+                        ->with('goodsReceipt:id,supplier_id')
+                        ->lockForUpdate()
+                        ->findOrFail($item['goods_receipt_item_id']);
+
+                    if ((int) $grItem->product_id !== (int) $item['product_id']) {
+                        throw new \RuntimeException('Invalid invoice item: product mismatch.');
+                    }
+
+                    if ((int) ($grItem->goodsReceipt?->supplier_id ?? 0) !== (int) $validated['supplier_id']) {
+                        throw new \RuntimeException('Invalid invoice item: supplier mismatch.');
+                    }
+
+                    $remaining = (float) $grItem->qty_received - (float) ($grItem->qty_invoiced ?? 0);
+                    if ((float) $item['qty'] > $remaining + 0.0001) {
+                        throw new \RuntimeException('Invalid invoice qty: exceeds remaining received qty.');
+                    }
+
                     $invoice->items()->create([
                         'goods_receipt_item_id' => $item['goods_receipt_item_id'],
                         'product_id' => $item['product_id'],
@@ -159,7 +177,6 @@ class PurchaseInvoiceController extends Controller
                     ]);
 
                     // Update qty_invoiced in Goods Receipt Item
-                    $grItem = \App\Models\GoodsReceiptItem::find($item['goods_receipt_item_id']);
                     $grItem->qty_invoiced += $item['qty'];
                     $grItem->save();
                 }
@@ -261,4 +278,3 @@ class PurchaseInvoiceController extends Controller
         }
     }
 }
-

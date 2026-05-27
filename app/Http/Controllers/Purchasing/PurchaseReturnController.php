@@ -143,7 +143,10 @@ class PurchaseReturnController extends Controller
 
         return Inertia::render('Purchasing/Returns/Create', [
             'purchaseOrder' => $purchaseOrder,
-            'purchaseOrders' => PurchaseOrder::whereIn('status', ['received', 'completed', 'partial'])->with('supplier')->orderByDesc('created_at')->get(),
+            'purchaseOrders' => PurchaseOrder::whereIn('status', [PurchaseOrder::STATUS_RECEIVED, PurchaseOrder::STATUS_PARTIAL])
+                ->with('supplier')
+                ->orderByDesc('created_at')
+                ->get(),
             'suppliers' => Supplier::orderBy('name')->get(['id', 'name']),
             'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
             'products' => Product::orderBy('name')->get(['id', 'name', 'sku'])->each->setAppends([]),

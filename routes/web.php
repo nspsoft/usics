@@ -219,6 +219,7 @@ Route::prefix('purchasing')->name('purchasing.')->middleware(['auth'])->group(fu
     Route::post('/receipts/{receipt}/reassign-po', [App\Http\Controllers\Purchasing\GoodsReceiptController::class, 'reassignPo'])->name('receipts.reassign-po.update');
     Route::get('/receipts/{receipt}/print', [App\Http\Controllers\Purchasing\GoodsReceiptController::class, 'print'])->name('receipts.print');
     Route::get('/returns/po-items/{order}', [PurchaseReturnController::class, 'getReturnableItems'])->name('purchase-returns.po-items');
+    Route::post('/returns/{return}/confirm', [PurchaseReturnController::class, 'confirm'])->name('purchase-returns.confirm');
     Route::resource('returns', PurchaseReturnController::class)->names([
         'index' => 'purchase-returns.index',
         'create' => 'purchase-returns.create',

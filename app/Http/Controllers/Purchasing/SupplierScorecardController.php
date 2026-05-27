@@ -23,7 +23,7 @@ class SupplierScorecardController extends Controller
         $suppliers = Supplier::active()
             ->withCount([
                 'purchaseOrders as total_pos' => fn($q) => $q->where('created_at', '>=', $since)->where('status', '!=', 'cancelled'),
-                'purchaseOrders as completed_pos' => fn($q) => $q->where('created_at', '>=', $since)->whereIn('status', ['received', 'completed']),
+                'purchaseOrders as completed_pos' => fn($q) => $q->where('created_at', '>=', $since)->where('status', PurchaseOrder::STATUS_RECEIVED),
                 'goodsReceipts as total_grs' => fn($q) => $q->where('created_at', '>=', $since),
             ])
             ->withSum([

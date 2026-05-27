@@ -17,7 +17,7 @@ const props = defineProps({
 const confirmReturn = () => {
     if (!props.purchaseReturn?.id) return;
     if (confirm('Are you sure you want to confirm this return? This will update your stock levels.')) {
-        router.post(`/purchasing/returns/${props.purchaseReturn.id}/confirm`);
+        router.post(route('purchasing.purchase-returns.confirm', props.purchaseReturn.id));
     }
 };
 
