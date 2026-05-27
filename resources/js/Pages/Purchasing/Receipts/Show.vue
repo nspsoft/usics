@@ -29,6 +29,7 @@ const formatDate = (date) => {
 const getStatusBadge = (status) => {
     const badges = {
         draft: 'bg-slate-500/20 text-slate-500 dark:text-slate-400',
+        dispatched: 'bg-purple-500/20 text-purple-400',
         received: 'bg-blue-500/20 text-blue-400',
         inspected: 'bg-amber-500/20 text-amber-400',
         completed: 'bg-emerald-500/20 text-emerald-400',

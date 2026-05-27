@@ -8,6 +8,7 @@ use App\Models\GoodsReceiptItem;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseInvoice;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Warehouse;
@@ -97,6 +98,7 @@ class GoodsReceiptController extends Controller
             'filters' => $request->only(['search', 'status', 'sort', 'direction']),
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
+                ['value' => 'dispatched', 'label' => 'Dispatched'],
                 ['value' => 'received', 'label' => 'Received'],
                 ['value' => 'inspected', 'label' => 'Inspected'],
                 ['value' => 'completed', 'label' => 'Completed'],
@@ -111,14 +113,31 @@ class GoodsReceiptController extends Controller
             $purchaseOrder = PurchaseOrder::with(['items.product', 'supplier', 'warehouse'])->find($request->po_id);
         }
 
+        $purchaseOrdersQuery = PurchaseOrder::whereIn('status', [
+            PurchaseOrder::STATUS_APPROVED,
+            PurchaseOrder::STATUS_ORDERED,
+            PurchaseOrder::STATUS_ACKNOWLEDGED,
+            PurchaseOrder::STATUS_PARTIAL,
+        ])->where(function ($q) {
+            $q->whereDoesntHave('purchaseInvoices', function ($iq) {
+                $iq->where('status', '!=', PurchaseInvoice::STATUS_CANCELLED);
+            })->orWhereHas('purchaseInvoices', function ($iq) {
+                $iq->whereIn('status', [PurchaseInvoice::STATUS_UNPAID, PurchaseInvoice::STATUS_PARTIAL]);
+            });
+        });
+
+        $purchaseOrders = $purchaseOrdersQuery
+            ->with('supplier')
+            ->orderByDesc('created_at')
+            ->get();
+
+        if ($purchaseOrder && !$purchaseOrders->contains('id', $purchaseOrder->id)) {
+            $purchaseOrders->prepend($purchaseOrder->loadMissing('supplier'));
+        }
+
         return Inertia::render('Purchasing/Receipts/Create', [
             'purchaseOrder' => $purchaseOrder,
-            'purchaseOrders' => PurchaseOrder::whereIn('status', [
-                PurchaseOrder::STATUS_APPROVED,
-                PurchaseOrder::STATUS_ORDERED,
-                PurchaseOrder::STATUS_ACKNOWLEDGED,
-                PurchaseOrder::STATUS_PARTIAL,
-            ])->with('supplier')->orderByDesc('created_at')->get(),
+            'purchaseOrders' => $purchaseOrders,
             'suppliers' => Supplier::active()->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
             'products' => Product::active()->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
@@ -226,6 +245,13 @@ class GoodsReceiptController extends Controller
                 PurchaseOrder::STATUS_PARTIAL,
                 PurchaseOrder::STATUS_RECEIVED,
             ])
+            ->where(function ($q) {
+                $q->whereDoesntHave('purchaseInvoices', function ($iq) {
+                    $iq->where('status', '!=', PurchaseInvoice::STATUS_CANCELLED);
+                })->orWhereHas('purchaseInvoices', function ($iq) {
+                    $iq->whereIn('status', [PurchaseInvoice::STATUS_UNPAID, PurchaseInvoice::STATUS_PARTIAL]);
+                });
+            })
             ->with('supplier:id,name')
             ->orderByDesc('created_at');
 
@@ -283,6 +309,9 @@ class GoodsReceiptController extends Controller
         if ((int) ($validated['purchase_order_id'] ?? 0) === (int) ($receipt->purchase_order_id ?? 0)) {
             return back()->with('error', 'Target PO is the same as current PO.');
         }
+
+        $oldPoId = (int) ($receipt->purchase_order_id ?? 0);
+        $newPoId = (int) $validated['purchase_order_id'];
 
         try {
             DB::transaction(function () use ($receipt, $validated) {
@@ -387,6 +416,17 @@ class GoodsReceiptController extends Controller
             return back()->with('error', 'Cannot change PO: unexpected error.');
         }
 
+        activity()
+            ->performedOn($receipt)
+            ->causedBy(auth()->user())
+            ->withProperties([
+                'receipt_id' => $receipt->id,
+                'grn_number' => $receipt->grn_number,
+                'old_po_id' => $oldPoId,
+                'new_po_id' => $newPoId,
+            ])
+            ->log('Reassigned Linked PO for Goods Receipt');
+
         return redirect()->route('purchasing.receipts.show', $receipt->id)
             ->with('success', 'Linked PO updated successfully.');
     }
@@ -410,14 +450,31 @@ class GoodsReceiptController extends Controller
 
         $receipt->load(['purchaseOrder', 'supplier', 'warehouse', 'items.product', 'receivedBy']);
 
+        $purchaseOrdersQuery = PurchaseOrder::whereIn('status', [
+            PurchaseOrder::STATUS_APPROVED,
+            PurchaseOrder::STATUS_ORDERED,
+            PurchaseOrder::STATUS_ACKNOWLEDGED,
+            PurchaseOrder::STATUS_PARTIAL,
+        ])->where(function ($q) {
+            $q->whereDoesntHave('purchaseInvoices', function ($iq) {
+                $iq->where('status', '!=', PurchaseInvoice::STATUS_CANCELLED);
+            })->orWhereHas('purchaseInvoices', function ($iq) {
+                $iq->whereIn('status', [PurchaseInvoice::STATUS_UNPAID, PurchaseInvoice::STATUS_PARTIAL]);
+            });
+        });
+
+        $purchaseOrders = $purchaseOrdersQuery
+            ->with('supplier')
+            ->orderByDesc('created_at')
+            ->get();
+
+        if ($receipt->purchaseOrder && !$purchaseOrders->contains('id', $receipt->purchaseOrder->id)) {
+            $purchaseOrders->prepend($receipt->purchaseOrder->loadMissing('supplier'));
+        }
+
         return Inertia::render('Purchasing/Receipts/Edit', [
             'receipt' => $receipt,
-            'purchaseOrders' => PurchaseOrder::whereIn('status', [
-                PurchaseOrder::STATUS_APPROVED,
-                PurchaseOrder::STATUS_ORDERED,
-                PurchaseOrder::STATUS_ACKNOWLEDGED,
-                PurchaseOrder::STATUS_PARTIAL,
-            ])->with('supplier')->orderByDesc('created_at')->get(),
+            'purchaseOrders' => $purchaseOrders,
             'suppliers' => Supplier::active()->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
             'products' => Product::active()->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),

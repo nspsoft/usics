@@ -161,7 +161,15 @@ class PurchaseInvoiceController extends Controller
                         throw new \RuntimeException('Invalid invoice item: supplier mismatch.');
                     }
 
-                    $remaining = (float) $grItem->qty_received - (float) ($grItem->qty_invoiced ?? 0);
+                    $returnedQty = 0;
+                    if (!empty($grItem->purchase_order_item_id)) {
+                        $poItem = \App\Models\PurchaseOrderItem::query()
+                            ->select(['id', 'qty_returned'])
+                            ->find($grItem->purchase_order_item_id);
+                        $returnedQty = (float) ($poItem?->qty_returned ?? 0);
+                    }
+
+                    $remaining = (float) $grItem->qty_received - (float) ($grItem->qty_invoiced ?? 0) - $returnedQty;
                     if ((float) $item['qty'] > $remaining + 0.0001) {
                         throw new \RuntimeException('Invalid invoice qty: exceeds remaining received qty.');
                     }
@@ -180,6 +188,17 @@ class PurchaseInvoiceController extends Controller
                     $grItem->qty_invoiced += $item['qty'];
                     $grItem->save();
                 }
+
+                activity()
+                    ->performedOn($invoice)
+                    ->causedBy(auth()->user())
+                    ->withProperties([
+                        'invoice_number' => $invoice->invoice_number,
+                        'supplier_id' => $invoice->supplier_id,
+                        'purchase_order_id' => $invoice->purchase_order_id,
+                        'total_amount' => (float) $invoice->total_amount,
+                    ])
+                    ->log('Created Purchase Invoice');
             });
 
             return redirect()->route('purchasing.invoices.index')

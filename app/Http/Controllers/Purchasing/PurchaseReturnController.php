@@ -253,6 +253,19 @@ class PurchaseReturnController extends Controller
 
             $purchaseReturn->update(['status' => 'confirmed']);
 
+            activity()
+                ->performedOn($purchaseReturn)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'number' => $purchaseReturn->number,
+                    'purchase_order_id' => $purchaseReturn->purchase_order_id,
+                    'supplier_id' => $purchaseReturn->supplier_id,
+                    'warehouse_id' => $purchaseReturn->warehouse_id,
+                    'items_count' => $purchaseReturn->items()->count(),
+                    'total_amount' => (float) $purchaseReturn->total_amount,
+                ])
+                ->log('Confirmed Purchase Return');
+
             return back()->with('success', 'Purchase return confirmed and stock updated.');
         });
     }
