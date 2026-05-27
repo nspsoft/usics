@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { 
@@ -12,8 +12,12 @@ import {
     Square3Stack3DIcon
 } from '@heroicons/vue/24/outline';
 
-defineProps({
-    title: String
+const props = defineProps({
+    title: String,
+    mode: {
+        type: String,
+        default: 'production',
+    },
 });
 
 // --- Real-time Clock ---
@@ -36,13 +40,41 @@ const costElements = [
     { name: 'Other Costs', value: 'Rp 35.000.000', percentage: 5, color: '#64748b' },
 ];
 
-const navigationTabs = [
+const pageConfig = computed(() => {
+    switch (props.mode) {
+        case 'overhead':
+            return {
+                heading: 'OVERHEAD ALLOCATION',
+                bannerTitle: 'Overhead Allocation Blueprint',
+                bannerDescription: 'Blueprinting phase: Implementing overhead allocation engine using cost drivers (machine hours, labor hours, energy). Allocations are posted to work orders and item-level costs.',
+                breakdownTitle: 'Overhead Allocation Breakdown',
+            };
+        case 'profitability':
+            return {
+                heading: 'PROFITABILITY ANALYTICS',
+                bannerTitle: 'Profitability Analytics Blueprint',
+                bannerDescription: 'Blueprinting phase: Implementing profitability analytics per item/customer/order by combining selling price, actual HPP, and overhead allocation. Detecting margin leakage and pricing anomalies.',
+                breakdownTitle: 'Cost & Margin Breakdown',
+            };
+        default:
+            return {
+                heading: 'PRODUCTION COSTING',
+                bannerTitle: 'Production Costing Blueprint',
+                bannerDescription: 'Blueprinting phase: Implementing real-time actual costing engine. This module calculates COGS (HPP) by aggregating Raw Material (FIFO/Weighted), Direct Labor, and allocated Overhead for every Work Order.',
+                breakdownTitle: 'Production Cost Breakdown',
+            };
+    }
+});
+
+const navigationTabs = computed(() => [
     { name: 'Financial Hub', href: '/finance/dashboard', active: false },
     { name: 'General Ledger', href: '/finance/ledger', active: false },
     { name: 'Profit & Loss', href: '/finance/reports', active: false },
-    { name: 'AP & AR', href: '/finance/ap_&_ar_monitoring', active: false },
-    { name: 'Costing Engine', href: '/costing/production', active: true },
-];
+    { name: 'AP & AR', href: '/finance/payment-monitoring', active: false },
+    { name: 'Production Costing', href: '/costing/production', active: props.mode === 'production' },
+    { name: 'Overhead Allocation', href: '/costing/overhead', active: props.mode === 'overhead' },
+    { name: 'Profitability Analytics', href: '/costing/profitability', active: props.mode === 'profitability' },
+]);
 </script>
 
 <template>
@@ -71,7 +103,7 @@ const navigationTabs = [
                             </span>
                         </div>
                         <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-indigo-400 tracking-widest uppercase glow-text">
-                            ACTUAL COSTING
+                            {{ pageConfig.heading }}
                         </h1>
                     </div>
                     
@@ -110,9 +142,9 @@ const navigationTabs = [
                             <CpuChipIcon class="h-8 w-8 text-cyan-400" />
                         </div>
                         <div>
-                            <h3 class="text-lg font-black tracking-tight uppercase text-white glow-text">Costing Engine Activation</h3>
+                            <h3 class="text-lg font-black tracking-tight uppercase text-white glow-text">{{ pageConfig.bannerTitle }}</h3>
                             <p class="text-slate-400 max-w-4xl text-xs leading-relaxed mt-1 italic">
-                                Blueprinting phase: Implementing real-time **Actual Costing** engine. This module calculates COGS (HPP) by aggregating Raw Material (FIFO/Weighted), Direct Labor, and allocated Overhead for every Work Order.
+                                {{ pageConfig.bannerDescription }}
                             </p>
                         </div>
                     </div>
@@ -124,7 +156,7 @@ const navigationTabs = [
                     <div class="lg:col-span-2 hud-panel p-8">
                         <div class="flex items-center justify-between mb-8">
                             <div>
-                                <h3 class="text-xl font-black text-white uppercase tracking-tighter glow-text">Production Cost Breakdown</h3>
+                                <h3 class="text-xl font-black text-white uppercase tracking-tighter glow-text">{{ pageConfig.breakdownTitle }}</h3>
                                 <p class="text-[10px] text-cyan-500 font-bold uppercase tracking-[0.2em] mt-1 pulse-opacity">Status: Calculation Running</p>
                             </div>
                             <div class="p-3 bg-white/5 border border-white/10 rounded-2xl">

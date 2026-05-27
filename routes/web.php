@@ -567,9 +567,9 @@ Route::prefix('projects')->name('projects.')->middleware(['auth'])->group(functi
 
 // Costing
 Route::middleware(['auth'])->prefix('costing')->name('costing.')->group(function () {
-    Route::get('/production', fn () => Inertia::render('Blueprints/Costing', ['title' => 'Production Costing']))->name('production');
-    Route::get('/overhead', fn () => Inertia::render('Blueprints/Costing', ['title' => 'Overhead Allocation']))->name('overhead');
-    Route::get('/profitability', fn () => Inertia::render('Blueprints/Costing', ['title' => 'Profitability Analytic']))->name('profitability');
+    Route::get('/production', fn () => Inertia::render('Costing/Production'))->name('production');
+    Route::get('/overhead', fn () => Inertia::render('Costing/Overhead'))->name('overhead');
+    Route::get('/profitability', fn () => Inertia::render('Costing/Profitability'))->name('profitability');
 });
 
 // Portal
