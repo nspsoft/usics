@@ -168,6 +168,8 @@ const hasPermission = (permission) => {
     return auth.permissions?.includes(permission);
 };
 
+const quickActionsOpen = ref(false);
+
 const mobileNavCatalog = {
     home: { name: 'Home', href: '/', icon: HomeIcon },
     menu: { name: 'Menu', action: 'openMenu', icon: Bars3Icon },
@@ -175,22 +177,53 @@ const mobileNavCatalog = {
     purchasing: { name: 'Purchasing', href: '/purchasing/dashboard', icon: ShoppingCartIcon, permission: 'purchasing.view' },
     inventory: { name: 'Inventory', href: '/inventory/dashboard', icon: CubeIcon, permission: 'inventory.view' },
     finance: { name: 'Finance', href: '/finance/dashboard', icon: BanknotesIcon, permission: 'finance.view' },
+    logistics: { name: 'Logistics', href: '/logistics/dashboard', icon: TruckIcon, permission: 'logistics.view' },
+    activity: { name: 'Activity', href: '/notifications', icon: BellIcon },
+    reports: { name: 'Reports', href: '/finance/reports', icon: ChartBarSquareIcon, permission: 'finance.profit_&_loss.view' },
+    map: { name: 'Map', href: '/logistics/planning', icon: MapIcon, permission: 'logistics.view' },
+    quick: { name: 'Create', action: 'openQuick', icon: PlusCircleIcon },
     profile: { name: 'Profile', href: '/profile', icon: UserCircleIcon },
 };
 
 const mobileNavByRole = {
-    'Super Admin': ['home', 'sales', 'purchasing', 'inventory', 'finance'],
-    Finance: ['home', 'finance', 'purchasing', 'sales', 'profile'],
-    Purchasing: ['home', 'purchasing', 'inventory', 'finance', 'profile'],
-    Sales: ['home', 'sales', 'purchasing', 'finance', 'profile'],
-    Inventory: ['home', 'inventory', 'purchasing', 'finance', 'profile'],
-    default: ['home', 'menu', 'purchasing', 'finance', 'profile'],
+    'Super Admin': ['home', 'sales', 'quick', 'purchasing', 'finance'],
+    Finance: ['home', 'finance', 'quick', 'reports', 'activity'],
+    Purchasing: ['home', 'purchasing', 'quick', 'inventory', 'activity'],
+    Sales: ['home', 'sales', 'quick', 'activity', 'map'],
+    Inventory: ['home', 'inventory', 'quick', 'purchasing', 'activity'],
+    Logistics: ['home', 'logistics', 'quick', 'activity', 'map'],
+    default: ['home', 'menu', 'quick', 'activity', 'profile'],
 };
 
-const mobileNavItems = computed(() => {
+const quickActionsCatalog = {
+    pr: { name: 'New PR', href: '/purchasing/requests/create', icon: DocumentPlusIcon, permission: 'purchasing.purchase_requests.view' },
+    po: { name: 'New PO', href: '/purchasing/orders/create', icon: ShoppingCartIcon, permission: 'purchasing.purchase_orders.view' },
+    grn: { name: 'New GRN', href: '/purchasing/receipts/create', icon: ArchiveBoxArrowDownIcon, permission: 'purchasing.goods_receipts.view' },
+    pi: { name: 'New Invoice', href: '/purchasing/invoices/create', icon: BanknotesIcon, permission: 'purchasing.purchase_invoices.view' },
+    quotation: { name: 'New Quotation', href: '/sales/quotations/create', icon: DocumentTextIcon, permission: 'sales_crm.quotations.view' },
+    so: { name: 'New Sales Order', href: '/sales/orders/create', icon: ShoppingCartIcon, permission: 'sales_crm.sales_orders.view' },
+    do: { name: 'New Delivery', href: '/sales/deliveries/create', icon: ClipboardDocumentCheckIcon, permission: 'sales_crm.delivery_orders.view' },
+    movement: { name: 'New Movement', href: '/inventory/movements/create', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
+    transfer: { name: 'New Transfer', href: '/inventory/transfers/create', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
+    adjustment: { name: 'New Adjustment', href: '/inventory/adjustments/create', icon: WrenchScrewdriverIcon, permission: 'inventory.stock_movements.view' },
+};
+
+const quickActionsByRole = {
+    'Super Admin': ['pr', 'po', 'so', 'movement'],
+    Purchasing: ['pr', 'po', 'grn', 'pi'],
+    Sales: ['quotation', 'so', 'do'],
+    Inventory: ['movement', 'transfer', 'adjustment'],
+    default: ['pr', 'so', 'movement'],
+};
+
+const resolvedRoleKey = computed(() => {
     const roles = page.props.auth?.roles ?? [];
     const matchedRole = roles.find((r) => Object.prototype.hasOwnProperty.call(mobileNavByRole, r));
-    const keys = mobileNavByRole[matchedRole ?? 'default'] ?? mobileNavByRole.default;
+    return matchedRole ?? 'default';
+});
+
+const mobileNavItems = computed(() => {
+    const keys = mobileNavByRole[resolvedRoleKey.value] ?? mobileNavByRole.default;
 
     const result = [];
     for (const key of keys) {
@@ -217,12 +250,32 @@ const mobileNavItems = computed(() => {
     return result.slice(0, 5);
 });
 
+const quickActions = computed(() => {
+    const keys = quickActionsByRole[resolvedRoleKey.value] ?? quickActionsByRole.default;
+    const result = [];
+    for (const key of keys) {
+        const item = quickActionsCatalog[key];
+        if (!item) continue;
+        if (item.permission && !hasPermission(item.permission)) continue;
+        result.push(item);
+        if (result.length === 6) break;
+    }
+    return result;
+});
+
 const isMobileNavActive = (href) => {
     if (!href) return false;
     const url = page.url ?? '';
     if (href === '/') return url === '/' || url === '';
     return url.startsWith(href);
 };
+
+watch(
+    () => page.url,
+    () => {
+        quickActionsOpen.value = false;
+    }
+);
 
 const navigation = [
     { name: 'Dashboard', href: '/', icon: HomeIcon, current: true },
@@ -1057,7 +1110,7 @@ onUnmounted(() => {
 
             <div class="fixed bottom-0 left-0 right-0 z-[70] lg:hidden print:hidden">
                 <div class="mx-auto max-w-screen-sm px-3 pb-3">
-                    <div class="grid grid-cols-5 gap-2 rounded-2xl border border-white/10 bg-slate-950/90 backdrop-blur shadow-xl shadow-black/30 px-2 py-2">
+                    <div class="relative grid grid-cols-5 gap-2 rounded-2xl border border-white/10 bg-slate-950/90 backdrop-blur shadow-xl shadow-black/30 px-2 py-2">
                         <template v-for="item in mobileNavItems" :key="item.name">
                             <button
                                 v-if="item.action === 'openMenu'"
@@ -1068,6 +1121,18 @@ onUnmounted(() => {
                             >
                                 <component :is="item.icon" class="h-6 w-6" />
                                 <span class="truncate max-w-full">{{ item.name }}</span>
+                            </button>
+
+                            <button
+                                v-else-if="item.action === 'openQuick'"
+                                type="button"
+                                @click="quickActionsOpen = true"
+                                class="flex flex-col items-center justify-center"
+                            >
+                                <div class="-mt-8 h-14 w-14 rounded-full bg-gradient-to-br from-cyan-500 to-indigo-600 shadow-xl shadow-cyan-900/40 border border-white/10 flex items-center justify-center">
+                                    <component :is="item.icon" class="h-8 w-8 text-white" />
+                                </div>
+                                <span class="mt-1 text-[10px] font-bold tracking-widest uppercase text-slate-300">{{ item.name }}</span>
                             </button>
 
                             <Link
@@ -1083,6 +1148,64 @@ onUnmounted(() => {
                     </div>
                 </div>
             </div>
+
+            <Transition
+                enter-active-class="transition ease-out duration-150"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div
+                    v-if="quickActionsOpen"
+                    class="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm lg:hidden"
+                    @click="quickActionsOpen = false"
+                />
+            </Transition>
+
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0 translate-y-4"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 translate-y-4"
+            >
+                <div
+                    v-if="quickActionsOpen"
+                    class="fixed left-0 right-0 bottom-0 z-[90] lg:hidden px-3 pb-6"
+                >
+                    <div class="mx-auto max-w-screen-sm rounded-2xl bg-slate-950 border border-white/10 shadow-2xl shadow-black/40 overflow-hidden">
+                        <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+                            <div class="text-sm font-black text-white tracking-widest uppercase">Quick Action</div>
+                            <button type="button" class="text-slate-400 hover:text-white" @click="quickActionsOpen = false">
+                                <XMarkIcon class="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div class="p-3">
+                            <div v-if="quickActions.length === 0" class="px-3 py-6 text-center text-sm text-slate-500">
+                                Tidak ada aksi yang tersedia untuk role ini.
+                            </div>
+                            <div v-else class="grid grid-cols-1 gap-2">
+                                <Link
+                                    v-for="action in quickActions"
+                                    :key="action.href"
+                                    :href="action.href"
+                                    class="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition px-4 py-3"
+                                    @click="quickActionsOpen = false"
+                                >
+                                    <component :is="action.icon" class="h-5 w-5 text-cyan-300" />
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-bold text-white truncate">{{ action.name }}</div>
+                                        <div class="text-[10px] text-slate-500 truncate">{{ action.href }}</div>
+                                    </div>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
 
             <!-- Flash Notifications -->
             <div 
