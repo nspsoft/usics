@@ -34,6 +34,7 @@ import {
     SunIcon,
     MoonIcon,
     CpuChipIcon,
+    DevicePhoneMobileIcon,
     BriefcaseIcon,
     BookOpenIcon,
     // New Icons for Submenus
@@ -169,7 +170,8 @@ const hasPermission = (permission) => {
 };
 
 const quickActionsOpen = ref(false);
-const roleBasedMobileNavEnabled = false;
+const mobileNavbarSettings = computed(() => page.props.settings?.mobile_navbar ?? null);
+const roleBasedMobileNavEnabled = computed(() => !!mobileNavbarSettings.value?.enabled);
 
 const mobileNavCatalog = {
     home: { name: 'Home', href: '/', icon: HomeIcon },
@@ -186,7 +188,7 @@ const mobileNavCatalog = {
     profile: { name: 'Profile', href: '/profile', icon: UserCircleIcon },
 };
 
-const mobileNavByRole = {
+const mobileNavByRoleFallback = {
     'Super Admin': ['home', 'sales', 'quick', 'purchasing', 'finance'],
     Finance: ['home', 'finance', 'quick', 'reports', 'activity'],
     Purchasing: ['home', 'purchasing', 'quick', 'inventory', 'activity'],
@@ -209,7 +211,7 @@ const quickActionsCatalog = {
     adjustment: { name: 'New Adjustment', href: '/inventory/adjustments/create', icon: WrenchScrewdriverIcon, permission: 'inventory.stock_movements.view' },
 };
 
-const quickActionsByRole = {
+const quickActionsByRoleFallback = {
     'Super Admin': ['pr', 'po', 'so', 'movement'],
     Purchasing: ['pr', 'po', 'grn', 'pi'],
     Sales: ['quotation', 'so', 'do'],
@@ -217,15 +219,27 @@ const quickActionsByRole = {
     default: ['pr', 'so', 'movement'],
 };
 
+const mobileNavByRole = computed(() => {
+    const fromDb = mobileNavbarSettings.value?.nav_by_role;
+    if (fromDb && typeof fromDb === 'object') return { ...mobileNavByRoleFallback, ...fromDb };
+    return mobileNavByRoleFallback;
+});
+
+const quickActionsByRole = computed(() => {
+    const fromDb = mobileNavbarSettings.value?.quick_by_role;
+    if (fromDb && typeof fromDb === 'object') return { ...quickActionsByRoleFallback, ...fromDb };
+    return quickActionsByRoleFallback;
+});
+
 const resolvedRoleKey = computed(() => {
     const roles = page.props.auth?.roles ?? [];
-    if (!roleBasedMobileNavEnabled) return 'default';
-    const matchedRole = roles.find((r) => Object.prototype.hasOwnProperty.call(mobileNavByRole, r));
+    if (!roleBasedMobileNavEnabled.value) return 'default';
+    const matchedRole = roles.find((r) => Object.prototype.hasOwnProperty.call(mobileNavByRole.value, r));
     return matchedRole ?? 'default';
 });
 
 const mobileNavItems = computed(() => {
-    const keys = mobileNavByRole[resolvedRoleKey.value] ?? mobileNavByRole.default;
+    const keys = mobileNavByRole.value[resolvedRoleKey.value] ?? mobileNavByRole.value.default;
 
     const result = [];
     for (const key of keys) {
@@ -238,7 +252,7 @@ const mobileNavItems = computed(() => {
         if (result.length === 5) break;
     }
 
-    const fallbackKeys = mobileNavByRole.default;
+    const fallbackKeys = mobileNavByRole.value.default ?? [];
     for (const key of fallbackKeys) {
         if (result.length === 5) break;
         const item = mobileNavCatalog[key];
@@ -253,7 +267,7 @@ const mobileNavItems = computed(() => {
 });
 
 const quickActions = computed(() => {
-    const keys = quickActionsByRole[resolvedRoleKey.value] ?? quickActionsByRole.default;
+    const keys = quickActionsByRole.value[resolvedRoleKey.value] ?? quickActionsByRole.value.default;
     const result = [];
     for (const key of keys) {
         const item = quickActionsCatalog[key];
@@ -479,6 +493,7 @@ const navigation = [
         children: [
             { name: 'User Management', href: '/settings/users', icon: UsersIcon, permission: 'settings.user_management.view' },
             { name: 'Roles & Permissions', href: '/settings/roles', icon: ShieldCheckIcon, permission: 'settings.roles_&_permissions.view' },
+            { name: 'Mobile Navbar', href: '/settings/mobile-navbar', icon: DevicePhoneMobileIcon, permission: 'settings.mobile_navbar.view' },
             { name: 'Company Profile', href: '/settings/company', icon: BuildingOfficeIcon, permission: 'settings.company_profile.view' },
             { name: 'Departments', href: '/settings/departments', icon: BuildingOfficeIcon, permission: 'settings.view' },
             { name: 'AI Configuration', href: '/settings/ai', icon: CpuChipIcon, permission: 'settings.company_profile.view' },

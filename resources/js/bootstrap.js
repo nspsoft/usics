@@ -2,20 +2,8 @@ import axios from 'axios';
 window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-
-/**
- * Next we will register the CSRF Token as a common header with Axios so that
- * all outgoing HTTP requests automatically have it attached. This is just
- * a simple convenience so we don't have to attach every token manually.
- */
-
-let token = document.head.querySelector('meta[name="csrf-token"]');
-
-if (token) {
-    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
-} else {
-    console.error('CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token');
-}
+window.axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
+window.axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
 
 window.axios.interceptors.response.use(
     (response) => response,
@@ -32,12 +20,3 @@ window.axios.interceptors.response.use(
         return Promise.reject(error);
     }
 );
-
-// Keep-Alive Ping every 30 minutes to prevent 419 Error
-// This requests an empty response from server just to keep session alive
-setInterval(() => {
-    window.axios.get('/sanctum/csrf-cookie').catch(() => {
-        // Silent catch
-    });
-}, 30 * 60 * 1000); // 30 minutes
-

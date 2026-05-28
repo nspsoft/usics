@@ -600,6 +600,8 @@ Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(functi
     Route::post('/roles', [App\Http\Controllers\Settings\RoleController::class, 'store'])->name('roles.store');
     Route::put('/roles/{role}', [App\Http\Controllers\Settings\RoleController::class, 'update'])->name('roles.update');
     Route::delete('/roles/{role}', [App\Http\Controllers\Settings\RoleController::class, 'destroy'])->name('roles.destroy');
+    Route::get('/mobile-navbar', [App\Http\Controllers\Settings\MobileNavbarController::class, 'index'])->name('mobile-navbar');
+    Route::put('/mobile-navbar', [App\Http\Controllers\Settings\MobileNavbarController::class, 'update'])->name('mobile-navbar.update');
 
     // Departments
     Route::get('/departments', [App\Http\Controllers\Settings\DepartmentController::class, 'index'])->name('departments');

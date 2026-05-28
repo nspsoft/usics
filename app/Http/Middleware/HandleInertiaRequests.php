@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AppSetting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -38,6 +39,8 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
 
         $company = null;
+        $mobileNavbarConfig = null;
+        $debug = null;
 
         try {
             $company = \App\Models\Company::query()
@@ -46,6 +49,39 @@ class HandleInertiaRequests extends Middleware
         } catch (\Throwable $e) {
             $company = null;
         }
+
+        try {
+            $mobileNavbarConfig = AppSetting::get('mobile_navbar_config', null);
+        } catch (\Throwable $e) {
+            $mobileNavbarConfig = null;
+        }
+
+        // #region debug-point mobile-navbar-blank-share
+        try {
+            $envPath = base_path('.dbg/mobile-navbar-blank.env');
+            if (is_file($envPath)) {
+                $lines = preg_split("/\r\n|\n|\r/", (string) file_get_contents($envPath));
+                $data = [];
+                foreach ($lines as $line) {
+                    $line = trim((string) $line);
+                    if ($line === '' || !str_contains($line, '=')) {
+                        continue;
+                    }
+                    [$k, $v] = explode('=', $line, 2);
+                    $data[trim($k)] = trim($v);
+                }
+
+                if (!empty($data['DEBUG_SERVER_URL']) && !empty($data['DEBUG_SESSION_ID'])) {
+                    $debug = [
+                        'server_url' => $data['DEBUG_SERVER_URL'],
+                        'session_id' => $data['DEBUG_SESSION_ID'],
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            $debug = null;
+        }
+        // #endregion debug-point mobile-navbar-blank-share
 
         return [
             ...parent::share($request),
@@ -66,6 +102,10 @@ class HandleInertiaRequests extends Middleware
                     'logo' => '/images/jicos.png',
                 ],
             'csrf_token' => csrf_token(),
+            'settings' => [
+                'mobile_navbar' => $mobileNavbarConfig,
+            ],
+            'debug' => $debug,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

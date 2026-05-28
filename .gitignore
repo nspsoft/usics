@@ -11,6 +11,11 @@
 /.phpunit.cache
 /.vscode
 /.zed
+/.dbg
+/.vercel
+/debug-*.md
+/.vercelignore
+/vercel.json
 /auth.json
 /node_modules
 /public/hot
