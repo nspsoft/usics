@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\HR\Leave;
+use App\Models\HR\AttendanceRequest;
 use App\Models\HR\LeaveType;
 use App\Models\HR\LeaveBalance;
 use Carbon\Carbon;
@@ -33,6 +34,11 @@ class LeaveController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $attendanceRequests = AttendanceRequest::where('employee_id', $employee->id)
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get();
+
         // Calculate pending vs approved
         $stats = [
             'pending' => $leaves->where('status', 'pending')->count(),
@@ -42,6 +48,7 @@ class LeaveController extends Controller
         return Inertia::render('Employee/Leaves/Dashboard', [
             'balances' => $balances,
             'leaves' => $leaves,
+            'attendanceRequests' => $attendanceRequests,
             'stats' => $stats,
         ]);
     }

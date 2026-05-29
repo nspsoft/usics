@@ -18,11 +18,34 @@ import moment from 'moment';
 const props = defineProps({
     balances: Array,
     leaves: Array,
+    attendanceRequests: Array,
     stats: Object,
 });
 
 const formatDate = (date) => {
     return moment(date).format('DD MMM YYYY');
+};
+
+const formatTime = (time) => {
+    if (!time) return '--:--';
+    return moment(time, ['HH:mm:ss', 'HH:mm']).format('HH:mm');
+};
+
+const getAttendanceTypeLabel = (type) => {
+    const map = {
+        late_arrival: 'Datang Terlambat',
+        early_dismissal: 'Pulang Lebih Awal',
+        forgot_clock_in: 'Lupa Absen',
+    };
+    return map[type] || type;
+};
+
+const getAttendanceStatusColor = (status) => {
+    switch (status) {
+        case 'approved': return 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400';
+        case 'rejected': return 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400';
+        default: return 'text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400';
+    }
 };
 
 const getStatusColor = (status) => {
@@ -124,6 +147,26 @@ const submitAttendance = () => {
                     <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Recent Requests</h3>
                 </div>
                 
+                <div class="space-y-3 mb-6">
+                    <div v-for="req in (attendanceRequests || []).slice(0, 5)" :key="`att-${req.id}`" class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-medium text-slate-900 dark:text-white">{{ getAttendanceTypeLabel(req.type) }}</h4>
+                                <p class="text-xs text-slate-500 mt-0.5">
+                                    {{ formatDate(req.request_date) }} • {{ formatTime(req.request_time) }}
+                                </p>
+                            </div>
+                            <span :class="['px-2.5 py-1 text-[10px] font-medium rounded-full uppercase tracking-wider', getAttendanceStatusColor(req.status)]">
+                                {{ req.status }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-3 line-clamp-2">{{ req.reason }}</p>
+                        <p v-if="req.status === 'rejected' && req.rejection_reason" class="text-xs text-red-500 mt-2">
+                            {{ req.rejection_reason }}
+                        </p>
+                    </div>
+                </div>
+
                 <div class="space-y-3">
                     <div v-for="leave in leaves" :key="leave.id" class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
                         <div class="flex justify-between items-start mb-3">
