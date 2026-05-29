@@ -79,9 +79,18 @@ class CompanyController extends Controller
 
         $defaultInstruction = "Anda adalah Customer Service Jidoka AI yang ramah. Tugas Anda adalah melayani Customer dan Staff PT JIDOKA dengan sopan, ceria, dan membantu.";
 
+        $emailSettings = $company->settings['email'] ?? [];
+        $emailSettings['imap_password'] = '';
+        $emailSettings['smtp_password'] = '';
+
+        $emeteraiSettings = $company->settings['emeterai'] ?? [];
+        if (is_array($emeteraiSettings)) {
+            $emeteraiSettings['secret_key'] = '';
+        }
+
         return Inertia::render('Settings/AISettings', [
             'settings' => array_merge($defaultSettings, $company->settings['ai'] ?? []),
-            'email_settings' => $company->settings['email'] ?? [
+            'email_settings' => array_merge([
                 'imap_host' => '',
                 'imap_port' => '993',
                 'imap_encryption' => 'ssl',
@@ -94,12 +103,12 @@ class CompanyController extends Controller
                 'smtp_password' => '',
                 'from_address' => '',
                 'from_name' => '',
-            ],
-            'emeterai_settings' => $company->settings['emeterai'] ?? [
+            ], $emailSettings),
+            'emeterai_settings' => array_merge([
                 'enabled' => false,
                 'client_id' => '',
                 'secret_key' => '',
-            ],
+            ], $emeteraiSettings),
             'whatsapp_bot_instruction' => (string) AppSetting::get('whatsapp_bot_instruction', $defaultInstruction)
         ]);
     }
@@ -134,18 +143,19 @@ class CompanyController extends Controller
         // Handle Email Settings if present in request (Fix for persistence)
         if ($request->has('email_settings')) {
             $emailSettings = $request->email_settings;
+            $existingEmailSettings = is_array($settings['email'] ?? null) ? $settings['email'] : [];
             // Ensure no null values for critical fields
             $settings['email'] = [
                 'imap_host' => $emailSettings['imap_host'] ?? '',
                 'imap_port' => $emailSettings['imap_port'] ?? '993',
                 'imap_encryption' => $emailSettings['imap_encryption'] ?? 'ssl',
                 'imap_username' => $emailSettings['imap_username'] ?? '',
-                'imap_password' => $emailSettings['imap_password'] ?? '',
+                'imap_password' => !empty($emailSettings['imap_password'] ?? null) ? $emailSettings['imap_password'] : ($existingEmailSettings['imap_password'] ?? ''),
                 'smtp_host' => $emailSettings['smtp_host'] ?? '',
                 'smtp_port' => $emailSettings['smtp_port'] ?? '587',
                 'smtp_encryption' => $emailSettings['smtp_encryption'] ?? 'tls',
                 'smtp_username' => $emailSettings['smtp_username'] ?? '',
-                'smtp_password' => $emailSettings['smtp_password'] ?? '',
+                'smtp_password' => !empty($emailSettings['smtp_password'] ?? null) ? $emailSettings['smtp_password'] : ($existingEmailSettings['smtp_password'] ?? ''),
                 'from_address' => $emailSettings['from_address'] ?? '',
                 'from_name' => $emailSettings['from_name'] ?? '',
             ];

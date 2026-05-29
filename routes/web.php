@@ -378,7 +378,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
 
     // AI Email Inbox
     Route::get('/emails', [App\Http\Controllers\Sales\EmailInboxController::class, 'index'])->name('emails.index');
-    Route::get('/emails/sync', [App\Http\Controllers\Sales\EmailInboxController::class, 'sync'])->name('emails.sync');
+    Route::post('/emails/sync', [App\Http\Controllers\Sales\EmailInboxController::class, 'sync'])->name('emails.sync');
     Route::get('/emails/{email}', [App\Http\Controllers\Sales\EmailInboxController::class, 'show'])->name('emails.show');
     Route::post('/emails/send', [App\Http\Controllers\Sales\EmailInboxController::class, 'store'])->name('emails.store');
     Route::delete('/emails/{email}', [App\Http\Controllers\Sales\EmailInboxController::class, 'destroy'])->name('emails.destroy');

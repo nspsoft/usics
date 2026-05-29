@@ -18,6 +18,21 @@ const props = defineProps({
     email: Object,
 });
 
+const stripHtml = (html) => {
+    if (!html) return '';
+    return String(html)
+        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
+const emailBody = () => {
+    return props.email.body_text || stripHtml(props.email.body_html) || '';
+};
+
 const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString('id-ID', {
         day: '2-digit',
@@ -100,11 +115,8 @@ const copyToClipboard = (text) => {
                                 </div>
                             </div>
 
-                            <!-- HTML Body -->
-                            <div v-if="email.body_html" class="prose prose-indigo max-w-none text-gray-800 border-t pt-6" v-html="email.body_html"></div>
-                            <!-- Fallback to Text Body -->
-                            <div v-else class="whitespace-pre-wrap text-gray-800 border-t pt-6 font-sans">
-                                {{ email.body_text }}
+                            <div class="whitespace-pre-wrap text-gray-800 border-t pt-6 font-sans">
+                                {{ emailBody() }}
                             </div>
 
                             <!-- Attachments Area -->

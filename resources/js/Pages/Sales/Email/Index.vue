@@ -13,6 +13,7 @@ import {
     ArchiveBoxIcon,
     ClockIcon,
     StarIcon,
+    SparklesIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
     PaperAirplaneIcon,
@@ -40,14 +41,18 @@ const composeForm = useForm({
 });
 const selectedEmail = ref(null);
 const searchQuery = ref(props.filters.search || '');
-const activeFilter = ref('inbox'); // 'inbox', 'sent', 'done', 'trash', 'po', 'urgent'
+const activeFilter = ref('inbox'); // 'inbox', 'sent', 'done', 'archived', 'po', 'urgent'
 
 // Initialize activeFilter based on props
 if (props.filters.status) {
-    activeFilter.value = props.filters.status === 'read' ? 'done' : props.filters.status;
+    if (props.filters.status === 'read') activeFilter.value = 'done';
+    else if (props.filters.status === 'archived') activeFilter.value = 'archived';
+    else if (props.filters.status === 'sent') activeFilter.value = 'sent';
 } else if (props.filters.intent) {
     if (props.filters.intent === 'purchase_order') activeFilter.value = 'po';
     // 'urgent' would be handled by urgency score, not intent strictly
+} else if (props.filters.urgent) {
+    activeFilter.value = 'urgent';
 }
 
 // Formatting Functions
@@ -90,7 +95,7 @@ const getIntentLabel = (intent) => {
 const syncEmails = () => {
     isSyncing.value = true;
     router.visit(route('sales.emails.sync'), {
-        method: 'get',
+        method: 'post',
         preserveScroll: true,
         preserveState: true,
         onFinish: () => {
@@ -126,14 +131,32 @@ const performSearch = (filter = null) => {
     router.visit(route('sales.emails.index'), {
         data: { 
             search: searchQuery.value,
-            intent: ['po', 'urgent'].includes(activeFilter.value) ? (activeFilter.value === 'po' ? 'purchase_order' : null) : null,
-            status: ['sent', 'trash'].includes(activeFilter.value) ? activeFilter.value : (activeFilter.value === 'done' ? 'read' : null)
+            intent: activeFilter.value === 'po' ? 'purchase_order' : null,
+            urgent: activeFilter.value === 'urgent' ? 1 : null,
+            status: ['sent', 'archived'].includes(activeFilter.value) ? activeFilter.value : (activeFilter.value === 'done' ? 'read' : null)
         },
         preserveState: true, 
         preserveScroll: true,
         replace: true 
     });
 };
+
+const stripHtml = (html) => {
+    if (!html) return '';
+    return String(html)
+        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
+const selectedEmailBody = computed(() => {
+    if (!selectedEmail.value) return '';
+    const text = selectedEmail.value.body_text || stripHtml(selectedEmail.value.body_html);
+    return text || '';
+});
 
 // Auto-select first email on load if desktop
 onMounted(() => {
@@ -156,7 +179,8 @@ const sendEmail = () => {
         onSuccess: () => {
             closeCompose();
             // Optional: Show success notification or refresh list
-        }
+        },
+        forceFormData: true,
     });
 };
 
@@ -216,22 +240,22 @@ const removeAttachment = (index) => {
                         <CheckCircleIcon class="w-5 h-5" :class="activeFilter === 'done' ? 'text-indigo-600' : 'text-slate-400'" />
                         <span>Done</span>
                     </button>
-                    <button @click="performSearch('trash')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium group transition-colors text-left" :class="activeFilter === 'trash' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'">
-                        <TrashIcon class="w-5 h-5" :class="activeFilter === 'trash' ? 'text-indigo-600' : 'text-slate-400'" />
-                        <span>Trash</span>
+                    <button @click="performSearch('archived')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium group transition-colors text-left" :class="activeFilter === 'archived' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'">
+                        <ArchiveBoxIcon class="w-5 h-5" :class="activeFilter === 'archived' ? 'text-indigo-600' : 'text-slate-400'" />
+                        <span>Archived</span>
                     </button>
 
                     <div class="mt-6 px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Smart Filters</div>
                     
-                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium transition-colors">
+                    <button @click="performSearch('urgent')" type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium transition-colors text-left">
                         <ExclamationCircleIcon class="w-5 h-5 text-rose-500" />
                         <span>High Urgency</span>
                         <span class="ml-auto w-2 h-2 rounded-full bg-rose-500"></span>
-                    </a>
-                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium transition-colors">
+                    </button>
+                    <button @click="performSearch('po')" type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium transition-colors text-left">
                         <ArchiveBoxIcon class="w-5 h-5 text-emerald-500" />
                         <span>Purchase Orders</span>
-                    </a>
+                    </button>
                 </nav>
 
                 <div class="p-4 border-t border-slate-200">
@@ -428,10 +452,9 @@ const removeAttachment = (index) => {
 
                     <!-- Email Body -->
                     <div class="flex-1 overflow-y-auto p-6">
-                        <div 
-                            class="prose prose-sm dark:prose-invert max-w-none text-slate-800 dark:text-slate-300 prose-headings:font-bold prose-a:text-indigo-600 prose-img:rounded-lg"
-                            v-html="selectedEmail.body_html || selectedEmail.body_text.replace(/\n/g, '<br>')"
-                        ></div>
+                        <div class="whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-300 leading-relaxed">
+                            {{ selectedEmailBody }}
+                        </div>
 
                         <!-- Attachments -->
                         <div v-if="selectedEmail.attachments.length > 0" class="mt-8 pt-6 border-t border-slate-100">

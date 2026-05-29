@@ -18,21 +18,20 @@ class EmailInboxController extends Controller
         $query = EmailMessage::with(['customer:id,name', 'attachments'])
             ->orderByDesc('email_date');
 
-        // Filter by Status (Sent, Read, Unread)
-        if ($request->has('status') && $request->status) {
-             if ($request->status === 'sent') {
-                 $query->where('status', 'sent');
-             } else {
-                 $query->where('status', $request->status);
-             }
+        $status = (string) $request->input('status', '');
+        if (in_array($status, ['unread', 'read', 'archived', 'sent'], true)) {
+            $query->where('status', $status);
         } else {
-            // Default: Show Inbox (Read/Unread) but exclude Sent and Trash
-            $query->whereNotIn('status', ['sent', 'trash']);
+            $query->whereIn('status', ['unread', 'read']);
         }
 
         // Filter by Intent
         if ($request->has('intent') && $request->intent) {
             $query->where('intent', $request->intent);
+        }
+
+        if ($request->boolean('urgent')) {
+            $query->where('urgency_score', '>=', 0.7);
         }
 
         // Search
@@ -49,7 +48,7 @@ class EmailInboxController extends Controller
 
         return Inertia::render('Sales/Email/Index', [
             'emails' => $emails,
-            'filters' => $request->only(['search', 'intent', 'status']),
+            'filters' => $request->only(['search', 'intent', 'status', 'urgent']),
         ]);
     }
 
@@ -137,7 +136,7 @@ class EmailInboxController extends Controller
                     $sentEmail->attachments()->create([
                         'file_name' => $file->getClientOriginalName(),
                         'file_path' => $path,
-                        'file_type' => $file->getClientMimeType(),
+                        'mime_type' => $file->getClientMimeType(),
                         'size' => $file->getSize(),
                     ]);
                 }
