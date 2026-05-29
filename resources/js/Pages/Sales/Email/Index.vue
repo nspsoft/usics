@@ -178,7 +178,7 @@ const sendEmail = () => {
     composeForm.post(route('sales.emails.store'), {
         onSuccess: () => {
             closeCompose();
-            // Optional: Show success notification or refresh list
+            router.reload({ only: ['emails'] });
         },
         forceFormData: true,
     });
