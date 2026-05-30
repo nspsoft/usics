@@ -29,12 +29,16 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 const props = defineProps({
     receipts: Object,
+    suppliers: Array,
     filters: Object,
     statuses: Array,
 });
 
 const search = ref(props.filters?.search || '');
 const selectedStatus = ref(props.filters?.status || '');
+const selectedSupplier = ref(props.filters?.supplier || '');
+const dateFrom = ref(props.filters?.date_range?.[0] || '');
+const dateTo = ref(props.filters?.date_range?.[1] || '');
 const sortField = ref(props.filters?.sort || 'created_at');
 const sortDirection = ref(props.filters?.direction || 'desc');
 const showFilters = ref(false);
@@ -84,6 +88,8 @@ const applyFilters = debounce(() => {
     router.get('/purchasing/receipts', {
         search: search.value || undefined,
         status: selectedStatus.value || undefined,
+        supplier: selectedSupplier.value || undefined,
+        date_range: (dateFrom.value && dateTo.value) ? [dateFrom.value, dateTo.value] : undefined,
         sort: sortField.value,
         direction: sortDirection.value,
     }, {
@@ -92,9 +98,14 @@ const applyFilters = debounce(() => {
     });
 }, 300);
 
-watch([search, selectedStatus], () => {
-    applyFilters();
-});
+watch([search, selectedStatus, selectedSupplier, dateFrom, dateTo], applyFilters);
+
+const clearFilters = () => {
+    selectedStatus.value = '';
+    selectedSupplier.value = '';
+    dateFrom.value = '';
+    dateTo.value = '';
+};
 
 const getStatusBadge = (status) => {
     if (!status) return 'bg-slate-500/20 text-slate-500 dark:text-slate-400 border-slate-500/30';
@@ -193,13 +204,49 @@ const deleteReceipt = (id) => {
                 leave-to-class="opacity-0 -translate-y-2"
             >
                 <div v-if="showFilters" class="mb-6 rounded-2xl glass-card p-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Status</label>
                             <select v-model="selectedStatus" class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50">
                                 <option value="">All Status</option>
                                 <option v-for="status in statuses" :key="status.value" :value="status.value">{{ status.label }}</option>
                             </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Supplier</label>
+                            <select
+                                v-model="selectedSupplier"
+                                class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            >
+                                <option value="">All Suppliers</option>
+                                <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.id">
+                                    {{ supplier.name }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Date From</label>
+                            <input
+                                v-model="dateFrom"
+                                type="date"
+                                class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Date To</label>
+                            <input
+                                v-model="dateTo"
+                                type="date"
+                                class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            />
+                        </div>
+                        <div class="flex items-end">
+                            <button 
+                                @click="clearFilters"
+                                class="w-full rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-700 transition-colors"
+                            >
+                                Clear Filters
+                            </button>
                         </div>
                     </div>
                 </div>

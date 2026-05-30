@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\SalesOrder;
 use App\Models\Unit;
 use App\Models\Warehouse;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -41,6 +42,9 @@ class SalesOrderController extends Controller
             })
             ->when($request->po_number, function ($q, $po_number) {
                 $q->where('customer_po_number', 'like', "%{$po_number}%");
+            })
+            ->when($request->so_number, function ($q, $so_number) {
+                $q->where('so_number', 'like', "%{$so_number}%");
             })
             ->when($request->status, function ($q, $status) {
                 $q->where('status', $status);
@@ -80,7 +84,7 @@ class SalesOrderController extends Controller
             'salesOrders' => $salesOrders,
             'stats' => $stats,
             'customers' => Customer::active()->orderBy('name')->get(['id', 'name', 'code']),
-            'filters' => $request->only(['search', 'status', 'customer', 'po_number']),
+            'filters' => $request->only(['search', 'status', 'customer', 'po_number', 'so_number']),
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'waiting_po', 'label' => 'Waiting PO'],
@@ -493,13 +497,18 @@ class SalesOrderController extends Controller
 
         try {
             return \DB::transaction(function () use ($order, $itemsToInvoice) {
+                $lastDeliveryDate = \App\Models\DeliveryOrder::where('sales_order_id', $order->id)
+                    ->whereIn('status', ['delivered', 'completed'])
+                    ->max('delivery_date');
+                $invoiceDate = $lastDeliveryDate ? Carbon::parse($lastDeliveryDate) : now();
+
                 // Create the invoice
                 $invoice = $order->invoices()->create([
                     'company_id' => $order->company_id ?? 1,
                     'customer_id' => $order->customer_id,
                     'invoice_number' => \App\Models\SalesInvoice::generateInvoiceNumber($order->customer),
-                    'invoice_date' => now(),
-                    'due_date' => now()->addDays($order->customer->payment_days ?? 30),
+                    'invoice_date' => $invoiceDate,
+                    'due_date' => (clone $invoiceDate)->addDays($order->customer->payment_days ?? 30),
                     'status' => 'draft',
                     'tax_percent' => $order->tax_percent,
                     'notes' => 'Generated from Sales Order (Consolidated)',

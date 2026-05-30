@@ -58,6 +58,7 @@ const props = defineProps({
 });
 
 const search = ref(props.filters.search || '');
+const soNumberFilter = ref(props.filters.so_number || '');
 const poNumber = ref(props.filters.po_number || '');
 const selectedStatus = ref(props.filters.status || '');
 const selectedCustomer = ref(props.filters.customer || '');
@@ -124,6 +125,7 @@ const bulkConfirm = () => {
 const applyFilters = debounce(() => {
     router.get('/sales/orders', {
         search: search.value || undefined,
+        so_number: soNumberFilter.value || undefined,
         po_number: poNumber.value || undefined,
         status: selectedStatus.value || undefined,
         customer: selectedCustomer.value || undefined,
@@ -145,10 +147,11 @@ const sort = (field) => {
     applyFilters();
 };
 
-watch([search, poNumber, selectedStatus, selectedCustomer], applyFilters);
+watch([search, soNumberFilter, poNumber, selectedStatus, selectedCustomer], applyFilters);
 
 const clearFilters = () => {
     search.value = '';
+    soNumberFilter.value = '';
     poNumber.value = '';
     selectedStatus.value = '';
     selectedCustomer.value = '';
@@ -317,7 +320,7 @@ const calculateWidth = (value, total) => {
             leave-to-class="opacity-0 -translate-y-2"
         >
             <div v-if="showFilters" class="mb-6 rounded-2xl glass-card p-4">
-                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Status</label>
                         <select
@@ -341,6 +344,15 @@ const calculateWidth = (value, total) => {
                                 {{ customer.name }}
                             </option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">SO Number</label>
+                        <input
+                            v-model="soNumberFilter"
+                            type="text"
+                            placeholder="Search SO..."
+                            class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 py-2.5 px-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/50 transition-all shadow-sm"
+                        />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">PO Number</label>

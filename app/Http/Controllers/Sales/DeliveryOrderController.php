@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
 use App\Models\DeliveryOrder;
 use App\Models\Product;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
 use App\Models\Warehouse;
 use App\Models\Vehicle;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +45,15 @@ class DeliveryOrderController extends Controller
             })
             ->when($request->status, function ($q, $status) {
                 $q->where('status', $status);
+            })
+            ->when($request->customer, function ($q, $customer) {
+                $q->where('customer_id', $customer);
+            })
+            ->when($request->delivery_date_from, function ($q, $date) {
+                $q->whereDate('delivery_date', '>=', $date);
+            })
+            ->when($request->delivery_date_to, function ($q, $date) {
+                $q->whereDate('delivery_date', '<=', $date);
             })
             ->when($request->invoice_status, function ($q, $status) {
                 $q->invoiceStatus($status);
@@ -82,7 +93,8 @@ class DeliveryOrderController extends Controller
         return Inertia::render('Sales/Deliveries/Index', [
             'deliveryOrders' => $deliveryOrders,
             'pendingSalesOrders' => $pendingSalesOrders,
-            'filters' => $request->only(['search', 'status', 'invoice_status']),
+            'customers' => Customer::active()->orderBy('name')->get(['id', 'name', 'code']),
+            'filters' => $request->only(['search', 'status', 'invoice_status', 'customer', 'delivery_date_from', 'delivery_date_to']),
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'picking', 'label' => 'Picking'],
@@ -928,14 +940,15 @@ class DeliveryOrderController extends Controller
         try {
             return \DB::transaction(function () use ($deliveryOrder) {
                 $so = $deliveryOrder->salesOrder;
+                $invoiceDate = $deliveryOrder->delivery_date ? Carbon::parse($deliveryOrder->delivery_date) : now();
                 
                 $invoice = \App\Models\SalesInvoice::create([
                     'company_id' => $deliveryOrder->company_id,
                     'invoice_number' => \App\Models\SalesInvoice::generateInvoiceNumber($deliveryOrder->customer),
                     'sales_order_id' => $so->id,
                     'customer_id' => $deliveryOrder->customer_id,
-                    'invoice_date' => now(),
-                    'due_date' => now()->addDays(30),
+                    'invoice_date' => $invoiceDate,
+                    'due_date' => (clone $invoiceDate)->addDays($deliveryOrder->customer?->payment_days ?? 30),
                     'status' => 'draft',
                     'subtotal' => 0, // Will be calculated
                     'tax_amount' => 0,
@@ -1091,6 +1104,15 @@ class DeliveryOrderController extends Controller
             ->when($filters['status'] ?? null, function ($q, $status) {
                 $q->where('status', $status);
             })
+            ->when($filters['customer'] ?? null, function ($q, $customer) {
+                $q->where('customer_id', $customer);
+            })
+            ->when($filters['delivery_date_from'] ?? null, function ($q, $date) {
+                $q->whereDate('delivery_date', '>=', $date);
+            })
+            ->when($filters['delivery_date_to'] ?? null, function ($q, $date) {
+                $q->whereDate('delivery_date', '<=', $date);
+            })
             ->when($filters['invoice_status'] ?? null, function ($q, $status) {
                 $q->invoiceStatus($status);
             });
@@ -1179,14 +1201,15 @@ class DeliveryOrderController extends Controller
 
                     if (empty($groupedItems)) continue;
 
+                    $invoiceDate = ($dos->max('delivery_date') ? Carbon::parse($dos->max('delivery_date')) : now());
                     $invoiceNumber = \App\Models\SalesInvoice::generateInvoiceNumber($so->customer);
                     $invoice = \App\Models\SalesInvoice::create([
                         'company_id' => $so->company_id,
                         'invoice_number' => $invoiceNumber,
                         'sales_order_id' => $so->id,
                         'customer_id' => $customerId,
-                        'invoice_date' => now(),
-                        'due_date' => now()->addDays(30),
+                        'invoice_date' => $invoiceDate,
+                        'due_date' => (clone $invoiceDate)->addDays($so->customer?->payment_days ?? 30),
                         'status' => 'draft',
                         'subtotal' => 0,
                         'tax_amount' => 0,

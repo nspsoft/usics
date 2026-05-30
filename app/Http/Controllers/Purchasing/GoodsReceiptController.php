@@ -70,6 +70,14 @@ class GoodsReceiptController extends Controller
             })
             ->when($request->status, function ($q, $status) {
                 $q->where('status', $status);
+            })
+            ->when($request->supplier, function ($q, $supplier) {
+                $q->where('supplier_id', $supplier);
+            })
+            ->when($request->date_range, function ($q, $range) {
+                if (is_array($range) && count($range) === 2) {
+                    $q->whereBetween('receipt_date', $range);
+                }
             });
 
         $sort = $request->input('sort', 'created_at');
@@ -95,7 +103,8 @@ class GoodsReceiptController extends Controller
 
         return Inertia::render('Purchasing/Receipts/Index', [
             'receipts' => $receipts,
-            'filters' => $request->only(['search', 'status', 'sort', 'direction']),
+            'suppliers' => Supplier::active()->orderBy('name')->get(['id', 'name', 'code']),
+            'filters' => $request->only(['search', 'status', 'supplier', 'date_range', 'sort', 'direction']),
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'dispatched', 'label' => 'Dispatched'],

@@ -32,12 +32,16 @@ import Board from './Board.vue';
 const props = defineProps({
     deliveryOrders: Object,
     pendingSalesOrders: Array,
+    customers: Array,
     filters: Object,
     statuses: Array,
 });
 
 const search = ref(props.filters.search || '');
 const selectedStatus = ref(props.filters.status || '');
+const selectedCustomer = ref(props.filters.customer || '');
+const deliveryDateFrom = ref(props.filters.delivery_date_from || '');
+const deliveryDateTo = ref(props.filters.delivery_date_to || '');
 const showFilters = ref(false);
 const viewMode = ref('list'); // list or board (Trigger Update)
 const sortField = ref(props.filters.sort || 'delivery_date');
@@ -55,6 +59,9 @@ const applyFilters = debounce(() => {
     router.get(route('sales.deliveries.index'), {
         search: search.value || undefined,
         status: selectedStatus.value || undefined,
+        customer: selectedCustomer.value || undefined,
+        delivery_date_from: deliveryDateFrom.value || undefined,
+        delivery_date_to: deliveryDateTo.value || undefined,
         invoice_status: invoiceStatus.value || undefined,
         sort: sortField.value,
         direction: sortDirection.value,
@@ -73,8 +80,6 @@ const sort = (field) => {
     }
     applyFilters();
 };
-
-watch([search, selectedStatus], applyFilters);
 
 const getStatusBadge = (status) => {
     const badges = {
@@ -181,6 +186,9 @@ const createConsolidatedInvoice = async () => {
             filters: {
                 search: search.value,
                 status: selectedStatus.value,
+                customer: selectedCustomer.value,
+                delivery_date_from: deliveryDateFrom.value,
+                delivery_date_to: deliveryDateTo.value,
                 invoice_status: invoiceStatus.value
             }
         });
@@ -203,6 +211,9 @@ const confirmBulkInvoice = () => {
         filters: {
             search: search.value,
             status: selectedStatus.value,
+            customer: selectedCustomer.value,
+            delivery_date_from: deliveryDateFrom.value,
+            delivery_date_to: deliveryDateTo.value,
             invoice_status: invoiceStatus.value
         },
         excluded_so_ids: excludedSoIds.value
@@ -231,7 +242,7 @@ const invoiceStatuses = [
     { value: 'invoiced', label: 'Fully Invoiced', description: 'Sudah ditagih lunas seluruh item.' },
 ];
 
-watch([search, selectedStatus, invoiceStatus], () => {
+watch([search, selectedStatus, selectedCustomer, deliveryDateFrom, deliveryDateTo, invoiceStatus], () => {
     selectedIds.value = [];
     isSelectAllAcrossPages.value = false;
     applyFilters();
@@ -356,7 +367,7 @@ const submitImport = () => {
         </div>
 
         <!-- Filter Panel -->
-        <div v-if="showFilters" class="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div v-if="showFilters" class="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-5 gap-4">
             <div class="relative group">
                 <label class="text-xs font-bold text-slate-500 mb-1 block">Status</label>
                 <div class="relative">
@@ -368,6 +379,34 @@ const submitImport = () => {
                         <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
                     </select>
                     <ChevronDownIcon class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+            </div>
+            <div class="relative group">
+                <label class="text-xs font-bold text-slate-500 mb-1 block">Customer</label>
+                <div class="relative">
+                    <select
+                        v-model="selectedCustomer"
+                        class="w-full bg-white dark:bg-slate-900 border-0 ring-2 ring-slate-200 dark:ring-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all shadow-sm appearance-none"
+                    >
+                        <option value="">All Customers</option>
+                        <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+                    </select>
+                    <ChevronDownIcon class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+            </div>
+            <div class="relative group">
+                <label class="text-xs font-bold text-slate-500 mb-1 block">Delivery Date</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <input
+                        v-model="deliveryDateFrom"
+                        type="date"
+                        class="w-full bg-white dark:bg-slate-900 border-0 ring-2 ring-slate-200 dark:ring-slate-800 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
+                    />
+                    <input
+                        v-model="deliveryDateTo"
+                        type="date"
+                        class="w-full bg-white dark:bg-slate-900 border-0 ring-2 ring-slate-200 dark:ring-slate-800 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
+                    />
                 </div>
             </div>
             <div class="relative group">
@@ -936,6 +975,3 @@ const submitImport = () => {
         </div>
     </Transition>
 </template>
-
-
-
