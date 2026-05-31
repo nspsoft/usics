@@ -151,6 +151,9 @@ class DatabaseBackupService
         'finance' => [
             'journal_entries', 'journals',
         ],
+        'logistics' => [
+            'delivery_schedules',
+        ],
     ];
 
     /**

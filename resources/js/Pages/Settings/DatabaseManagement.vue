@@ -76,7 +76,7 @@ const moduleLabels = {
     maintenance: { name: 'Maintenance', icon: '🔧', desc: 'Schedules, Logs, Spareparts' },
 };
 
-const softResettableModules = new Set(['sales', 'purchasing', 'inventory', 'manufacturing', 'hr', 'finance']);
+const softResettableModules = new Set(['sales', 'purchasing', 'inventory', 'manufacturing', 'hr', 'finance', 'logistics']);
 
 // Computed
 const selectedModuleCount = computed(() => backupForm.modules.length);
