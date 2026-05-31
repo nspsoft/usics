@@ -47,13 +47,15 @@ class DatabaseBackupService
             'purchase_return_items',
         ],
         'inventory' => [
-            'categories',
             'products',
-            'warehouses',
-            'stocks',
-            'stock_movements',
-            'stock_opnames',
-            'stock_opname_items',
+            'product_stocks',
+            'inv_stock_movements',
+            'inv_stock_adjustment_items',
+            'inv_stock_adjustments',
+            'inv_stock_transfer_items',
+            'inv_stock_transfers',
+            'inv_stock_opname_items',
+            'inv_stock_opnames',
         ],
         'manufacturing' => [
             'boms',
@@ -133,8 +135,10 @@ class DatabaseBackupService
             'purchase_return_items', 'purchase_returns',
         ],
         'inventory' => [
-            'stock_movements',
-            'stock_opname_items', 'stock_opnames',
+            'inv_stock_movements',
+            'inv_stock_adjustment_items', 'inv_stock_adjustments',
+            'inv_stock_transfer_items', 'inv_stock_transfers',
+            'inv_stock_opname_items', 'inv_stock_opnames',
         ],
         'manufacturing' => [
             'work_order_items', 'work_orders',
@@ -520,8 +524,14 @@ class DatabaseBackupService
                 }
             }
 
-            if ($module === 'inventory' && $this->tableExists('stocks')) {
-                DB::table('stocks')->update(['quantity' => 0]);
+            if ($module === 'inventory' && $this->tableExists('product_stocks')) {
+                DB::table('product_stocks')->update([
+                    'qty_on_hand' => 0,
+                    'qty_reserved' => 0,
+                    'qty_incoming' => 0,
+                    'qty_outgoing' => 0,
+                    'avg_cost' => 0,
+                ]);
             }
 
             Schema::enableForeignKeyConstraints();
