@@ -10,6 +10,7 @@ use App\Models\Warehouse;
 use App\Models\Customer;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -76,6 +77,48 @@ class ProductController extends Controller
                 ['value' => 'spare_part', 'label' => 'Spare Part'],
             ],
         ]);
+    }
+
+    public function lookup(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        if ($q !== '' && mb_strlen($q) < 2) {
+            return response()->json(['data' => []]);
+        }
+
+        $columns = ['id', 'name', 'sku'];
+        if (Schema::hasColumn('products', 'code')) {
+            $columns[] = 'code';
+        }
+
+        $products = Product::active()
+            ->stockManaged()
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where(function ($qq) use ($q) {
+                    $qq->where('sku', 'like', "%{$q}%")
+                        ->orWhere('name', 'like', "%{$q}%");
+
+                    if (Schema::hasColumn('products', 'code')) {
+                        $qq->orWhere('code', 'like', "%{$q}%");
+                    }
+                });
+            })
+            ->orderBy('name')
+            ->limit(30)
+            ->get($columns)
+            ->map(function ($p) {
+                $code = $p->code ?? $p->sku ?? '-';
+                return [
+                    'id' => $p->id,
+                    'label' => "[{$code}] {$p->name}",
+                    'sku' => $p->sku,
+                    'name' => $p->name,
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $products]);
     }
 
     /**

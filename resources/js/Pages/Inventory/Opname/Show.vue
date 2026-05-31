@@ -4,6 +4,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import axios from 'axios';
 import { Html5Qrcode } from 'html5-qrcode';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import {
     ArrowLeftIcon,
     MagnifyingGlassIcon,
@@ -38,17 +39,77 @@ const scannedLocation = ref(null);
 const locationProductIds = ref(null);
 let html5QrCode = null;
 
+const productOptions = computed(() => []);
+
 // Local state for items
 const items = ref(
     (props.opname.items || []).map(item => ({
         id: item.id,
-        product: item.product || { name: 'Unknown Product', sku: '-' },
+        product: item.product || { id: null, name: 'Unknown Product', sku: '-' },
         qty_system: Number(item.qty_system),
         qty_physic: Number(item.qty_physic),
         qty_difference: Number(item.qty_difference),
         original_physic: Number(item.qty_physic),
+        notes: item.notes ?? '',
     }))
 );
+
+const inputProductId = ref('');
+const inputQty = ref(0);
+const inputNotes = ref('');
+const adding = ref(false);
+const addError = ref('');
+
+const addItem = async () => {
+    if (props.opname.status === 'completed') return;
+    addError.value = '';
+
+    if (!inputProductId.value) {
+        addError.value = 'Produk wajib dipilih.';
+        return;
+    }
+
+    const qty = Math.max(0, Number(inputQty.value) || 0);
+
+    adding.value = true;
+    try {
+        const res = await axios.post(`/inventory/opname/${props.opname.id}/add-item`, {
+            product_id: inputProductId.value,
+            qty_physic: qty,
+            notes: inputNotes.value || null,
+        });
+
+        const payload = res?.data?.item;
+        if (!payload) return;
+
+        const existingIdx = items.value.findIndex(i => Number(i.product?.id) === Number(payload.product?.id));
+        const next = {
+            id: payload.id,
+            product: payload.product,
+            qty_system: Number(payload.qty_system),
+            qty_physic: Number(payload.qty_physic),
+            qty_difference: Number(payload.qty_difference),
+            original_physic: Number(payload.qty_physic),
+            notes: payload.notes ?? '',
+        };
+
+        if (existingIdx >= 0) {
+            items.value.splice(existingIdx, 1, next);
+        } else {
+            items.value.unshift(next);
+        }
+
+        inputProductId.value = '';
+        inputQty.value = 0;
+        inputNotes.value = '';
+        search.value = '';
+        filterMode.value = 'all';
+    } catch (e) {
+        addError.value = e?.response?.data?.message || e?.response?.data?.error || 'Gagal menambahkan item.';
+    } finally {
+        adding.value = false;
+    }
+};
 
 // Progress
 const progress = computed(() => {
@@ -363,7 +424,7 @@ const getDiffBg = (diff) => {
                         :class="getStatusBadge(opname.status)"
                     >{{ opname.status?.replace('_', ' ') }}</span>
                 </div>
-                <div class="grid grid-cols-3 gap-4 text-sm">
+                <div class="grid grid-cols-4 gap-4 text-sm">
                     <div>
                         <p class="text-xs text-slate-500">Warehouse</p>
                         <p class="font-medium text-slate-900 dark:text-white truncate">{{ opname.warehouse?.name }}</p>
@@ -371,6 +432,10 @@ const getDiffBg = (diff) => {
                     <div>
                         <p class="text-xs text-slate-500">Date</p>
                         <p class="font-medium text-slate-900 dark:text-white">{{ formatDate(opname.opname_date) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500">Lokasi</p>
+                        <p class="font-medium text-slate-900 dark:text-white truncate">{{ opname.location || '—' }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500">Created By</p>
@@ -385,8 +450,61 @@ const getDiffBg = (diff) => {
                 </div>
             </div>
 
+            <div v-if="opname.status !== 'completed'" class="relative z-30 rounded-2xl glass-card p-4 sm:p-6">
+                <div class="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Input Stock Opname</h3>
+                        <p class="text-xs text-slate-500">
+                            Mode full count: produk yang tidak diinput akan dianggap 0 saat complete.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-6 gap-3">
+                    <div class="sm:col-span-3">
+                        <SearchableSelect
+                            v-model="inputProductId"
+                            :options="productOptions"
+                            fetch-url="/inventory/products/lookup"
+                            placeholder="Pilih produk..."
+                        />
+                    </div>
+                    <div class="sm:col-span-1">
+                        <input
+                            v-model.number="inputQty"
+                            type="number"
+                            min="0"
+                            step="1"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800/50 py-2.5 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            placeholder="Qty"
+                        />
+                    </div>
+                    <div class="sm:col-span-1">
+                        <input
+                            v-model="inputNotes"
+                            type="text"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800/50 py-2.5 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            placeholder="Note"
+                        />
+                    </div>
+                    <div class="sm:col-span-1">
+                        <button
+                            type="button"
+                            @click="addItem"
+                            class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 transition-colors disabled:opacity-60"
+                            :disabled="adding"
+                        >
+                            <PlusIcon class="h-4 w-4" />
+                            Add
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="addError" class="mt-3 text-xs text-red-500">{{ addError }}</div>
+            </div>
+
             <!-- Progress Bar -->
-            <div v-if="items.length > 0" class="rounded-2xl glass-card p-4">
+            <div v-if="items.length > 0" class="relative z-10 rounded-2xl glass-card p-4">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Counting Progress</span>
                     <span class="text-sm font-bold" :class="progress.percent >= 100 ? 'text-emerald-400' : 'text-blue-400'">
@@ -431,8 +549,8 @@ const getDiffBg = (diff) => {
                 Showing {{ filteredItems.length }} of {{ items.length }} items
             </p>
 
-            <!-- Product Cards (Mobile-First) -->
-            <div v-if="items.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <!-- Items (Mobile Cards) -->
+            <div v-if="items.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:hidden">
                 <div
                     v-for="item in filteredItems"
                     :key="item.id"
@@ -511,19 +629,98 @@ const getDiffBg = (diff) => {
                 </div>
             </div>
 
+            <!-- Items (Desktop List) -->
+            <div v-if="items.length > 0" class="hidden lg:block">
+                <div class="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <div class="grid grid-cols-12 gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-900/60 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <div class="col-span-5">Product</div>
+                        <div class="col-span-2 text-right">System</div>
+                        <div class="col-span-3 text-center">Physical</div>
+                        <div class="col-span-1 text-right">Diff</div>
+                        <div class="col-span-1 text-right">Action</div>
+                    </div>
+
+                    <div class="divide-y divide-slate-200 dark:divide-slate-800">
+                        <div
+                            v-for="item in filteredItems"
+                            :key="item.id"
+                            class="grid grid-cols-12 gap-3 px-4 py-3 items-center border-l-4"
+                            :class="[
+                                item.qty_difference > 0 ? 'bg-emerald-500/5 border-emerald-500' : '',
+                                item.qty_difference < 0 ? 'bg-red-500/5 border-red-500' : '',
+                                item.qty_difference === 0 ? 'bg-transparent border-transparent' : '',
+                                savingItemId === item.id ? 'ring-1 ring-blue-500/40' : '',
+                                savedItemId === item.id ? 'ring-1 ring-emerald-500/40' : '',
+                                errorItemId === item.id ? 'ring-1 ring-red-500/40' : '',
+                            ]"
+                        >
+                            <div class="col-span-5 min-w-0">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <div class="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                                        <ArrowPathIcon v-if="savingItemId === item.id" class="h-4 w-4 text-blue-400 animate-spin" />
+                                        <CheckIcon v-else-if="savedItemId === item.id" class="h-4 w-4 text-emerald-400" />
+                                        <XMarkIcon v-else-if="errorItemId === item.id" class="h-4 w-4 text-red-400" />
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ item.product.name }}</div>
+                                        <div class="text-xs text-slate-500 font-mono truncate">{{ item.product.sku }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-span-2 text-right font-mono font-semibold text-slate-400">{{ formatNumber(item.qty_system) }}</div>
+
+                            <div class="col-span-3">
+                                <div v-if="opname.status !== 'completed'" class="flex items-center justify-center gap-2">
+                                    <button
+                                        @click="decrement(item)"
+                                        class="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center active:scale-95"
+                                        :disabled="item.qty_physic <= 0"
+                                    >
+                                        <MinusIcon class="h-4 w-4" />
+                                    </button>
+                                    <input
+                                        v-model.number="item.qty_physic"
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        @change="onInput(item)"
+                                        class="w-28 h-10 text-center text-sm font-bold rounded-xl border-0 bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
+                                    <button
+                                        @click="increment(item)"
+                                        class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-colors flex items-center justify-center active:scale-95"
+                                    >
+                                        <PlusIcon class="h-4 w-4" />
+                                    </button>
+                                </div>
+                                <div v-else class="text-center font-mono font-bold text-slate-900 dark:text-white">
+                                    {{ formatNumber(item.qty_physic) }}
+                                </div>
+                            </div>
+
+                            <div class="col-span-1 text-right font-mono font-bold" :class="getDiffColor(item.qty_difference)">
+                                {{ item.qty_difference > 0 ? '+' : '' }}{{ formatNumber(item.qty_difference) }}
+                            </div>
+
+                            <div class="col-span-1 text-right">
+                                <button
+                                    v-if="opname.status !== 'completed' && item.qty_difference !== 0"
+                                    @click="resetItem(item)"
+                                    class="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 underline"
+                                >Reset</button>
+                                <span v-else class="text-xs text-slate-400">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Empty State -->
             <div v-else class="rounded-2xl glass-card p-8 sm:p-12 text-center">
                 <ArrowPathIcon class="mx-auto h-12 w-12 text-slate-600 mb-3" />
                 <p class="text-slate-400 mb-1">No items in this session.</p>
-                <p class="text-xs text-slate-500 mb-4">Load products to start counting.</p>
-                <button
-                    v-if="opname.status !== 'completed'"
-                    @click="populateItems"
-                    class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
-                >
-                    <ArrowPathIcon class="h-4 w-4" />
-                    Load All Products
-                </button>
+                <p class="text-xs text-slate-500 mb-4">Tambahkan produk lewat form input di atas.</p>
             </div>
         </div>
 

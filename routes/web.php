@@ -88,6 +88,7 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::get('/dashboard', [App\Http\Controllers\Inventory\InventoryDashboardController::class, 'index'])->name('dashboard');
     Route::resource('categories', App\Http\Controllers\Inventory\CategoryController::class);
     Route::get('/stocks', [App\Http\Controllers\Inventory\CurrentStockController::class, 'index'])->name('stocks.index');
+    Route::get('/products/lookup', [ProductController::class, 'lookup'])->name('products.lookup');
     Route::resource('products', ProductController::class);
     Route::post('/products/{product}/partners', [App\Http\Controllers\Inventory\ProductPartnerController::class, 'store'])->name('products.partners.store');
     Route::delete('/products/partners/{partner}', [App\Http\Controllers\Inventory\ProductPartnerController::class, 'destroy'])->name('products.partners.destroy');
@@ -127,6 +128,7 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     // Stock Opname
     Route::resource('opname', App\Http\Controllers\Inventory\StockOpnameController::class);
     Route::post('/opname/{opname}/populate', [App\Http\Controllers\Inventory\StockOpnameController::class, 'populate'])->name('opname.populate');
+    Route::post('/opname/{opname}/add-item', [App\Http\Controllers\Inventory\StockOpnameController::class, 'addItem'])->name('opname.add-item');
     Route::put('/opname/{opname}/items', [App\Http\Controllers\Inventory\StockOpnameController::class, 'updateItems'])->name('opname.update-items');
     Route::put('/opname/{opname}/item', [App\Http\Controllers\Inventory\StockOpnameController::class, 'updateSingleItem'])->name('opname.update-item');
     Route::get('/opname/{opname}/location-stock', [App\Http\Controllers\Inventory\StockOpnameController::class, 'locationStock'])->name('opname.location-stock');
@@ -174,6 +176,7 @@ Route::prefix('purchasing')->name('purchasing.')->middleware(['auth'])->group(fu
     Route::get('/orders/template', [App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'template'])->name('orders.template');
     Route::post('/orders/{order}/duplicate', [App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'duplicate'])->name('orders.duplicate');
     Route::post('/orders/import', [App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'import'])->name('orders.import');
+    Route::post('/orders/bulk-mark-ordered', [App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'bulkMarkOrdered'])->name('orders.bulk-mark-ordered');
     Route::resource('orders', PurchaseOrderController::class);
     Route::post('/orders/{order}/submit', [PurchaseOrderController::class, 'submit'])->name('orders.submit');
     Route::post('/orders/{order}/approve', [PurchaseOrderController::class, 'approve'])->name('orders.approve');

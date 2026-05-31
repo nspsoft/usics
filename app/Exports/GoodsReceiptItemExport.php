@@ -87,12 +87,14 @@ class GoodsReceiptItemExport implements FromQuery, WithHeadings, WithMapping, Sh
 
     public function map($item): array
     {
+        $gr = $item->goodsReceipt;
+
         return [
-            $item->goodsReceipt->grn_number,
-            $item->goodsReceipt->receipt_date ? $item->goodsReceipt->receipt_date->format('Y-m-d') : '-',
-            $item->goodsReceipt->purchaseOrder->po_number ?? '-',
-            $item->goodsReceipt->supplier->name ?? '-',
-            $item->goodsReceipt->delivery_note_number ?? '-',
+            $gr?->grn_number ?? '-',
+            $gr?->receipt_date ? $gr->receipt_date->format('Y-m-d') : '-',
+            $gr?->purchaseOrder?->po_number ?? '-',
+            $gr?->supplier?->name ?? '-',
+            $gr?->delivery_note_number ?? '-',
             $item->product->code ?? $item->product->sku ?? '-',
             $item->product->name ?? '-',
             $item->qty_ordered,
@@ -102,7 +104,7 @@ class GoodsReceiptItemExport implements FromQuery, WithHeadings, WithMapping, Sh
             $item->unit->name ?? '-',
             $item->unit_cost,
             $item->total_value,
-            ucfirst($item->goodsReceipt->status),
+            $gr?->status ? ucfirst($gr->status) : '-',
         ];
     }
 

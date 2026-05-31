@@ -13,6 +13,8 @@ const form = useForm({
     opname_number: props.opnameNumber,
     warehouse_id: '',
     opname_date: new Date().toISOString().split('T')[0],
+    location: '',
+    count_mode: 'full_input',
     notes: '',
 });
 
@@ -73,6 +75,17 @@ const submit = () => {
                         class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
                     />
                     <p v-if="form.errors.opname_date" class="mt-1 text-xs text-red-500">{{ form.errors.opname_date }}</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Lokasi</label>
+                    <input
+                        v-model="form.location"
+                        type="text"
+                        class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        placeholder="e.g. Area FG, Rack A, Receiving"
+                    />
+                    <p v-if="form.errors.location" class="mt-1 text-xs text-red-500">{{ form.errors.location }}</p>
                 </div>
 
                 <div>

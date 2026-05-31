@@ -45,6 +45,7 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
                 $p1->cost_price ?: 50000,
                 0,
                 'Contoh PO (baris ini & baris berikutnya jadi 1 PO karena Supplier + Warehouse + Date sama)',
+                'draft',
             ]);
             $rows->push([
                 '',
@@ -57,6 +58,7 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
                 $p2->cost_price ?: 75000,
                 5,
                 '',
+                'draft',
             ]);
             // Row 3: Different supplier = new PO
             $rows->push([
@@ -70,6 +72,7 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
                 $p3->cost_price ?: 10000,
                 0,
                 'Contoh PO terpisah (supplier berbeda)',
+                'draft',
             ]);
         } else {
             // Fallback
@@ -77,8 +80,8 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
             $code = $p?->code ?? $p?->sku ?? 'PROD-001';
             $price = $p?->cost_price ?: 50000;
 
-            $rows->push(['', $today, $expectedDate, $supCode1, $whName, $code, 100, $price, 0, 'Contoh order']);
-            $rows->push(['', $today, '', $supCode2, $whName, $code, 200, $price, 0, 'Contoh PO lain']);
+            $rows->push(['', $today, $expectedDate, $supCode1, $whName, $code, 100, $price, 0, 'Contoh order', 'draft']);
+            $rows->push(['', $today, '', $supCode2, $whName, $code, 200, $price, 0, 'Contoh PO lain', 'draft']);
         }
 
         return $rows;
@@ -97,6 +100,7 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
             'Unit Price',
             'Discount %',
             'Notes',
+            'Status',
         ];
     }
 
@@ -105,7 +109,7 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $sheet->getStyle('A1:J1')->getFont()->setBold(true);
+                $sheet->getStyle('A1:K1')->getFont()->setBold(true);
 
                 $sheet->getComment('A1')->getText()->createTextRun(
                     'Optional/Key. Jika terisi dan opsi Overwrite dicentang, maka file akan menimpa seluruh item di PO ini (khusus draft). Jika dikosongkan, sistem akan membuat PO Number otomatis.'
@@ -136,6 +140,9 @@ class PurchaseOrderTemplateExport implements FromCollection, WithHeadings, WithE
                 );
                 $sheet->getComment('J1')->getText()->createTextRun(
                     'Optional. Catatan tambahan untuk baris PO ini.'
+                );
+                $sheet->getComment('K1')->getText()->createTextRun(
+                    "Optional (migration). Status PO. Contoh: draft, ordered.\nJika kosong, default draft."
                 );
 
                 $redColor = new Color(Color::COLOR_RED);

@@ -48,10 +48,26 @@ const sortField = ref(props.filters?.sort || 'created_at');
 const sortDirection = ref(props.filters?.direction || 'desc');
 const showFilters = ref(false);
 
+const selectedIds = ref([]);
+
+const canSelect = (po) => po?.status === 'approved';
+
+const eligibleIdsOnPage = computed(() => {
+    if (!props.purchaseOrders?.data) return [];
+    return props.purchaseOrders.data.filter(canSelect).map((po) => po.id);
+});
+
+const allEligibleSelected = computed(() => {
+    const ids = eligibleIdsOnPage.value;
+    if (!ids.length) return false;
+    return ids.every((id) => selectedIds.value.includes(id));
+});
+
 const showImportModal = ref(false);
 const importForm = useForm({
     file: null,
     with_data: false,
+    include_all: false,
     overwrite: false,
 });
 
@@ -117,6 +133,31 @@ const clearFilters = () => {
 const deletePO = (po) => {
     if (confirm(`Are you sure you want to delete "${po.po_number}"?`)) {
         router.delete(`/purchasing/orders/${po.id}`);
+    }
+};
+
+const toggleSelectAllEligible = () => {
+    const ids = eligibleIdsOnPage.value;
+    if (!ids.length) return;
+
+    if (allEligibleSelected.value) {
+        selectedIds.value = selectedIds.value.filter((id) => !ids.includes(id));
+        return;
+    }
+
+    const merged = new Set([...selectedIds.value, ...ids]);
+    selectedIds.value = Array.from(merged);
+};
+
+const bulkMarkOrdered = () => {
+    if (!selectedIds.value.length) return;
+    if (confirm(`Mark ${selectedIds.value.length} purchase orders as ordered? (Only approved POs will be processed)`)) {
+        router.post(route('purchasing.orders.bulk-mark-ordered'), { ids: selectedIds.value }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                selectedIds.value = [];
+            },
+        });
     }
 };
 
@@ -297,10 +338,39 @@ const formatDate = (date) => {
 
             <!-- Purchase Orders Table -->
             <div class="rounded-2xl glass-card overflow-hidden">
+                <div v-if="selectedIds.length" class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/30 flex items-center justify-between gap-3">
+                    <div class="text-sm text-slate-600 dark:text-slate-300">
+                        Selected: <span class="font-bold text-slate-900 dark:text-white">{{ selectedIds.length }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button
+                            @click="bulkMarkOrdered"
+                            class="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-3 py-2 text-sm font-semibold text-white hover:bg-purple-500 transition-colors"
+                        >
+                            <TruckIcon class="h-4 w-4" />
+                            Mark Ordered
+                        </button>
+                        <button
+                            @click="selectedIds = []"
+                            class="inline-flex items-center gap-2 rounded-xl bg-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                </div>
                 <div class="overflow-x-auto overflow-y-auto max-h-[600px]">
                     <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
                         <thead>
                             <tr class="border-b border-slate-200 dark:border-slate-700">
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-3 py-2 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-10">
+                                    <input
+                                        type="checkbox"
+                                        :checked="allEligibleSelected"
+                                        @change="toggleSelectAllEligible"
+                                        class="rounded border-slate-300 dark:border-slate-700 text-blue-600 shadow-sm focus:ring-blue-500"
+                                        :disabled="eligibleIdsOnPage.length === 0"
+                                    >
+                                </th>
                                 <th @click="sort('po_number')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
                                     <div class="flex items-center gap-1">
                                         PO Number
@@ -392,6 +462,15 @@ const formatDate = (date) => {
                                 :key="po.id"
                                 class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors"
                             >
+                                <td class="px-3 py-2 whitespace-nowrap">
+                                    <input
+                                        v-if="canSelect(po)"
+                                        type="checkbox"
+                                        :value="po.id"
+                                        v-model="selectedIds"
+                                        class="rounded border-slate-300 dark:border-slate-700 text-blue-600 shadow-sm focus:ring-blue-500"
+                                    >
+                                </td>
                                 <td class="px-4 py-2 whitespace-nowrap">
                                     <div class="flex items-center gap-3">
                                         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 font-mono text-xs text-slate-500">
@@ -470,7 +549,7 @@ const formatDate = (date) => {
                                 </td>
                             </tr>
                             <tr v-if="purchaseOrders.data && purchaseOrders.data.length === 0">
-                                <td colspan="11" class="px-4 py-12 text-center text-slate-500 italic">No purchase orders found.</td>
+                                <td colspan="12" class="px-4 py-12 text-center text-slate-500 italic">No purchase orders found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -571,6 +650,20 @@ const formatDate = (date) => {
                         </p>
                     </div>
 
+                    <div class="mb-6" v-if="importForm.with_data">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                v-model="importForm.include_all"
+                                class="rounded border-slate-300 dark:border-slate-700 text-amber-600 shadow-sm focus:ring-amber-500"
+                            >
+                            <span class="text-sm text-slate-700 dark:text-slate-300 font-medium">Include ALL POs (All Statuses)</span>
+                        </label>
+                        <p class="text-xs text-slate-500 mt-1 ml-6">
+                            Jika dicentang, template akan berisi semua item PO (draft + non-draft). Untuk import overwrite, sistem tetap hanya boleh overwrite PO status draft.
+                        </p>
+                    </div>
+
                     <div class="mb-6">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input 
@@ -585,7 +678,7 @@ const formatDate = (date) => {
                         </p>
                     </div>
 
-                    <a :href="route('purchasing.orders.template') + (importForm.with_data ? '?with_data=1' : '')" class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-500 mb-4 font-medium">
+                    <a :href="route('purchasing.orders.template') + (importForm.with_data ? ('?with_data=1' + (importForm.include_all ? '&all=1' : '')) : '')" class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-500 mb-4 font-medium">
                         <ArrowDownTrayIcon class="h-4 w-4" />
                         Download Template {{ importForm.with_data ? 'with Data' : '' }}
                     </a>

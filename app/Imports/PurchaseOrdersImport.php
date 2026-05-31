@@ -48,6 +48,7 @@ class PurchaseOrdersImport implements ToCollection, WithHeadingRow
 
                     $orderDate = $this->parseDate($firstRow['order_date']);
                     $expectedDate = !empty($firstRow['expected_date']) ? $this->parseDate($firstRow['expected_date']) : null;
+                    $status = $this->normalizeStatus($firstRow['status'] ?? null);
                     
                     $po = null;
 
@@ -82,7 +83,7 @@ class PurchaseOrdersImport implements ToCollection, WithHeadingRow
                                 'warehouse_id' => $warehouse->id,
                                 'order_date' => $orderDate,
                                 'expected_date' => $expectedDate,
-                                'status' => 'draft',
+                                'status' => $status,
                                 'notes' => $firstRow['notes'] ?? null,
                                 'created_by' => auth()->id(),
                                 'currency' => 'IDR', // Default
@@ -98,7 +99,7 @@ class PurchaseOrdersImport implements ToCollection, WithHeadingRow
                             'warehouse_id' => $warehouse->id,
                             'order_date' => $orderDate,
                             'expected_date' => $expectedDate,
-                            'status' => 'draft',
+                            'status' => $status,
                             'notes' => $firstRow['notes'] ?? null,
                             'created_by' => auth()->id(),
                             'currency' => 'IDR', // Default
@@ -128,12 +129,29 @@ class PurchaseOrdersImport implements ToCollection, WithHeadingRow
                     }
 
                     $po->calculateTotals();
+
+                    if ($po->status === 'ordered' && empty($po->approved_at)) {
+                        $po->update([
+                            'approved_by' => auth()->id(),
+                            'approved_at' => now(),
+                        ]);
+                    }
                 });
             } catch (\Exception $e) {
                 Log::error("PurchaseOrdersImport Error on key [{$key}]: " . $e->getMessage());
                 continue;
             }
         }
+    }
+
+    private function normalizeStatus($value): string
+    {
+        $val = strtolower(trim((string) $value));
+        if ($val === '') {
+            return 'draft';
+        }
+
+        return in_array($val, ['draft', 'submitted', 'approved', 'ordered'], true) ? $val : 'draft';
     }
 
     private function parseDate($value)

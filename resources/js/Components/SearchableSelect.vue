@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import {
     Combobox,
     ComboboxInput,
@@ -9,12 +9,21 @@ import {
     TransitionRoot,
 } from '@headlessui/vue';
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/vue/20/solid';
+import axios from 'axios';
 
 const props = defineProps({
     modelValue: [String, Number, Object],
     options: {
         type: Array,
         required: true,
+    },
+    fetchUrl: {
+        type: String,
+        default: null,
+    },
+    minChars: {
+        type: Number,
+        default: 2,
     },
     placeholder: {
         type: String,
@@ -25,8 +34,18 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'change']);
 
 const query = ref('');
+const loading = ref(false);
+const remoteOptions = ref([]);
+const selectedCache = ref(null);
+let fetchTimer = null;
+
+const allOptions = computed(() => {
+    if (props.fetchUrl) return remoteOptions.value;
+    return props.options;
+});
 
 const filteredOptions = computed(() => {
+    if (props.fetchUrl) return allOptions.value;
     if (!query.value) return props.options;
     
     return props.options.filter((option) => {
@@ -39,11 +58,40 @@ const filteredOptions = computed(() => {
 });
 
 const selectedOption = computed({
-    get: () => props.options.find(opt => opt.id == props.modelValue) || null,
+    get: () => {
+        const found = allOptions.value.find(opt => opt.id == props.modelValue) || null;
+        if (found) return found;
+        if (selectedCache.value && selectedCache.value.id == props.modelValue) return selectedCache.value;
+        return null;
+    },
     set: (val) => {
         emit('update:modelValue', val?.id);
         emit('change', val);
+        selectedCache.value = val ?? null;
     }
+});
+
+watch(query, async (val) => {
+    if (!props.fetchUrl) return;
+
+    const q = String(val || '').trim();
+    clearTimeout(fetchTimer);
+
+    if (q.length < props.minChars) {
+        remoteOptions.value = [];
+        loading.value = false;
+        return;
+    }
+
+    fetchTimer = setTimeout(async () => {
+        loading.value = true;
+        try {
+            const res = await axios.get(props.fetchUrl, { params: { q } });
+            remoteOptions.value = Array.isArray(res?.data?.data) ? res.data.data : [];
+        } finally {
+            loading.value = false;
+        }
+    }, 250);
 });
 </script>
 
@@ -55,7 +103,7 @@ const selectedOption = computed({
                     <ComboboxInput
                         class="w-full border-none py-2.5 pl-3 pr-10 text-xs leading-5 text-slate-900 dark:text-white bg-transparent focus:ring-0"
                         :displayValue="(option) => option?.label ?? ''"
-                        @change="query = $event.target.value"
+                        @input="query = $event.target.value"
                         :placeholder="placeholder"
                         :title="selectedOption?.label"
                     />
@@ -71,6 +119,12 @@ const selectedOption = computed({
                     @after-leave="query = ''"
                 >
                     <ComboboxOptions class="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white dark:bg-slate-800 py-1 text-base shadow-2xl ring-1 ring-black/5 focus:outline-none sm:text-sm border border-slate-200 dark:border-slate-700 z-[99999]">
+                        <div
+                            v-if="loading"
+                            class="relative cursor-default select-none py-2 px-4 text-slate-400 text-xs"
+                        >
+                            Loading...
+                        </div>
                         <div
                             v-if="filteredOptions.length === 0 && query !== ''"
                             class="relative cursor-default select-none py-2 px-4 text-slate-400"

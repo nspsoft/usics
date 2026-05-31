@@ -84,20 +84,22 @@ class PurchaseOrderItemExport implements FromQuery, WithHeadings, WithMapping, S
 
     public function map($item): array
     {
+        $po = $item->purchaseOrder;
+
         return [
-            $item->purchaseOrder->po_number,
-            $item->purchaseOrder->order_date ? $item->purchaseOrder->order_date->format('Y-m-d') : '-',
-            $item->purchaseOrder->supplier->name ?? '-',
-            $item->product->code ?? $item->product->sku ?? '-',
-            $item->product->name ?? '-',
+            $po?->po_number ?? '-',
+            $po?->order_date ? $po->order_date->format('Y-m-d') : '-',
+            $po?->supplier?->name ?? '-',
+            $item->product?->code ?? $item->product?->sku ?? '-',
+            $item->product?->name ?? '-',
             $item->qty,
             $item->qty_received,
             $item->qty_returned,
             $item->remaining_qty,
-            $item->unit->name ?? '-',
+            $item->unit?->name ?? '-',
             $item->unit_price,
             $item->subtotal,
-            ucfirst($item->purchaseOrder->status),
+            $po?->status ? ucfirst($po->status) : '-',
         ];
     }
 

@@ -11,11 +11,24 @@ use App\Models\Customer;
 use App\Services\FonnteService;
 use App\Services\WablasService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class WhatsappCenterController extends Controller
 {
+    protected static ?bool $hasIsReadColumn = null;
+
+    protected function hasIsReadColumn(): bool
+    {
+        if (self::$hasIsReadColumn !== null) {
+            return self::$hasIsReadColumn;
+        }
+
+        return self::$hasIsReadColumn = Schema::hasColumn('whatsapp_messages', 'is_read');
+    }
+
     /**
      * Display the WhatsApp Center (Chat List & Interface).
      */
@@ -35,8 +48,7 @@ class WhatsappCenterController extends Controller
         $templates = collect();
         $labelPresets = [];
 
-        try {
-            // Add unread counts per contact (requires is_read column)
+        if ($this->hasIsReadColumn()) {
             $unreadCounts = WhatsappMessage::unread()
                 ->selectRaw('phone, COUNT(*) as unread_count')
                 ->groupBy('phone')
@@ -47,9 +59,10 @@ class WhatsappCenterController extends Controller
                 return $contact;
             });
 
-            $totalUnread = WhatsappMessage::unread()->count();
-        } catch (\Exception $e) {
-            // is_read column may not exist yet
+            $totalUnread = Cache::remember('whatsapp_unread_count', 10, function () {
+                return WhatsappMessage::unread()->count();
+            });
+        } else {
             $contacts->transform(function ($contact) {
                 $contact->unread_count = 0;
                 return $contact;
@@ -102,13 +115,13 @@ class WhatsappCenterController extends Controller
     public function history(string $phone)
     {
         // Mark all incoming messages for this phone as read
-        try {
+        if ($this->hasIsReadColumn()) {
             WhatsappMessage::where('phone', $phone)
                 ->where('direction', 'incoming')
                 ->where('is_read', false)
                 ->update(['is_read' => true]);
-        } catch (\Exception $e) {
-            // is_read column may not exist yet
+
+            Cache::forget('whatsapp_unread_count');
         }
 
         $messages = WhatsappMessage::where('phone', $phone)
@@ -282,11 +295,15 @@ class WhatsappCenterController extends Controller
      */
     public function unreadCount()
     {
-        try {
-            $total = WhatsappMessage::unread()->count();
-        } catch (\Exception $e) {
-            $total = 0;
+        if (!$this->hasIsReadColumn()) {
+            return response()->json([
+                'total' => 0,
+            ]);
         }
+
+        $total = Cache::remember('whatsapp_unread_count', 10, function () {
+            return WhatsappMessage::unread()->count();
+        });
 
         return response()->json([
             'total' => $total,

@@ -485,6 +485,37 @@ class PurchaseOrderController extends Controller
         return back()->with('success', 'Purchase Order marked as ordered.');
     }
 
+    public function bulkMarkOrdered(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $ids = array_values(array_unique($validated['ids']));
+
+        $orders = PurchaseOrder::whereIn('id', $ids)->get(['id', 'status']);
+        $eligibleIds = $orders->where('status', 'approved')->pluck('id')->values();
+        $skipped = $orders->count() - $eligibleIds->count();
+
+        if ($eligibleIds->isEmpty()) {
+            return back()->with('error', 'No approved orders selected. Only approved orders can be marked as ordered.');
+        }
+
+        DB::transaction(function () use ($eligibleIds) {
+            PurchaseOrder::whereIn('id', $eligibleIds)->update([
+                'status' => 'ordered',
+            ]);
+        });
+
+        $message = "Marked {$eligibleIds->count()} purchase orders as ordered.";
+        if ($skipped > 0) {
+            $message .= " Skipped {$skipped} because status was not approved.";
+        }
+
+        return back()->with('success', $message);
+    }
+
     /**
      * Cancel purchase order.
      */
@@ -589,7 +620,11 @@ class PurchaseOrderController extends Controller
     public function template(Request $request)
     {
         if ($request->boolean('with_data')) {
-            return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\PurchaseOrderDataExport, 'purchase_orders_data_' . now()->format('Y-m-d') . '.xlsx');
+            $includeAll = $request->boolean('all');
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\PurchaseOrderDataExport($includeAll),
+                'purchase_orders_data_' . now()->format('Y-m-d') . '.xlsx'
+            );
         }
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\Template\PurchaseOrderTemplateExport, 'purchase_order_template.xlsx');
     }

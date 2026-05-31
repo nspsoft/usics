@@ -45,6 +45,11 @@ const materialOptions = computed(() =>
     }))
 );
 
+const getUnitIdForMaterial = (materialId) => {
+    const material = props.materials.find(m => m.id == materialId);
+    return material?.unit_id ?? '';
+};
+
 // Tutorial State
 const showTutorial = ref(false);
 const currentStep = ref(0);
@@ -140,6 +145,19 @@ const addComponent = () => {
     });
 };
 
+const syncComponentUnitFromMaterial = (index) => {
+    const comp = form.components[index];
+    if (!comp) return;
+
+    if (!comp.product_id) {
+        comp.unit_id = '';
+        return;
+    }
+
+    const unitId = getUnitIdForMaterial(comp.product_id);
+    comp.unit_id = unitId || '';
+};
+
 const removeComponent = (index) => {
     if (form.components.length > 1) {
         form.components.splice(index, 1);
@@ -158,6 +176,12 @@ onMounted(() => {
     if (!isEditing.value && !form.code) {
         form.code = 'BOM-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     }
+
+    form.components.forEach((_, index) => {
+        if (form.components[index]?.product_id && !form.components[index]?.unit_id) {
+            syncComponentUnitFromMaterial(index);
+        }
+    });
 });
 </script>
 
@@ -293,7 +317,7 @@ onMounted(() => {
 
                     <!-- Right Column: Components List -->
                     <div class="xl:col-span-8 space-y-8" id="components-section">
-                        <div class="glass-card rounded-3xl shadow-sm !overflow-visible" :class="{'ring-2 ring-blue-500 shadow-2xl shadow-blue-500/20 z-10': showTutorial && tutorialSteps[currentStep].target === 'components-section'}">
+                        <div class="glass-card rounded-3xl shadow-sm !overflow-visible relative z-30" :class="{'ring-2 ring-blue-500 shadow-2xl shadow-blue-500/20 z-10': showTutorial && tutorialSteps[currentStep].target === 'components-section'}">
                             <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                                     <Bars3Icon class="h-4 w-4" />
@@ -327,6 +351,7 @@ onMounted(() => {
                                                     v-model="comp.product_id"
                                                     :options="materialOptions"
                                                     placeholder="Search material..."
+                                                    @change="() => syncComponentUnitFromMaterial(index)"
                                                 />
                                             </td>
                                             <td class="px-6 py-3">
@@ -379,7 +404,7 @@ onMounted(() => {
                         </div>
 
                         <!-- Routing Section -->
-                        <div class="glass-card rounded-3xl shadow-sm overflow-hidden" id="operations-section" :class="{'ring-2 ring-blue-500 shadow-2xl shadow-blue-500/20 z-10': showTutorial && tutorialSteps[currentStep].target === 'operations-section'}">
+                        <div class="glass-card rounded-3xl shadow-sm overflow-hidden relative z-10" id="operations-section" :class="{'ring-2 ring-blue-500 shadow-2xl shadow-blue-500/20 z-10': showTutorial && tutorialSteps[currentStep].target === 'operations-section'}">
                             <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-950/50">
                                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                                     <ListBulletIcon class="h-4 w-4" />

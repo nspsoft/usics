@@ -18,6 +18,7 @@ class StockOpnameItem extends Model
         'qty_system',
         'qty_physic',
         'qty_difference',
+        'notes',
     ];
 
     protected $casts = [

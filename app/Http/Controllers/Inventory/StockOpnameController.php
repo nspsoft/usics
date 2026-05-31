@@ -8,6 +8,7 @@ use App\Models\ProductStock;
 use App\Models\Location;
 use App\Models\StockMovement;
 use App\Models\StockOpname;
+use App\Models\StockOpnameItem;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +73,8 @@ class StockOpnameController extends Controller
             'opname_number' => 'required|string|max:30|unique:inv_stock_opnames,opname_number',
             'warehouse_id' => 'required|exists:warehouses,id',
             'opname_date' => 'required|date',
+            'location' => 'required|string|max:100',
+            'count_mode' => 'required|string|in:full_input,partial_input',
             'notes' => 'nullable|string',
         ]);
 
@@ -79,6 +82,8 @@ class StockOpnameController extends Controller
             'opname_number' => $validated['opname_number'],
             'warehouse_id' => $validated['warehouse_id'],
             'opname_date' => $validated['opname_date'],
+            'location' => $validated['location'],
+            'count_mode' => $validated['count_mode'],
             'status' => 'draft',
             'notes' => $validated['notes'] ?? null,
             'created_by' => auth()->id(),
@@ -99,6 +104,69 @@ class StockOpnameController extends Controller
                     'name' => $opname->createdBy->name,
                 ] : null,
             ]),
+        ]);
+    }
+
+    public function addItem(Request $request, StockOpname $opname)
+    {
+        if ($opname->status === 'completed') {
+            return response()->json(['error' => 'Cannot update completed opname.'], 422);
+        }
+
+        $validated = $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'qty_physic' => 'required|numeric|min:0',
+            'notes' => 'nullable|string',
+        ]);
+
+        $qtySystem = (float) (ProductStock::where('product_id', $validated['product_id'])
+            ->where('warehouse_id', $opname->warehouse_id)
+            ->sum('qty_on_hand') ?? 0);
+
+        $item = StockOpnameItem::where('stock_opname_id', $opname->id)
+            ->where('product_id', $validated['product_id'])
+            ->first();
+
+        if ($item) {
+            $nextQtyPhysic = (float) $item->qty_physic + (float) $validated['qty_physic'];
+            $nextNotes = $item->notes;
+            if (!empty($validated['notes'])) {
+                $nextNotes = $nextNotes ? trim($nextNotes) . "\n" . trim($validated['notes']) : trim($validated['notes']);
+            }
+
+            $item->update([
+                'qty_system' => $qtySystem,
+                'qty_physic' => $nextQtyPhysic,
+                'qty_difference' => $nextQtyPhysic - $qtySystem,
+                'notes' => $nextNotes,
+            ]);
+        } else {
+            $item = StockOpnameItem::create([
+                'stock_opname_id' => $opname->id,
+                'product_id' => $validated['product_id'],
+                'qty_system' => $qtySystem,
+                'qty_physic' => $validated['qty_physic'],
+                'qty_difference' => $validated['qty_physic'] - $qtySystem,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+        }
+
+        $item->load('product');
+
+        if ($opname->status === 'draft') {
+            $opname->update(['status' => 'in_progress']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'item' => [
+                'id' => $item->id,
+                'product' => $item->product,
+                'qty_system' => (float) $item->qty_system,
+                'qty_physic' => (float) $item->qty_physic,
+                'qty_difference' => (float) $item->qty_difference,
+                'notes' => $item->notes,
+            ],
         ]);
     }
 
@@ -193,9 +261,9 @@ class StockOpnameController extends Controller
             ->chunk(500, function ($products) use ($opname, &$count) {
                 $items = [];
                 foreach ($products as $product) {
-                    $qtySystem = ProductStock::where('product_id', $product->id)
+                    $qtySystem = (float) (ProductStock::where('product_id', $product->id)
                         ->where('warehouse_id', $opname->warehouse_id)
-                        ->value('qty_on_hand') ?? 0;
+                        ->sum('qty_on_hand') ?? 0);
 
                     $items[] = [
                         'stock_opname_id' => $opname->id,
@@ -223,37 +291,90 @@ class StockOpnameController extends Controller
             return back()->with('error', 'Already completed.');
         }
 
-        DB::transaction(function () use ($opname) {
-            foreach ($opname->items as $item) {
-                $delta = $item->qty_physic - $item->qty_system;
+        try {
+            DB::transaction(function () use ($opname) {
+                $opname->load('items');
 
-                if ($delta != 0) {
-                    $stock = ProductStock::firstOrCreate(
-                        [
-                            'product_id' => $item->product_id,
-                            'warehouse_id' => $opname->warehouse_id,
-                        ],
-                        [
-                            'qty_on_hand' => 0,
-                            'qty_reserved' => 0,
-                            'qty_incoming' => 0,
-                            'qty_outgoing' => 0,
-                            'avg_cost' => 0,
-                        ]
-                    );
+                if ($opname->count_mode === 'full_input') {
+                    if ($opname->items->count() === 0) {
+                        throw new \RuntimeException('Tidak ada item yang diinput. Tidak bisa complete untuk mode full count.');
+                    }
 
-                    $stock->adjustStock(
-                        $delta,
-                        null,
-                        StockMovement::TYPE_OPNAME,
-                        $opname,
-                        "Stock Opname #{$opname->opname_number}"
-                    );
+                    $existingByProductId = $opname->items->keyBy('product_id');
+                    $stocks = ProductStock::where('warehouse_id', $opname->warehouse_id)
+                        ->selectRaw('product_id, SUM(qty_on_hand) as qty_on_hand')
+                        ->groupBy('product_id')
+                        ->havingRaw('SUM(qty_on_hand) != 0')
+                        ->get();
+
+                    foreach ($stocks as $stockRow) {
+                        $productId = (int) $stockRow->product_id;
+                        $qtySystem = (float) $stockRow->qty_on_hand;
+
+                        if (isset($existingByProductId[$productId])) {
+                            $item = $existingByProductId[$productId];
+                            $item->update([
+                                'qty_system' => $qtySystem,
+                                'qty_difference' => (float) $item->qty_physic - $qtySystem,
+                            ]);
+                        } else {
+                            StockOpnameItem::create([
+                                'stock_opname_id' => $opname->id,
+                                'product_id' => $productId,
+                                'qty_system' => $qtySystem,
+                                'qty_physic' => 0,
+                                'qty_difference' => -$qtySystem,
+                                'notes' => 'AUTO: tidak diinput (dianggap 0)',
+                            ]);
+                        }
+                    }
+
+                    foreach ($opname->items as $item) {
+                        if (!$stocks->firstWhere('product_id', $item->product_id)) {
+                            $item->update([
+                                'qty_system' => 0,
+                                'qty_difference' => (float) $item->qty_physic,
+                            ]);
+                        }
+                    }
                 }
-            }
 
-            $opname->update(['status' => 'completed']);
-        });
+                $opname->refresh();
+                $opname->load('items');
+
+                foreach ($opname->items as $item) {
+                    $delta = (float) $item->qty_physic - (float) $item->qty_system;
+
+                    if ($delta != 0) {
+                        $stock = ProductStock::firstOrCreate(
+                            [
+                                'product_id' => $item->product_id,
+                                'warehouse_id' => $opname->warehouse_id,
+                            ],
+                            [
+                                'qty_on_hand' => 0,
+                                'qty_reserved' => 0,
+                                'qty_incoming' => 0,
+                                'qty_outgoing' => 0,
+                                'avg_cost' => 0,
+                            ]
+                        );
+
+                        $stock->adjustStock(
+                            $delta,
+                            null,
+                            StockMovement::TYPE_OPNAME,
+                            $opname,
+                            "Stock Opname #{$opname->opname_number}"
+                        );
+                    }
+                }
+
+                $opname->update(['status' => 'completed']);
+            });
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', 'Stock Opname completed and adjustments posted.');
     }

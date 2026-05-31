@@ -7,7 +7,9 @@ use App\Models\Customer;
 use App\Models\SalesOrder;
 use App\Models\SalesInvoice;
 use App\Models\WhatsappMessage;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class WhatsappBotService
 {
@@ -15,6 +17,7 @@ class WhatsappBotService
     protected GeminiService $gemini;
     protected QuotationBotService $quotationService;
     protected string $provider;
+    protected static ?bool $hasIsReadColumn = null;
 
     public function __construct(GeminiService $gemini, QuotationBotService $quotationService)
     {
@@ -403,13 +406,36 @@ class WhatsappBotService
     protected function logMessage(string $phone, string $message, string $direction, ?int $customerId = null, ?string $intent = null): void
     {
         try {
-            WhatsappMessage::create([
+            if ($direction === 'notification') {
+                $direction = 'outgoing';
+                $intent = $intent ?: 'notification';
+            }
+
+            if (!in_array($direction, ['incoming', 'outgoing'], true)) {
+                $direction = 'incoming';
+            }
+
+            if (self::$hasIsReadColumn === null) {
+                self::$hasIsReadColumn = Schema::hasColumn('whatsapp_messages', 'is_read');
+            }
+
+            $payload = [
                 'phone' => $phone,
                 'customer_id' => $customerId,
                 'direction' => $direction,
                 'message' => $message,
                 'intent' => $intent,
-            ]);
+            ];
+
+            if (self::$hasIsReadColumn) {
+                $payload['is_read'] = $direction !== 'incoming';
+            }
+
+            WhatsappMessage::create($payload);
+
+            if ($direction === 'incoming') {
+                Cache::forget('whatsapp_unread_count');
+            }
         } catch (\Exception $e) {
             Log::error('Failed to log WhatsApp message: ' . $e->getMessage());
         }

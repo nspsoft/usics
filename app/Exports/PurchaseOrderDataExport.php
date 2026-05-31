@@ -2,38 +2,58 @@
 
 namespace App\Exports;
 
-use App\Models\PurchaseOrder;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use App\Models\PurchaseOrderItem;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 
-class PurchaseOrderDataExport implements FromCollection, WithHeadings, WithEvents
+class PurchaseOrderDataExport implements FromQuery, WithHeadings, WithMapping, WithEvents
 {
-    public function collection()
+    protected bool $includeAll;
+
+    public function __construct(bool $includeAll = false)
     {
-        // Only export draft requests, as others shouldn't be overridden typically
-        return PurchaseOrder::where('status', 'draft')
-            ->with(['supplier', 'warehouse', 'items.product'])
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->flatMap(function ($po) {
-                return $po->items->map(function ($item) use ($po) {
-                    return [
-                        $po->po_number,
-                        $po->order_date ? \Carbon\Carbon::parse($po->order_date)->format('Y-m-d') : '',
-                        $po->expected_date ? \Carbon\Carbon::parse($po->expected_date)->format('Y-m-d') : '',
-                        $po->supplier ? $po->supplier->code : '',
-                        $po->warehouse ? $po->warehouse->name : '',
-                        $item->product ? ($item->product->code ?? $item->product->sku) : '',
-                        $item->qty,
-                        $item->unit_price,
-                        $item->discount_percent,
-                        $item->notes,
-                    ];
-                });
-            });
+        $this->includeAll = $includeAll;
+    }
+
+    public function query()
+    {
+        $q = PurchaseOrderItem::query()
+            ->with(['purchaseOrder.supplier', 'purchaseOrder.warehouse', 'product'])
+            ->join('purchase_orders', 'purchase_order_items.purchase_order_id', '=', 'purchase_orders.id')
+            ->select('purchase_order_items.*')
+            ->orderBy('purchase_orders.created_at', 'desc')
+            ->orderBy('purchase_order_items.id', 'asc');
+
+        $q->whereNull('purchase_orders.deleted_at');
+
+        if (!$this->includeAll) {
+            $q->where('purchase_orders.status', 'draft');
+        }
+
+        return $q;
+    }
+
+    public function map($item): array
+    {
+        $po = $item->purchaseOrder;
+
+        return [
+            $po?->po_number ?? '',
+            $po?->order_date ? $po->order_date->format('Y-m-d') : '',
+            $po?->expected_date ? $po->expected_date->format('Y-m-d') : '',
+            $po?->supplier?->code ?? '',
+            $po?->warehouse?->name ?? '',
+            $item->product ? ($item->product->code ?? $item->product->sku) : '',
+            $item->qty,
+            $item->unit_price,
+            $item->discount_percent,
+            $item->notes,
+            $po?->status ?? '',
+        ];
     }
 
     public function headings(): array
@@ -49,6 +69,7 @@ class PurchaseOrderDataExport implements FromCollection, WithHeadings, WithEvent
             'Unit Price',
             'Discount %',
             'Notes',
+            'Status',
         ];
     }
 
@@ -57,7 +78,7 @@ class PurchaseOrderDataExport implements FromCollection, WithHeadings, WithEvent
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $sheet->getStyle('A1:J1')->getFont()->setBold(true);
+                $sheet->getStyle('A1:K1')->getFont()->setBold(true);
 
                 $sheet->getComment('A1')->getText()->createTextRun(
                     'Optional/Key. Jika terisi dan opsi Overwrite dicentang, maka file akan menimpa seluruh item di PO Number ini (khusus draft). Jika dikosongkan, sistem akan menggenerate PO Number baru.'
@@ -88,6 +109,9 @@ class PurchaseOrderDataExport implements FromCollection, WithHeadings, WithEvent
                 );
                 $sheet->getComment('J1')->getText()->createTextRun(
                     'Optional. Catatan tambahan untuk baris PO ini.'
+                );
+                $sheet->getComment('K1')->getText()->createTextRun(
+                    "Optional (migration). Status PO. Contoh: ordered.\nCatatan: fitur Overwrite tetap hanya boleh untuk PO status draft."
                 );
 
                 $redColor = new Color(Color::COLOR_RED);
