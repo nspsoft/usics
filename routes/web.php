@@ -117,6 +117,8 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
 
     // Stock Adjustments
     Route::resource('adjustments', App\Http\Controllers\Inventory\StockAdjustmentController::class);
+    Route::get('/adjustments-template', [App\Http\Controllers\Inventory\StockAdjustmentController::class, 'template'])->name('adjustments.template');
+    Route::post('/adjustments-import', [App\Http\Controllers\Inventory\StockAdjustmentController::class, 'import'])->name('adjustments.import');
     Route::post('/adjustments/{adjustment}/complete', [App\Http\Controllers\Inventory\StockAdjustmentController::class, 'complete'])->name('adjustments.complete');
     Route::get('/stock-check', [App\Http\Controllers\Inventory\StockAdjustmentController::class, 'getStock'])->name('stock.check');
 

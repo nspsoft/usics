@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
+use App\Exports\Template\StockAdjustmentTemplateExport;
+use App\Imports\StockAdjustmentsImport;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\StockAdjustment;
@@ -12,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StockAdjustmentController extends Controller
 {
@@ -78,6 +81,46 @@ class StockAdjustmentController extends Controller
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
             'products' => Product::active()->stockManaged()->select('id','sku','name','unit_id')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
         ]);
+    }
+
+    public function template()
+    {
+        return Excel::download(new StockAdjustmentTemplateExport(), 'stock_adjustment_template.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv',
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'adjustment_date' => 'required|date',
+            'reason' => 'required|string|max:255',
+            'notes' => 'nullable|string',
+        ]);
+
+        $import = new StockAdjustmentsImport(
+            (int) $validated['warehouse_id'],
+            $validated['adjustment_date'],
+            $validated['reason'],
+            $validated['notes'] ?? null
+        );
+
+        Excel::import($import, $validated['file']);
+
+        if ($import->createdAdjustmentId) {
+            $msg = "Import berhasil. {$import->rowCount} baris diproses, {$import->skippedCount} baris dilewati.";
+            if (!empty($import->errors)) {
+                $msg .= ' (Sebagian baris error)';
+            }
+
+            return redirect()
+                ->route('inventory.adjustments.show', $import->createdAdjustmentId)
+                ->with('success', $msg)
+                ->with('import_errors', $import->errors);
+        }
+
+        $msg = 'Import gagal: ' . (empty($import->errors) ? 'Tidak ada item valid.' : implode('; ', array_slice($import->errors, 0, 5)));
+        return back()->with('error', $msg)->with('import_errors', $import->errors);
     }
 
     public function store(Request $request)

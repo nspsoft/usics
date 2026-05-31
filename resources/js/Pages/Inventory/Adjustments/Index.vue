@@ -1,7 +1,10 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Modal from '@/Components/Modal.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -16,6 +19,7 @@ import {
     ArrowsRightLeftIcon,
     NoSymbolIcon,
     DocumentArrowUpIcon,
+    ArrowDownTrayIcon,
     ChevronUpIcon,
     ChevronDownIcon,
 } from '@heroicons/vue/24/outline';
@@ -33,6 +37,42 @@ const selectedStatus = ref(props.filters.status || '');
 const selectedWarehouse = ref(props.filters.warehouse_id || '');
 const sortField = ref(props.filters.sort || 'created_at');
 const sortDirection = ref(props.filters.direction || 'desc');
+
+const showImportModal = ref(false);
+const importForm = useForm({
+    file: null,
+    warehouse_id: props.filters.warehouse_id || '',
+    adjustment_date: new Date().toISOString().slice(0, 10),
+    reason: 'STO Correction',
+    notes: '',
+});
+
+const openImportModal = () => {
+    importForm.warehouse_id = selectedWarehouse.value || importForm.warehouse_id || '';
+    showImportModal.value = true;
+};
+
+const closeImportModal = () => {
+    showImportModal.value = false;
+    importForm.reset();
+};
+
+const handleFileChange = (e) => {
+    importForm.file = e.target.files[0];
+};
+
+const downloadTemplate = () => {
+    window.location.href = route('inventory.adjustments.template');
+};
+
+const submitImport = () => {
+    importForm.post(route('inventory.adjustments.import'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeImportModal();
+        },
+    });
+};
 
 const applyFilters = debounce(() => {
     router.get('/inventory/adjustments', {
@@ -114,13 +154,23 @@ const deleteAdjustment = (adj) => {
                 </select>
             </div>
             
-            <Link
-                href="/inventory/adjustments/create"
-                class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all"
-            >
-                <PlusIcon class="h-5 w-5" />
-                New Adjustment
-            </Link>
+            <div class="flex items-center gap-2">
+                <button
+                    type="button"
+                    @click="openImportModal"
+                    class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                    <DocumentArrowUpIcon class="h-5 w-5" />
+                    Import
+                </button>
+                <Link
+                    href="/inventory/adjustments/create"
+                    class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all"
+                >
+                    <PlusIcon class="h-5 w-5" />
+                    New Adjustment
+                </Link>
+            </div>
         </div>
 
         <div class="rounded-2xl glass-card overflow-hidden">
@@ -306,6 +356,89 @@ const deleteAdjustment = (adj) => {
                 </div>
             </div>
         </div>
+
+        <Modal :show="showImportModal" @close="closeImportModal">
+            <div class="p-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Import Stock Adjustment</h2>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            Gunakan file per gudang. Sistem akan membuat draft Adjustment dan menghitung selisih otomatis.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        @click="downloadTemplate"
+                        class="inline-flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        <ArrowDownTrayIcon class="h-4 w-4" />
+                        Template
+                    </button>
+                </div>
+
+                <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Warehouse</label>
+                        <select
+                            v-model="importForm.warehouse_id"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        >
+                            <option value="">Pilih Warehouse</option>
+                            <option v-for="w in warehouses" :key="w.id" :value="w.id">
+                                {{ w.name }}
+                            </option>
+                        </select>
+                        <div v-if="importForm.errors.warehouse_id" class="mt-1 text-xs text-red-400">{{ importForm.errors.warehouse_id }}</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Adjustment Date</label>
+                        <input
+                            v-model="importForm.adjustment_date"
+                            type="date"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        />
+                        <div v-if="importForm.errors.adjustment_date" class="mt-1 text-xs text-red-400">{{ importForm.errors.adjustment_date }}</div>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Reason</label>
+                        <input
+                            v-model="importForm.reason"
+                            type="text"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        />
+                        <div v-if="importForm.errors.reason" class="mt-1 text-xs text-red-400">{{ importForm.errors.reason }}</div>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Notes (optional)</label>
+                        <textarea
+                            v-model="importForm.notes"
+                            rows="2"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        />
+                        <div v-if="importForm.errors.notes" class="mt-1 text-xs text-red-400">{{ importForm.errors.notes }}</div>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">File</label>
+                        <input
+                            type="file"
+                            accept=".xlsx,.xls,.csv"
+                            @change="handleFileChange"
+                            class="block w-full text-sm text-slate-600 dark:text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-slate-800 dark:file:text-slate-200 dark:hover:file:bg-slate-700"
+                        />
+                        <div v-if="importForm.errors.file" class="mt-1 text-xs text-red-400">{{ importForm.errors.file }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-900 px-6 py-4">
+                <SecondaryButton @click="closeImportModal">Cancel</SecondaryButton>
+                <PrimaryButton :disabled="importForm.processing" @click="submitImport">Import</PrimaryButton>
+            </div>
+        </Modal>
     </AppLayout>
 </template>
 
