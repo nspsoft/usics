@@ -398,6 +398,8 @@ Route::prefix('manufacturing')->name('manufacturing.')->middleware(['auth'])->gr
     Route::post('/boms/{bom}/archive', [BomController::class, 'archive'])->name('boms.archive');
 
     Route::resource('work-orders', WorkOrderController::class);
+    Route::get('/work-orders/template', [WorkOrderController::class, 'template'])->name('work-orders.template');
+    Route::post('/work-orders/import', [WorkOrderController::class, 'import'])->name('work-orders.import');
     Route::post('/work-orders/{workOrder}/confirm', [WorkOrderController::class, 'confirm'])->name('work-orders.confirm');
     Route::post('/work-orders/{workOrder}/revert-to-draft', [WorkOrderController::class, 'revertToDraft'])->name('work-orders.revert-to-draft');
     Route::post('/work-orders/{workOrder}/start', [WorkOrderController::class, 'start'])->name('work-orders.start');

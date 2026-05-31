@@ -1,7 +1,8 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -11,6 +12,8 @@ import {
     CogIcon,
     FunnelIcon,
     PencilIcon,
+    ArrowUpTrayIcon,
+    ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 import { formatNumber, formatCurrency } from '@/helpers';
@@ -28,6 +31,11 @@ const selectedStatus = ref(props.filters.status || '');
 const selectedPriority = ref(props.filters.priority || '');
 const selectedType = ref(props.filters.production_type || '');
 const showFilters = ref(false);
+const showImportModal = ref(false);
+
+const importForm = useForm({
+    file: null,
+});
 
 const applyFilters = debounce(() => {
     router.get('/manufacturing/work-orders', {
@@ -48,6 +56,25 @@ const clearFilters = () => {
     selectedStatus.value = '';
     selectedPriority.value = '';
     selectedType.value = '';
+};
+
+const openImport = () => {
+    importForm.reset();
+    importForm.clearErrors();
+    showImportModal.value = true;
+};
+
+const closeImport = () => {
+    showImportModal.value = false;
+    importForm.reset();
+    importForm.clearErrors();
+};
+
+const submitImport = () => {
+    importForm.post(route('manufacturing.work-orders.import'), {
+        forceFormData: true,
+        onSuccess: () => closeImport(),
+    });
 };
 
 const getStatusBadge = (status) => {
@@ -113,13 +140,24 @@ const formatDate = (date) => {
                 </button>
             </div>
             
-            <Link
-                href="/manufacturing/work-orders/create"
-                class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all"
-            >
-                <PlusIcon class="h-5 w-5" />
-                Create WO
-            </Link>
+            <div class="flex items-center gap-2">
+                <button
+                    type="button"
+                    @click="openImport"
+                    class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                    <ArrowUpTrayIcon class="h-5 w-5" />
+                    Import
+                </button>
+
+                <Link
+                    href="/manufacturing/work-orders/create"
+                    class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all"
+                >
+                    <PlusIcon class="h-5 w-5" />
+                    Create WO
+                </Link>
+            </div>
         </div>
 
         <Transition
@@ -352,6 +390,55 @@ const formatDate = (date) => {
                 </div>
             </div>
         </div>
+
+        <Modal :show="showImportModal" @close="closeImport">
+            <div class="px-6 py-4">
+                <div class="text-lg font-semibold text-slate-900 dark:text-white">Import Work Orders</div>
+                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    WO akan dibuat otomatis dengan status Confirmed, berdasarkan BOM Name.
+                </div>
+
+                <div class="mt-4 flex flex-col gap-3">
+                    <a
+                        :href="route('manufacturing.work-orders.template')"
+                        class="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-500"
+                    >
+                        <ArrowDownTrayIcon class="h-4 w-4" />
+                        Download Template
+                    </a>
+
+                    <div>
+                        <input
+                            type="file"
+                            accept=".xlsx,.xls"
+                            class="block w-full text-sm text-slate-700 dark:text-slate-200 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600"
+                            @change="(e) => (importForm.file = e.target.files?.[0] || null)"
+                        />
+                        <div v-if="importForm.errors.file" class="mt-2 text-sm text-red-600">
+                            {{ importForm.errors.file }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-900 px-6 py-4">
+                <button
+                    type="button"
+                    class="rounded-lg bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    @click="closeImport"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60 transition-colors"
+                    :disabled="importForm.processing || !importForm.file"
+                    @click="submitImport"
+                >
+                    Import
+                </button>
+            </div>
+        </Modal>
     </AppLayout>
 </template>
 

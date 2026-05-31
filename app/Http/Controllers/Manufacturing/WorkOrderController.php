@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Manufacturing;
 
 use App\Http\Controllers\Controller;
+use App\Exports\Template\WorkOrderTemplateExport;
+use App\Imports\WorkOrdersImport;
 use App\Models\Bom;
 use App\Models\Product;
 use App\Models\ProductionEntry;
@@ -14,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
 
 class WorkOrderController extends Controller
 {
@@ -70,6 +73,32 @@ class WorkOrderController extends Controller
                 ['value' => 'subcontract', 'label' => 'Subcontract'],
             ],
         ]);
+    }
+
+    public function template()
+    {
+        return Excel::download(new WorkOrderTemplateExport(), 'work_orders_template.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls',
+        ]);
+
+        $import = new WorkOrdersImport();
+        Excel::import($import, $validated['file']);
+
+        $message = "Import selesai: {$import->importedCount} WO dibuat (status Confirmed).";
+        if ($import->skippedCount > 0) {
+            $message .= " {$import->skippedCount} baris dilewati.";
+        }
+        if (!empty($import->errors)) {
+            $message .= ' Errors: ' . implode('; ', array_slice($import->errors, 0, 5));
+        }
+
+        $hasSuccess = ($import->importedCount > 0);
+        return back()->with($hasSuccess ? 'success' : 'error', $message);
     }
 
     public function create(): Response

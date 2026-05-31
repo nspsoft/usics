@@ -610,9 +610,24 @@ class PurchaseOrderController extends Controller
         ]);
 
         try {
-            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\PurchaseOrdersImport($request->boolean('overwrite')), $request->file('file'));
-            return back()->with('success', 'Purchase Orders imported successfully.');
-        } catch (\Exception $e) {
+            $import = new \App\Imports\PurchaseOrdersImport($request->boolean('overwrite'));
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+            $message = "Import selesai: {$import->importedCount} PO dibuat";
+            if ($import->updatedCount > 0) {
+                $message .= ", {$import->updatedCount} PO diupdate";
+            }
+            $message .= ".";
+            if ($import->skippedCount > 0) {
+                $message .= " {$import->skippedCount} baris dilewati.";
+            }
+            if (!empty($import->errors)) {
+                $message .= ' Errors: ' . implode('; ', array_slice($import->errors, 0, 5));
+            }
+
+            $hasSuccess = ($import->importedCount > 0 || $import->updatedCount > 0);
+            return back()->with($hasSuccess ? 'success' : 'error', $message);
+        } catch (\Throwable $e) {
             return back()->with('error', 'Error importing file: ' . $e->getMessage());
         }
     }
