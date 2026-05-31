@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
+use App\Exports\StockOpnameItemsExport;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\Location;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StockOpnameController extends Controller
 {
@@ -65,6 +67,42 @@ class StockOpnameController extends Controller
             'opnameNumber' => StockOpname::generateNumber(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
         ]);
+    }
+
+    public function export(Request $request)
+    {
+        $validated = $request->validate([
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'status' => 'nullable|string|in:draft,in_progress,completed,cancelled',
+            'warehouse_id' => 'nullable|exists:warehouses,id',
+            'opname_ids' => 'nullable|array',
+            'opname_ids.*' => 'integer|exists:inv_stock_opnames,id',
+        ]);
+
+        $dateFrom = $validated['date_from'] ?? null;
+        $dateTo = $validated['date_to'] ?? null;
+        if (!empty($dateFrom) && empty($dateTo)) {
+            $dateTo = $dateFrom;
+        }
+
+        $filters = array_filter([
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'status' => $validated['status'] ?? null,
+            'warehouse_id' => $validated['warehouse_id'] ?? null,
+            'opname_ids' => !empty($validated['opname_ids'] ?? null) ? array_values(array_unique($validated['opname_ids'])) : null,
+        ], fn ($v) => $v !== null && $v !== '');
+
+        $suffix = now()->format('Y-m-d_His');
+        if (!empty($filters['opname_ids'])) {
+            $suffix = 'selected_' . now()->format('Y-m-d_His');
+        }
+        if (!empty($filters['date_from']) && !empty($filters['date_to'])) {
+            $suffix = $filters['date_from'] . '_to_' . $filters['date_to'];
+        }
+
+        return Excel::download(new StockOpnameItemsExport($filters), "stock_opname_export_{$suffix}.xlsx");
     }
 
     public function store(Request $request)

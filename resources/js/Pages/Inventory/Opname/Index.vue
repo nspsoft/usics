@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -14,6 +15,7 @@ import {
     ExclamationCircleIcon,
     ChevronUpIcon,
     ChevronDownIcon,
+    ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 
@@ -30,6 +32,12 @@ const selectedWarehouse = ref(props.filters.warehouse_id || '');
 const sortField = ref(props.filters.sort || 'created_at');
 const sortDirection = ref(props.filters.direction || 'desc');
 
+const showExportModal = ref(false);
+const exportDateFrom = ref('');
+const exportDateTo = ref('');
+const exportStatus = ref('');
+const exportWarehouse = ref('');
+
 const applyFilters = debounce(() => {
     router.get('/inventory/opname', {
         search: search.value || undefined,
@@ -44,6 +52,34 @@ const applyFilters = debounce(() => {
 }, 300);
 
 watch([search, selectedStatus, selectedWarehouse], applyFilters);
+
+const openExport = () => {
+    exportStatus.value = selectedStatus.value || '';
+    exportWarehouse.value = selectedWarehouse.value || '';
+    showExportModal.value = true;
+};
+
+const closeExport = () => {
+    showExportModal.value = false;
+};
+
+const exportToExcel = () => {
+    const dateFrom = exportDateFrom.value || '';
+    const dateTo = exportDateTo.value || dateFrom || '';
+    const params = {
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+        status: exportStatus.value || undefined,
+        warehouse_id: exportWarehouse.value || undefined,
+    };
+
+    window.location.href = route('inventory.opname.export', params);
+    closeExport();
+};
+
+const exportSession = (opnameId) => {
+    window.location.href = route('inventory.opname.export', { opname_ids: [opnameId] });
+};
 
 const sort = (field) => {
     if (sortField.value === field) {
@@ -111,13 +147,23 @@ const deleteOpname = (opname) => {
                 </select>
             </div>
             
-            <Link
-                href="/inventory/opname/create"
-                class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all"
-            >
-                <PlusIcon class="h-5 w-5" />
-                New Session
-            </Link>
+            <div class="flex items-center gap-2">
+                <button
+                    type="button"
+                    @click="openExport"
+                    class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                    <ArrowDownTrayIcon class="h-5 w-5" />
+                    Export
+                </button>
+                <Link
+                    href="/inventory/opname/create"
+                    class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all"
+                >
+                    <PlusIcon class="h-5 w-5" />
+                    New Session
+                </Link>
+            </div>
         </div>
 
         <div class="rounded-2xl glass-card overflow-hidden">
@@ -225,6 +271,13 @@ const deleteOpname = (opname) => {
                                         <EyeIcon class="h-4 w-4" />
                                     </Link>
                                     <button
+                                        type="button"
+                                        @click="exportSession(opname.id)"
+                                        class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors"
+                                    >
+                                        <ArrowDownTrayIcon class="h-4 w-4" />
+                                    </button>
+                                    <button
                                         v-if="opname.status !== 'completed'"
                                         @click="deleteOpname(opname)"
                                         class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors"
@@ -324,6 +377,75 @@ const deleteOpname = (opname) => {
                 </div>
             </div>
         </div>
+
+        <Modal :show="showExportModal" @close="closeExport">
+            <div class="px-6 py-4">
+                <div class="text-lg font-semibold text-slate-900 dark:text-white">Export Stock Opname</div>
+                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Export detail item Stock Opname ke Excel untuk backup.
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Date From</label>
+                        <input
+                            v-model="exportDateFrom"
+                            type="date"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Date To</label>
+                        <input
+                            v-model="exportDateTo"
+                            type="date"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Warehouse</label>
+                        <select
+                            v-model="exportWarehouse"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        >
+                            <option value="">All Warehouses</option>
+                            <option v-for="w in warehouses" :key="w.id" :value="w.id">
+                                {{ w.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Status</label>
+                        <select
+                            v-model="exportStatus"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                        >
+                            <option value="">All Statuses</option>
+                            <option v-for="s in statuses" :key="s.value" :value="s.value">
+                                {{ s.label }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-900 px-6 py-4">
+                <button
+                    type="button"
+                    class="rounded-lg bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    @click="closeExport"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
+                    @click="exportToExcel"
+                >
+                    Export
+                </button>
+            </div>
+        </Modal>
     </AppLayout>
 </template>
 
