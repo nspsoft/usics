@@ -227,6 +227,21 @@ class WorkOrderController extends Controller
         return back()->with('success', 'Work Order cancelled.');
     }
 
+    public function reopen(WorkOrder $workOrder)
+    {
+        if ($workOrder->status !== 'cancelled') {
+            return back()->with('error', 'Only cancelled work orders can be reopened.');
+        }
+
+        $workOrder->update(['status' => 'draft']);
+
+        if ((float) $workOrder->qty_produced > 0 || $workOrder->productionEntries()->exists()) {
+            return back()->with('warning', 'Work Order reopened to draft. Production entries already exist; please review before confirming.');
+        }
+
+        return back()->with('success', 'Work Order reopened to draft.');
+    }
+
     public function destroy(WorkOrder $workOrder)
     {
         if ($workOrder->status !== 'draft') {

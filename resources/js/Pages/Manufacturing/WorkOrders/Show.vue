@@ -94,6 +94,7 @@ const canStart = computed(() => props.workOrder.status === 'confirmed');
 const canRecordProduction = computed(() => props.workOrder.status === 'in_progress');
 const canComplete = computed(() => props.workOrder.status === 'in_progress' && parseFloat(props.workOrder.qty_produced) > 0);
 const canCancel = computed(() => !['completed', 'cancelled'].includes(props.workOrder.status));
+const canReopen = computed(() => props.workOrder.status === 'cancelled');
 </script>
 
 <template>
@@ -204,6 +205,14 @@ const canCancel = computed(() => !['completed', 'cancelled'].includes(props.work
                     >
                         <XCircleIcon class="h-5 w-5" />
                         Cancel
+                    </button>
+                    <button 
+                        v-if="canReopen"
+                        @click="confirmAction('reopen')"
+                        class="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
+                    >
+                        <ArrowPathIcon class="h-5 w-5" />
+                        Reopen to Draft
                     </button>
                 </div>
             </div>

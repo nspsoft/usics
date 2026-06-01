@@ -411,6 +411,7 @@ Route::prefix('manufacturing')->name('manufacturing.')->middleware(['auth'])->gr
     Route::post('/work-orders/{workOrder}/start', [WorkOrderController::class, 'start'])->name('work-orders.start');
     Route::post('/work-orders/{workOrder}/complete', [WorkOrderController::class, 'complete'])->name('work-orders.complete');
     Route::post('/work-orders/{workOrder}/cancel', [WorkOrderController::class, 'cancel'])->name('work-orders.cancel');
+    Route::post('/work-orders/{workOrder}/reopen', [WorkOrderController::class, 'reopen'])->name('work-orders.reopen');
     Route::get('/work-orders/{workOrder}/print', [WorkOrderController::class, 'print'])->name('work-orders.print');
     Route::get('/work-orders/{workOrder}/record-production', [WorkOrderController::class, 'recordProductionForm'])->name('work-orders.record-production-form');
     Route::post('/work-orders/{workOrder}/record-production', [WorkOrderController::class, 'recordProduction'])->name('work-orders.record-production');
