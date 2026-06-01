@@ -16,7 +16,7 @@ const props = defineProps({
     machineOptions: Object,
     defectCategories: Object,
     operators: Array,
-    defaultOperatorEmployeeId: [Number, String, null],
+    defaultOperatorEmployeeId: [Number, String],
 });
 
 const form = useForm({
