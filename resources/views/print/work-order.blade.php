@@ -271,7 +271,7 @@
             <tr>
                 <th width="60">Tanggal</th>
                 <th width="35">Shift</th>
-                <th width="160">Operator / Pelaksana</th>
+                <th width="135">Operator / Pelaksana</th>
                 <th width="80">Jam</th>
                 <th width="55">Proses (mnt)</th>
                 <th width="55">Speed (/jam)</th>
