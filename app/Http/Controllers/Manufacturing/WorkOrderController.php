@@ -463,7 +463,7 @@ class WorkOrderController extends Controller
     public function print(WorkOrder $workOrder)
     {
         return view('print.work-order', [
-            'workOrder' => $workOrder->load(['product.unit', 'bom', 'warehouse', 'supplier', 'components.product.unit', 'productionEntries.operatorEmployee', 'productionEntries.entryUser', 'productionEntries.producedBy', 'materialConsumptions.product.unit'])
+            'workOrder' => $workOrder->load(['product.unit', 'bom', 'warehouse', 'supplier', 'createdBy', 'components.product.unit', 'components.unit', 'productionEntries.operatorEmployee', 'productionEntries.entryUser', 'productionEntries.producedBy', 'materialConsumptions.product.unit'])
         ]);
     }
 

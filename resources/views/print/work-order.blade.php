@@ -250,9 +250,16 @@
                 <td class="text-center">{{ $index + 1 }}</td>
                 <td class="text-center font-mono">{{ $comp->product->sku }}</td>
                 <td>{{ $comp->product->name }}</td>
-                <td class="text-right">{{ number_format($comp->qty_per_unit, 4, ',', '.') }}</td>
-                <td class="text-right font-bold">{{ number_format($comp->qty_planned, 0, ',', '.') }}</td>
-                <td class="text-center">{{ $comp->product->unit->symbol ?? 'EA' }}</td>
+                <td class="text-right">
+                    @php
+                        $qtyPerUnit = ((float) ($workOrder->qty_planned ?? 0)) > 0
+                            ? ((float) $comp->qty_required / (float) $workOrder->qty_planned)
+                            : 0;
+                    @endphp
+                    {{ number_format($qtyPerUnit, 4, ',', '.') }}
+                </td>
+                <td class="text-right font-bold">{{ number_format($comp->qty_required, 4, ',', '.') }}</td>
+                <td class="text-center">{{ $comp->unit->symbol ?? $comp->product->unit->symbol ?? 'EA' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -265,6 +272,9 @@
                 <th width="80">Tanggal</th>
                 <th width="40">Shift</th>
                 <th>Operator / Pelaksana</th>
+                <th width="90">Jam</th>
+                <th width="70">Proses (mnt)</th>
+                <th width="70">Speed (/jam)</th>
                 <th width="60">Good</th>
                 <th width="60">Reject</th>
                 <th width="100">Keterangan</th>
@@ -275,20 +285,34 @@
             <tr>
                 <td class="text-center">{{ date('d/m/y', strtotime($entry->production_date)) }}</td>
                 <td class="text-center">{{ $entry->shift }}</td>
-                <td>{{ $entry->producedBy->name ?? '-' }}</td>
+                <td>{{ $entry->operatorEmployee->full_name ?? $entry->producedBy->name ?? '-' }}</td>
+                @php
+                    $startDt = $entry->start_time ? \Carbon\Carbon::parse($entry->production_date . ' ' . $entry->start_time) : null;
+                    $endDt = $entry->end_time ? \Carbon\Carbon::parse($entry->production_date . ' ' . $entry->end_time) : null;
+                    $grossMin = ($startDt && $endDt) ? $startDt->diffInMinutes($endDt) : null;
+                    $downMin = (int) ($entry->downtime_minutes ?? 0);
+                    $netMin = ($grossMin !== null) ? max(0, $grossMin - $downMin) : null;
+                    $goodQty = (float) ($entry->qty_produced ?? 0);
+                    $speed = ($netMin && $netMin > 0) ? ($goodQty / ($netMin / 60)) : null;
+                @endphp
+                <td class="text-center">
+                    {{ $entry->start_time && $entry->end_time ? substr($entry->start_time, 0, 5) . ' - ' . substr($entry->end_time, 0, 5) : '-' }}
+                </td>
+                <td class="text-right">{{ $netMin !== null ? number_format($netMin, 0, ',', '.') : '-' }}</td>
+                <td class="text-right">{{ $speed !== null ? number_format($speed, 2, ',', '.') : '-' }}</td>
                 <td class="text-right font-bold">{{ number_format($entry->qty_produced, 0, ',', '.') }}</td>
                 <td class="text-right font-bold text-red-600">{{ number_format($entry->qty_rejected, 0, ',', '.') }}</td>
                 <td style="font-size: 7pt;">{{ $entry->notes }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="6" class="text-center italic" style="padding: 15px;">Belum ada catatan produksi terekam.</td>
+                <td colspan="9" class="text-center italic" style="padding: 15px;">Belum ada catatan produksi terekam.</td>
             </tr>
             @endforelse
         </tbody>
         <tfoot>
             <tr class="font-bold bg-slate-100">
-                <td colspan="3" class="text-right uppercase">Total Akumulasi Produksi:</td>
+                <td colspan="6" class="text-right uppercase">Total Akumulasi Produksi:</td>
                 <td class="text-right">{{ number_format($workOrder->qty_produced, 0, ',', '.') }}</td>
                 <td class="text-right text-red-600">{{ number_format($workOrder->qty_rejected, 0, ',', '.') }}</td>
                 <td class="text-center">{{ number_format($workOrder->progress_percent, 0, ',', '.') }} %</td>
