@@ -370,8 +370,10 @@ const navigation = [
             { name: 'Unit Management', href: '/inventory/units', icon: ScaleIcon, permission: 'inventory.products.view' },
             { name: 'Current Stock', href: '/inventory/stocks', icon: ClipboardDocumentListIcon, permission: 'inventory.current_stock.view' },
             { name: 'Warehouses', href: '/inventory/warehouses', icon: BuildingStorefrontIcon, permission: 'inventory.warehouses.view' },
+            { name: 'Warehouse Areas', href: '/inventory/warehouse-areas', icon: MapPinIcon, permission: 'inventory.warehouses.manage' },
             { name: 'Stock Movements', href: '/inventory/movements', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Transfers', href: '/inventory/transfers', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
+            { name: 'Stock Adjustments', href: '/inventory/adjustments', icon: WrenchScrewdriverIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Opname', href: '/inventory/opname', icon: ClipboardDocumentCheckIcon, permission: 'inventory.stock_opname.view' },
             { name: 'Inventory Aging', href: '/inventory/reports/inventory-aging', icon: ClockIcon, permission: 'inventory.view' },
         ]

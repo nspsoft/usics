@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
 use App\Exports\StockOpnameItemsExport;
+use App\Imports\StockOpnamesFromExportImport;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\Location;
@@ -103,6 +104,33 @@ class StockOpnameController extends Controller
         }
 
         return Excel::download(new StockOpnameItemsExport($filters), "stock_opname_export_{$suffix}.xlsx");
+    }
+
+    public function import(Request $request)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv',
+            'overwrite_existing' => 'nullable|boolean',
+        ]);
+
+        $import = new StockOpnamesFromExportImport((bool) ($validated['overwrite_existing'] ?? true));
+        Excel::import($import, $validated['file']);
+
+        $processedSessions = $import->createdCount + $import->updatedCount;
+        if ($processedSessions > 0) {
+            $msg = "Import berhasil. {$processedSessions} sesi diproses (baru: {$import->createdCount}, update: {$import->updatedCount}).";
+            if (!empty($import->errors)) {
+                $msg .= ' (Sebagian baris error)';
+            }
+
+            return redirect()
+                ->route('inventory.opname.index')
+                ->with('success', $msg)
+                ->with('import_errors', $import->errors);
+        }
+
+        $msg = 'Import gagal: ' . (empty($import->errors) ? 'Tidak ada data valid.' : implode('; ', array_slice($import->errors, 0, 5)));
+        return back()->with('error', $msg)->with('import_errors', $import->errors);
     }
 
     public function store(Request $request)

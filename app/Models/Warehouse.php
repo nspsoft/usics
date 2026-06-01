@@ -79,6 +79,11 @@ class Warehouse extends Model
         return $this->hasMany(Location::class);
     }
 
+    public function areas(): HasMany
+    {
+        return $this->hasMany(WarehouseArea::class);
+    }
+
     public function productStocks(): HasMany
     {
         return $this->hasMany(ProductStock::class);

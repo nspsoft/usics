@@ -108,6 +108,8 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::post('/warehouses/{warehouse}/map-background', [WarehouseController::class, 'uploadBackgroundLayout'])->name('warehouses.map-background.upload');
     Route::delete('/warehouses/{warehouse}/map-background', [WarehouseController::class, 'removeBackgroundLayout'])->name('warehouses.map-background.destroy');
     Route::get('/locations/{location}/detail', [WarehouseController::class, 'locationDetail'])->name('locations.detail');
+    Route::get('/warehouse-areas/lookup', [App\Http\Controllers\Inventory\WarehouseAreaController::class, 'lookup'])->name('warehouse-areas.lookup');
+    Route::resource('warehouse-areas', App\Http\Controllers\Inventory\WarehouseAreaController::class)->except(['create', 'edit', 'show']);
 
     Route::get('/movements', [App\Http\Controllers\Inventory\StockMovementController::class, 'index'])->name('movements.index');
 
@@ -130,6 +132,7 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     // Stock Opname
     Route::resource('opname', App\Http\Controllers\Inventory\StockOpnameController::class);
     Route::get('/opname-export', [App\Http\Controllers\Inventory\StockOpnameController::class, 'export'])->name('opname.export');
+    Route::post('/opname-import', [App\Http\Controllers\Inventory\StockOpnameController::class, 'import'])->name('opname.import');
     Route::post('/opname/{opname}/populate', [App\Http\Controllers\Inventory\StockOpnameController::class, 'populate'])->name('opname.populate');
     Route::post('/opname/{opname}/add-item', [App\Http\Controllers\Inventory\StockOpnameController::class, 'addItem'])->name('opname.add-item');
     Route::put('/opname/{opname}/items', [App\Http\Controllers\Inventory\StockOpnameController::class, 'updateItems'])->name('opname.update-items');

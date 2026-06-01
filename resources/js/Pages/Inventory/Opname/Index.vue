@@ -1,6 +1,6 @@
 <script setup>
-import { ref, watch } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, watch, computed } from 'vue';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import {
@@ -16,6 +16,7 @@ import {
     ChevronUpIcon,
     ChevronDownIcon,
     ArrowDownTrayIcon,
+    DocumentArrowUpIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 
@@ -37,6 +38,44 @@ const exportDateFrom = ref('');
 const exportDateTo = ref('');
 const exportStatus = ref('');
 const exportWarehouse = ref('');
+
+const showImportModal = ref(false);
+const importForm = useForm({
+    file: null,
+    overwrite_existing: true,
+});
+
+const handleFileChange = (e) => {
+    importForm.file = e.target.files[0];
+};
+
+const openImportModal = () => {
+    showImportModal.value = true;
+};
+
+const closeImportModal = () => {
+    showImportModal.value = false;
+    importForm.reset();
+};
+
+const submitImport = () => {
+    importForm.post(route('inventory.opname.import'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeImportModal();
+        },
+    });
+};
+
+const page = usePage();
+const importErrors = computed(() => page.props.flash?.import_errors || []);
+const showImportErrors = ref(true);
+
+watch(importErrors, (v) => {
+    if (Array.isArray(v) && v.length) {
+        showImportErrors.value = true;
+    }
+});
 
 const applyFilters = debounce(() => {
     router.get('/inventory/opname', {
@@ -150,6 +189,14 @@ const deleteOpname = (opname) => {
             <div class="flex items-center gap-2">
                 <button
                     type="button"
+                    @click="openImportModal"
+                    class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                    <DocumentArrowUpIcon class="h-5 w-5" />
+                    Import
+                </button>
+                <button
+                    type="button"
                     @click="openExport"
                     class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
@@ -163,6 +210,27 @@ const deleteOpname = (opname) => {
                     <PlusIcon class="h-5 w-5" />
                     New Session
                 </Link>
+            </div>
+        </div>
+
+        <div v-if="showImportErrors && importErrors.length" class="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+            <div class="flex items-start justify-between gap-3">
+                <div class="text-sm text-amber-200">
+                    <div class="font-semibold">Import: ada baris yang gagal diproses</div>
+                    <ul class="mt-2 list-disc pl-5 space-y-1">
+                        <li v-for="(err, i) in importErrors.slice(0, 10)" :key="i">{{ err }}</li>
+                    </ul>
+                    <div v-if="importErrors.length > 10" class="mt-2 text-xs text-amber-300">
+                        Menampilkan 10 dari {{ importErrors.length }} error.
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    class="text-xs font-semibold text-amber-200 hover:text-amber-100"
+                    @click="showImportErrors = false"
+                >
+                    Tutup
+                </button>
             </div>
         </div>
 
@@ -443,6 +511,55 @@ const deleteOpname = (opname) => {
                     @click="exportToExcel"
                 >
                     Export
+                </button>
+            </div>
+        </Modal>
+
+        <Modal :show="showImportModal" @close="closeImportModal">
+            <div class="px-6 py-4">
+                <div class="text-lg font-semibold text-slate-900 dark:text-white">Import Stock Opname</div>
+                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Import dari file hasil export Stock Opname (untuk restore histori).
+                </div>
+
+                <div class="mt-4 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">File Excel</label>
+                        <input
+                            type="file"
+                            accept=".xlsx,.xls,.csv"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            @change="handleFileChange"
+                        />
+                        <div v-if="importForm.errors.file" class="mt-1 text-xs text-red-400">{{ importForm.errors.file }}</div>
+                    </div>
+
+                    <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <input
+                            v-model="importForm.overwrite_existing"
+                            type="checkbox"
+                            class="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+                        />
+                        Overwrite session jika Opname Number sudah ada
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-900 px-6 py-4">
+                <button
+                    type="button"
+                    class="rounded-lg bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    @click="closeImportModal"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors disabled:opacity-50"
+                    :disabled="importForm.processing"
+                    @click="submitImport"
+                >
+                    Import
                 </button>
             </div>
         </Modal>
