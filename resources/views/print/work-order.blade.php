@@ -269,15 +269,15 @@
     <table class="items-table">
         <thead>
             <tr>
-                <th width="80">Tanggal</th>
-                <th width="40">Shift</th>
-                <th>Operator / Pelaksana</th>
-                <th width="90">Jam</th>
-                <th width="70">Proses (mnt)</th>
-                <th width="70">Speed (/jam)</th>
-                <th width="60">Good</th>
-                <th width="60">Reject</th>
-                <th width="100">Keterangan</th>
+                <th width="60">Tanggal</th>
+                <th width="35">Shift</th>
+                <th width="190">Operator / Pelaksana</th>
+                <th width="80">Jam</th>
+                <th width="55">Proses (mnt)</th>
+                <th width="55">Speed (/jam)</th>
+                <th width="50">Good</th>
+                <th width="50">Reject</th>
+                <th width="90">Keterangan</th>
             </tr>
         </thead>
         <tbody>
