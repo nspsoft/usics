@@ -37,6 +37,7 @@ class ProductionEntry extends Model
         'produced_by',
         'operator_employee_id',
         'entry_user_id',
+        'client_request_id',
     ];
 
     protected $casts = [

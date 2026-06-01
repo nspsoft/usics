@@ -374,7 +374,38 @@ class WorkOrderController extends Controller
             'defect_category' => 'nullable|string|max:50',
             'downtime_minutes' => 'nullable|integer|min:0',
             'notes' => 'nullable|string|max:500',
+            'client_request_id' => 'nullable|uuid',
         ]);
+
+        if (!empty($validated['client_request_id'])) {
+            $existing = ProductionEntry::query()
+                ->where('client_request_id', $validated['client_request_id'])
+                ->first();
+
+            if ($existing) {
+                return back()->with('success', 'Laporan produksi sudah tersimpan.');
+            }
+        }
+
+        $duplicate = $workOrder->productionEntries()
+            ->whereDate('production_date', $validated['production_date'])
+            ->where('shift', $validated['shift'])
+            ->where('operator_employee_id', $validated['operator_employee_id'])
+            ->when(
+                array_key_exists('start_time', $validated) && $validated['start_time'] !== null && $validated['start_time'] !== '',
+                fn ($q) => $q->where('start_time', $validated['start_time']),
+                fn ($q) => $q->whereNull('start_time')
+            )
+            ->when(
+                array_key_exists('end_time', $validated) && $validated['end_time'] !== null && $validated['end_time'] !== '',
+                fn ($q) => $q->where('end_time', $validated['end_time']),
+                fn ($q) => $q->whereNull('end_time')
+            )
+            ->exists();
+
+        if ($duplicate) {
+            return back()->with('warning', 'Laporan produksi untuk operator/shift/jam yang sama sudah ada. Jika ini batch baru, silakan ubah jam produksi.');
+        }
 
         // Over-production safeguard: Allow only up to 20% overrun of the total planning
         $tolerance = 1.2; 
@@ -403,6 +434,7 @@ class WorkOrderController extends Controller
                 'notes' => $validated['notes'],
                 'operator_employee_id' => $validated['operator_employee_id'],
                 'entry_user_id' => auth()->id(),
+                'client_request_id' => $validated['client_request_id'] ?? null,
             ]);
 
             // Work order totals are updated by model event in ProductionEntry

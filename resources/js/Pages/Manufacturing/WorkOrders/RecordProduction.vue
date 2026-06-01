@@ -19,7 +19,18 @@ const props = defineProps({
     defaultOperatorEmployeeId: [Number, String],
 });
 
+const generateRequestId = () => {
+    try {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+    } catch (e) {}
+    const rnd = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+    return `${rnd()}${rnd()}-${rnd()}-${rnd()}-${rnd()}-${rnd()}${rnd()}${rnd()}`;
+};
+
 const form = useForm({
+    client_request_id: generateRequestId(),
     production_date: new Date().toISOString().split('T')[0],
     shift: '1',
     operator_employee_id: props.defaultOperatorEmployeeId || '',
@@ -46,6 +57,7 @@ const isOverProduction = computed(() => {
 const submit = () => {
     form.post(route('manufacturing.work-orders.record-production', props.workOrder.id), {
         onSuccess: () => {
+            form.client_request_id = generateRequestId();
             // Redirect will be handled by controller, but we can also force navigate back
             // The controller currently does `return back()`, so this form submission will reload the page
             // We should ideally update controller to redirect to show page on success
