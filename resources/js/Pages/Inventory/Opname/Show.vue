@@ -405,9 +405,9 @@ const getDiffBg = (diff) => {
                         <span class="sm:hidden">Complete</span>
                     </button>
                     <button
-                        v-if="opname.status === 'completed'"
+                        type="button"
                         class="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700"
-                        onclick="window.print()"
+                        @click="window.open(`/inventory/opname/${opname.id}/print`, '_blank')"
                     >
                         <PrinterIcon class="h-4 w-4" />
                         Print

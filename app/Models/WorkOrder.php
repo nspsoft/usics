@@ -29,6 +29,7 @@ class WorkOrder extends Model
         'product_id',
         'sales_order_id',
         'warehouse_id',
+        'material_warehouse_id',
         'qty_planned',
         'qty_produced',
         'qty_rejected',
@@ -54,6 +55,7 @@ class WorkOrder extends Model
         'actual_end' => 'datetime',
         'production_type' => 'string',
         'supplier_id' => 'integer',
+        'material_warehouse_id' => 'integer',
     ];
 
     const STATUS_DRAFT = 'draft';
@@ -90,6 +92,11 @@ class WorkOrder extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function materialWarehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class, 'material_warehouse_id');
     }
 
     public function components(): HasMany
@@ -175,6 +182,23 @@ class WorkOrder extends Model
      */
     public function complete(): void
     {
+        if ($this->productionEntries()->whereNotNull('stock_posted_at')->exists()) {
+            $this->update([
+                'status' => self::STATUS_COMPLETED,
+                'actual_end' => now(),
+            ]);
+            return;
+        }
+
+        $goodQty = (float) ($this->qty_produced ?? 0);
+        if ($goodQty <= 0) {
+            $this->update([
+                'status' => self::STATUS_COMPLETED,
+                'actual_end' => now(),
+            ]);
+            return;
+        }
+
         // Add finished goods to stock
         $stock = ProductStock::firstOrCreate(
             [
@@ -192,7 +216,6 @@ class WorkOrder extends Model
 
         // Calculate production cost
         $productionCost = $this->calculateProductionCost();
-        $goodQty = $this->qty_produced - $this->qty_rejected;
         
         $stock->adjustStock(
             $goodQty,

@@ -18,6 +18,7 @@ import {
     ChevronDownIcon,
     ArrowDownTrayIcon,
     DocumentArrowUpIcon,
+    PrinterIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 
@@ -120,6 +121,24 @@ const exportToExcel = () => {
 
 const exportSession = (opnameId) => {
     window.location.href = route('inventory.opname.export', { opname_ids: [opnameId] });
+};
+
+const printSession = (opnameId) => {
+    window.open(route('inventory.opname.print', opnameId), '_blank');
+};
+
+const printByFilter = () => {
+    const dateFrom = exportDateFrom.value || '';
+    const dateTo = exportDateTo.value || dateFrom || '';
+    const params = {
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+        status: exportStatus.value || undefined,
+        warehouse_id: exportWarehouse.value || undefined,
+    };
+
+    window.open(route('inventory.opname.print-batch', params), '_blank');
+    closeExport();
 };
 
 const sort = (field) => {
@@ -381,6 +400,13 @@ const deleteOpname = (opname) => {
                                         <ArrowDownTrayIcon class="h-4 w-4" />
                                     </button>
                                     <button
+                                        type="button"
+                                        @click="printSession(opname.id)"
+                                        class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors"
+                                    >
+                                        <PrinterIcon class="h-4 w-4" />
+                                    </button>
+                                    <button
                                         v-if="opname.status !== 'completed'"
                                         @click="deleteOpname(opname)"
                                         class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors"
@@ -546,6 +572,13 @@ const deleteOpname = (opname) => {
                     @click="exportToExcel"
                 >
                     Export
+                </button>
+                <button
+                    type="button"
+                    class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition-colors"
+                    @click="printByFilter"
+                >
+                    Print
                 </button>
             </div>
         </Modal>

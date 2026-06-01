@@ -47,6 +47,12 @@ class WorkOrdersImport implements ToCollection, WithHeadingRow
 
     public function collection(Collection $rows)
     {
+        $defaultMaterialWarehouseId = Warehouse::query()
+            ->where('code', 'WH-RM')
+            ->orWhereRaw('LOWER(name) LIKE ?', ['%raw material%'])
+            ->orderByRaw("CASE WHEN code = 'WH-RM' THEN 0 ELSE 1 END")
+            ->value('id');
+
         foreach ($rows as $i => $row) {
             $rowNumber = $i + 2;
 
@@ -140,13 +146,14 @@ class WorkOrdersImport implements ToCollection, WithHeadingRow
             }
 
             try {
-                DB::transaction(function () use ($bom, $warehouse, $qtyPlanned, $plannedStart, $plannedEnd, $priority, $productionType, $supplier, $notes) {
+                DB::transaction(function () use ($bom, $warehouse, $qtyPlanned, $plannedStart, $plannedEnd, $priority, $productionType, $supplier, $notes, $defaultMaterialWarehouseId) {
                     $wo = WorkOrder::create([
                         'company_id' => session('company_id'),
                         'wo_number' => WorkOrder::generateWoNumber(),
                         'bom_id' => $bom->id,
                         'product_id' => $bom->product_id,
                         'warehouse_id' => $warehouse->id,
+                        'material_warehouse_id' => $defaultMaterialWarehouseId,
                         'qty_planned' => $qtyPlanned,
                         'planned_start' => $plannedStart,
                         'planned_end' => $plannedEnd,
@@ -179,4 +186,3 @@ class WorkOrdersImport implements ToCollection, WithHeadingRow
         }
     }
 }
-

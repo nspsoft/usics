@@ -8,11 +8,14 @@ use App\Imports\WorkOrdersImport;
 use App\Models\Bom;
 use App\Models\Employee;
 use App\Models\Product;
+use App\Models\ProductStock;
 use App\Models\ProductionEntry;
+use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WorkOrder;
+use App\Models\MaterialConsumption;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -109,6 +112,7 @@ class WorkOrderController extends Controller
             'woNumber' => WorkOrder::generateWoNumber(),
             'boms' => Bom::active()->with('product')->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
+            'defaultMaterialWarehouseId' => $this->resolveDefaultMaterialWarehouseId(),
             'suppliers' => Supplier::orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -119,6 +123,7 @@ class WorkOrderController extends Controller
             'wo_number' => 'required|string|max:30|unique:work_orders,wo_number',
             'bom_id' => 'required|exists:boms,id',
             'warehouse_id' => 'required|exists:warehouses,id',
+            'material_warehouse_id' => 'required|exists:warehouses,id',
             'qty_planned' => 'required|numeric|min:0.0001',
             'planned_start' => 'required|date',
             'planned_end' => 'required|date|after_or_equal:planned_start',
@@ -137,6 +142,7 @@ class WorkOrderController extends Controller
                 'bom_id' => $validated['bom_id'],
                 'product_id' => $bom->product_id,
                 'warehouse_id' => $validated['warehouse_id'],
+                'material_warehouse_id' => $validated['material_warehouse_id'],
                 'qty_planned' => $validated['qty_planned'],
                 'planned_start' => $validated['planned_start'],
                 'planned_end' => $validated['planned_end'],
@@ -261,6 +267,7 @@ class WorkOrderController extends Controller
             'woNumber' => $workOrder->wo_number,
             'boms' => Bom::active()->with('product')->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
+            'defaultMaterialWarehouseId' => $this->resolveDefaultMaterialWarehouseId(),
             'suppliers' => Supplier::orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -271,6 +278,7 @@ class WorkOrderController extends Controller
             'wo_number' => 'required|string|max:30|unique:work_orders,wo_number,' . $workOrder->id,
             'bom_id' => 'required|exists:boms,id',
             'warehouse_id' => 'required|exists:warehouses,id',
+            'material_warehouse_id' => 'required|exists:warehouses,id',
             'qty_planned' => 'required|numeric|min:0.0001',
             'planned_start' => 'required|date',
             'planned_end' => 'required|date|after_or_equal:planned_start',
@@ -290,6 +298,17 @@ class WorkOrderController extends Controller
 
         return redirect()->route('manufacturing.work-orders.index')
             ->with('success', 'Work Order updated successfully.');
+    }
+
+    private function resolveDefaultMaterialWarehouseId(): ?int
+    {
+        $warehouse = Warehouse::query()
+            ->where('code', 'WH-RM')
+            ->orWhereRaw('LOWER(name) LIKE ?', ['%raw material%'])
+            ->orderByRaw("CASE WHEN code = 'WH-RM' THEN 0 ELSE 1 END")
+            ->first();
+
+        return $warehouse?->id;
     }
 
     public function recordProductionForm(WorkOrder $workOrder): Response
@@ -362,6 +381,13 @@ class WorkOrderController extends Controller
             return back()->with('error', 'Only in-progress work orders can record production.');
         }
 
+        $materialWarehouseId = $workOrder->material_warehouse_id ?? $this->resolveDefaultMaterialWarehouseId();
+        if (!$materialWarehouseId) {
+            return back()->withErrors([
+                'material_warehouse_id' => 'Material Warehouse belum diset. Silakan set Material Warehouse (Raw Material) di Work Order.',
+            ]);
+        }
+
         $validated = $request->validate([
             'production_date' => 'required|date',
             'shift' => 'required|in:1,2,3',
@@ -419,9 +445,14 @@ class WorkOrderController extends Controller
             ])->withInput();
         }
 
-        DB::transaction(function () use ($validated, $workOrder) {
-            // Create production entry
-            $workOrder->productionEntries()->create([
+        DB::transaction(function () use ($validated, $workOrder, $materialWarehouseId) {
+            $workOrder->loadMissing(['components.product', 'components.unit']);
+
+            $qtyGood = (float) $validated['qty_good'];
+            $qtyRejected = (float) ($validated['qty_rejected'] ?? 0);
+            $qtyForConsumption = $qtyGood + $qtyRejected;
+
+            $entry = $workOrder->productionEntries()->create([
                 'production_date' => $validated['production_date'],
                 'shift' => $validated['shift'],
                 'start_time' => $validated['start_time'],
@@ -437,7 +468,63 @@ class WorkOrderController extends Controller
                 'client_request_id' => $validated['client_request_id'] ?? null,
             ]);
 
-            // Work order totals are updated by model event in ProductionEntry
+            $productionCost = 0.0;
+            if ($qtyForConsumption > 0) {
+                foreach ($workOrder->components as $comp) {
+                    $qtyPerUnit = ((float) ($workOrder->qty_planned ?? 0)) > 0
+                        ? ((float) ($comp->qty_required ?? 0) / (float) $workOrder->qty_planned)
+                        : 0;
+
+                    $consumeQty = round($qtyPerUnit * $qtyForConsumption, 4);
+                    if ($consumeQty <= 0) {
+                        continue;
+                    }
+
+                    MaterialConsumption::create([
+                        'work_order_id' => $workOrder->id,
+                        'work_order_component_id' => $comp->id,
+                        'product_id' => $comp->product_id,
+                        'warehouse_id' => $materialWarehouseId,
+                        'location_id' => null,
+                        'qty' => $consumeQty,
+                        'unit_id' => $comp->unit_id,
+                        'batch_number' => null,
+                        'consumption_date' => $validated['production_date'],
+                        'consumed_by' => auth()->id(),
+                    ]);
+
+                    $productionCost += $consumeQty * (float) ($comp->product?->cost_price ?? 0);
+                }
+            }
+
+            if ($qtyGood > 0) {
+                $stock = ProductStock::firstOrCreate(
+                    [
+                        'product_id' => $workOrder->product_id,
+                        'warehouse_id' => $workOrder->warehouse_id,
+                    ],
+                    [
+                        'qty_on_hand' => 0,
+                        'qty_reserved' => 0,
+                        'qty_incoming' => 0,
+                        'qty_outgoing' => 0,
+                        'avg_cost' => 0,
+                    ]
+                );
+
+                $stock->adjustStock(
+                    $qtyGood,
+                    $qtyGood > 0 ? ($productionCost / $qtyGood) : null,
+                    StockMovement::TYPE_PRODUCTION_OUT,
+                    $entry,
+                    "Production Output WO #{$workOrder->wo_number}",
+                    "PE:{$entry->id}:FG"
+                );
+            }
+
+            $entry->update([
+                'stock_posted_at' => now(),
+            ]);
         });
 
         return back()->with('success', 'Production output recorded successfully.');

@@ -83,19 +83,27 @@ class MaterialConsumption extends Model
             $woComp->save();
 
             // Reduce stock
-            $stock = ProductStock::where('product_id', $consumption->product_id)
-                ->where('warehouse_id', $consumption->warehouse_id)
-                ->first();
+            $stock = ProductStock::firstOrCreate(
+                [
+                    'product_id' => $consumption->product_id,
+                    'warehouse_id' => $consumption->warehouse_id,
+                ],
+                [
+                    'qty_on_hand' => 0,
+                    'qty_reserved' => 0,
+                    'qty_incoming' => 0,
+                    'qty_outgoing' => 0,
+                    'avg_cost' => 0,
+                ]
+            );
 
-            if ($stock) {
-                $stock->adjustStock(
-                    -$consumption->qty,
-                    null,
-                    StockMovement::TYPE_PRODUCTION_IN,
-                    $consumption->workOrder,
-                    "Material consumption for WO #{$consumption->workOrder->wo_number}"
-                );
-            }
+            $stock->adjustStock(
+                -$consumption->qty,
+                null,
+                StockMovement::TYPE_PRODUCTION_IN,
+                $consumption->workOrder,
+                "Material consumption for WO #{$consumption->workOrder->wo_number}"
+            );
         });
     }
 }

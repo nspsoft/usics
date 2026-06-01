@@ -38,6 +38,7 @@ class ProductionEntry extends Model
         'operator_employee_id',
         'entry_user_id',
         'client_request_id',
+        'stock_posted_at',
     ];
 
     protected $casts = [
@@ -45,6 +46,7 @@ class ProductionEntry extends Model
         'qty_scrapped' => 'float',
         'qty_rejected' => 'float',
         'downtime_minutes' => 'integer',
+        'stock_posted_at' => 'datetime',
     ];
 
     // Shift constants
@@ -108,7 +110,7 @@ class ProductionEntry extends Model
 
     public function getGoodQtyAttribute(): float
     {
-        return $this->qty_produced - $this->qty_rejected;
+        return (float) ($this->qty_produced ?? 0);
     }
 
     protected static function booted(): void

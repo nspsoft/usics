@@ -21,6 +21,7 @@ Route::middleware('throttle:public-validate-view')->group(function () {
     Route::get('/v/inv/{uuid}', [App\Http\Controllers\Sales\SalesInvoiceController::class, 'publicValidate'])->name('sales.invoices.public-validate');
     Route::get('/v/do/{uuid}', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'publicValidate'])->name('sales.deliveries.public-validate');
     Route::get('/v/ret/{uuid}', [App\Http\Controllers\Sales\SalesReturnController::class, 'publicValidate'])->name('sales.returns.public-validate');
+    Route::get('/v/sto/{uuid}', [App\Http\Controllers\Inventory\StockOpnameController::class, 'publicValidate'])->name('inventory.opname.public-validate');
 });
 
 Route::middleware('throttle:public-validate-action')->group(function () {
@@ -132,12 +133,14 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     // Stock Opname
     Route::resource('opname', App\Http\Controllers\Inventory\StockOpnameController::class);
     Route::get('/opname-export', [App\Http\Controllers\Inventory\StockOpnameController::class, 'export'])->name('opname.export');
+    Route::get('/opname-print', [App\Http\Controllers\Inventory\StockOpnameController::class, 'printBatch'])->name('opname.print-batch');
     Route::post('/opname-import', [App\Http\Controllers\Inventory\StockOpnameController::class, 'import'])->name('opname.import');
     Route::post('/opname/{opname}/populate', [App\Http\Controllers\Inventory\StockOpnameController::class, 'populate'])->name('opname.populate');
     Route::post('/opname/{opname}/add-item', [App\Http\Controllers\Inventory\StockOpnameController::class, 'addItem'])->name('opname.add-item');
     Route::put('/opname/{opname}/items', [App\Http\Controllers\Inventory\StockOpnameController::class, 'updateItems'])->name('opname.update-items');
     Route::put('/opname/{opname}/item', [App\Http\Controllers\Inventory\StockOpnameController::class, 'updateSingleItem'])->name('opname.update-item');
     Route::get('/opname/{opname}/location-stock', [App\Http\Controllers\Inventory\StockOpnameController::class, 'locationStock'])->name('opname.location-stock');
+    Route::get('/opname/{opname}/print', [App\Http\Controllers\Inventory\StockOpnameController::class, 'print'])->name('opname.print');
     Route::post('/opname/{opname}/complete', [App\Http\Controllers\Inventory\StockOpnameController::class, 'complete'])->name('opname.complete');
     // Reports
     Route::get('/reports', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');

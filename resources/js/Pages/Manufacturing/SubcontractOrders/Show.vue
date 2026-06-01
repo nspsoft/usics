@@ -24,6 +24,8 @@ import {
 const props = defineProps({
     order: Object,
     stockMovements: Array,
+    subcontractWarehouse: Object,
+    subcontractStocks: Array,
 });
 
 const showDispatchModal = ref(false);
@@ -305,6 +307,45 @@ const canReceive = computed(() => ['sent', 'received'].includes(props.order.stat
                         </div>
                     </div>
 
+                    <!-- Subcontract Stock On Hand -->
+                    <div class="glass-card rounded-3xl overflow-hidden shadow-sm">
+                        <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 font-mono">
+                                <div class="h-6 w-1 bg-emerald-500 rounded-full"></div>
+                                SUBCONT_STOCK_ON_HAND
+                            </h3>
+                            <span class="text-[10px] items-center gap-1.5 text-slate-500 font-mono flex uppercase font-bold px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                 {{ subcontractWarehouse?.name || 'No Subcontract WH' }}
+                            </span>
+                        </div>
+                        <div class="overflow-x-auto max-h-[300px] overflow-y-auto custom-scrollbar relative">
+                            <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                                <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm">
+                                    <tr class="bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 text-left">
+                                        <th class="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Material</th>
+                                        <th class="px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Net Sent</th>
+                                        <th class="px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">On Hand</th>
+                                        <th class="px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Used</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tr v-for="row in (subcontractStocks || [])" :key="row.product_id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="text-slate-900 dark:text-white font-medium">{{ row.product?.name }}</div>
+                                            <div class="text-[10px] text-slate-500 font-mono mt-0.5">{{ row.product?.sku }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-right text-slate-600 dark:text-slate-300 font-mono">{{ formatNumber(row.qty_sent) }}</td>
+                                        <td class="px-6 py-4 text-right text-emerald-400 font-mono font-bold">{{ formatNumber(row.qty_on_hand) }}</td>
+                                        <td class="px-6 py-4 text-right text-amber-400 font-mono font-bold">{{ formatNumber(row.qty_sent - row.qty_on_hand) }}</td>
+                                    </tr>
+                                    <tr v-if="(subcontractStocks || []).length === 0">
+                                        <td colspan="4" class="px-6 py-12 text-center text-slate-600 italic">Subcontract Warehouse belum diset atau belum ada pergerakan stok.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- Movement Histroy -->
                     <div class="glass-card rounded-3xl overflow-hidden shadow-sm">
                         <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
@@ -457,6 +498,20 @@ const canReceive = computed(() => ['sent', 'received'].includes(props.order.stat
                                 <div>
                                     <div class="text-[10px] text-slate-500 uppercase font-bold">Main Inventory</div>
                                     <div class="text-xs text-slate-900 dark:text-white">{{ order.work_order?.warehouse?.name }}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <ClipboardDocumentCheckIcon class="h-5 w-5 text-slate-500 dark:text-slate-400" />
+                                <div>
+                                    <div class="text-[10px] text-slate-500 uppercase font-bold">Material Warehouse</div>
+                                    <div class="text-xs text-slate-900 dark:text-white">{{ order.work_order?.material_warehouse?.name || '-' }}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <TruckIcon class="h-5 w-5 text-slate-500 dark:text-slate-400" />
+                                <div>
+                                    <div class="text-[10px] text-slate-500 uppercase font-bold">Subcontract Warehouse</div>
+                                    <div class="text-xs text-slate-900 dark:text-white">{{ subcontractWarehouse?.name || '-' }}</div>
                                 </div>
                             </div>
                          </div>

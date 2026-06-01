@@ -61,7 +61,10 @@ class SubcontractOrderController extends Controller
             'workOrder.product',
             'workOrder.bom',
             'workOrder.components.product',
+            'workOrder.warehouse',
+            'workOrder.materialWarehouse',
             'supplier',
+            'supplier.subcontractWarehouse',
             'purchaseOrder'
         ]);
 
@@ -71,9 +74,37 @@ class SubcontractOrderController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $subcontractWarehouseId = $subcontractOrder->supplier?->subcontract_warehouse_id;
+        $subcontractStocks = [];
+        if ($subcontractWarehouseId) {
+            $productIds = $subcontractOrder->workOrder?->components
+                ?->pluck('product_id')
+                ->unique()
+                ->filter()
+                ->values()
+                ->all() ?? [];
+
+            $stockByProductId = ProductStock::query()
+                ->where('warehouse_id', $subcontractWarehouseId)
+                ->whereIn('product_id', $productIds)
+                ->get()
+                ->keyBy('product_id');
+
+            foreach ($subcontractOrder->workOrder?->components ?? [] as $component) {
+                $subcontractStocks[] = [
+                    'product_id' => $component->product_id,
+                    'product' => $component->product,
+                    'qty_sent' => (float) ($component->qty_consumed ?? 0),
+                    'qty_on_hand' => (float) ($stockByProductId->get($component->product_id)?->qty_on_hand ?? 0),
+                ];
+            }
+        }
+
         return Inertia::render('Manufacturing/SubcontractOrders/Show', [
             'order' => $subcontractOrder,
             'stockMovements' => $stockMovements,
+            'subcontractWarehouse' => $subcontractOrder->supplier?->subcontractWarehouse,
+            'subcontractStocks' => $subcontractStocks,
         ]);
     }
 
@@ -83,16 +114,32 @@ class SubcontractOrderController extends Controller
             return back()->with('error', 'Cannot dispatch materials for completed or cancelled orders.');
         }
 
+        $workOrder = $subcontractOrder->workOrder;
+        $materialWarehouseId = $workOrder->material_warehouse_id;
+        if (!$materialWarehouseId) {
+            $materialWarehouseId = \App\Models\Warehouse::query()
+                ->where('code', 'WH-RM')
+                ->orWhereRaw('LOWER(name) LIKE ?', ['%raw material%'])
+                ->orderByRaw("CASE WHEN code = 'WH-RM' THEN 0 ELSE 1 END")
+                ->value('id');
+        }
+
+        if (!$materialWarehouseId) {
+            return back()->with('error', 'Material Warehouse (WH-RM) tidak ditemukan. Silakan set Material Warehouse di Work Order.');
+        }
+
+        $subcontWarehouseId = $subcontractOrder->supplier->subcontract_warehouse_id ?? null;
+        if (!$subcontWarehouseId) {
+            return back()->with('error', 'Subcontract Warehouse belum diset di Supplier. Silakan set Subcontract Warehouse terlebih dahulu agar sisa material di subcont bisa dipantau.');
+        }
+
         $validated = $request->validate([
             'items' => 'required|array',
             'items.*.id' => 'required|exists:work_order_components,id',
             'items.*.qty' => 'required|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($subcontractOrder, $validated) {
-            $workOrder = $subcontractOrder->workOrder;
-            $subcontWarehouseId = $subcontractOrder->supplier->subcontract_warehouse_id ?? null;
-            
+        DB::transaction(function () use ($subcontractOrder, $validated, $workOrder, $subcontWarehouseId, $materialWarehouseId) {
             foreach ($validated['items'] as $item) {
                 if ($item['qty'] <= 0) continue;
 
@@ -102,52 +149,37 @@ class SubcontractOrderController extends Controller
                 // Update actual stock balance and log movement
                 $sourceStock = ProductStock::firstOrCreate([
                     'product_id' => $component->product_id,
-                    'warehouse_id' => $workOrder->warehouse_id,
+                    'warehouse_id' => $materialWarehouseId,
                 ], [
                     'qty_on_hand' => 0,
                     'avg_cost' => 0,
                 ]);
 
-                if ($subcontWarehouseId) {
-                    // TRANSFER: Source -> Subcont WH
-                    // 1. Reduce Source
-                    $sourceStock->adjustStock(
-                        -$item['qty'], 
-                        null, 
-                        StockMovement::TYPE_TRANSFER, 
-                        $subcontractOrder, 
-                        "Transfer to Subcont WH for WO: {$workOrder->wo_number}",
-                        'TO: ' . $subcontractOrder->supplier->name
-                    );
+                $sourceStock->adjustStock(
+                    -$item['qty'],
+                    null,
+                    StockMovement::TYPE_TRANSFER,
+                    $subcontractOrder,
+                    "Transfer to Subcont WH for WO: {$workOrder->wo_number}",
+                    'TO: ' . $subcontractOrder->supplier->name
+                );
 
-                    // 2. Add to Subcont WH
-                    $destStock = ProductStock::firstOrCreate([
-                        'product_id' => $component->product_id,
-                        'warehouse_id' => $subcontWarehouseId,
-                    ], [
-                        'qty_on_hand' => 0,
-                        'avg_cost' => $sourceStock->avg_cost, // Inherit cost
-                    ]);
+                $destStock = ProductStock::firstOrCreate([
+                    'product_id' => $component->product_id,
+                    'warehouse_id' => $subcontWarehouseId,
+                ], [
+                    'qty_on_hand' => 0,
+                    'avg_cost' => $sourceStock->avg_cost,
+                ]);
 
-                    $destStock->adjustStock(
-                        $item['qty'], 
-                        $sourceStock->avg_cost, 
-                        StockMovement::TYPE_TRANSFER, 
-                        $subcontractOrder, 
-                        "Received from Main WH for WO: {$workOrder->wo_number}",
-                        'FROM: ' . $workOrder->warehouse->name
-                    );
-
-                } else {
-                    // CONSUME: Immediate Production Out (Legacy/Simple Mode)
-                    $sourceStock->adjustStock(
-                        -$item['qty'], 
-                        null, 
-                        StockMovement::TYPE_PRODUCTION_OUT, 
-                        $subcontractOrder, 
-                        "Partial materials dispatch to Subcontractor for WO: {$workOrder->wo_number}"
-                    );
-                }
+                $destStock->adjustStock(
+                    $item['qty'],
+                    $sourceStock->avg_cost,
+                    StockMovement::TYPE_TRANSFER,
+                    $subcontractOrder,
+                    "Received from Main WH for WO: {$workOrder->wo_number}",
+                    'FROM: WH-RM'
+                );
 
                 // Update component consumed qty (used as dispatched qty for subcontract)
                 $component->increment('qty_consumed', $item['qty']);
@@ -165,6 +197,11 @@ class SubcontractOrderController extends Controller
     {
         if (!in_array($subcontractOrder->status, ['sent', 'received'])) {
             return back()->with('error', 'Only sent or partially received orders can receive goods.');
+        }
+
+        $subcontWarehouseId = $subcontractOrder->supplier->subcontract_warehouse_id ?? null;
+        if (!$subcontWarehouseId) {
+            return back()->with('error', 'Subcontract Warehouse belum diset di Supplier. Silakan set Subcontract Warehouse terlebih dahulu agar sisa material di subcont bisa dipantau.');
         }
 
         $validated = $request->validate([
@@ -195,7 +232,6 @@ class SubcontractOrderController extends Controller
             );
 
             // BACKFLUSH COMPONENTS IF VIRTUAL WAREHOUSE EXISTS
-            $subcontWarehouseId = $subcontractOrder->supplier->subcontract_warehouse_id ?? null;
             if ($subcontWarehouseId) {
                 foreach ($workOrder->components as $component) {
                     // Calculate theoretical usage
@@ -287,80 +323,72 @@ class SubcontractOrderController extends Controller
             return back()->with('error', 'Cannot return materials for completed or cancelled orders.');
         }
 
+        $workOrder = $subcontractOrder->workOrder;
+        $materialWarehouseId = $workOrder->material_warehouse_id;
+        if (!$materialWarehouseId) {
+            $materialWarehouseId = \App\Models\Warehouse::query()
+                ->where('code', 'WH-RM')
+                ->orWhereRaw('LOWER(name) LIKE ?', ['%raw material%'])
+                ->orderByRaw("CASE WHEN code = 'WH-RM' THEN 0 ELSE 1 END")
+                ->value('id');
+        }
+
+        if (!$materialWarehouseId) {
+            return back()->with('error', 'Material Warehouse (WH-RM) tidak ditemukan. Silakan set Material Warehouse di Work Order.');
+        }
+
+        $subcontWarehouseId = $subcontractOrder->supplier->subcontract_warehouse_id ?? null;
+        if (!$subcontWarehouseId) {
+            return back()->with('error', 'Subcontract Warehouse belum diset di Supplier. Silakan set Subcontract Warehouse terlebih dahulu agar sisa material di subcont bisa dipantau.');
+        }
+
         $validated = $request->validate([
             'items' => 'required|array',
             'items.*.id' => 'required|exists:work_order_components,id',
             'items.*.qty' => 'required|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($subcontractOrder, $validated) {
-            $workOrder = $subcontractOrder->workOrder;
-            
+        DB::transaction(function () use ($subcontractOrder, $validated, $workOrder, $subcontWarehouseId, $materialWarehouseId) {
             foreach ($validated['items'] as $item) {
                 if ($item['qty'] <= 0) continue;
 
                 $component = $workOrder->components()->find($item['id']);
                 if (!$component) continue;
 
-                $subcontWarehouseId = $subcontractOrder->supplier->subcontract_warehouse_id ?? null;
-
                 // Update actual stock balance and log movement
-                if ($subcontWarehouseId) {
-                    // TRANSFER: Subcont WH -> Main WH
-                    // 1. Reduce Subcont WH
-                    $subcontStock = ProductStock::firstOrCreate([
-                        'product_id' => $component->product_id,
-                        'warehouse_id' => $subcontWarehouseId,
-                    ], [
-                        'qty_on_hand' => 0,
-                        'avg_cost' => 0,
-                    ]);
+                $subcontStock = ProductStock::firstOrCreate([
+                    'product_id' => $component->product_id,
+                    'warehouse_id' => $subcontWarehouseId,
+                ], [
+                    'qty_on_hand' => 0,
+                    'avg_cost' => 0,
+                ]);
 
-                    $subcontStock->adjustStock(
-                        -$item['qty'], 
-                        null, 
-                        StockMovement::TYPE_TRANSFER, 
-                        $subcontractOrder, 
-                        "Returned unused material to Main WH for WO: {$workOrder->wo_number}",
-                        'TO: ' . $workOrder->warehouse->name
-                    );
+                $subcontStock->adjustStock(
+                    -$item['qty'],
+                    null,
+                    StockMovement::TYPE_TRANSFER,
+                    $subcontractOrder,
+                    "Returned unused material to Main WH for WO: {$workOrder->wo_number}",
+                    'TO: WH-RM'
+                );
 
-                    // 2. Add to Main WH
-                    $mainStock = ProductStock::firstOrCreate([
-                        'product_id' => $component->product_id,
-                        'warehouse_id' => $workOrder->warehouse_id,
-                    ], [
-                        'qty_on_hand' => 0,
-                        'avg_cost' => $subcontStock->avg_cost,
-                    ]);
+                $mainStock = ProductStock::firstOrCreate([
+                    'product_id' => $component->product_id,
+                    'warehouse_id' => $materialWarehouseId,
+                ], [
+                    'qty_on_hand' => 0,
+                    'avg_cost' => $subcontStock->avg_cost,
+                ]);
 
-                    $mainStock->adjustStock(
-                        $item['qty'], 
-                        $subcontStock->avg_cost, 
-                        StockMovement::TYPE_TRANSFER, 
-                        $subcontractOrder, 
-                        "Material returned from Subcontractor for WO: {$workOrder->wo_number}",
-                        'FROM: ' . $subcontractOrder->supplier->name
-                    );
-
-                } else {
-                    // LEGACY: Simply add back to inventory (Production In)
-                    $stock = ProductStock::firstOrCreate([
-                        'product_id' => $component->product_id,
-                        'warehouse_id' => $workOrder->warehouse_id,
-                    ], [
-                        'qty_on_hand' => 0,
-                        'avg_cost' => 0,
-                    ]);
-    
-                    $stock->adjustStock(
-                        $item['qty'], 
-                        null, 
-                        StockMovement::TYPE_PRODUCTION_IN, 
-                        $subcontractOrder, 
-                        "Material returned from Subcontractor for WO: {$workOrder->wo_number}"
-                    );
-                }
+                $mainStock->adjustStock(
+                    $item['qty'],
+                    $subcontStock->avg_cost,
+                    StockMovement::TYPE_TRANSFER,
+                    $subcontractOrder,
+                    "Material returned from Subcontractor for WO: {$workOrder->wo_number}",
+                    'FROM: ' . $subcontractOrder->supplier->name
+                );
 
                 // Decrease component consumed qty (as it is returned)
                 $component->decrement('qty_consumed', $item['qty']);

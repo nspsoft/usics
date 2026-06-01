@@ -13,6 +13,7 @@ const props = defineProps({
     woNumber: String,
     boms: Array,
     warehouses: Array,
+    defaultMaterialWarehouseId: [Number, String, null],
     suppliers: Array,
 });
 
@@ -22,6 +23,7 @@ const form = useForm({
     wo_number: props.workOrder?.wo_number || props.woNumber || '',
     bom_id: props.workOrder?.bom_id || '',
     warehouse_id: props.workOrder?.warehouse_id || '',
+    material_warehouse_id: props.workOrder?.material_warehouse_id || props.defaultMaterialWarehouseId || '',
     qty_planned: props.workOrder?.qty_planned || 1,
     planned_start: props.workOrder?.planned_start?.split('T')[0] || new Date().toISOString().split('T')[0],
     planned_end: props.workOrder?.planned_end?.split('T')[0] || '',
@@ -203,6 +205,21 @@ watch(() => form.planned_start, (newVal) => {
                                 </option>
                             </select>
                             <div v-if="form.errors.warehouse_id" class="text-red-400 text-xs mt-1">{{ form.errors.warehouse_id }}</div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Material Warehouse (Raw Material) *</label>
+                            <select 
+                                v-model="form.material_warehouse_id"
+                                class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                                required
+                            >
+                                <option value="">Select Warehouse...</option>
+                                <option v-for="wh in warehouses" :key="wh.id" :value="wh.id">
+                                    {{ wh.name }}
+                                </option>
+                            </select>
+                            <div v-if="form.errors.material_warehouse_id" class="text-red-400 text-xs mt-1">{{ form.errors.material_warehouse_id }}</div>
                         </div>
 
                         <div>

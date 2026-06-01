@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -27,6 +28,7 @@ class StockOpname extends Model
     protected $fillable = [
         'warehouse_id',
         'opname_number',
+        'public_uuid',
         'opname_date',
         'location',
         'count_mode',
@@ -38,6 +40,15 @@ class StockOpname extends Model
     protected $casts = [
         'opname_date' => 'date',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (StockOpname $opname) {
+            if (empty($opname->public_uuid)) {
+                $opname->public_uuid = (string) Str::uuid();
+            }
+        });
+    }
 
     const STATUS_DRAFT = 'draft';
     const STATUS_IN_PROGRESS = 'in_progress';

@@ -14,6 +14,7 @@ use App\Models\StockOpnameItem;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -512,6 +513,91 @@ class StockOpnameController extends Controller
 
         return redirect()->route('inventory.opname.index')
             ->with('success', 'Stock Opname deleted.');
+    }
+
+    public function print(StockOpname $opname)
+    {
+        if (!$opname->public_uuid) {
+            $opname->public_uuid = (string) Str::uuid();
+            $opname->save();
+        }
+
+        return view('print.stock-opname', [
+            'opname' => $opname->load(['warehouse', 'createdBy', 'items.product.unit']),
+        ]);
+    }
+
+    public function printBatch(Request $request)
+    {
+        $validated = $request->validate([
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'status' => 'nullable|string|in:draft,in_progress,completed,cancelled',
+            'warehouse_id' => 'nullable|exists:warehouses,id',
+            'opname_ids' => 'nullable|array',
+            'opname_ids.*' => 'integer|exists:inv_stock_opnames,id',
+        ]);
+
+        $dateFrom = $validated['date_from'] ?? null;
+        $dateTo = $validated['date_to'] ?? null;
+        if (!empty($dateFrom) && empty($dateTo)) {
+            $dateTo = $dateFrom;
+        }
+
+        $filters = array_filter([
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'status' => $validated['status'] ?? null,
+            'warehouse_id' => $validated['warehouse_id'] ?? null,
+            'opname_ids' => !empty($validated['opname_ids'] ?? null) ? array_values(array_unique($validated['opname_ids'])) : null,
+        ], fn ($v) => $v !== null && $v !== '');
+
+        $query = StockOpname::query()
+            ->with(['warehouse', 'createdBy', 'items.product.unit'])
+            ->when(!empty($filters['status']), fn ($q) => $q->where('status', $filters['status']))
+            ->when(!empty($filters['warehouse_id']), fn ($q) => $q->where('warehouse_id', $filters['warehouse_id']))
+            ->when(!empty($filters['date_from']) && !empty($filters['date_to']), fn ($q) => $q->whereBetween('opname_date', [$filters['date_from'], $filters['date_to']]));
+
+        if (!empty($filters['opname_ids'])) {
+            $query->whereIn('id', $filters['opname_ids']);
+        }
+
+        $opnames = $query->orderBy('opname_date', 'asc')->orderBy('id', 'asc')->get();
+
+        foreach ($opnames as $opname) {
+            if (!$opname->public_uuid) {
+                $opname->public_uuid = (string) Str::uuid();
+                $opname->save();
+            }
+        }
+
+        return view('print.stock-opname-batch', [
+            'opnames' => $opnames,
+            'filters' => $filters,
+        ]);
+    }
+
+    public function publicValidate($uuid)
+    {
+        $opname = StockOpname::with(['warehouse', 'createdBy', 'items.product.unit'])
+            ->where('public_uuid', $uuid)
+            ->first();
+
+        if (!$opname && is_numeric($uuid)) {
+            $opname = StockOpname::with(['warehouse', 'createdBy', 'items.product.unit'])->findOrFail($uuid);
+        }
+
+        if (!$opname) {
+            abort(404);
+        }
+
+        if ($opname->public_uuid && (string) $uuid !== (string) $opname->public_uuid) {
+            return redirect()->route('inventory.opname.public-validate', $opname->public_uuid);
+        }
+
+        return view('print.public-stock-opname-validation', [
+            'opname' => $opname,
+        ]);
     }
 
     public function locationStock(Request $request, StockOpname $opname)
