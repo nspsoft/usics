@@ -46,12 +46,69 @@ class StockOpnameController extends Controller
             $query->orderBy($sort, $direction);
         }
 
+        $priceExpr = "CASE WHEN products.product_type = ? THEN COALESCE(products.selling_price, 0) ELSE COALESCE(products.cost_price, 0) END";
+        $query
+            ->selectSub(
+                StockOpnameItem::query()
+                    ->join('products', 'inv_stock_opname_items.product_id', '=', 'products.id')
+                    ->whereColumn('inv_stock_opname_items.stock_opname_id', 'inv_stock_opnames.id')
+                    ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_system * ({$priceExpr})), 0)", [Product::TYPE_FINISHED_GOOD]),
+                'system_value'
+            )
+            ->selectSub(
+                StockOpnameItem::query()
+                    ->join('products', 'inv_stock_opname_items.product_id', '=', 'products.id')
+                    ->whereColumn('inv_stock_opname_items.stock_opname_id', 'inv_stock_opnames.id')
+                    ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_physic * ({$priceExpr})), 0)", [Product::TYPE_FINISHED_GOOD]),
+                'physical_value'
+            )
+            ->selectSub(
+                StockOpnameItem::query()
+                    ->join('products', 'inv_stock_opname_items.product_id', '=', 'products.id')
+                    ->whereColumn('inv_stock_opname_items.stock_opname_id', 'inv_stock_opnames.id')
+                    ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_difference * ({$priceExpr})), 0)", [Product::TYPE_FINISHED_GOOD]),
+                'variance_value'
+            );
+
         $opnames = $query->paginate(20)->withQueryString();
+
+        $summaryPriceExpr = "CASE WHEN p.product_type = ? THEN COALESCE(p.selling_price, 0) ELSE COALESCE(p.cost_price, 0) END";
+        $valuationSummary = StockOpnameItem::query()
+            ->join('inv_stock_opnames as o', 'inv_stock_opname_items.stock_opname_id', '=', 'o.id')
+            ->join('products as p', 'inv_stock_opname_items.product_id', '=', 'p.id')
+            ->whereNull('o.deleted_at')
+            ->when($request->search, function ($q, $search) {
+                $q->where('o.opname_number', 'like', "%{$search}%");
+            })
+            ->when($request->status, function ($q, $status) {
+                $q->where('o.status', $status);
+            })
+            ->when($request->warehouse_id, function ($q, $warehouseId) {
+                $q->where('o.warehouse_id', $warehouseId);
+            })
+            ->selectRaw(
+                "COALESCE(SUM(inv_stock_opname_items.qty_system * ({$summaryPriceExpr})), 0) as system_value",
+                [Product::TYPE_FINISHED_GOOD]
+            )
+            ->selectRaw(
+                "COALESCE(SUM(inv_stock_opname_items.qty_physic * ({$summaryPriceExpr})), 0) as physical_value",
+                [Product::TYPE_FINISHED_GOOD]
+            )
+            ->selectRaw(
+                "COALESCE(SUM(inv_stock_opname_items.qty_difference * ({$summaryPriceExpr})), 0) as variance_value",
+                [Product::TYPE_FINISHED_GOOD]
+            )
+            ->first();
 
         return Inertia::render('Inventory/Opname/Index', [
             'opnames' => $opnames,
             'warehouses' => Warehouse::active()->orderBy('name')->get(['id', 'name']),
             'filters' => $request->only(['search', 'status', 'warehouse_id', 'sort', 'direction']),
+            'valuationSummary' => [
+                'system_value' => (float) ($valuationSummary->system_value ?? 0),
+                'physical_value' => (float) ($valuationSummary->physical_value ?? 0),
+                'variance_value' => (float) ($valuationSummary->variance_value ?? 0),
+            ],
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'in_progress', 'label' => 'In Progress'],
