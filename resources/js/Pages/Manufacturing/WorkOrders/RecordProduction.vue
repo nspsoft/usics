@@ -16,12 +16,13 @@ const props = defineProps({
     machineOptions: Object,
     defectCategories: Object,
     operators: Array,
+    defaultOperatorEmployeeId: [Number, String, null],
 });
 
 const form = useForm({
     production_date: new Date().toISOString().split('T')[0],
     shift: '1',
-    produced_by: '',
+    operator_employee_id: props.defaultOperatorEmployeeId || '',
     start_time: '',
     end_time: '',
     machine_line: '',
@@ -115,12 +116,12 @@ const submit = () => {
                     <div>
                         <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Operator</label>
                         <select 
-                            v-model="form.produced_by"
+                            v-model="form.operator_employee_id"
                             class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50"
                             required
                         >
                             <option value="">Pilih Operator...</option>
-                            <option v-for="op in operators" :key="op.id" :value="op.id">{{ op.name }}</option>
+                            <option v-for="op in operators" :key="op.id" :value="op.id">{{ op.nik ? `${op.nik} - ${op.full_name}` : op.full_name }}</option>
                         </select>
                     </div>
 

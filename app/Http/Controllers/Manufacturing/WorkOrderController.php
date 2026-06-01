@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Exports\Template\WorkOrderTemplateExport;
 use App\Imports\WorkOrdersImport;
 use App\Models\Bom;
+use App\Models\Employee;
 use App\Models\Product;
 use App\Models\ProductionEntry;
 use App\Models\Supplier;
@@ -161,13 +162,13 @@ class WorkOrderController extends Controller
 
     public function show(WorkOrder $workOrder): Response
     {
-        $workOrder->load(['product', 'bom', 'warehouse', 'supplier', 'components.product', 'productionEntries.producedBy', 'materialConsumptions.product', 'subcontractOrders']);
+        $workOrder->load(['product', 'bom', 'warehouse', 'supplier', 'components.product', 'productionEntries.operatorEmployee', 'productionEntries.entryUser', 'productionEntries.producedBy', 'materialConsumptions.product', 'subcontractOrders']);
 
         return Inertia::render('Manufacturing/WorkOrders/Show', [
             'workOrder' => $workOrder,
             'shiftOptions' => ProductionEntry::getShiftOptions(),
             'defectCategories' => ProductionEntry::getDefectCategories(),
-            'operators' => User::orderBy('name')->get(['id', 'name']),
+            'operators' => Employee::query()->where('is_active', true)->orderBy('full_name')->get(['id', 'nik', 'full_name']),
         ]);
     }
 
@@ -290,7 +291,8 @@ class WorkOrderController extends Controller
             'shiftOptions' => ProductionEntry::getShiftOptions(),
             'machineOptions' => ProductionEntry::getMachineOptions(),
             'defectCategories' => ProductionEntry::getDefectCategories(),
-            'operators' => User::orderBy('name')->get(['id', 'name']),
+            'operators' => Employee::query()->where('is_active', true)->orderBy('full_name')->get(['id', 'nik', 'full_name']),
+            'defaultOperatorEmployeeId' => auth()->user()?->employee?->id,
         ]);
     }
 
@@ -348,7 +350,7 @@ class WorkOrderController extends Controller
         $validated = $request->validate([
             'production_date' => 'required|date',
             'shift' => 'required|in:1,2,3',
-            'produced_by' => 'required|exists:users,id',
+            'operator_employee_id' => 'required|exists:hr_employees,id',
             'start_time' => 'nullable|date_format:H:i',
             'end_time' => 'nullable|date_format:H:i',
             'machine_line' => 'nullable|string|max:100',
@@ -384,7 +386,8 @@ class WorkOrderController extends Controller
                 'defect_category' => $validated['defect_category'],
                 'downtime_minutes' => $validated['downtime_minutes'] ?? 0,
                 'notes' => $validated['notes'],
-                'produced_by' => $validated['produced_by'],
+                'operator_employee_id' => $validated['operator_employee_id'],
+                'entry_user_id' => auth()->id(),
             ]);
 
             // Work order totals are updated by model event in ProductionEntry
@@ -413,7 +416,7 @@ class WorkOrderController extends Controller
     public function print(WorkOrder $workOrder)
     {
         return view('print.work-order', [
-            'workOrder' => $workOrder->load(['product.unit', 'bom', 'warehouse', 'supplier', 'components.product.unit', 'productionEntries.producedBy', 'materialConsumptions.product.unit'])
+            'workOrder' => $workOrder->load(['product.unit', 'bom', 'warehouse', 'supplier', 'components.product.unit', 'productionEntries.operatorEmployee', 'productionEntries.entryUser', 'productionEntries.producedBy', 'materialConsumptions.product.unit'])
         ]);
     }
 

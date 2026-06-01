@@ -35,6 +35,8 @@ class ProductionEntry extends Model
         'machine_line',
         'notes',
         'produced_by',
+        'operator_employee_id',
+        'entry_user_id',
     ];
 
     protected $casts = [
@@ -91,6 +93,16 @@ class ProductionEntry extends Model
     public function producedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'produced_by');
+    }
+
+    public function operatorEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'operator_employee_id');
+    }
+
+    public function entryUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'entry_user_id');
     }
 
     public function getGoodQtyAttribute(): float

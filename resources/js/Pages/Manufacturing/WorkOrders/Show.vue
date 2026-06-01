@@ -316,6 +316,7 @@ const canCancel = computed(() => !['completed', 'cancelled'].includes(props.work
                                     <tr class="bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 text-left">
                                         <th class="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Date / Shift</th>
                                         <th class="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Operator</th>
+                                        <th class="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Entry By</th>
                                         <th class="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Time</th>
                                         <th class="px-4 py-3 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Good</th>
                                         <th class="px-4 py-3 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Reject</th>
@@ -328,7 +329,12 @@ const canCancel = computed(() => !['completed', 'cancelled'].includes(props.work
                                             <div class="text-slate-900 dark:text-white">{{ formatDate(entry.production_date) }}</div>
                                             <div class="text-[10px] text-slate-500">Shift {{ entry.shift || '-' }}</div>
                                         </td>
-                                        <td class="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs">{{ entry.produced_by?.name || '-' }}</td>
+                                        <td class="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs">
+                                            {{ entry.operator_employee?.full_name || entry.produced_by?.name || '-' }}
+                                        </td>
+                                        <td class="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs">
+                                            {{ entry.entry_user?.name || '-' }}
+                                        </td>
                                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs font-mono">
                                             {{ entry.start_time || '-' }} - {{ entry.end_time || '-' }}
                                         </td>
