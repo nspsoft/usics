@@ -22,6 +22,7 @@ Route::middleware('throttle:public-validate-view')->group(function () {
     Route::get('/v/do/{uuid}', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'publicValidate'])->name('sales.deliveries.public-validate');
     Route::get('/v/ret/{uuid}', [App\Http\Controllers\Sales\SalesReturnController::class, 'publicValidate'])->name('sales.returns.public-validate');
     Route::get('/v/sto/{uuid}', [App\Http\Controllers\Inventory\StockOpnameController::class, 'publicValidate'])->name('inventory.opname.public-validate');
+    Route::get('/v/sto-summary', [App\Http\Controllers\Inventory\StockOpnameController::class, 'publicValidateSummary'])->name('inventory.opname.public-summary');
 });
 
 Route::middleware('throttle:public-validate-action')->group(function () {

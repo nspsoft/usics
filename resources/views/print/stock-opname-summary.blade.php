@@ -5,7 +5,7 @@
     <style>
         @page {
             margin: 0.5cm;
-            size: A4 portrait;
+            size: A4 landscape;
         }
         body {
             font-family: Arial, sans-serif;
@@ -79,7 +79,35 @@
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .font-bold { font-weight: bold; }
+        .underline { text-decoration: underline; }
         .uppercase { text-transform: uppercase; }
+        .qr-box {
+            text-align: center;
+            width: 120px;
+        }
+        .qr-image {
+            width: 90px;
+            height: 90px;
+            display: block;
+            margin: 0 auto 5px;
+        }
+        .qr-text {
+            font-size: 7pt;
+            color: #555;
+            font-weight: bold;
+        }
+        .sig-table {
+            margin-top: 20px;
+        }
+        .sig-table td {
+            text-align: center;
+            vertical-align: top;
+        }
+        .sig-box {
+            height: 60px;
+            margin: 10px 15px 5px;
+            border-bottom: 1pt solid #000;
+        }
         @media print {
             .no-print { display: none; }
         }
@@ -136,14 +164,15 @@
     <table class="items-table">
         <thead>
             <tr>
-                <th width="9%">No</th>
-                <th width="18%">No. STO</th>
-                <th width="20%">Warehouse</th>
-                <th width="15%">Created By</th>
-                <th width="8%">Items</th>
-                <th width="10%">System (Rp)</th>
-                <th width="10%">Physical (Rp)</th>
-                <th width="10%">Variance (Rp)</th>
+                <th width="3%">No</th>
+                <th width="12%">No. STO</th>
+                <th width="19%">Warehouse</th>
+                <th width="14%">Created By</th>
+                <th width="7%">Items</th>
+                <th width="8%">Total Qty</th>
+                <th width="11%">System (Rp)</th>
+                <th width="11%">Physical (Rp)</th>
+                <th width="15%">Variance (Rp)</th>
             </tr>
         </thead>
         <tbody>
@@ -154,25 +183,66 @@
                     <td>{{ $opname->warehouse->name ?? '-' }}</td>
                     <td>{{ $opname->createdBy->name ?? '-' }}</td>
                     <td class="text-center font-bold">{{ (int) ($opname->items_count ?? 0) }}</td>
+                    <td class="text-right font-bold">{{ number_format((float) ($opname->total_qty ?? 0), 2, ',', '.') }}</td>
                     <td class="text-right font-bold">{{ number_format((float) ($opname->system_value ?? 0), 0, ',', '.') }}</td>
                     <td class="text-right font-bold">{{ number_format((float) ($opname->physical_value ?? 0), 0, ',', '.') }}</td>
                     <td class="text-right font-bold">{{ number_format((float) ($opname->variance_value ?? 0), 0, ',', '.') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" class="text-center">Tidak ada data.</td>
+                    <td colspan="9" class="text-center">Tidak ada data.</td>
                 </tr>
             @endforelse
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="5" class="text-right font-bold">TOTAL</td>
+                <td class="text-right font-bold">{{ number_format((float) ($totals['total_qty'] ?? 0), 2, ',', '.') }}</td>
                 <td class="text-right font-bold">{{ number_format((float) ($totals['system_value'] ?? 0), 0, ',', '.') }}</td>
                 <td class="text-right font-bold">{{ number_format((float) ($totals['physical_value'] ?? 0), 0, ',', '.') }}</td>
                 <td class="text-right font-bold">{{ number_format((float) ($totals['variance_value'] ?? 0), 0, ',', '.') }}</td>
             </tr>
         </tfoot>
     </table>
+
+    <table width="100%" style="margin-top: 15px;">
+        <tr>
+            <td width="65%" style="vertical-align: top;">
+                <div style="border: 0.5pt solid #000; padding: 10px;">
+                    <div class="font-bold underline" style="font-size: 8pt; margin-bottom: 5px;">CATATAN / KETERANGAN:</div>
+                    <div style="height: 45px; font-style: italic; color: #555;">
+                        Dokumen ini sah sebagai ringkasan hasil Stock Opname pada tanggal tersebut yang tercatat di sistem.
+                    </div>
+                </div>
+            </td>
+            <td width="35%" style="text-align: right; vertical-align: top;">
+                <div class="qr-box" style="float: right;">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ urlencode(route('inventory.opname.public-summary', array_filter(['date' => $date, 'status' => $filters['status'] ?? null, 'warehouse_id' => $filters['warehouse_id'] ?? null], fn($v) => $v !== null && $v !== ''))) }}" class="qr-image">
+                    <div class="qr-text italic">VALIDATION</div>
+                    <div class="qr-text" style="font-size: 5pt; margin-top: 3px; color: #003680;">STO SUMMARY SAH</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table width="100%" class="sig-table">
+        <tr>
+            <td width="33%">
+                Manager Warehouse,
+                <div class="sig-box"></div>
+                <div class="font-bold">( __________________ )</div>
+            </td>
+            <td width="34%">
+                Direktur,
+                <div class="sig-box"></div>
+                <div class="font-bold">( __________________ )</div>
+            </td>
+            <td width="33%">
+                Owner,
+                <div class="sig-box"></div>
+                <div class="font-bold">( __________________ )</div>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
-

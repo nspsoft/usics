@@ -597,7 +597,6 @@ class StockOpnameController extends Controller
             ->when(!empty($status), fn ($q) => $q->where('status', $status))
             ->when(!empty($warehouseId), fn ($q) => $q->where('warehouse_id', $warehouseId))
             ->whereDate('opname_date', $date)
-            ->select('inv_stock_opnames.*')
             ->selectSub(
                 StockOpnameItem::query()
                     ->join('products', 'inv_stock_opname_items.product_id', '=', 'products.id')
@@ -619,6 +618,12 @@ class StockOpnameController extends Controller
                     ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_difference * ({$priceExpr})), 0)", [Product::TYPE_FINISHED_GOOD]),
                 'variance_value'
             )
+            ->selectSub(
+                StockOpnameItem::query()
+                    ->whereColumn('inv_stock_opname_items.stock_opname_id', 'inv_stock_opnames.id')
+                    ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_physic), 0)"),
+                'total_qty'
+            )
             ->orderBy('warehouse_id', 'asc')
             ->orderBy('id', 'asc')
             ->get();
@@ -634,6 +639,7 @@ class StockOpnameController extends Controller
             ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_system * ({$summaryPriceExpr})), 0) as system_value", [Product::TYPE_FINISHED_GOOD])
             ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_physic * ({$summaryPriceExpr})), 0) as physical_value", [Product::TYPE_FINISHED_GOOD])
             ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_difference * ({$summaryPriceExpr})), 0) as variance_value", [Product::TYPE_FINISHED_GOOD])
+            ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_physic), 0) as total_qty")
             ->first();
 
         return view('print.stock-opname-summary', [
@@ -647,6 +653,7 @@ class StockOpnameController extends Controller
                 'system_value' => (float) ($totals->system_value ?? 0),
                 'physical_value' => (float) ($totals->physical_value ?? 0),
                 'variance_value' => (float) ($totals->variance_value ?? 0),
+                'total_qty' => (float) ($totals->total_qty ?? 0),
             ],
         ]);
     }
@@ -671,6 +678,45 @@ class StockOpnameController extends Controller
 
         return view('print.public-stock-opname-validation', [
             'opname' => $opname,
+        ]);
+    }
+
+    public function publicValidateSummary(Request $request)
+    {
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'status' => 'nullable|string|in:draft,in_progress,completed,cancelled',
+            'warehouse_id' => 'nullable|exists:warehouses,id',
+        ]);
+
+        $date = $validated['date'];
+        $status = $validated['status'] ?? null;
+        $warehouseId = $validated['warehouse_id'] ?? null;
+
+        $opnames = StockOpname::query()
+            ->with(['warehouse', 'createdBy'])
+            ->withCount('items')
+            ->when(!empty($status), fn ($q) => $q->where('status', $status))
+            ->when(!empty($warehouseId), fn ($q) => $q->where('warehouse_id', $warehouseId))
+            ->whereDate('opname_date', $date)
+            ->orderBy('warehouse_id', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        foreach ($opnames as $opname) {
+            if (!$opname->public_uuid) {
+                $opname->public_uuid = (string) Str::uuid();
+                $opname->save();
+            }
+        }
+
+        return view('print.public-stock-opname-summary-validation', [
+            'opnames' => $opnames,
+            'date' => $date,
+            'filters' => [
+                'status' => $status,
+                'warehouse_id' => $warehouseId,
+            ],
         ]);
     }
 
