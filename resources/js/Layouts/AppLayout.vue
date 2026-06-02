@@ -695,9 +695,11 @@ onUnmounted(() => {
         >
             <div 
                 v-if="sidebarOpen"
-                class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-white/5 lg:hidden print:hidden"
+                class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 border-r border-white/5 lg:hidden print:hidden relative overflow-hidden"
             >
-                <div class="flex h-16 shrink-0 items-center justify-between px-6 border-b border-white/5 bg-slate-950">
+                <div class="absolute top-0 right-0 w-[140px] h-[140px] bg-cyan-500/6 rounded-full blur-[60px] pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 w-[140px] h-[140px] bg-indigo-500/6 rounded-full blur-[60px] pointer-events-none"></div>
+                <div class="flex h-16 shrink-0 items-center justify-between px-6 border-b border-white/5 bg-transparent relative">
                     <div class="flex items-center gap-3">
                         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 border border-white/10 shadow-lg shadow-blue-500/20 overflow-hidden">
                             <img :src="$page.props.company?.logo || '/images/jicos.png'" alt="Logo" class="w-full h-full object-cover" />
@@ -711,7 +713,7 @@ onUnmounted(() => {
                         <XMarkIcon class="w-6 h-6" />
                     </button>
                 </div>
-                <nav class="flex flex-1 flex-col px-4 py-4 overflow-y-auto bg-slate-950">
+                <nav class="flex flex-1 flex-col px-4 py-4 overflow-y-auto bg-transparent relative">
                     <ul class="space-y-1">
                         <li v-for="item in filteredNavigation" :key="item.name">
                             <template v-if="item.children">
@@ -776,7 +778,7 @@ onUnmounted(() => {
             class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col transition-all duration-300 print:hidden"
             :class="collapsed ? 'lg:w-20' : 'lg:w-64'"
         >
-            <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-slate-950 border-r border-white/5 transition-all duration-300 relative">
+            <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 border-r border-white/5 transition-all duration-300 relative">
                 <!-- Sidebar Branding Glow -->
                 <div class="absolute top-0 right-0 w-[150px] h-[150px] bg-cyan-500/5 rounded-full blur-[60px] pointer-events-none"></div>
                 <div class="absolute bottom-0 left-0 w-[150px] h-[150px] bg-blue-500/5 rounded-full blur-[60px] pointer-events-none"></div>
@@ -921,13 +923,13 @@ onUnmounted(() => {
         <!-- Main content -->
         <div class="transition-all duration-300" :class="collapsed ? 'lg:pl-20' : 'lg:pl-64'">
             <!-- Top bar -->
-            <div class="sticky top-0 z-40 lg:z-[60] flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-300 px-4 shadow-sm dark:shadow-lg sm:gap-x-6 sm:px-6 lg:px-8 relative pointer-events-auto print:hidden">
+            <div class="sticky top-0 z-40 lg:z-[60] flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-800 bg-slate-950 px-4 shadow-lg sm:gap-x-6 sm:px-6 lg:px-8 relative pointer-events-auto print:hidden">
                 <!-- Futuristic Background Animation -->
                 <TechnoHeaderBg />
                 
                 <button 
                     type="button" 
-                    class="-m-2.5 p-2.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white lg:hidden relative z-10"
+                    class="-m-2.5 p-2.5 text-slate-300 hover:text-white lg:hidden relative z-10"
                     @click="sidebarOpen = true"
                 >
                     <Bars3Icon class="h-6 w-6" />
@@ -936,14 +938,14 @@ onUnmounted(() => {
                 <!-- Desktop Sidebar Toggle -->
                 <button 
                     type="button" 
-                    class="hidden lg:block -ml-4 p-2.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors relative z-10"
+                    class="hidden lg:block -ml-4 p-2.5 text-slate-300 hover:text-white transition-colors relative z-10"
                     @click="toggleDesktopSidebar"
                 >
                     <Bars3BottomLeftIcon class="h-6 w-6 transform transition-transform duration-300" :class="collapsed ? 'rotate-180' : ''" />
                 </button>
 
                 <!-- Separator -->
-                <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 lg:hidden relative z-10" />
+                <div class="h-6 w-px bg-slate-800 lg:hidden relative z-10" />
 
                 <div class="flex flex-1 items-center gap-x-4 self-stretch lg:gap-x-6 relative z-10">
                     <!-- Tech Date Display -->
@@ -984,7 +986,7 @@ onUnmounted(() => {
                             <button 
                                 type="button" 
                                 @click="toggleFullscreen"
-                                class="relative -m-2.5 p-2.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors mr-2"
+                                class="relative -m-2.5 p-2.5 text-slate-300 hover:text-white transition-colors mr-2"
                                 title="Toggle Fullscreen"
                             >
                                 <component :is="isFullscreen ? ArrowsPointingInIcon : ArrowsPointingOutIcon" class="h-6 w-6" />
@@ -994,7 +996,7 @@ onUnmounted(() => {
                             <button 
                                 type="button" 
                                 @click="toggleTheme"
-                                class="relative -m-2.5 p-2.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all mr-2"
+                                class="relative -m-2.5 p-2.5 text-slate-300 hover:text-white transition-all mr-2"
                                 :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
                             >
                                 <SunIcon v-if="isDark" class="h-6 w-6" />
@@ -1004,7 +1006,7 @@ onUnmounted(() => {
                             <button 
                                 type="button" 
                                 @click="toggleNotifications"
-                                class="relative -m-2.5 p-2.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+                                class="relative -m-2.5 p-2.5 text-slate-300 hover:text-white transition-colors"
                             >
                                 <BellIcon class="h-6 w-6" />
                                 <span v-if="unreadCount > 0" class="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
@@ -1060,13 +1062,13 @@ onUnmounted(() => {
                         </div>
 
                         <!-- Separator -->
-                        <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-slate-200 dark:lg:bg-slate-700" />
+                        <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-slate-800" />
 
                         <!-- Profile dropdown -->
                         <div class="relative">
                             <button 
                                 @click="userMenuOpen = !userMenuOpen"
-                                class="flex items-center gap-3 rounded-xl p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
+                                class="flex items-center gap-3 rounded-xl p-1.5 hover:bg-white/5 transition-colors"
                             >
                                 <img 
                                     v-if="$page.props.auth.user?.profile_photo_path" 
@@ -1077,7 +1079,7 @@ onUnmounted(() => {
                                 <div v-else class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                                     <span class="text-xs font-bold text-white">{{ $page.props.auth.user?.name?.charAt(0).toUpperCase() || 'U' }}</span>
                                 </div>
-                                <span class="hidden lg:block text-sm font-medium text-slate-700 dark:text-white">{{ $page.props.auth.user?.name || 'User' }}</span>
+                                <span class="hidden lg:block text-sm font-medium text-slate-200">{{ $page.props.auth.user?.name || 'User' }}</span>
                                 <ChevronDownIcon class="hidden lg:block h-4 w-4 text-slate-400" />
                             </button>
                             

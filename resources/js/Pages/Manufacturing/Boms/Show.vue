@@ -72,6 +72,13 @@ const totalCost = computed(() => {
 const costPerUnit = computed(() => {
     return props.bom.qty > 0 ? totalCost.value / props.bom.qty : 0;
 });
+
+const formatShortDate = (value) => {
+    if (!value) return '-';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+};
 </script>
 
 <template>
@@ -96,6 +103,7 @@ const costPerUnit = computed(() => {
                             </span>
                         </div>
                         <p class="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold font-mono">CODE: {{ bom.code }} / VERSION: {{ bom.version }}</p>
+                        <p class="text-[10px] text-slate-500 font-mono mt-1">CREATED: {{ formatShortDate(bom.created_at) }} | LAST REVISION: {{ formatShortDate(bom.updated_at) }}</p>
                     </div>
                 </div>
 

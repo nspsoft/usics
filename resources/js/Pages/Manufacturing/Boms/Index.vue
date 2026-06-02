@@ -28,20 +28,31 @@ const props = defineProps({
     statuses: Array,
 });
 
+const formatShortDate = (value) => {
+    if (!value) return '-';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 const search = ref(props.filters.search || '');
 const selectedStatus = ref(props.filters.status || '');
+const revisionFrom = ref(props.filters.revision_from || '');
+const revisionTo = ref(props.filters.revision_to || '');
 
 const applyFilters = debounce(() => {
     router.get('/manufacturing/boms', {
         search: search.value || undefined,
         status: selectedStatus.value || undefined,
+        revision_from: revisionFrom.value || undefined,
+        revision_to: revisionTo.value || undefined,
     }, {
         preserveState: true,
         replace: true,
     });
 }, 300);
 
-watch([search, selectedStatus], applyFilters);
+watch([search, selectedStatus, revisionFrom, revisionTo], applyFilters);
 
 const deleteBom = (bom) => {
     if (confirm(`Are you sure you want to delete "${bom.name}"?`)) {
@@ -94,7 +105,7 @@ const exportBoms = () => {
     
     <AppLayout title="Bill of Materials">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <div class="relative flex-1 sm:w-80">
                     <MagnifyingGlassIcon class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
                     <input
@@ -113,6 +124,18 @@ const exportBoms = () => {
                         {{ status.label }}
                     </option>
                 </select>
+                <input
+                    v-model="revisionFrom"
+                    type="date"
+                    class="rounded-xl border-0 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 py-2.5 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                    title="Last Revision From"
+                />
+                <input
+                    v-model="revisionTo"
+                    type="date"
+                    class="rounded-xl border-0 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 py-2.5 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                    title="Last Revision To"
+                />
             </div>
             
             <div class="flex gap-2">
@@ -153,6 +176,8 @@ const exportBoms = () => {
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Finished Product</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Components</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Yield Qty</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Created Date</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Last Revision</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -180,6 +205,12 @@ const exportBoms = () => {
                             <td class="px-4 py-2 whitespace-nowrap text-center text-sm text-slate-900 dark:text-white font-medium">
                                 {{ formatNumber(bom.qty) }} <span class="text-[10px] text-slate-500 font-normal ml-0.5">{{ bom.unit?.symbol || 'pcs' }}</span>
                             </td>
+                            <td class="px-4 py-2 whitespace-nowrap text-center text-sm text-slate-600 dark:text-slate-300 font-mono">
+                                {{ formatShortDate(bom.created_at) }}
+                            </td>
+                            <td class="px-4 py-2 whitespace-nowrap text-center text-sm text-slate-600 dark:text-slate-300 font-mono">
+                                {{ formatShortDate(bom.updated_at) }}
+                            </td>
                             <td class="px-4 py-2 whitespace-nowrap text-center">
                                 <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium capitalize" :class="getStatusBadge(bom.status)">{{ bom.status }}</span>
                             </td>
@@ -195,7 +226,7 @@ const exportBoms = () => {
                             </td>
                         </tr>
                         <tr v-if="boms.data.length === 0">
-                            <td colspan="6" class="px-4 py-12 text-center text-slate-500 italic">No definitions found.</td>
+                            <td colspan="8" class="px-4 py-12 text-center text-slate-500 italic">No definitions found.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -316,4 +347,3 @@ const exportBoms = () => {
         </Modal>
     </AppLayout>
 </template>
-

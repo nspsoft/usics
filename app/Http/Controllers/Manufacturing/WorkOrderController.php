@@ -505,6 +505,7 @@ class WorkOrderController extends Controller
                 'remaining' => max(0, $planned - $produced),
                 'percent' => $percent,
                 'planned_start' => $wo->planned_start,
+                'planned_end' => $wo->planned_end,
             ];
         });
 

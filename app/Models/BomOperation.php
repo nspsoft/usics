@@ -11,6 +11,8 @@ class BomOperation extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $touches = ['bom'];
+
     protected $fillable = [
         'bom_id',
         'name',

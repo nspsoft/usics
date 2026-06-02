@@ -19,9 +19,16 @@ class BomController extends Controller
 {
     public function index(Request $request): Response
     {
+        $validated = $request->validate([
+            'search' => 'nullable|string|max:100',
+            'status' => 'nullable|string|max:20',
+            'revision_from' => 'nullable|date',
+            'revision_to' => 'nullable|date|after_or_equal:revision_from',
+        ]);
+
         $query = Bom::with(['product', 'unit'])
             ->withCount('components')
-            ->when($request->search, function ($q, $search) {
+            ->when(($validated['search'] ?? null), function ($q, $search) {
                 $q->where(function ($q) use ($search) {
                     $q->where('code', 'like', "%{$search}%")
                       ->orWhere('name', 'like', "%{$search}%")
@@ -30,9 +37,11 @@ class BomController extends Controller
                       });
                 });
             })
-            ->when($request->status, function ($q, $status) {
+            ->when(($validated['status'] ?? null), function ($q, $status) {
                 $q->where('status', $status);
-            });
+            })
+            ->when(($validated['revision_from'] ?? null), fn ($q, $dateFrom) => $q->whereDate('updated_at', '>=', $dateFrom))
+            ->when(($validated['revision_to'] ?? null), fn ($q, $dateTo) => $q->whereDate('updated_at', '<=', $dateTo));
 
         $boms = $query->orderByDesc('created_at')
             ->paginate(20)
@@ -40,7 +49,7 @@ class BomController extends Controller
 
         return Inertia::render('Manufacturing/Boms/Index', [
             'boms' => $boms,
-            'filters' => $request->only(['search', 'status']),
+            'filters' => $request->only(['search', 'status', 'revision_from', 'revision_to']),
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'active', 'label' => 'Active'],

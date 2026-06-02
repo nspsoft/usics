@@ -10,6 +10,8 @@ class BomComponent extends Model
 {
     use HasFactory;
 
+    protected $touches = ['bom'];
+
     protected $fillable = [
         'bom_id',
         'product_id',

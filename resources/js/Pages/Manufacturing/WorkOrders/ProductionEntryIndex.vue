@@ -27,6 +27,13 @@ const applyFilters = debounce(() => {
 
 watch(search, applyFilters);
 
+const formatShortDate = (value) => {
+    if (!value) return '-';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 </script>
 
 <template>
@@ -106,9 +113,21 @@ watch(search, applyFilters);
                             <div class="text-emerald-400 font-mono font-bold">{{ formatNumber(wo.qty_produced) }}</div>
                         </div>
                         <div class="text-right">
+                            <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Remaining</div>
+                            <div class="text-amber-400 font-mono font-bold">{{ formatNumber(wo.remaining) }}</div>
+                        </div>
+                        <div class="text-right">
                             <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Target</div>
                             <div class="text-slate-600 dark:text-slate-300 font-mono font-bold">{{ formatNumber(wo.qty_planned) }}</div>
                         </div>
+                    </div>
+
+                    <div class="mt-3 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                        <div class="inline-flex items-center gap-1">
+                            <ClockIcon class="h-4 w-4" />
+                            <span>Start: {{ formatShortDate(wo.planned_start) }}</span>
+                        </div>
+                        <div>Finish: {{ formatShortDate(wo.planned_end) }}</div>
                     </div>
                 </Link>
             </div>
@@ -120,8 +139,11 @@ watch(search, applyFilters);
                             <tr class="border-b border-slate-200 dark:border-slate-700">
                                 <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">WO</th>
                                 <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Product</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Schedule Start</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Schedule Finish</th>
                                 <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Produced</th>
                                 <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Target</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Remaining</th>
                                 <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Progress</th>
                                 <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-16">Action</th>
                             </tr>
@@ -137,11 +159,20 @@ watch(search, applyFilters);
                                 <td class="px-4 py-3">
                                     <div class="text-sm font-semibold text-slate-900 dark:text-white line-clamp-1">{{ wo.product_name }}</div>
                                 </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center text-sm text-slate-600 dark:text-slate-300 font-mono">
+                                    {{ formatShortDate(wo.planned_start) }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center text-sm text-slate-600 dark:text-slate-300 font-mono">
+                                    {{ formatShortDate(wo.planned_end) }}
+                                </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-right">
                                     <span class="text-emerald-400 font-mono font-bold">{{ formatNumber(wo.qty_produced) }}</span>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-right">
                                     <span class="text-slate-600 dark:text-slate-300 font-mono font-bold">{{ formatNumber(wo.qty_planned) }}</span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right">
+                                    <span class="text-amber-400 font-mono font-bold">{{ formatNumber(wo.remaining) }}</span>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-right">
                                     <span class="text-slate-900 dark:text-white font-mono font-bold">{{ wo.percent.toFixed(0) }}%</span>
@@ -157,7 +188,7 @@ watch(search, applyFilters);
                                 </td>
                             </tr>
                             <tr v-if="workOrders.data.length === 0">
-                                <td colspan="6" class="px-4 py-12 text-center text-slate-500 italic">No Active Jobs</td>
+                                <td colspan="9" class="px-4 py-12 text-center text-slate-500 italic">No Active Jobs</td>
                             </tr>
                         </tbody>
                     </table>
