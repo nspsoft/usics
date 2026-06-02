@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatNumber } from '@/helpers';
 import debounce from 'lodash/debounce';
-import { MagnifyingGlassIcon, ArrowTopRightOnSquareIcon } from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, ArrowTopRightOnSquareIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     entries: Object,
@@ -141,7 +141,7 @@ const formatTime = (t) => {
                                 <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Reject</th>
                                 <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Down (m)</th>
                                 <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Catatan</th>
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-16">WO</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-24">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -168,13 +168,22 @@ const formatTime = (t) => {
                                     {{ e.notes || '-' }}
                                 </td>
                                 <td class="px-4 py-3 text-right">
-                                    <Link
-                                        :href="route('manufacturing.work-orders.show', e.work_order_id)"
-                                        class="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
-                                        title="View WO"
-                                    >
-                                        <ArrowTopRightOnSquareIcon class="h-5 w-5" />
-                                    </Link>
+                                    <div class="inline-flex items-center justify-end gap-2">
+                                        <Link
+                                            :href="route('manufacturing.production-reports.edit', e.id)"
+                                            class="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                                            title="Edit Jam/Catatan"
+                                        >
+                                            <PencilSquareIcon class="h-5 w-5" />
+                                        </Link>
+                                        <Link
+                                            :href="route('manufacturing.work-orders.show', e.work_order_id)"
+                                            class="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                                            title="View WO"
+                                        >
+                                            <ArrowTopRightOnSquareIcon class="h-5 w-5" />
+                                        </Link>
+                                    </div>
                                 </td>
                             </tr>
                             <tr v-if="entries.data.length === 0">
@@ -207,4 +216,3 @@ const formatTime = (t) => {
         </div>
     </AppLayout>
 </template>
-

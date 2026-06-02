@@ -427,6 +427,8 @@ Route::prefix('manufacturing')->name('manufacturing.')->middleware(['auth'])->gr
     
     Route::get('/production-entry', [WorkOrderController::class, 'productionEntryIndex'])->name('production-entry.index');
     Route::get('/production-reports', [\App\Http\Controllers\Manufacturing\ProductionEntryController::class, 'index'])->name('production-reports.index');
+    Route::get('/production-reports/{productionEntry}/edit', [\App\Http\Controllers\Manufacturing\ProductionEntryController::class, 'edit'])->name('production-reports.edit');
+    Route::put('/production-reports/{productionEntry}', [\App\Http\Controllers\Manufacturing\ProductionEntryController::class, 'update'])->name('production-reports.update');
     Route::resource('shifts', ShiftController::class);
     Route::resource('machines', MachineController::class);
     Route::resource('subcontract-orders', SubcontractOrderController::class);

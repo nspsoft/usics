@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Manufacturing;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\ProductionEntry;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -56,5 +58,87 @@ class ProductionEntryController extends Controller
             'operators' => $operators,
         ]);
     }
-}
 
+    public function edit(ProductionEntry $productionEntry): Response
+    {
+        $productionEntry->loadMissing([
+            'workOrder.product',
+            'operatorEmployee',
+        ]);
+
+        if (session()->has('company_id') && $productionEntry->workOrder && (int) $productionEntry->workOrder->company_id !== (int) session('company_id')) {
+            abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$user) {
+            abort(403);
+        }
+
+        if ((int) $productionEntry->entry_user_id !== (int) $user->id && !$user->hasAnyRole(['Super Admin', 'Admin', 'Administrator'])) {
+            abort(403);
+        }
+
+        return Inertia::render('Manufacturing/ProductionEntries/Edit', [
+            'entry' => $productionEntry,
+        ]);
+    }
+
+    public function update(Request $request, ProductionEntry $productionEntry): RedirectResponse
+    {
+        $productionEntry->loadMissing(['workOrder']);
+
+        if (session()->has('company_id') && $productionEntry->workOrder && (int) $productionEntry->workOrder->company_id !== (int) session('company_id')) {
+            abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$user) {
+            abort(403);
+        }
+
+        if ((int) $productionEntry->entry_user_id !== (int) $user->id && !$user->hasAnyRole(['Super Admin', 'Admin', 'Administrator'])) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
+            'downtime_minutes' => 'nullable|integer|min:0',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $duplicate = $productionEntry->workOrder
+            ->productionEntries()
+            ->where('id', '!=', $productionEntry->id)
+            ->whereDate('production_date', $productionEntry->production_date)
+            ->where('shift', $productionEntry->shift)
+            ->where('operator_employee_id', $productionEntry->operator_employee_id)
+            ->when(
+                array_key_exists('start_time', $validated) && $validated['start_time'] !== null && $validated['start_time'] !== '',
+                fn ($q) => $q->where('start_time', $validated['start_time']),
+                fn ($q) => $q->whereNull('start_time')
+            )
+            ->when(
+                array_key_exists('end_time', $validated) && $validated['end_time'] !== null && $validated['end_time'] !== '',
+                fn ($q) => $q->where('end_time', $validated['end_time']),
+                fn ($q) => $q->whereNull('end_time')
+            )
+            ->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'start_time' => 'Laporan produksi untuk operator/shift/jam yang sama sudah ada.',
+            ]);
+        }
+
+        $productionEntry->update([
+            'start_time' => $validated['start_time'] ?? null,
+            'end_time' => $validated['end_time'] ?? null,
+            'downtime_minutes' => $validated['downtime_minutes'] ?? 0,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        return back()->with('success', 'Laporan produksi berhasil di-update.');
+    }
+}
