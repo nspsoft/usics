@@ -9,7 +9,10 @@ use App\Imports\BomImport;
 use App\Models\Bom;
 use App\Models\Product;
 use App\Models\Unit;
+use App\Models\WorkOrder;
+use App\Models\Warehouse;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,6 +31,13 @@ class BomController extends Controller
 
         $query = Bom::with(['product', 'unit'])
             ->withCount('components')
+            ->selectSub(function ($q) {
+                $q->from('work_orders')
+                    ->selectRaw('COALESCE(SUM(GREATEST(qty_planned - qty_produced, 0)), 0)')
+                    ->whereColumn('work_orders.bom_id', 'boms.id')
+                    ->whereIn('status', [WorkOrder::STATUS_CONFIRMED, WorkOrder::STATUS_IN_PROGRESS])
+                    ->when(session()->has('company_id'), fn ($sq) => $sq->where('company_id', session('company_id')));
+            }, 'active_remaining_qty')
             ->when(($validated['search'] ?? null), function ($q, $search) {
                 $q->where(function ($q) use ($search) {
                     $q->where('code', 'like', "%{$search}%")
@@ -47,15 +57,104 @@ class BomController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $boms->getCollection()->transform(function ($bom) {
+            $bom->active_remaining_qty = (float) ($bom->active_remaining_qty ?? 0);
+            return $bom;
+        });
+
         return Inertia::render('Manufacturing/Boms/Index', [
             'boms' => $boms,
             'filters' => $request->only(['search', 'status', 'revision_from', 'revision_to']),
+            'warehouses' => Warehouse::active()->orderBy('name')->get(['id', 'code', 'name']),
+            'defaultMaterialWarehouseId' => $this->resolveDefaultMaterialWarehouseId(),
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'active', 'label' => 'Active'],
                 ['value' => 'archived', 'label' => 'Archived'],
             ],
         ]);
+    }
+
+    public function massCreateWorkOrders(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'bom_ids' => 'required|array|min:1',
+            'bom_ids.*' => 'integer|exists:boms,id',
+            'qty_planned' => 'required|numeric|min:0.0001',
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'material_warehouse_id' => 'required|exists:warehouses,id',
+            'planned_start' => 'required|date',
+            'planned_end' => 'required|date|after_or_equal:planned_start',
+            'priority' => 'required|in:low,normal,high,urgent',
+        ]);
+
+        $bomIds = array_values(array_unique($validated['bom_ids']));
+        $boms = Bom::whereIn('id', $bomIds)->get(['id', 'company_id', 'product_id']);
+
+        if (session()->has('company_id')) {
+            $boms = $boms->where('company_id', (int) session('company_id'))->values();
+        }
+
+        if ($boms->isEmpty()) {
+            return back()->with('error', 'Tidak ada BOM yang valid untuk dibuatkan Work Order.');
+        }
+
+        $created = 0;
+        $skipped = 0;
+
+        DB::transaction(function () use ($boms, $validated, &$created, &$skipped) {
+            foreach ($boms as $bom) {
+                $hasActive = WorkOrder::query()
+                    ->where('bom_id', $bom->id)
+                    ->whereIn('status', [WorkOrder::STATUS_CONFIRMED, WorkOrder::STATUS_IN_PROGRESS])
+                    ->whereRaw('qty_planned > qty_produced')
+                    ->exists();
+
+                if ($hasActive) {
+                    $skipped++;
+                    continue;
+                }
+
+                $wo = WorkOrder::create([
+                    'company_id' => session('company_id'),
+                    'wo_number' => WorkOrder::generateWoNumber(),
+                    'bom_id' => $bom->id,
+                    'product_id' => $bom->product_id,
+                    'warehouse_id' => $validated['warehouse_id'],
+                    'material_warehouse_id' => $validated['material_warehouse_id'],
+                    'qty_planned' => $validated['qty_planned'],
+                    'planned_start' => $validated['planned_start'],
+                    'planned_end' => $validated['planned_end'],
+                    'status' => WorkOrder::STATUS_CONFIRMED,
+                    'priority' => $validated['priority'],
+                    'notes' => null,
+                    'created_by' => auth()->id(),
+                    'production_type' => 'internal',
+                    'supplier_id' => null,
+                ]);
+
+                $wo->initializeFromBom();
+                $created++;
+            }
+        });
+
+        $message = "Berhasil membuat {$created} Work Order (Confirmed).";
+        if ($skipped > 0) {
+            $message .= " {$skipped} BOM dilewati karena masih ada Active Order.";
+        }
+
+        return back()->with('success', $message);
+    }
+
+    private function resolveDefaultMaterialWarehouseId(): ?int
+    {
+        $warehouse = Warehouse::query()
+            ->where('code', 'WH-RM')
+            ->orWhereRaw('LOWER(name) LIKE ?', ['%raw material%'])
+            ->orderByRaw("CASE WHEN code = 'WH-RM' THEN 0 ELSE 1 END")
+            ->first();
+
+        return $warehouse?->id;
     }
 
     public function create(): Response

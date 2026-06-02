@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatNumber, formatCurrency } from '@/helpers';
@@ -26,6 +26,8 @@ const props = defineProps({
     boms: Object,
     filters: Object,
     statuses: Array,
+    warehouses: Array,
+    defaultMaterialWarehouseId: [Number, String],
 });
 
 const formatShortDate = (value) => {
@@ -40,6 +42,71 @@ const selectedStatus = ref(props.filters.status || '');
 const revisionFrom = ref(props.filters.revision_from || '');
 const revisionTo = ref(props.filters.revision_to || '');
 
+const selectedBomIds = ref([]);
+const showMassCreateModal = ref(false);
+
+const eligibleBomIds = computed(() => {
+    return (props.boms?.data || [])
+        .filter(b => parseFloat(b.active_remaining_qty || 0) <= 0)
+        .map(b => b.id);
+});
+
+const allEligibleSelected = computed(() => {
+    if (eligibleBomIds.value.length === 0) return false;
+    return eligibleBomIds.value.every(id => selectedBomIds.value.includes(id));
+});
+
+const toggleSelectAllEligible = () => {
+    if (allEligibleSelected.value) {
+        selectedBomIds.value = [];
+        return;
+    }
+    selectedBomIds.value = [...eligibleBomIds.value];
+};
+
+const canSelectBom = (bom) => {
+    return parseFloat(bom.active_remaining_qty || 0) <= 0;
+};
+
+const toggleBomSelection = (bomId, checked) => {
+    if (checked) {
+        if (!selectedBomIds.value.includes(bomId)) {
+            selectedBomIds.value.push(bomId);
+        }
+        return;
+    }
+    selectedBomIds.value = selectedBomIds.value.filter(id => id !== bomId);
+};
+
+const openMassCreateModal = () => {
+    showMassCreateModal.value = true;
+    massCreateForm.material_warehouse_id = props.defaultMaterialWarehouseId || '';
+};
+
+const closeMassCreateModal = () => {
+    showMassCreateModal.value = false;
+    massCreateForm.reset();
+    selectedBomIds.value = [];
+};
+
+const massCreateForm = useForm({
+    bom_ids: [],
+    qty_planned: '',
+    warehouse_id: '',
+    material_warehouse_id: props.defaultMaterialWarehouseId || '',
+    planned_start: new Date().toISOString().split('T')[0],
+    planned_end: new Date().toISOString().split('T')[0],
+    priority: 'normal',
+});
+
+const submitMassCreate = () => {
+    massCreateForm.bom_ids = [...selectedBomIds.value];
+    massCreateForm.post(route('manufacturing.boms.mass-create-work-orders'), {
+        preserveScroll: true,
+        onSuccess: () => closeMassCreateModal(),
+    });
+};
+
 const applyFilters = debounce(() => {
     router.get('/manufacturing/boms', {
         search: search.value || undefined,
@@ -53,6 +120,9 @@ const applyFilters = debounce(() => {
 }, 300);
 
 watch([search, selectedStatus, revisionFrom, revisionTo], applyFilters);
+watch(() => props.boms?.data, () => {
+    selectedBomIds.value = [];
+}, { deep: true });
 
 const deleteBom = (bom) => {
     if (confirm(`Are you sure you want to delete "${bom.name}"?`)) {
@@ -157,6 +227,18 @@ const exportBoms = () => {
                     <span class="hidden md:inline">Import</span>
                 </button>
 
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-500 hover:to-emerald-400 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    :disabled="selectedBomIds.length === 0"
+                    @click="openMassCreateModal"
+                    title="Create Work Order Massal (Confirmed)"
+                >
+                    <PlusIcon class="h-5 w-5" />
+                    <span class="hidden md:inline">Mass Create WO</span>
+                    <span class="md:hidden">WO</span>
+                </button>
+
                 <Link
                     :href="route('manufacturing.boms.create')"
                     class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all"
@@ -172,18 +254,37 @@ const exportBoms = () => {
                 <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
                     <thead>
                         <tr class="border-b border-slate-200 dark:border-slate-700">
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-10">
+                                <input
+                                    type="checkbox"
+                                    class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                    :checked="allEligibleSelected"
+                                    @change="toggleSelectAllEligible"
+                                    :disabled="eligibleBomIds.length === 0"
+                                />
+                            </th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">BOM Detail</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Finished Product</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Components</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Yield Qty</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Created Date</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Last Revision</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Order</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="bom in boms.data" :key="bom.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
+                            <td class="px-4 py-2 whitespace-nowrap text-center">
+                                <input
+                                    type="checkbox"
+                                    class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-40"
+                                    :disabled="!canSelectBom(bom)"
+                                    :checked="selectedBomIds.includes(bom.id)"
+                                    @change="(e) => toggleBomSelection(bom.id, e.target.checked)"
+                                />
+                            </td>
                             <td class="px-4 py-2 whitespace-nowrap">
                                 <div class="flex items-center gap-3">
                                     <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-600/20 to-red-600/20 border border-orange-500/30">
@@ -211,6 +312,9 @@ const exportBoms = () => {
                             <td class="px-4 py-2 whitespace-nowrap text-center text-sm text-slate-600 dark:text-slate-300 font-mono">
                                 {{ formatShortDate(bom.updated_at) }}
                             </td>
+                            <td class="px-4 py-2 whitespace-nowrap text-right text-sm text-slate-600 dark:text-slate-300 font-mono font-bold">
+                                {{ formatNumber(bom.active_remaining_qty ?? 0) }}
+                            </td>
                             <td class="px-4 py-2 whitespace-nowrap text-center">
                                 <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium capitalize" :class="getStatusBadge(bom.status)">{{ bom.status }}</span>
                             </td>
@@ -226,7 +330,7 @@ const exportBoms = () => {
                             </td>
                         </tr>
                         <tr v-if="boms.data.length === 0">
-                            <td colspan="8" class="px-4 py-12 text-center text-slate-500 italic">No definitions found.</td>
+                            <td colspan="10" class="px-4 py-12 text-center text-slate-500 italic">No definitions found.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -295,6 +399,109 @@ const exportBoms = () => {
                 </div>
             </div>
         </div>
+
+        <Modal :show="showMassCreateModal" @close="closeMassCreateModal">
+            <div class="p-6 bg-white dark:bg-slate-900 rounded-2xl">
+                <h2 class="text-lg font-medium text-slate-900 dark:text-white mb-1">Mass Create Work Order</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-5">
+                    Work Order akan dibuat dengan status <span class="font-bold">Confirmed</span> untuk BOM yang dipilih (hanya yang Active Order = 0).
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Qty Planned (sama semua)</label>
+                        <input
+                            v-model="massCreateForm.qty_planned"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800/50 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50"
+                            required
+                        />
+                        <div v-if="massCreateForm.errors.qty_planned" class="text-red-400 text-[11px] mt-1 font-semibold">{{ massCreateForm.errors.qty_planned }}</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Priority</label>
+                        <select
+                            v-model="massCreateForm.priority"
+                            class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800/50 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50"
+                            required
+                        >
+                            <option value="low">Low</option>
+                            <option value="normal">Normal</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                        <div v-if="massCreateForm.errors.priority" class="text-red-400 text-[11px] mt-1 font-semibold">{{ massCreateForm.errors.priority }}</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Schedule Start</label>
+                        <input
+                            v-model="massCreateForm.planned_start"
+                            type="date"
+                            class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800/50 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50"
+                            required
+                        />
+                        <div v-if="massCreateForm.errors.planned_start" class="text-red-400 text-[11px] mt-1 font-semibold">{{ massCreateForm.errors.planned_start }}</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Schedule Finish</label>
+                        <input
+                            v-model="massCreateForm.planned_end"
+                            type="date"
+                            class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800/50 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50"
+                            required
+                        />
+                        <div v-if="massCreateForm.errors.planned_end" class="text-red-400 text-[11px] mt-1 font-semibold">{{ massCreateForm.errors.planned_end }}</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Output Warehouse (FG)</label>
+                        <select
+                            v-model="massCreateForm.warehouse_id"
+                            class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800/50 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50"
+                            required
+                        >
+                            <option value="">Pilih Warehouse...</option>
+                            <option v-for="wh in warehouses" :key="wh.id" :value="wh.id">
+                                {{ wh.code ? `${wh.code} - ${wh.name}` : wh.name }}
+                            </option>
+                        </select>
+                        <div v-if="massCreateForm.errors.warehouse_id" class="text-red-400 text-[11px] mt-1 font-semibold">{{ massCreateForm.errors.warehouse_id }}</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Material Warehouse (RM)</label>
+                        <select
+                            v-model="massCreateForm.material_warehouse_id"
+                            class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800/50 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50"
+                            required
+                        >
+                            <option value="">Pilih Warehouse...</option>
+                            <option v-for="wh in warehouses" :key="wh.id" :value="wh.id">
+                                {{ wh.code ? `${wh.code} - ${wh.name}` : wh.name }}
+                            </option>
+                        </select>
+                        <div v-if="massCreateForm.errors.material_warehouse_id" class="text-red-400 text-[11px] mt-1 font-semibold">{{ massCreateForm.errors.material_warehouse_id }}</div>
+                    </div>
+                </div>
+
+                <div class="mt-5 flex items-center justify-between">
+                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                        Selected BOM: <span class="font-bold text-slate-900 dark:text-white">{{ selectedBomIds.length }}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <SecondaryButton type="button" @click="closeMassCreateModal">Batal</SecondaryButton>
+                        <PrimaryButton type="button" :disabled="massCreateForm.processing || selectedBomIds.length === 0" @click="submitMassCreate">
+                            Create WO
+                        </PrimaryButton>
+                    </div>
+                </div>
+            </div>
+        </Modal>
 
         <Modal :show="showImportModal" @close="closeImportModal">
             <div class="p-6 bg-white dark:bg-slate-900 rounded-2xl">

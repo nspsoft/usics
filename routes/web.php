@@ -406,6 +406,7 @@ Route::prefix('manufacturing')->name('manufacturing.')->middleware(['auth'])->gr
     Route::get('/boms/export', [BomController::class, 'export'])->name('boms.export');
     Route::get('/boms/template', [BomController::class, 'template'])->name('boms.template');
     Route::post('/boms/import', [BomController::class, 'import'])->name('boms.import');
+    Route::post('/boms/mass-create-work-orders', [BomController::class, 'massCreateWorkOrders'])->name('boms.mass-create-work-orders');
     Route::resource('boms', BomController::class);
     Route::post('/boms/{bom}/activate', [BomController::class, 'activate'])->name('boms.activate');
     Route::post('/boms/{bom}/archive', [BomController::class, 'archive'])->name('boms.archive');
