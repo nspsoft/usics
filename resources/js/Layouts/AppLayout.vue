@@ -365,6 +365,7 @@ const navigation = [
         permission: 'inventory.view',
         children: [
             { name: 'Command Center', href: '/inventory/dashboard', icon: PresentationChartBarIcon, permission: 'inventory.view' },
+            { name: 'Information', href: '/inventory/information', icon: InformationCircleIcon, permission: 'inventory.view' },
             { name: 'Categories', href: '/inventory/categories', icon: TagIcon, permission: 'inventory.categories.view' },
             { name: 'Products', href: '/inventory/products', icon: CubeIcon, permission: 'inventory.products.view' },
             { name: 'Unit Management', href: '/inventory/units', icon: ScaleIcon, permission: 'inventory.products.view' },
@@ -386,6 +387,7 @@ const navigation = [
         permission: 'manufacturing.view',
         children: [
             { name: 'Intelligence Hub', href: '/manufacturing/dashboard', icon: PresentationChartBarIcon, permission: 'manufacturing.view' },
+            { name: 'Information', href: '/manufacturing/information', icon: InformationCircleIcon, permission: 'manufacturing.view' },
             { name: 'Bill of Materials', href: '/manufacturing/boms', icon: ListBulletIcon, permission: 'manufacturing.bill_of_materials.view' },
             { name: 'Production Routing', href: '/manufacturing/routing', icon: ArrowsRightLeftIcon, permission: 'manufacturing.production_routing.view' },
             { name: 'Work Orders', href: '/manufacturing/work-orders', icon: ClipboardDocumentListIcon, permission: 'manufacturing.work_orders.view' },

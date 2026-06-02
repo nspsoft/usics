@@ -352,8 +352,74 @@ class SubcontractOrderController extends Controller
 
     public function print(SubcontractOrder $subcontractOrder)
     {
+        $subcontractOrder->load([
+            'workOrder.product.unit',
+            'workOrder.bom',
+            'workOrder.components.product.unit',
+            'workOrder.components.bomComponent',
+            'supplier',
+            'supplier.subcontractWarehouse',
+        ]);
+
+        $grReceipts = [];
+        if ($subcontractOrder->purchase_order_id) {
+            $fgProductId = $subcontractOrder->workOrder?->product_id;
+
+            $grReceipts = GoodsReceipt::query()
+                ->where('purchase_order_id', $subcontractOrder->purchase_order_id)
+                ->where('status', GoodsReceipt::STATUS_COMPLETED)
+                ->with(['items', 'receivedBy'])
+                ->orderBy('receipt_date')
+                ->get()
+                ->map(function ($gr) use ($fgProductId) {
+                    $qty = $fgProductId
+                        ? (float) $gr->items->where('product_id', $fgProductId)->sum('qty_received')
+                        : (float) $gr->items->sum('qty_received');
+
+                    return [
+                        'id' => $gr->id,
+                        'grn_number' => $gr->grn_number,
+                        'receipt_date' => $gr->receipt_date,
+                        'status' => $gr->status,
+                        'delivery_note_number' => $gr->delivery_note_number,
+                        'received_by' => $gr->receivedBy?->name,
+                        'qty' => $qty,
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
+        $subcontractWarehouseId = $subcontractOrder->supplier?->subcontract_warehouse_id;
+        $subcontractStocks = [];
+        if ($subcontractWarehouseId) {
+            $productIds = $subcontractOrder->workOrder?->components
+                ?->pluck('product_id')
+                ->unique()
+                ->filter()
+                ->values()
+                ->all() ?? [];
+
+            $stockByProductId = ProductStock::query()
+                ->where('warehouse_id', $subcontractWarehouseId)
+                ->whereIn('product_id', $productIds)
+                ->get()
+                ->keyBy('product_id');
+
+            foreach ($subcontractOrder->workOrder?->components ?? [] as $component) {
+                $subcontractStocks[] = [
+                    'product_id' => $component->product_id,
+                    'product' => $component->product,
+                    'qty_sent' => (float) ($component->qty_consumed ?? 0),
+                    'qty_on_hand' => (float) ($stockByProductId->get($component->product_id)?->qty_on_hand ?? 0),
+                ];
+            }
+        }
+
         return view('print.subcontract-order', [
-            'order' => $subcontractOrder->load(['workOrder.product.unit', 'workOrder.bom', 'workOrder.components.product.unit', 'supplier'])
+            'order' => $subcontractOrder,
+            'grReceipts' => $grReceipts,
+            'subcontractStocks' => $subcontractStocks,
         ]);
     }
 

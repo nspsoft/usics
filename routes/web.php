@@ -88,6 +88,7 @@ Route::middleware(['auth'])->group(function () {
 // Inventory Module
 Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Inventory\InventoryDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/information', [App\Http\Controllers\Inventory\InventoryInformationController::class, 'index'])->name('information');
     Route::resource('categories', App\Http\Controllers\Inventory\CategoryController::class);
     Route::get('/stocks', [App\Http\Controllers\Inventory\CurrentStockController::class, 'index'])->name('stocks.index');
     Route::get('/products/lookup', [ProductController::class, 'lookup'])->name('products.lookup');
@@ -401,6 +402,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
 // Manufacturing Module
 Route::prefix('manufacturing')->name('manufacturing.')->middleware(['auth'])->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Manufacturing\ProductionDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/information', [App\Http\Controllers\Manufacturing\ManufacturingInformationController::class, 'index'])->name('information');
     Route::get('/boms/export', [BomController::class, 'export'])->name('boms.export');
     Route::get('/boms/template', [BomController::class, 'template'])->name('boms.template');
     Route::post('/boms/import', [BomController::class, 'import'])->name('boms.import');

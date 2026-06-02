@@ -120,6 +120,8 @@
 
         .footer-section {
             margin-top: 15px;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         .signature-name {
             margin-top: 60px;
@@ -233,9 +235,14 @@
             @endif
             @endforeach
             <!-- Dynamic Spacer Row -->
-            @php $remainingRows = max(0, 10 - $no); @endphp
+            @php
+                $itemCount = max(0, $no - 1);
+                $targetRows = 7;
+                $rowHeight = 10;
+                $remainingRows = max(0, $targetRows - $itemCount);
+            @endphp
             <tr class="item-row">
-                <td style="height: {{ $remainingRows * 15 }}px; border-left: 1px solid #0055A5; border-right: 1px solid #0055A5;"></td>
+                <td style="height: {{ $remainingRows * $rowHeight }}px; border-left: 1px solid #0055A5; border-right: 1px solid #0055A5;"></td>
                 <td style="border-left: 1px solid #0055A5; border-right: 1px solid #0055A5;"></td>
                 <td style="border-left: 1px solid #0055A5; border-right: 1px solid #0055A5;"></td>
                 <td style="border-left: 1px solid #0055A5; border-right: 1px solid #0055A5;"></td>

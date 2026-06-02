@@ -126,6 +126,11 @@
     </style>
 </head>
 <body>
+    @php
+        $subcontractStocks = $subcontractStocks ?? [];
+        $grReceipts = $grReceipts ?? [];
+        $decimals = 2;
+    @endphp
     <div class="no-print" style="text-align: right; margin-bottom: 20px;">
         <button onclick="window.print()" style="padding: 10px 20px; background: #E21E26; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold;">PRINT ORDER</button>
     </div>
@@ -206,15 +211,115 @@
         </thead>
         <tbody>
             @foreach($order->workOrder->components as $index => $comp)
+            @php
+                $qtyPerUnit = (float) ($comp->bomComponent?->required_qty ?? $comp->bomComponent?->qty ?? 0);
+                $totalKirim = (float) ($comp->qty_required ?? 0);
+            @endphp
             <tr>
                 <td class="text-center">{{ $index + 1 }}</td>
                 <td class="text-center font-mono">{{ $comp->product->sku }}</td>
                 <td>{{ $comp->product->name }}</td>
-                <td class="text-right">{{ number_format($comp->qty_per_unit, 4, ',', '.') }}</td>
-                <td class="text-right font-bold">{{ number_format($comp->qty_planned, 0, ',', '.') }}</td>
+                <td class="text-right">{{ number_format($qtyPerUnit, $decimals, ',', '.') }}</td>
+                <td class="text-right font-bold">{{ number_format($totalKirim, $decimals, ',', '.') }}</td>
                 <td class="text-center">{{ $comp->product->unit->symbol ?? 'PCs' }}</td>
             </tr>
             @endforeach
+        </tbody>
+    </table>
+
+    <div class="section-title">Materials Dispatch Plan</div>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="40">No</th>
+                <th width="130">Kode Material</th>
+                <th>Nama Material / Komponen</th>
+                <th width="75">Qty Required</th>
+                <th width="75">Qty Dispatched</th>
+                <th width="75">Qty Remaining</th>
+                <th width="60">Unit</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($order->workOrder->components as $index => $comp)
+            @php
+                $qtyRequired = (float) ($comp->qty_required ?? 0);
+                $qtyDispatched = (float) ($comp->qty_consumed ?? 0);
+                $qtyRemaining = (float) ($comp->remaining_qty ?? ($qtyRequired - $qtyDispatched));
+            @endphp
+            <tr>
+                <td class="text-center">{{ $index + 1 }}</td>
+                <td class="text-center font-mono">{{ $comp->product->sku }}</td>
+                <td>{{ $comp->product->name }}</td>
+                <td class="text-right font-bold">{{ number_format($qtyRequired, $decimals, ',', '.') }}</td>
+                <td class="text-right font-bold">{{ number_format($qtyDispatched, $decimals, ',', '.') }}</td>
+                <td class="text-right font-bold">{{ number_format($qtyRemaining, $decimals, ',', '.') }}</td>
+                <td class="text-center">{{ $comp->product->unit->symbol ?? 'PCs' }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <div class="section-title">Subcont Stock On Hand</div>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="40">No</th>
+                <th width="150">Kode Material</th>
+                <th>Nama Material / Komponen</th>
+                <th width="100">Qty Sent</th>
+                <th width="100">Stock On Hand</th>
+                <th width="60">Unit</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($subcontractStocks as $i => $row)
+            <tr>
+                <td class="text-center">{{ $i + 1 }}</td>
+                <td class="text-center font-mono">{{ $row['product']?->sku ?? '-' }}</td>
+                <td>{{ $row['product']?->name ?? '-' }}</td>
+                <td class="text-right font-bold">{{ number_format((float) ($row['qty_sent'] ?? 0), $decimals, ',', '.') }}</td>
+                <td class="text-right font-bold">{{ number_format((float) ($row['qty_on_hand'] ?? 0), $decimals, ',', '.') }}</td>
+                <td class="text-center">{{ $row['product']?->unit?->symbol ?? 'PCs' }}</td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="6" class="text-center">Subcontract Warehouse belum diset / tidak ada data stock.</td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <div class="section-title">GRN Sesuai Kedatangan</div>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="40">No</th>
+                <th width="150">No. GRN</th>
+                <th>No. Surat Jalan / Penerima</th>
+                <th width="100">Tanggal</th>
+                <th width="80">Qty</th>
+                <th width="80">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($grReceipts as $i => $gr)
+            <tr>
+                <td class="text-center">{{ $i + 1 }}</td>
+                <td class="text-center font-bold">{{ $gr['grn_number'] ?? '-' }}</td>
+                <td>
+                    <div class="font-bold">{{ $gr['delivery_note_number'] ?? '-' }}</div>
+                    <div style="font-size: 8pt; color: #333;">Penerima/Input: {{ $gr['received_by'] ?? '-' }}</div>
+                </td>
+                <td class="text-center">{{ !empty($gr['receipt_date']) ? \Carbon\Carbon::parse($gr['receipt_date'])->format('d/m/Y') : '-' }}</td>
+                <td class="text-right font-bold">{{ number_format((float) ($gr['qty'] ?? 0), $decimals, ',', '.') }}</td>
+                <td class="text-center">{{ strtoupper($gr['status'] ?? '-') }}</td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="6" class="text-center">Belum ada GRN.</td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
 
