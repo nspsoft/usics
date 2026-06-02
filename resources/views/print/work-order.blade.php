@@ -256,9 +256,9 @@
                             ? ((float) $comp->qty_required / (float) $workOrder->qty_planned)
                             : 0;
                     @endphp
-                    {{ number_format($qtyPerUnit, 4, ',', '.') }}
+                    {{ number_format($qtyPerUnit, 2, ',', '.') }}
                 </td>
-                <td class="text-right font-bold">{{ number_format($comp->qty_required, 4, ',', '.') }}</td>
+                <td class="text-right font-bold">{{ number_format($comp->qty_required, 2, ',', '.') }}</td>
                 <td class="text-center">{{ $comp->unit->symbol ?? $comp->product->unit->symbol ?? 'EA' }}</td>
             </tr>
             @endforeach

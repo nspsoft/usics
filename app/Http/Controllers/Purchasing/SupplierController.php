@@ -11,6 +11,7 @@ use App\Imports\SupplierContactImport;
 use App\Imports\SupplierImport;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -54,7 +55,9 @@ class SupplierController extends Controller
     {
         return Inertia::render('Purchasing/Suppliers/Form', [
             'supplier' => null,
-            'subcontWarehouses' => \App\Models\Warehouse::where('type', 'subcontract')->where('is_active', true)->get(['id', 'name']),
+            'subcontWarehouses' => \App\Models\Warehouse::where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'code', 'name', 'type']),
         ]);
     }
 
@@ -88,7 +91,13 @@ class SupplierController extends Controller
         $supplier = Supplier::create($validated);
 
         if ($request->has('contacts')) {
-            $supplier->contacts()->createMany($request->contacts);
+            $contacts = collect($request->contacts)->map(function ($contact) use ($supplier) {
+                $data = Arr::only($contact, ['name', 'phone', 'email', 'position']);
+                $data['supplier_id'] = $supplier->id;
+                return $data;
+            })->all();
+
+            $supplier->contacts()->createMany($contacts);
         }
 
         return redirect()->route('purchasing.suppliers.index')
@@ -118,7 +127,9 @@ class SupplierController extends Controller
 
         return Inertia::render('Purchasing/Suppliers/Form', [
             'supplier' => $supplier,
-            'subcontWarehouses' => \App\Models\Warehouse::where('type', 'subcontract')->where('is_active', true)->get(['id', 'name']),
+            'subcontWarehouses' => \App\Models\Warehouse::where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'code', 'name', 'type']),
         ]);
     }
 
@@ -157,17 +168,18 @@ class SupplierController extends Controller
         // But usually frontend sends fresh array. Let's try to update logic if id exists.
 
         if ($request->has('contacts')) {
-            // Get IDs from request
-            $contactIds = collect($request->contacts)->pluck('id')->filter()->toArray();
+            $contacts = collect($validated['contacts'] ?? []);
+            $contactIds = $contacts->pluck('id')->filter()->toArray();
 
             // Delete contacts not in request
             $supplier->contacts()->whereNotIn('id', $contactIds)->delete();
 
-            foreach ($request->contacts as $contactData) {
+            foreach ($contacts as $contactData) {
+                $data = Arr::only($contactData, ['name', 'phone', 'email', 'position']);
                 if (isset($contactData['id'])) {
-                    $supplier->contacts()->where('id', $contactData['id'])->update($contactData);
+                    $supplier->contacts()->where('id', $contactData['id'])->update($data);
                 } else {
-                    $supplier->contacts()->create($contactData);
+                    $supplier->contacts()->create($data);
                 }
             }
         } else {

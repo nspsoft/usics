@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Manufacturing;
 
 use App\Http\Controllers\Controller;
+use App\Models\GoodsReceipt;
 use App\Models\ProductStock;
 use App\Models\StockMovement;
 use App\Models\SubcontractOrder;
@@ -74,6 +75,33 @@ class SubcontractOrderController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $grReceipts = [];
+        if ($subcontractOrder->purchase_order_id) {
+            $fgProductId = $subcontractOrder->workOrder?->product_id;
+
+            $grReceipts = GoodsReceipt::query()
+                ->where('purchase_order_id', $subcontractOrder->purchase_order_id)
+                ->where('status', GoodsReceipt::STATUS_COMPLETED)
+                ->with(['items'])
+                ->orderByDesc('receipt_date')
+                ->get()
+                ->map(function ($gr) use ($fgProductId) {
+                    $qty = $fgProductId
+                        ? (float) $gr->items->where('product_id', $fgProductId)->sum('qty_received')
+                        : (float) $gr->items->sum('qty_received');
+
+                    return [
+                        'id' => $gr->id,
+                        'grn_number' => $gr->grn_number,
+                        'receipt_date' => $gr->receipt_date,
+                        'status' => $gr->status,
+                        'qty' => $qty,
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
         $subcontractWarehouseId = $subcontractOrder->supplier?->subcontract_warehouse_id;
         $subcontractStocks = [];
         if ($subcontractWarehouseId) {
@@ -105,6 +133,7 @@ class SubcontractOrderController extends Controller
             'stockMovements' => $stockMovements,
             'subcontractWarehouse' => $subcontractOrder->supplier?->subcontractWarehouse,
             'subcontractStocks' => $subcontractStocks,
+            'grReceipts' => $grReceipts,
         ]);
     }
 
@@ -195,84 +224,7 @@ class SubcontractOrderController extends Controller
 
     public function receiveGoods(Request $request, SubcontractOrder $subcontractOrder)
     {
-        if (!in_array($subcontractOrder->status, ['sent', 'received'])) {
-            return back()->with('error', 'Only sent or partially received orders can receive goods.');
-        }
-
-        $subcontWarehouseId = $subcontractOrder->supplier->subcontract_warehouse_id ?? null;
-        if (!$subcontWarehouseId) {
-            return back()->with('error', 'Subcontract Warehouse belum diset di Supplier. Silakan set Subcontract Warehouse terlebih dahulu agar sisa material di subcont bisa dipantau.');
-        }
-
-        $validated = $request->validate([
-            'qty_received' => 'required|numeric|min:0.0001',
-            'sj_number' => 'nullable|string|max:50',
-            'notes' => 'nullable|string|max:500',
-        ]);
-
-        DB::transaction(function () use ($subcontractOrder, $validated) {
-            $workOrder = $subcontractOrder->workOrder;
-
-            // Update actual stock balance and log movement
-            $stock = ProductStock::firstOrCreate([
-                'product_id' => $workOrder->product_id,
-                'warehouse_id' => $workOrder->warehouse_id,
-            ], [
-                'qty_on_hand' => 0,
-                'avg_cost' => 0,
-            ]);
-
-            $stock->adjustStock(
-                $validated['qty_received'], 
-                null, 
-                StockMovement::TYPE_PRODUCTION_IN, 
-                $subcontractOrder, 
-                $validated['notes'] ?? "Received finished goods from Subcontractor for WO: {$workOrder->wo_number}",
-                $validated['sj_number'] ?? null // SJ Number
-            );
-
-            // BACKFLUSH COMPONENTS IF VIRTUAL WAREHOUSE EXISTS
-            if ($subcontWarehouseId) {
-                foreach ($workOrder->components as $component) {
-                    // Calculate theoretical usage
-                    $usagePerUnit = $workOrder->qty_planned > 0 ? ($component->qty_required / $workOrder->qty_planned) : 0;
-                    $qtyToConsume = $usagePerUnit * $validated['qty_received'];
-                    
-                    if ($qtyToConsume <= 0) continue;
-
-                    $subcontStock = ProductStock::firstOrCreate([
-                        'product_id' => $component->product_id,
-                        'warehouse_id' => $subcontWarehouseId,
-                    ], [
-                        'qty_on_hand' => 0,
-                        'avg_cost' => 0,
-                    ]);
-
-                    $subcontStock->adjustStock(
-                        -$qtyToConsume, 
-                        null, 
-                        StockMovement::TYPE_PRODUCTION_OUT, 
-                        $subcontractOrder, 
-                        "Backflush component for WO: {$workOrder->wo_number} (Ref: {$subcontractOrder->order_number})",
-                        'SJ: ' . ($validated['sj_number'] ?? '-')
-                    );
-                }
-            }
-
-            // Update Work Order produced qty
-            $workOrder->increment('qty_produced', $validated['qty_received']);
-
-            // If work order is completed, update Subcontract Order status
-            if ($workOrder->qty_produced >= $workOrder->qty_planned) {
-                $subcontractOrder->update(['status' => 'completed']);
-                $workOrder->update(['status' => 'completed', 'actual_end' => now()]);
-            } else {
-                $subcontractOrder->update(['status' => 'received']);
-                $workOrder->update(['status' => 'in_progress', 'actual_start' => $workOrder->actual_start ?? now()]);
-            }
-        });
-
-        return back()->with('success', 'Goods received and stock updated.');
+        return back()->with('error', 'Transaksi subcontract mengikuti GR PO (Purchasing). Menu Receive Product (IN) dinonaktifkan untuk menghindari double input.');
     }
 
     public function edit(SubcontractOrder $subcontractOrder)

@@ -141,6 +141,28 @@ const printByFilter = () => {
     closeExport();
 };
 
+const printSummaryByDate = () => {
+    const dateFrom = exportDateFrom.value || '';
+    const dateTo = exportDateTo.value || dateFrom || '';
+    if (!dateFrom) {
+        alert('Pilih Date From terlebih dahulu.');
+        return;
+    }
+    if (dateTo && dateTo !== dateFrom) {
+        alert('Print Summary hanya untuk 1 tanggal. Samakan Date From dan Date To.');
+        return;
+    }
+
+    const params = {
+        date: dateFrom,
+        status: exportStatus.value || undefined,
+        warehouse_id: exportWarehouse.value || undefined,
+    };
+
+    window.open(route('inventory.opname.print-summary', params), '_blank');
+    closeExport();
+};
+
 const sort = (field) => {
     if (sortField.value === field) {
         sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
@@ -579,6 +601,13 @@ const deleteOpname = (opname) => {
                     @click="printByFilter"
                 >
                     Print
+                </button>
+                <button
+                    type="button"
+                    class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors"
+                    @click="printSummaryByDate"
+                >
+                    Print Summary
                 </button>
             </div>
         </Modal>

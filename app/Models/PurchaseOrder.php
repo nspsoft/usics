@@ -6,6 +6,7 @@ use App\Traits\HasApproval;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -95,6 +96,11 @@ class PurchaseOrder extends Model
     public function goodsReceipts(): HasMany
     {
         return $this->hasMany(GoodsReceipt::class);
+    }
+
+    public function subcontractOrder(): HasOne
+    {
+        return $this->hasOne(SubcontractOrder::class, 'purchase_order_id');
     }
 
     public function returns(): HasMany

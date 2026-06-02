@@ -26,6 +26,7 @@ const props = defineProps({
     stockMovements: Array,
     subcontractWarehouse: Object,
     subcontractStocks: Array,
+    grReceipts: Array,
 });
 
 const showDispatchModal = ref(false);
@@ -151,7 +152,8 @@ const generatePo = () => {
 };
 
 const canDispatch = computed(() => !['completed', 'cancelled'].includes(props.order.status));
-const canReceive = computed(() => ['sent', 'received'].includes(props.order.status));
+const canReceive = computed(() => false);
+const canReturn = computed(() => !['completed', 'cancelled'].includes(props.order.status));
 </script>
 
 <template>
@@ -428,7 +430,7 @@ const canReceive = computed(() => ['sent', 'received'].includes(props.order.stat
                                 MATERIAL_RECONCILIATION
                             </h3>
                             <button 
-                                v-if="canReceive"
+                        v-if="canReturn"
                                 @click="openReturnModal"
                                 class="text-[10px] flex items-center gap-1.5 font-bold uppercase px-3 py-1.5 bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-slate-900 dark:text-white rounded-lg transition-all border border-purple-500/20"
                             >
@@ -486,6 +488,36 @@ const canReceive = computed(() => ['sent', 'received'].includes(props.order.stat
                                 class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
                                 :style="{ width: `${(order.work_order?.qty_produced / order.work_order?.qty_planned) * 100}%` }"
                             ></div>
+                        </div>
+                    </div>
+
+                    <div v-if="grReceipts && grReceipts.length > 0" class="glass-card rounded-3xl overflow-hidden shadow-sm">
+                        <div class="p-6 border-b border-slate-200 dark:border-slate-800">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 font-mono">
+                                <div class="h-6 w-1 bg-blue-500 rounded-full"></div>
+                                GR_RECEIPTS
+                            </h3>
+                        </div>
+                        <div class="overflow-x-auto max-h-[240px] overflow-y-auto custom-scrollbar relative">
+                            <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                                <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm">
+                                    <tr class="bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 text-left">
+                                        <th class="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">GRN</th>
+                                        <th class="px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Qty</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tr v-for="gr in grReceipts" :key="gr.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <Link :href="route('purchasing.receipts.show', gr.id)" class="text-slate-900 dark:text-white font-medium hover:text-blue-500">
+                                                {{ gr.grn_number }}
+                                            </Link>
+                                            <div class="text-[10px] text-slate-500 font-mono mt-0.5">{{ formatDate(gr.receipt_date) }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-right text-emerald-400 font-mono font-bold">{{ formatNumber(gr.qty) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
@@ -32,6 +32,7 @@ const selectedPriority = ref(props.filters.priority || '');
 const selectedType = ref(props.filters.production_type || '');
 const showFilters = ref(false);
 const showImportModal = ref(false);
+const selectedIds = ref([]);
 
 const importForm = useForm({
     file: null,
@@ -113,6 +114,93 @@ const formatDate = (date) => {
     return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
+const allSelected = computed(() => {
+    const rows = props.workOrders?.data || [];
+    return rows.length > 0 && selectedIds.value.length === rows.length;
+});
+
+const toggleSelectAll = (checked) => {
+    if (checked) {
+        selectedIds.value = (props.workOrders?.data || []).map(w => w.id);
+        return;
+    }
+    selectedIds.value = [];
+};
+
+const toggleSelected = (id, checked) => {
+    if (checked) {
+        if (!selectedIds.value.includes(id)) {
+            selectedIds.value.push(id);
+        }
+        return;
+    }
+    selectedIds.value = selectedIds.value.filter(x => x !== id);
+};
+
+const bulkStart = () => {
+    const selected = (props.workOrders?.data || []).filter(w => selectedIds.value.includes(w.id));
+    const eligibleIds = selected.filter(w => w.status === 'confirmed').map(w => w.id);
+    const skipped = selected.length - eligibleIds.length;
+
+    if (eligibleIds.length === 0) {
+        alert('Tidak ada Work Order berstatus Confirmed yang dipilih.');
+        return;
+    }
+
+    let message = `Start ${eligibleIds.length} Work Order?`;
+    if (skipped > 0) {
+        message += ` (${skipped} akan di-skip karena status bukan Confirmed)`;
+    }
+
+    if (!confirm(message)) {
+        return;
+    }
+
+    router.post(route('manufacturing.work-orders.bulk-start'), { ids: eligibleIds }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            selectedIds.value = [];
+        },
+    });
+};
+
+const bulkStartFiltered = () => {
+    if (selectedStatus.value !== 'confirmed') {
+        alert('Gunakan filter Status = Confirmed untuk bulk start.');
+        return;
+    }
+
+    const total = props.workOrders?.total || 0;
+    if (total <= 0) {
+        alert('Tidak ada Work Order berstatus Confirmed sesuai filter.');
+        return;
+    }
+
+    if (!confirm(`Start ${total} Work Order (sesuai filter saat ini)?`)) {
+        return;
+    }
+
+    router.post(route('manufacturing.work-orders.bulk-start-filtered'), {
+        search: search.value || undefined,
+        priority: selectedPriority.value || undefined,
+        production_type: selectedType.value || undefined,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            selectedIds.value = [];
+        },
+    });
+};
+
+const startWorkOrder = (wo) => {
+    if (!wo?.id) return;
+    if (confirm(`Start Production untuk WO ${wo.wo_number}?`)) {
+        router.post(route('manufacturing.work-orders.start', wo.id), {}, {
+            preserveScroll: true,
+        });
+    }
+};
+
 </script>
 
 <template>
@@ -148,6 +236,16 @@ const formatDate = (date) => {
                 >
                     <ArrowUpTrayIcon class="h-5 w-5" />
                     Import
+                </button>
+
+                <button
+                    v-if="selectedStatus === 'confirmed'"
+                    type="button"
+                    @click="bulkStartFiltered"
+                    class="inline-flex items-center gap-2 rounded-xl bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-400 border border-amber-500/20 hover:bg-amber-500 hover:text-slate-900 dark:text-white transition-colors"
+                >
+                    <PlayIcon class="h-5 w-5" />
+                    Start Filtered
                 </button>
 
                 <Link
@@ -219,10 +317,40 @@ const formatDate = (date) => {
         </Transition>
 
         <div class="rounded-2xl glass-card overflow-hidden">
+            <div v-if="selectedIds.length > 0" class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div class="text-sm text-slate-600 dark:text-slate-300">
+                    Selected: <span class="font-semibold text-slate-900 dark:text-white">{{ selectedIds.length }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-xl bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-400 border border-amber-500/20 hover:bg-amber-500 hover:text-slate-900 dark:text-white transition-colors"
+                        @click="bulkStart"
+                    >
+                        <PlayIcon class="h-4 w-4" />
+                        Start Selected
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-700 transition-colors"
+                        @click="selectedIds = []"
+                    >
+                        Clear
+                    </button>
+                </div>
+            </div>
             <div class="overflow-x-auto overflow-y-auto max-h-[600px]">
                 <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
                     <thead>
                         <tr class="border-b border-slate-200 dark:border-slate-700">
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-10">
+                                <input
+                                    type="checkbox"
+                                    class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/50"
+                                    :checked="allSelected"
+                                    @change="toggleSelectAll($event.target.checked)"
+                                />
+                            </th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">WO Number</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Product</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Output Qty</th>
@@ -236,6 +364,14 @@ const formatDate = (date) => {
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="wo in workOrders.data" :key="wo.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
+                            <td class="px-4 py-2 whitespace-nowrap">
+                                <input
+                                    type="checkbox"
+                                    class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/50"
+                                    :checked="selectedIds.includes(wo.id)"
+                                    @change="toggleSelected(wo.id, $event.target.checked)"
+                                />
+                            </td>
                             <td class="px-4 py-2 whitespace-nowrap">
                                 <div class="flex items-center gap-3">
                                     <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-600/20 to-blue-600/20 border border-cyan-500/30">
@@ -294,6 +430,15 @@ const formatDate = (date) => {
                                 <Link :href="route('manufacturing.work-orders.show', wo.id)" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors" title="View Detail">
                                     <EyeIcon class="h-4 w-4" />
                                 </Link>
+                                <button
+                                    v-if="wo.status === 'confirmed'"
+                                    type="button"
+                                    class="p-2 rounded-lg text-amber-400 hover:text-amber-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors"
+                                    title="Start Production"
+                                    @click="startWorkOrder(wo)"
+                                >
+                                    <PlayIcon class="h-4 w-4" />
+                                </button>
                                 <Link 
                                     v-if="wo.status === 'draft'"
                                     :href="route('manufacturing.work-orders.edit', wo.id)" 
@@ -305,7 +450,7 @@ const formatDate = (date) => {
                             </td>
                         </tr>
                         <tr v-if="workOrders.data.length === 0">
-                            <td colspan="9" class="px-4 py-12 text-center text-slate-500 italic">No active production runs found.</td>
+                            <td colspan="10" class="px-4 py-12 text-center text-slate-500 italic">No active production runs found.</td>
                         </tr>
                     </tbody>
                 </table>

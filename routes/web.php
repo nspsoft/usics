@@ -134,6 +134,7 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::resource('opname', App\Http\Controllers\Inventory\StockOpnameController::class);
     Route::get('/opname-export', [App\Http\Controllers\Inventory\StockOpnameController::class, 'export'])->name('opname.export');
     Route::get('/opname-print', [App\Http\Controllers\Inventory\StockOpnameController::class, 'printBatch'])->name('opname.print-batch');
+    Route::get('/opname-print-summary', [App\Http\Controllers\Inventory\StockOpnameController::class, 'printSummary'])->name('opname.print-summary');
     Route::post('/opname-import', [App\Http\Controllers\Inventory\StockOpnameController::class, 'import'])->name('opname.import');
     Route::post('/opname/{opname}/populate', [App\Http\Controllers\Inventory\StockOpnameController::class, 'populate'])->name('opname.populate');
     Route::post('/opname/{opname}/add-item', [App\Http\Controllers\Inventory\StockOpnameController::class, 'addItem'])->name('opname.add-item');
@@ -412,6 +413,8 @@ Route::prefix('manufacturing')->name('manufacturing.')->middleware(['auth'])->gr
     Route::post('/work-orders/{workOrder}/confirm', [WorkOrderController::class, 'confirm'])->name('work-orders.confirm');
     Route::post('/work-orders/{workOrder}/revert-to-draft', [WorkOrderController::class, 'revertToDraft'])->name('work-orders.revert-to-draft');
     Route::post('/work-orders/{workOrder}/start', [WorkOrderController::class, 'start'])->name('work-orders.start');
+    Route::post('/work-orders/bulk-start', [WorkOrderController::class, 'bulkStart'])->name('work-orders.bulk-start');
+    Route::post('/work-orders/bulk-start-filtered', [WorkOrderController::class, 'bulkStartFiltered'])->name('work-orders.bulk-start-filtered');
     Route::post('/work-orders/{workOrder}/complete', [WorkOrderController::class, 'complete'])->name('work-orders.complete');
     Route::post('/work-orders/{workOrder}/cancel', [WorkOrderController::class, 'cancel'])->name('work-orders.cancel');
     Route::post('/work-orders/{workOrder}/reopen', [WorkOrderController::class, 'reopen'])->name('work-orders.reopen');
@@ -420,6 +423,7 @@ Route::prefix('manufacturing')->name('manufacturing.')->middleware(['auth'])->gr
     Route::post('/work-orders/{workOrder}/record-production', [WorkOrderController::class, 'recordProduction'])->name('work-orders.record-production');
     
     Route::get('/production-entry', [WorkOrderController::class, 'productionEntryIndex'])->name('production-entry.index');
+    Route::get('/production-reports', [\App\Http\Controllers\Manufacturing\ProductionEntryController::class, 'index'])->name('production-reports.index');
     Route::resource('shifts', ShiftController::class);
     Route::resource('machines', MachineController::class);
     Route::resource('subcontract-orders', SubcontractOrderController::class);

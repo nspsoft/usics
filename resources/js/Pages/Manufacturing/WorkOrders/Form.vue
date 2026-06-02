@@ -7,6 +7,7 @@ import {
     CogIcon,
     CubeIcon,
 } from '@heroicons/vue/24/outline';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 
 const props = defineProps({
     workOrder: Object,
@@ -37,6 +38,13 @@ const selectedBom = computed(() => {
     if (!form.bom_id) return null;
     return props.boms.find(b => b.id === parseInt(form.bom_id));
 });
+
+const bomOptions = computed(() =>
+    props.boms.map(b => ({
+        id: b.id,
+        label: `${b.name} (${b.product?.name || '-'})`,
+    }))
+);
 
 const priorities = [
     { value: 'low', label: 'Low', color: 'text-slate-500 dark:text-slate-400' },
@@ -88,19 +96,26 @@ watch(() => form.planned_start, (newVal) => {
 
             <form @submit.prevent="submit" class="space-y-8">
                 <!-- BOM Selection -->
-                <div class="glass-card rounded-3xl p-6 shadow-sm">
+                <div class="glass-card rounded-3xl p-6 shadow-sm relative z-50">
                     <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-6 border-b border-slate-200 dark:border-slate-800 pb-4 flex items-center gap-2">
                         <CubeIcon class="h-4 w-4" />
                         Product & BOM
                     </h3>
                     
                     <div class="space-y-6">
-                        <div>
+                        <div class="relative z-50">
                             <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Bill of Materials *</label>
-                            <select 
+                            <SearchableSelect
+                                v-if="!isEditing"
+                                v-model="form.bom_id"
+                                :options="bomOptions"
+                                placeholder="Select BOM..."
+                            />
+                            <select
+                                v-else
                                 v-model="form.bom_id"
                                 class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
-                                :disabled="isEditing"
+                                disabled
                                 required
                             >
                                 <option value="">Select BOM...</option>
@@ -127,7 +142,7 @@ watch(() => form.planned_start, (newVal) => {
                 </div>
 
                 <!-- Production Details -->
-                <div class="glass-card rounded-3xl p-6 shadow-sm">
+                <div class="glass-card rounded-3xl p-6 shadow-sm relative z-0">
                     <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-6 border-b border-slate-200 dark:border-slate-800 pb-4 flex items-center gap-2">
                         <CogIcon class="h-4 w-4" />
                         Production Details

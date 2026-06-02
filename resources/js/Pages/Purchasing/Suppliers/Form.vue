@@ -399,7 +399,7 @@ const onMapConfirm = (location) => {
                             >
                                 <option :value="null">-- No Virtual Warehouse --</option>
                                 <option v-for="wh in subcontWarehouses" :key="wh.id" :value="wh.id">
-                                    {{ wh.name }}
+                                    {{ wh.code }} - {{ wh.name }}
                                 </option>
                             </select>
                             <p class="text-xs text-slate-500 mt-2">

@@ -478,7 +478,15 @@ const formatDate = (date) => {
                                         </div>
                                         <div>
                                             <div class="text-sm font-medium text-slate-900 dark:text-white">{{ po.po_number }}</div>
-                                            <div class="text-xs text-slate-500">{{ po.warehouse?.name }}</div>
+                                            <div class="flex items-center gap-2 mt-0.5">
+                                                <div class="text-xs text-slate-500">{{ po.warehouse?.name }}</div>
+                                                <span
+                                                    v-if="po.is_subcontract"
+                                                    class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase bg-amber-500/20 text-amber-400 ring-1 ring-inset ring-amber-500/30"
+                                                >
+                                                    Subcontract
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </td>

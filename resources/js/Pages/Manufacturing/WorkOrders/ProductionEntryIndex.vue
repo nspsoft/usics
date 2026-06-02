@@ -4,7 +4,8 @@ import {
     CubeIcon, 
     ArrowRightIcon, 
     ClockIcon,
-    MagnifyingGlassIcon
+    MagnifyingGlassIcon,
+    ListBulletIcon
 } from '@heroicons/vue/24/outline';
 import { ref, watch } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -19,7 +20,7 @@ const props = defineProps({
 const search = ref(props.filters?.search || '');
 
 const applyFilters = debounce(() => {
-    router.get(route('manufacturing.work-orders.production-entry'), {
+    router.get(route('manufacturing.production-entry.index'), {
         search: search.value || undefined,
     }, { preserveState: true, replace: true });
 }, 300);
@@ -35,14 +36,23 @@ watch(search, applyFilters);
         <div class="w-full">
             <!-- PWA Style Header for Mobile -->
             <div class="mb-6 lg:mb-8">
-                <div class="relative">
-                    <input 
-                        v-model="search"
-                        type="text" 
-                        placeholder="Search Work Order / Product..." 
-                        class="w-full rounded-2xl border-0 bg-white dark:bg-slate-950 py-4 pl-12 pr-4 text-slate-900 dark:text-white placeholder:text-slate-500 shadow-lg focus:ring-2 focus:ring-cyan-500/50"
-                    />
-                    <MagnifyingGlassIcon class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="relative flex-1">
+                        <input 
+                            v-model="search"
+                            type="text" 
+                            placeholder="Search Work Order / Product..." 
+                            class="w-full rounded-2xl border-0 bg-white dark:bg-slate-950 py-4 pl-12 pr-4 text-slate-900 dark:text-white placeholder:text-slate-500 shadow-lg focus:ring-2 focus:ring-cyan-500/50"
+                        />
+                        <MagnifyingGlassIcon class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                    </div>
+                    <Link
+                        :href="route('manufacturing.production-reports.index')"
+                        class="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-50 dark:bg-slate-800/50 px-5 py-4 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                        <ListBulletIcon class="h-5 w-5" />
+                        Laporan
+                    </Link>
                 </div>
             </div>
 
@@ -54,7 +64,7 @@ watch(search, applyFilters);
                 <p class="text-slate-500">All work orders are completed or none are started.</p>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid gap-4 sm:grid-cols-2 lg:hidden">
                 <Link 
                     v-for="wo in workOrders.data" 
                     :key="wo.id"
@@ -101,6 +111,57 @@ watch(search, applyFilters);
                         </div>
                     </div>
                 </Link>
+            </div>
+
+            <div class="hidden lg:block rounded-2xl glass-card overflow-hidden">
+                <div class="overflow-x-auto overflow-y-auto max-h-[650px]">
+                    <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-slate-700">
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">WO</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Product</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Produced</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Target</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Progress</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-3 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-16">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tr v-for="wo in workOrders.data" :key="wo.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="text-xs font-bold text-cyan-400 mb-1 border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 rounded-full w-fit">
+                                        {{ wo.wo_number }}
+                                    </div>
+                                    <div class="text-[10px] text-slate-500 font-mono">{{ wo.product_sku }}</div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="text-sm font-semibold text-slate-900 dark:text-white line-clamp-1">{{ wo.product_name }}</div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right">
+                                    <span class="text-emerald-400 font-mono font-bold">{{ formatNumber(wo.qty_produced) }}</span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right">
+                                    <span class="text-slate-600 dark:text-slate-300 font-mono font-bold">{{ formatNumber(wo.qty_planned) }}</span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right">
+                                    <span class="text-slate-900 dark:text-white font-mono font-bold">{{ wo.percent.toFixed(0) }}%</span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right">
+                                    <Link
+                                        :href="route('manufacturing.work-orders.record-production-form', wo.id)"
+                                        class="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                                        title="Input Produksi"
+                                    >
+                                        <ArrowRightIcon class="h-5 w-5" />
+                                    </Link>
+                                </td>
+                            </tr>
+                            <tr v-if="workOrders.data.length === 0">
+                                <td colspan="6" class="px-4 py-12 text-center text-slate-500 italic">No Active Jobs</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Pagination -->

@@ -1,6 +1,6 @@
 <script setup>
-import { computed } from 'vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { 
     ArrowLeftIcon, 
     XMarkIcon,
@@ -18,6 +18,28 @@ const props = defineProps({
     operators: Array,
     defaultOperatorEmployeeId: [Number, String],
 });
+
+const page = usePage();
+const toast = ref(null);
+const lastFlash = ref(null);
+
+const showToast = (type, message) => {
+    toast.value = { type, message };
+    setTimeout(() => {
+        if (toast.value?.message === message) {
+            toast.value = null;
+        }
+    }, 4000);
+};
+
+watch(() => page.props.flash, (flash) => {
+    const key = JSON.stringify(flash || {});
+    if (key === lastFlash.value) return;
+    lastFlash.value = key;
+
+    if (flash?.success) showToast('success', flash.success);
+    if (flash?.error) showToast('error', flash.error);
+}, { deep: true });
 
 const generateRequestId = () => {
     try {
@@ -58,12 +80,16 @@ const submit = () => {
     form.post(route('manufacturing.work-orders.record-production', props.workOrder.id), {
         onSuccess: () => {
             form.client_request_id = generateRequestId();
+            showToast('success', 'Input produksi berhasil disimpan.');
             // Redirect will be handled by controller, but we can also force navigate back
             // The controller currently does `return back()`, so this form submission will reload the page
             // We should ideally update controller to redirect to show page on success
             // OR we rely on Inertia behavior. 
             // For PWA flow, let's assume we want to go back to WO detail on success.
             // But 'back' from here is the WO detail page anyway if we navigated here.
+        },
+        onError: () => {
+            showToast('error', 'Gagal menyimpan input produksi. Periksa kembali data yang diisi.');
         }
     });
 };
@@ -273,6 +299,17 @@ const submit = () => {
                 <!-- Spacer for fixed bottom bar -->
                 <div class="h-20"></div>
             </form>
+        </div>
+
+        <div v-if="toast" class="fixed left-1/2 -translate-x-1/2 bottom-24 z-50 w-[calc(100%-2rem)] max-w-lg">
+            <div
+                class="rounded-2xl px-4 py-3 shadow-2xl border backdrop-blur-md"
+                :class="toast.type === 'success'
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200'
+                    : 'bg-red-500/10 border-red-500/20 text-red-200'"
+            >
+                <div class="text-sm font-semibold">{{ toast.message }}</div>
+            </div>
         </div>
     </div>
 </template>

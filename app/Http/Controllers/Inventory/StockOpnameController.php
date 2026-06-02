@@ -577,6 +577,80 @@ class StockOpnameController extends Controller
         ]);
     }
 
+    public function printSummary(Request $request)
+    {
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'status' => 'nullable|string|in:draft,in_progress,completed,cancelled',
+            'warehouse_id' => 'nullable|exists:warehouses,id',
+        ]);
+
+        $date = $validated['date'];
+        $status = $validated['status'] ?? null;
+        $warehouseId = $validated['warehouse_id'] ?? null;
+
+        $priceExpr = "CASE WHEN products.product_type = ? THEN COALESCE(products.selling_price, 0) ELSE COALESCE(products.cost_price, 0) END";
+
+        $opnames = StockOpname::query()
+            ->with(['warehouse', 'createdBy'])
+            ->withCount('items')
+            ->when(!empty($status), fn ($q) => $q->where('status', $status))
+            ->when(!empty($warehouseId), fn ($q) => $q->where('warehouse_id', $warehouseId))
+            ->whereDate('opname_date', $date)
+            ->select('inv_stock_opnames.*')
+            ->selectSub(
+                StockOpnameItem::query()
+                    ->join('products', 'inv_stock_opname_items.product_id', '=', 'products.id')
+                    ->whereColumn('inv_stock_opname_items.stock_opname_id', 'inv_stock_opnames.id')
+                    ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_system * ({$priceExpr})), 0)", [Product::TYPE_FINISHED_GOOD]),
+                'system_value'
+            )
+            ->selectSub(
+                StockOpnameItem::query()
+                    ->join('products', 'inv_stock_opname_items.product_id', '=', 'products.id')
+                    ->whereColumn('inv_stock_opname_items.stock_opname_id', 'inv_stock_opnames.id')
+                    ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_physic * ({$priceExpr})), 0)", [Product::TYPE_FINISHED_GOOD]),
+                'physical_value'
+            )
+            ->selectSub(
+                StockOpnameItem::query()
+                    ->join('products', 'inv_stock_opname_items.product_id', '=', 'products.id')
+                    ->whereColumn('inv_stock_opname_items.stock_opname_id', 'inv_stock_opnames.id')
+                    ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_difference * ({$priceExpr})), 0)", [Product::TYPE_FINISHED_GOOD]),
+                'variance_value'
+            )
+            ->orderBy('warehouse_id', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $summaryPriceExpr = "CASE WHEN p.product_type = ? THEN COALESCE(p.selling_price, 0) ELSE COALESCE(p.cost_price, 0) END";
+        $totals = StockOpnameItem::query()
+            ->join('inv_stock_opnames as o', 'inv_stock_opname_items.stock_opname_id', '=', 'o.id')
+            ->join('products as p', 'inv_stock_opname_items.product_id', '=', 'p.id')
+            ->whereNull('o.deleted_at')
+            ->whereDate('o.opname_date', $date)
+            ->when(!empty($status), fn ($q) => $q->where('o.status', $status))
+            ->when(!empty($warehouseId), fn ($q) => $q->where('o.warehouse_id', $warehouseId))
+            ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_system * ({$summaryPriceExpr})), 0) as system_value", [Product::TYPE_FINISHED_GOOD])
+            ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_physic * ({$summaryPriceExpr})), 0) as physical_value", [Product::TYPE_FINISHED_GOOD])
+            ->selectRaw("COALESCE(SUM(inv_stock_opname_items.qty_difference * ({$summaryPriceExpr})), 0) as variance_value", [Product::TYPE_FINISHED_GOOD])
+            ->first();
+
+        return view('print.stock-opname-summary', [
+            'opnames' => $opnames,
+            'date' => $date,
+            'filters' => [
+                'status' => $status,
+                'warehouse_id' => $warehouseId,
+            ],
+            'totals' => [
+                'system_value' => (float) ($totals->system_value ?? 0),
+                'physical_value' => (float) ($totals->physical_value ?? 0),
+                'variance_value' => (float) ($totals->variance_value ?? 0),
+            ],
+        ]);
+    }
+
     public function publicValidate($uuid)
     {
         $opname = StockOpname::with(['warehouse', 'createdBy', 'items.product.unit'])

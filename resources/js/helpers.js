@@ -11,6 +11,18 @@ export const formatNumber = (num) => {
     }).format(val);
 };
 
+export const formatNumberFixed = (num, fractionDigits = 2) => {
+    if (num === null || num === undefined) return new Intl.NumberFormat('id-ID', {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits
+    }).format(0);
+    const val = parseFloat(num);
+    return new Intl.NumberFormat('id-ID', {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits
+    }).format(isNaN(val) ? 0 : val);
+};
+
 /**
  * Format currency to IDR with no decimal places
  * Examples: 150000.00 -> Rp 150.000

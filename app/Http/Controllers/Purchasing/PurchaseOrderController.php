@@ -25,6 +25,7 @@ class PurchaseOrderController extends Controller
     {
         $query = PurchaseOrder::with(['supplier', 'warehouse', 'createdBy'])
             ->withCount('items')
+            ->withCount(['subcontractOrder as subcontract_order_count'])
             ->withSum('items as total_qty', 'qty')
             ->withSum('items as total_received', 'qty_received')
             ->withSum('items as total_returned', 'qty_returned')
@@ -67,6 +68,10 @@ class PurchaseOrderController extends Controller
         }
 
         $purchaseOrders = $query->paginate(20)->withQueryString();
+        $purchaseOrders->getCollection()->transform(function ($po) {
+            $po->is_subcontract = ((int) ($po->subcontract_order_count ?? 0)) > 0;
+            return $po;
+        });
 
         // Calculate stats from a fresh base query (Bug 7 fix: avoid cloning after join)
         $statsBaseQuery = PurchaseOrder::query()
@@ -238,7 +243,8 @@ class PurchaseOrderController extends Controller
      */
     public function show(PurchaseOrder $order): Response
     {
-        $order->load(['supplier', 'warehouse', 'items.product', 'items.unit', 'createdBy', 'approvedBy', 'goodsReceipts']);
+        $order->load(['supplier', 'warehouse', 'items.product', 'items.unit', 'createdBy', 'approvedBy', 'goodsReceipts', 'subcontractOrder']);
+        $order->is_subcontract = $order->subcontractOrder !== null;
 
         return Inertia::render('Purchasing/Orders/Show', [
             'purchaseOrder' => $order,

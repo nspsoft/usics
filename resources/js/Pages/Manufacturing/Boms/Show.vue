@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { formatNumber, formatCurrency } from '@/helpers';
+import { formatNumber, formatCurrency, formatNumberFixed } from '@/helpers';
 import { 
     ArrowLeftIcon, 
     PencilSquareIcon,
@@ -195,7 +195,7 @@ const costPerUnit = computed(() => {
                                             <div class="text-[10px] text-slate-500 font-mono mt-0.5">{{ comp.product?.sku }}</div>
                                         </td>
                                         <td class="px-6 py-4 text-center">
-                                            <div class="text-sm font-bold text-slate-200 font-mono">{{ formatNumber(comp.qty) }}</div>
+                                            <div class="text-sm font-bold text-slate-200 font-mono">{{ formatNumberFixed(comp.qty, 2) }}</div>
                                             <div class="text-[10px] text-slate-500 uppercase font-bold">{{ comp.unit?.symbol || comp.product?.unit?.symbol || 'pcs' }}</div>
                                         </td>
                                         <td class="px-6 py-4 text-center">

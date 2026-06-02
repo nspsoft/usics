@@ -7,6 +7,7 @@ use App\Exports\Template\WorkOrderTemplateExport;
 use App\Imports\WorkOrdersImport;
 use App\Models\Bom;
 use App\Models\Employee;
+use App\Models\GoodsReceipt;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\ProductionEntry;
@@ -18,6 +19,7 @@ use App\Models\WorkOrder;
 use App\Models\MaterialConsumption;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -113,7 +115,10 @@ class WorkOrderController extends Controller
             'boms' => Bom::active()->with('product')->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
             'defaultMaterialWarehouseId' => $this->resolveDefaultMaterialWarehouseId(),
-            'suppliers' => Supplier::orderBy('name')->get(['id', 'name']),
+            'suppliers' => Supplier::subcontractors()
+                ->where('company_id', session('company_id'))
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
     }
 
@@ -130,7 +135,15 @@ class WorkOrderController extends Controller
             'priority' => 'required|in:low,normal,high,urgent',
             'notes' => 'nullable|string',
             'production_type' => 'required|in:internal,subcontract',
-            'supplier_id' => 'required_if:production_type,subcontract|nullable|exists:suppliers,id',
+            'supplier_id' => [
+                'nullable',
+                'required_if:production_type,subcontract',
+                Rule::exists('suppliers', 'id')->where(function ($q) {
+                    $q->where('company_id', session('company_id'))
+                        ->where('is_active', true)
+                        ->whereNotNull('subcontract_warehouse_id');
+                }),
+            ],
         ]);
 
         DB::transaction(function () use ($validated) {
@@ -170,11 +183,45 @@ class WorkOrderController extends Controller
     {
         $workOrder->load(['product', 'bom', 'warehouse', 'supplier', 'components.product', 'productionEntries.operatorEmployee', 'productionEntries.entryUser', 'productionEntries.producedBy', 'materialConsumptions.product', 'subcontractOrders']);
 
+        $subcontractGrReceipts = [];
+        if ($workOrder->production_type === 'subcontract') {
+            $subcontractOrder = $workOrder->subcontractOrders
+                ?->sortByDesc('id')
+                ->first();
+
+            if ($subcontractOrder?->purchase_order_id) {
+                $fgProductId = $workOrder->product_id;
+
+                $subcontractGrReceipts = GoodsReceipt::query()
+                    ->where('purchase_order_id', $subcontractOrder->purchase_order_id)
+                    ->where('status', GoodsReceipt::STATUS_COMPLETED)
+                    ->with(['items'])
+                    ->orderByDesc('receipt_date')
+                    ->get()
+                    ->map(function ($gr) use ($fgProductId) {
+                        $qty = $fgProductId
+                            ? (float) $gr->items->where('product_id', $fgProductId)->sum('qty_received')
+                            : (float) $gr->items->sum('qty_received');
+
+                        return [
+                            'id' => $gr->id,
+                            'grn_number' => $gr->grn_number,
+                            'receipt_date' => $gr->receipt_date,
+                            'status' => $gr->status,
+                            'qty' => $qty,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        }
+
         return Inertia::render('Manufacturing/WorkOrders/Show', [
             'workOrder' => $workOrder,
             'shiftOptions' => ProductionEntry::getShiftOptions(),
             'defectCategories' => ProductionEntry::getDefectCategories(),
             'operators' => Employee::query()->where('is_active', true)->orderBy('full_name')->get(['id', 'nik', 'full_name']),
+            'subcontractGrReceipts' => $subcontractGrReceipts,
         ]);
     }
 
@@ -211,8 +258,80 @@ class WorkOrderController extends Controller
         return back()->with('success', 'Production started.');
     }
 
+    public function bulkStart(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $ids = array_values(array_unique($validated['ids']));
+
+        $workOrders = WorkOrder::whereIn('id', $ids)->get(['id', 'status']);
+        $eligibleIds = $workOrders->where('status', WorkOrder::STATUS_CONFIRMED)->pluck('id')->values();
+        $skipped = $workOrders->count() - $eligibleIds->count();
+
+        if ($eligibleIds->isEmpty()) {
+            return back()->with('error', 'Tidak ada Work Order berstatus Confirmed yang dipilih.');
+        }
+
+        DB::transaction(function () use ($eligibleIds) {
+            WorkOrder::whereIn('id', $eligibleIds)->update([
+                'status' => WorkOrder::STATUS_IN_PROGRESS,
+                'actual_start' => now(),
+            ]);
+        });
+
+        $message = "Started {$eligibleIds->count()} work orders.";
+        if ($skipped > 0) {
+            $message .= " Skipped {$skipped} karena status bukan Confirmed.";
+        }
+
+        return back()->with('success', $message);
+    }
+
+    public function bulkStartFiltered(Request $request)
+    {
+        $validated = $request->validate([
+            'search' => 'nullable|string',
+            'priority' => 'nullable|in:low,normal,high,urgent',
+            'production_type' => 'nullable|in:internal,subcontract',
+        ]);
+
+        $query = WorkOrder::query()
+            ->where('status', WorkOrder::STATUS_CONFIRMED)
+            ->when(($validated['search'] ?? null), function ($q, $search) {
+                $q->where(function ($q) use ($search) {
+                    $q->where('wo_number', 'like', "%{$search}%")
+                        ->orWhereHas('product', function ($pq) use ($search) {
+                            $pq->where('name', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->when(($validated['priority'] ?? null), fn ($q, $priority) => $q->where('priority', $priority))
+            ->when(($validated['production_type'] ?? null), fn ($q, $type) => $q->where('production_type', $type));
+
+        $count = (clone $query)->count();
+        if ($count <= 0) {
+            return back()->with('error', 'Tidak ada Work Order berstatus Confirmed sesuai filter.');
+        }
+
+        DB::transaction(function () use ($query) {
+            $query->update([
+                'status' => WorkOrder::STATUS_IN_PROGRESS,
+                'actual_start' => now(),
+            ]);
+        });
+
+        return back()->with('success', "Started {$count} work orders (filtered).");
+    }
+
     public function complete(WorkOrder $workOrder)
     {
+        if ($workOrder->production_type === 'subcontract') {
+            return back()->with('error', 'Work Order subcontract diproses lewat GR PO (Purchasing). Menu complete dinonaktifkan untuk menghindari double posting stok.');
+        }
+
         if ($workOrder->status !== 'in_progress') {
             return back()->with('error', 'Only in-progress work orders can be completed.');
         }
@@ -262,13 +381,22 @@ class WorkOrderController extends Controller
 
     public function edit(WorkOrder $workOrder): Response
     {
+        $suppliers = Supplier::subcontractors()
+            ->where('company_id', session('company_id'))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+        if ($workOrder->supplier_id && !$suppliers->contains('id', $workOrder->supplier_id)) {
+            $selected = Supplier::query()->whereKey($workOrder->supplier_id)->get(['id', 'name']);
+            $suppliers = $selected->concat($suppliers)->unique('id')->values();
+        }
+
         return Inertia::render('Manufacturing/WorkOrders/Form', [
             'workOrder' => $workOrder,
             'woNumber' => $workOrder->wo_number,
             'boms' => Bom::active()->with('product')->orderBy('name')->get(),
             'warehouses' => Warehouse::active()->orderBy('name')->get(),
             'defaultMaterialWarehouseId' => $this->resolveDefaultMaterialWarehouseId(),
-            'suppliers' => Supplier::orderBy('name')->get(['id', 'name']),
+            'suppliers' => $suppliers,
         ]);
     }
 
@@ -285,7 +413,15 @@ class WorkOrderController extends Controller
             'priority' => 'required|in:low,normal,high,urgent',
             'notes' => 'nullable|string',
             'production_type' => 'required|in:internal,subcontract',
-            'supplier_id' => 'required_if:production_type,subcontract|nullable|exists:suppliers,id',
+            'supplier_id' => [
+                'nullable',
+                'required_if:production_type,subcontract',
+                Rule::exists('suppliers', 'id')->where(function ($q) {
+                    $q->where('company_id', session('company_id'))
+                        ->where('is_active', true)
+                        ->whereNotNull('subcontract_warehouse_id');
+                }),
+            ],
         ]);
 
         DB::transaction(function () use ($validated, $workOrder) {
@@ -313,6 +449,11 @@ class WorkOrderController extends Controller
 
     public function recordProductionForm(WorkOrder $workOrder): Response
     {
+        if ($workOrder->production_type === 'subcontract') {
+            return redirect()->route('manufacturing.work-orders.show', $workOrder->id)
+                ->with('error', 'Work Order subcontract diproses lewat GR PO (Purchasing). Menu input produksi dinonaktifkan untuk menghindari double input.');
+        }
+
         if ($workOrder->status !== 'in_progress') {
             return redirect()->route('manufacturing.work-orders.show', $workOrder->id)
                 ->with('error', 'Production can only be recorded for in-progress work orders.');
@@ -334,6 +475,7 @@ class WorkOrderController extends Controller
     {
         $query = WorkOrder::with(['product', 'bom', 'components'])
             ->where('status', 'in_progress')
+            ->where('production_type', '!=', 'subcontract')
             ->when($request->search, function ($q, $search) {
                 $q->where(function ($q) use ($search) {
                     $q->where('wo_number', 'like', "%{$search}%")
@@ -377,6 +519,10 @@ class WorkOrderController extends Controller
      */
     public function recordProduction(Request $request, WorkOrder $workOrder)
     {
+        if ($workOrder->production_type === 'subcontract') {
+            return back()->with('error', 'Work Order subcontract diproses lewat GR PO (Purchasing). Menu input produksi dinonaktifkan untuk menghindari double input.');
+        }
+
         if ($workOrder->status !== 'in_progress') {
             return back()->with('error', 'Only in-progress work orders can record production.');
         }

@@ -19,10 +19,11 @@ import {
     XMarkIcon,
     PencilIcon,
 } from '@heroicons/vue/24/outline';
-import { formatNumber } from '@/helpers';
+import { formatNumber, formatNumberFixed } from '@/helpers';
 
 const props = defineProps({
     workOrder: Object,
+    subcontractGrReceipts: Array,
 });
 
 const confirmAction = (action) => {
@@ -91,8 +92,8 @@ const remainingQty = computed(() => {
 
 const canConfirm = computed(() => props.workOrder.status === 'draft');
 const canStart = computed(() => props.workOrder.status === 'confirmed');
-const canRecordProduction = computed(() => props.workOrder.status === 'in_progress');
-const canComplete = computed(() => props.workOrder.status === 'in_progress' && parseFloat(props.workOrder.qty_produced) > 0);
+const canRecordProduction = computed(() => props.workOrder.status === 'in_progress' && props.workOrder.production_type !== 'subcontract');
+const canComplete = computed(() => props.workOrder.status === 'in_progress' && parseFloat(props.workOrder.qty_produced) > 0 && props.workOrder.production_type !== 'subcontract');
 const canCancel = computed(() => !['completed', 'cancelled'].includes(props.workOrder.status));
 const canReopen = computed(() => props.workOrder.status === 'cancelled');
 </script>
@@ -300,8 +301,8 @@ const canReopen = computed(() => props.workOrder.status === 'cancelled');
                                             <div class="text-slate-900 dark:text-white font-medium">{{ comp.product?.name }}</div>
                                             <div class="text-[10px] text-slate-500 font-mono mt-0.5">{{ comp.product?.sku }}</div>
                                         </td>
-                                        <td class="px-6 py-4 text-right text-slate-600 dark:text-slate-300 font-mono">{{ formatNumber(comp.qty_required) }}</td>
-                                        <td class="px-6 py-4 text-right text-emerald-400 font-mono">{{ formatNumber(comp.qty_consumed || 0) }}</td>
+                                        <td class="px-6 py-4 text-right text-slate-600 dark:text-slate-300 font-mono">{{ formatNumberFixed(comp.qty_required, 2) }}</td>
+                                        <td class="px-6 py-4 text-right text-emerald-400 font-mono">{{ formatNumberFixed(comp.qty_consumed || 0, 2) }}</td>
                                     </tr>
                                     <tr v-if="!workOrder.components || workOrder.components.length === 0">
                                         <td colspan="3" class="px-6 py-8 text-center text-slate-500 italic">No components defined</td>
@@ -416,6 +417,36 @@ const canReopen = computed(() => props.workOrder.status === 'cancelled');
                         </h3>
                         <div class="text-sm font-bold text-slate-900 dark:text-white">{{ workOrder.supplier?.name || 'Unknown Vendor' }}</div>
                         <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">External Production Partner</p>
+                    </div>
+
+                    <div v-if="subcontractGrReceipts && subcontractGrReceipts.length > 0" class="glass-card rounded-3xl overflow-hidden shadow-sm">
+                        <div class="p-6 border-b border-slate-200 dark:border-slate-800">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 font-mono">
+                                <div class="h-6 w-1 bg-blue-500 rounded-full"></div>
+                                GR_RECEIPTS
+                            </h3>
+                        </div>
+                        <div class="overflow-x-auto max-h-[240px] overflow-y-auto custom-scrollbar relative">
+                            <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                                <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm">
+                                    <tr class="bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 text-left">
+                                        <th class="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">GRN</th>
+                                        <th class="px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Qty</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tr v-for="gr in subcontractGrReceipts" :key="gr.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <Link :href="route('purchasing.receipts.show', gr.id)" class="text-slate-900 dark:text-white font-medium hover:text-blue-500">
+                                                {{ gr.grn_number }}
+                                            </Link>
+                                            <div class="text-[10px] text-slate-500 font-mono mt-0.5">{{ formatDate(gr.receipt_date) }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-right text-emerald-400 font-mono font-bold">{{ formatNumber(gr.qty) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- Notes -->

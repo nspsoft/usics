@@ -215,6 +215,9 @@ const formatDate = (date) => {
                                     <span v-if="purchaseOrder.revision > 0" class="px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-700 text-sm font-semibold border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20">
                                         Rev. {{ purchaseOrder.revision }}
                                     </span>
+                                    <span v-if="purchaseOrder.is_subcontract" class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase bg-amber-500/20 text-amber-400 ring-1 ring-inset ring-amber-500/30">
+                                        Subcontract
+                                    </span>
                                 </h1>
                                 <div class="flex items-center gap-2 mt-1">
                                     <span class="text-sm text-slate-500">Created by {{ purchaseOrder.created_by?.name }} on {{ formatDate(purchaseOrder.created_at) }}</span>

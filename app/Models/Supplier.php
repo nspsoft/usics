@@ -109,4 +109,12 @@ class Supplier extends Model
     {
         return $query->where('is_active', true);
     }
+
+    public function scopeSubcontractors($query)
+    {
+        return $query
+            ->active()
+            ->whereNotNull('subcontract_warehouse_id')
+            ->whereHas('subcontractWarehouse');
+    }
 }
