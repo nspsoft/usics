@@ -2,7 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { formatNumber } from '@/helpers';
+import { formatNumber, formatDate, formatTime } from '@/helpers';
 import debounce from 'lodash/debounce';
 import { MagnifyingGlassIcon, ArrowTopRightOnSquareIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
 
@@ -40,15 +40,6 @@ const clearFilters = () => {
     operatorEmployeeId.value = '';
 };
 
-const formatDate = (date) => {
-    if (!date) return '-';
-    return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-};
-
-const formatTime = (t) => {
-    if (!t) return '-';
-    return String(t).slice(0, 5);
-};
 </script>
 
 <template>

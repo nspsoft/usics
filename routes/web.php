@@ -542,6 +542,8 @@ Route::middleware(['auth'])->prefix('logistics')->name('logistics.')->group(func
     // Dispatch Panel
     Route::get('/dispatch', [App\Http\Controllers\Logistics\DispatchController::class, 'index'])->name('dispatch.index');
     Route::patch('/dispatch/{deliveryOrder}/ship', [App\Http\Controllers\Logistics\DispatchController::class, 'dispatch'])->name('dispatch.ship');
+
+    Route::get('/tracking', [App\Http\Controllers\Logistics\FleetTrackingController::class, 'index'])->name('tracking.index');
     
     Route::get('/fleet/export', [App\Http\Controllers\Logistics\VehicleController::class, 'export'])->name('fleet.export');
     Route::get('/fleet/template', [App\Http\Controllers\Logistics\VehicleController::class, 'template'])->name('fleet.template');
@@ -551,6 +553,9 @@ Route::middleware(['auth'])->prefix('logistics')->name('logistics.')->group(func
     Route::get('/fleet/{vehicle}', [App\Http\Controllers\Logistics\VehicleController::class, 'show'])->name('fleet.show');
     Route::put('/fleet/{vehicle}', [App\Http\Controllers\Logistics\VehicleController::class, 'update'])->name('fleet.update');
     Route::delete('/fleet/{vehicle}', [App\Http\Controllers\Logistics\VehicleController::class, 'destroy'])->name('fleet.destroy');
+
+    Route::get('/traccar/devices', [App\Http\Controllers\Logistics\TraccarProxyController::class, 'devices'])->name('traccar.devices');
+    Route::get('/traccar/positions', [App\Http\Controllers\Logistics\TraccarProxyController::class, 'positions'])->name('traccar.positions');
 });
 
 // Driver Mobile Module
@@ -689,6 +694,11 @@ Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(functi
     Route::get('/whatsapp', [App\Http\Controllers\Settings\WhatsappSettingController::class, 'index'])->name('whatsapp.index');
     Route::post('/whatsapp', [App\Http\Controllers\Settings\WhatsappSettingController::class, 'update'])->name('whatsapp.update');
     Route::post('/whatsapp/test', [App\Http\Controllers\Settings\WhatsappSettingController::class, 'testConnection'])->name('whatsapp.test');
+
+    // Traccar Settings
+    Route::get('/traccar', [App\Http\Controllers\Settings\TraccarSettingController::class, 'index'])->name('traccar.index');
+    Route::post('/traccar', [App\Http\Controllers\Settings\TraccarSettingController::class, 'update'])->name('traccar.update');
+    Route::post('/traccar/test', [App\Http\Controllers\Settings\TraccarSettingController::class, 'test'])->name('traccar.test');
 });
 
 // Admin

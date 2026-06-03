@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
 import { ref } from 'vue';
+import { formatDate as formatDateDmy } from '@/helpers';
 import { 
     BellIcon, 
     CheckIcon,
@@ -56,7 +57,7 @@ const formatDate = (date) => {
     if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
     if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
     if (diff < 604800000) return Math.floor(diff / 86400000) + 'd ago';
-    return d.toLocaleDateString();
+    return formatDateDmy(d);
 };
 </script>
 

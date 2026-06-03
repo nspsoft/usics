@@ -4,6 +4,7 @@ import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
+import { formatDate, formatTime } from '@/helpers';
 import { 
     CalendarDaysIcon, 
     PlusIcon, 
@@ -13,7 +14,6 @@ import {
     ArrowRightIcon,
     ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline';
-import moment from 'moment';
 
 const props = defineProps({
     balances: Array,
@@ -21,15 +21,6 @@ const props = defineProps({
     attendanceRequests: Array,
     stats: Object,
 });
-
-const formatDate = (date) => {
-    return moment(date).format('DD MMM YYYY');
-};
-
-const formatTime = (time) => {
-    if (!time) return '--:--';
-    return moment(time, ['HH:mm:ss', 'HH:mm']).format('HH:mm');
-};
 
 const getAttendanceTypeLabel = (type) => {
     const map = {

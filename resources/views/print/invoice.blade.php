@@ -238,7 +238,7 @@
                             <tr>
                                 <td class="info-label">Date</td>
                                 <td class="info-separator">:</td>
-                                <td class="info-value">{{ $invoice->invoice_date->format('d F Y') }}</td>
+                                <td class="info-value">{{ $invoice->invoice_date->format('d/m/Y') }}</td>
                             </tr>
                             <tr>
                                 <td class="info-label">PO No.</td>
@@ -253,7 +253,7 @@
                             <tr>
                                 <td class="info-label">Terms</td>
                                 <td class="info-separator">:</td>
-                                <td class="info-value">{{ $invoice->due_date->format('d F Y') }}</td>
+                                <td class="info-value">{{ $invoice->due_date->format('d/m/Y') }}</td>
                             </tr>
                             <tr>
                                 <td class="info-label">DO No.</td>
@@ -376,7 +376,7 @@
             </div>
 
             <div class="signature-box">
-                <div style="margin-bottom: 15px;">Cikarang, {{ $invoice->invoice_date->format('d F Y') }}</div>
+                <div style="margin-bottom: 15px;">Cikarang, {{ $invoice->invoice_date->format('d/m/Y') }}</div>
                 <div class="signature-space" style="position: relative;">
                     @if($invoice->emeterai_serial)
                     <div style="position: absolute; top: 5px; left: 50%; transform: translateX(-50%); text-align: center;">
@@ -435,7 +435,7 @@
                         {{-- Merge Date and DO Number cells --}}
                         @if($index === 0)
                             <td rowspan="{{ $items->count() }}" style="padding: 5px; border: 1pt solid #ddd; text-align: center; vertical-align: middle; background-color: #fff;">
-                                {{ $item->deliveryOrder?->delivery_date->format('d/m/y') ?? '-' }}
+                                {{ $item->deliveryOrder?->delivery_date->format('d/m/Y') ?? '-' }}
                             </td>
                             <td rowspan="{{ $items->count() }}" style="padding: 5px; border: 1pt solid #ddd; vertical-align: middle; background-color: #fff;">
                                 {{ $doNumber }}

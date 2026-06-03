@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
+import { formatDate } from '@/helpers';
 import {
     HomeIcon,
     CubeIcon,
@@ -436,6 +437,7 @@ const navigation = [
             { name: 'Delivery Planning', href: '/logistics/planning', icon: MapIcon, permission: 'logistics.delivery_planning.view' },
             { name: 'Dispatch', href: '/logistics/dispatch', icon: TruckIcon, permission: 'logistics.view' },
             { name: 'Vehicle Fleet', href: '/logistics/fleet', icon: TruckIcon, permission: 'logistics.vehicle_fleet.view' },
+            { name: 'Fleet Tracking', href: '/logistics/tracking', icon: MapPinIcon, permission: 'logistics.view' },
         ]
     },
     { 
@@ -508,6 +510,7 @@ const navigation = [
             { name: 'Database Management', href: '/settings/database', icon: CircleStackIcon, permission: 'settings.database_management.view' },
             { name: 'Activity Logs', href: '/admin/activity-logs', icon: ClipboardDocumentListIcon, permission: 'settings.activity_logs.view' },
             { name: 'WhatsApp Bot', href: '/settings/whatsapp', icon: ChatBubbleLeftRightIcon, permission: 'settings.company_profile.view' },
+            { name: 'Traccar Tracking', href: '/settings/traccar', icon: MapPinIcon, permission: 'settings.view' },
         ]
     },
 ];
@@ -577,16 +580,8 @@ const recentNotifications = computed(() => page.props.auth?.recentNotifications 
 // Clock Logic
 const currentDate = ref('');
 
-// Immediate initialization (outside onMounted)
-const dateOptions = { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-};
-
 try {
-    currentDate.value = new Date().toLocaleDateString('id-ID', dateOptions);
+    currentDate.value = formatDate(new Date());
 } catch (e) {
     console.error('Date formatting error:', e);
     currentDate.value = new Date().toDateString();
@@ -1040,7 +1035,7 @@ onUnmounted(() => {
                                             >
                                                 <p class="text-sm text-slate-900 dark:text-white font-medium">{{ notification.data.title }}</p>
                                                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ notification.data.message }}</p>
-                                                <p class="text-xs text-slate-400 dark:text-slate-500 mt-2">{{ new Date(notification.created_at).toLocaleDateString() }}</p>
+                                                <p class="text-xs text-slate-400 dark:text-slate-500 mt-2">{{ formatDate(notification.created_at) }}</p>
                                             </div>
                                         </div>
                                         <div v-else class="px-4 py-8 text-center text-slate-400 dark:text-slate-500 text-sm">

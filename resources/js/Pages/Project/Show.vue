@@ -22,7 +22,7 @@ import {
     PrinterIcon,
     BookOpenIcon
 } from '@heroicons/vue/24/outline';
-import { formatDate } from '@/helpers';
+import { formatDate, formatDateTime } from '@/helpers';
 
 const props = defineProps({
     project: Object,
@@ -523,7 +523,7 @@ const handlePrint = () => {
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-slate-600">ID: JICOS-PRJ-{{ project.id.toString().padStart(4, '0') }}</p>
-                    <p class="text-[8px] uppercase font-bold tracking-widest text-slate-500">Official Strategic Document • {{ new Date().toLocaleString() }}</p>
+                    <p class="text-[8px] uppercase font-bold tracking-widest text-slate-500">Official Strategic Document • {{ formatDateTime(new Date()) }}</p>
                 </div>
             </div>
 

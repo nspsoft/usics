@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
+import { formatDate } from '@/helpers';
 import { 
     ShoppingCartIcon, 
     TruckIcon, 
@@ -297,7 +298,7 @@ const chartOptions = {
                                 <div v-for="po in recent_pos" :key="po.id" class="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-default">
                                     <div class="flex justify-between items-start mb-1">
                                         <span class="font-bold text-slate-800 dark:text-slate-200 text-sm group-hover:text-indigo-400 transition-colors">{{ po.po_number }}</span>
-                                        <span class="text-[10px] font-mono text-slate-400">{{ new Date(po.order_date).toLocaleDateString() }}</span>
+                                        <span class="text-[10px] font-mono text-slate-400">{{ formatDate(po.order_date) }}</span>
                                     </div>
                                     <div class="flex justify-between items-center">
                                        <div class="flex items-center gap-1.5">

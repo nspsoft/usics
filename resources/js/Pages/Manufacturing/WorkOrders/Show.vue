@@ -19,7 +19,7 @@ import {
     XMarkIcon,
     PencilIcon,
 } from '@heroicons/vue/24/outline';
-import { formatNumber, formatNumberFixed } from '@/helpers';
+import { formatNumber, formatNumberFixed, formatDate, formatDateTime } from '@/helpers';
 
 const props = defineProps({
     workOrder: Object,
@@ -31,19 +31,6 @@ const confirmAction = (action) => {
         preserveScroll: true,
     });
 };
-
-
-
-const formatDate = (date) => {
-    if (!date) return '-';
-    return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-};
-
-const formatDateTime = (date) => {
-    if (!date) return '-';
-    return new Date(date).toLocaleString('id-ID');
-};
-
 
 const getStatusBadge = (status) => {
     const badges = {

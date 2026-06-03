@@ -7,7 +7,7 @@ import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import moment from 'moment';
+import { formatDate } from '@/helpers';
 import debounce from 'lodash/debounce';
 
 const props = defineProps({
@@ -25,8 +25,6 @@ watch(statusFilter, debounce(function (value) {
         { preserveState: true, replace: true }
     );
 }, 300));
-
-const formatDate = (date) => moment(date).format('DD MMM YYYY');
 
 // Modals State
 const showApproveModal = ref(false);

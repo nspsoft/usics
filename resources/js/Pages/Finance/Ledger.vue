@@ -10,6 +10,7 @@ import {
     DocumentTextIcon
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
+import { formatDate } from '@/helpers';
 
 const props = defineProps({
     journals: Object,
@@ -35,9 +36,6 @@ const formatCurrency = (value) => new Intl.NumberFormat('id-ID', {
     style: 'currency', currency: 'IDR', maximumFractionDigits: 0 
 }).format(value);
 
-const formatDate = (date) => new Date(date).toLocaleDateString('id-ID', {
-    day: '2-digit', month: 'short', year: 'numeric'
-});
 </script>
 
 <template>

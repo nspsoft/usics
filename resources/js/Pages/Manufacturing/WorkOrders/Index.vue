@@ -16,7 +16,7 @@ import {
     ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
-import { formatNumber, formatCurrency } from '@/helpers';
+import { formatNumber, formatCurrency, formatDate } from '@/helpers';
 
 const props = defineProps({
     workOrders: Object,
@@ -108,10 +108,6 @@ const getPriorityBadge = (priority) => {
         urgent: 'bg-red-500/20 text-red-400',
     };
     return badges[priority] || 'bg-slate-500/20 text-slate-500 dark:text-slate-400';
-};
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 const allSelected = computed(() => {

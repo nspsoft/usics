@@ -9,6 +9,7 @@ import {
     TruckIcon,
     BanknotesIcon
 } from '@heroicons/vue/24/outline';
+import { formatDate } from '@/helpers';
 
 const props = defineProps({
     order: Object,
@@ -48,7 +49,7 @@ const reject = () => {
                 <div>
                     <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Order #{{ order.po_number }}</h1>
                     <p class="text-sm text-slate-500">
-                        Date: {{ new Date(order.order_date).toLocaleDateString() }}
+                        Date: {{ formatDate(order.order_date) }}
                     </p>
                 </div>
                 <div class="ml-auto">

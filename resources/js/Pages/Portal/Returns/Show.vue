@@ -9,6 +9,7 @@ import {
     ArrowLeftIcon,
     ExclamationCircleIcon
 } from '@heroicons/vue/24/outline';
+import { formatDate } from '@/helpers';
 
 defineProps({
     returnDetails: Object,
@@ -34,7 +35,7 @@ const formatCurrency = (amount) => {
                     </span>
                 </h1>
                 <div class="text-sm text-slate-500">
-                    Created on {{ new Date(returnDetails.created_at).toLocaleDateString() }}
+                    Created on {{ formatDate(returnDetails.created_at) }}
                 </div>
             </div>
         </div>
@@ -54,7 +55,7 @@ const formatCurrency = (amount) => {
                             <p class="text-sm text-slate-500 mb-1">Return Date</p>
                             <p class="font-medium text-slate-900 dark:text-white flex items-center gap-2">
                                 <CalendarIcon class="w-4 h-4" />
-                                {{ new Date(returnDetails.return_date).toLocaleDateString() }}
+                                {{ formatDate(returnDetails.return_date) }}
                             </p>
                         </div>
                         <div>

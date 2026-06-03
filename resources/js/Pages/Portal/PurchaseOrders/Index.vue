@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
 import { ChevronRightIcon } from '@heroicons/vue/24/outline';
+import { formatDate } from '@/helpers';
 
 const props = defineProps({
     orders: Object,
@@ -35,7 +36,7 @@ const props = defineProps({
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
                         <tr v-for="po in orders.data" :key="po.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="px-6 py-4 font-medium text-slate-900 dark:text-white">{{ po.po_number }}</td>
-                            <td class="px-6 py-4">{{ new Date(po.order_date).toLocaleDateString() }}</td>
+                            <td class="px-6 py-4">{{ formatDate(po.order_date) }}</td>
                             <td class="px-6 py-4">{{ po.warehouse?.name || '-' }}</td>
                             <td class="px-6 py-4">{{ po.items?.length || 0 }} Items</td>
                             <td class="px-6 py-4 font-bold">Rp {{ Number(po.total).toLocaleString('id-ID') }}</td>

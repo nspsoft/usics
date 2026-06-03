@@ -10,6 +10,7 @@ import {
     ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline';
 import { ref, computed } from 'vue';
+import { formatDate } from '@/helpers';
 
 const props = defineProps({
     rfq: Object,
@@ -90,7 +91,7 @@ const handleFileChange = (e) => {
                     <p class="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase mb-1">Deadline</p>
                     <p class="text-lg font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
                         <CalendarIcon class="w-5 h-5" />
-                        {{ new Date(rfq.deadline).toLocaleDateString() }}
+                        {{ formatDate(rfq.deadline) }}
                     </p>
                 </div>
             </div>
@@ -139,7 +140,7 @@ const handleFileChange = (e) => {
                         </div>
                         <div>
                             <span class="block opacity-70">Submitted On:</span>
-                            <span class="font-bold">{{ new Date(quotation.created_at).toLocaleDateString() }}</span>
+                            <span class="font-bold">{{ formatDate(quotation.created_at) }}</span>
                         </div>
                         <div>
                             <span class="block opacity-70">Total Amount:</span>
@@ -232,7 +233,7 @@ const handleFileChange = (e) => {
                     <ExclamationTriangleIcon class="w-6 h-6" />
                     <div>
                         <p class="font-bold">This RFQ has expired.</p>
-                        <p class="text-sm">The deadline was {{ new Date(rfq.deadline).toLocaleDateString() }}. You can no longer submit a quotation.</p>
+                        <p class="text-sm">The deadline was {{ formatDate(rfq.deadline) }}. You can no longer submit a quotation.</p>
                     </div>
                 </div>
             </div>

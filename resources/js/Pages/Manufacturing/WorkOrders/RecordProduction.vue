@@ -9,6 +9,7 @@ import {
     ClockIcon,
     ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline';
+import DmyDateInput from '@/Components/DmyDateInput.vue';
 
 const props = defineProps({
     workOrder: Object,
@@ -135,9 +136,8 @@ const submit = () => {
                     <div>
                         <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Tanggal & Shift</label>
                         <div class="grid grid-cols-2 gap-3">
-                            <input 
+                            <DmyDateInput
                                 v-model="form.production_date"
-                                type="date"
                                 class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50"
                                 required
                             />

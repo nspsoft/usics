@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
 import { ChevronRightIcon } from '@heroicons/vue/24/outline';
+import { formatDate } from '@/helpers';
 
 defineProps({
     invoices: Object,
@@ -36,8 +37,8 @@ defineProps({
                         <tr v-for="invoice in invoices.data" :key="invoice.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="px-6 py-4 font-medium text-slate-900 dark:text-white">{{ invoice.invoice_number }}</td>
                             <td class="px-6 py-4 text-indigo-600">{{ invoice.purchase_order?.po_number }}</td>
-                            <td class="px-6 py-4">{{ new Date(invoice.invoice_date).toLocaleDateString() }}</td>
-                            <td class="px-6 py-4">{{ new Date(invoice.due_date).toLocaleDateString() }}</td>
+                            <td class="px-6 py-4">{{ formatDate(invoice.invoice_date) }}</td>
+                            <td class="px-6 py-4">{{ formatDate(invoice.due_date) }}</td>
                             <td class="px-6 py-4 font-bold">Rp {{ Number(invoice.total_amount).toLocaleString('id-ID') }}</td>
                             <td class="px-6 py-4">
                                 <span class="px-2 py-1 rounded-full text-xs font-bold capitalize"

@@ -68,6 +68,7 @@ class VehicleController extends Controller
     {
         $validated = $request->validate([
             'license_plate' => 'required|string|max:20|unique:vehicles,license_plate',
+            'traccar_device_id' => 'nullable|integer|unique:vehicles,traccar_device_id',
             'vehicle_type' => 'nullable|string|max:50',
             'brand' => 'nullable|string|max:50',
             'capacity_weight' => 'nullable|numeric|min:0',
@@ -112,6 +113,7 @@ class VehicleController extends Controller
     {
         $validated = $request->validate([
             'license_plate' => 'required|string|max:20|unique:vehicles,license_plate,' . $vehicle->id,
+            'traccar_device_id' => 'nullable|integer|unique:vehicles,traccar_device_id,' . $vehicle->id,
             'vehicle_type' => 'nullable|string|max:50',
             'brand' => 'nullable|string|max:50',
             'capacity_weight' => 'nullable|numeric|min:0',

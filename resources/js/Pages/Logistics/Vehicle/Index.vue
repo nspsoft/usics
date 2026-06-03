@@ -30,6 +30,7 @@ const editingVehicle = ref(null);
 
 const form = useForm({
     license_plate: '',
+    traccar_device_id: null,
     vehicle_type: '',
     brand: '',
     capacity_weight: 0,
@@ -74,6 +75,7 @@ const submitImport = () => {
 const openCreateModal = () => {
     editingVehicle.value = null;
     form.reset();
+    loadTraccarDevices();
     showModal.value = true;
 };
 
@@ -81,6 +83,7 @@ const openEditModal = (vehicle) => {
     editingVehicle.value = vehicle;
     form.clearErrors();
     form.license_plate = vehicle.license_plate;
+    form.traccar_device_id = vehicle.traccar_device_id;
     form.vehicle_type = vehicle.vehicle_type;
     form.brand = vehicle.brand;
     form.capacity_weight = vehicle.capacity_weight;
@@ -95,7 +98,27 @@ const openEditModal = (vehicle) => {
     form.kir_expiry = vehicle.kir_expiry;
     form.driver_photo = null;
     form.vehicle_photo = null;
+    loadTraccarDevices();
     showModal.value = true;
+};
+
+const traccarDevices = ref([]);
+const traccarLoading = ref(false);
+const traccarError = ref(null);
+
+const loadTraccarDevices = async () => {
+    traccarError.value = null;
+    traccarLoading.value = true;
+
+    try {
+        const response = await axios.get(route('logistics.traccar.devices'));
+        traccarDevices.value = response.data?.data || [];
+    } catch (error) {
+        traccarDevices.value = [];
+        traccarError.value = error.response?.data?.message || error.message;
+    } finally {
+        traccarLoading.value = false;
+    }
 };
 
 const submit = () => {
@@ -416,6 +439,18 @@ const getDoStatusColor = (status) => {
                             <div class="space-y-2">
                                 <label class="text-xs font-black uppercase tracking-widest text-slate-500">No Polisi (License Plate)</label>
                                 <input v-model="form.license_plate" type="text" class="w-full bg-slate-50 dark:bg-slate-800 border-0 ring-1 ring-slate-200 dark:ring-slate-700 rounded-xl px-4 py-3 shadow-inner focus:ring-2 focus:ring-blue-500 transition-all font-bold uppercase" placeholder="B 1234 ABC" required />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black uppercase tracking-widest text-slate-500">Traccar Device</label>
+                                <select v-model="form.traccar_device_id" class="w-full bg-slate-50 dark:bg-slate-800 border-0 ring-1 ring-slate-200 dark:ring-slate-700 rounded-xl px-4 py-3 shadow-inner focus:ring-2 focus:ring-blue-500 transition-all">
+                                    <option :value="null">- Tidak di-link -</option>
+                                    <option v-for="d in traccarDevices" :key="d.id" :value="d.id">
+                                        {{ d.name }}{{ d.uniqueId ? ` (${d.uniqueId})` : '' }}
+                                    </option>
+                                </select>
+                                <div v-if="traccarLoading" class="text-[11px] font-bold text-slate-500">Loading devices...</div>
+                                <div v-else-if="traccarError" class="text-[11px] font-bold text-red-600">{{ traccarError }}</div>
+                                <div v-if="form.errors.traccar_device_id" class="text-[11px] font-bold text-red-600">{{ form.errors.traccar_device_id }}</div>
                             </div>
                             <div class="space-y-2">
                                 <label class="text-xs font-black uppercase tracking-widest text-slate-500">Tipe Kendaraan</label>

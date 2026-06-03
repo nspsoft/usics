@@ -39,20 +39,53 @@ export const formatCurrency = (num) => {
 };
 
 /**
- * Format date to Indonesian long format
- * Examples: 2026-01-28 -> 28 Januari 2026
+ * Format date to DD/MM/YYYY
+ * Examples: 2026-01-28 -> 28/01/2026
  */
 export const formatDate = (date) => {
     if (!date) return '-';
     try {
         const d = new Date(date);
         if (isNaN(d.getTime())) return date;
-        return d.toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
+        return d.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
             year: 'numeric'
         });
     } catch (e) {
         return date;
+    }
+};
+
+export const formatTime = (time) => {
+    if (!time) return '-';
+    try {
+        const raw = String(time);
+        const m = raw.match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
+        if (!m) return time;
+        return `${m[1]}:${m[2]}`;
+    } catch (e) {
+        return time;
+    }
+};
+
+export const formatDateTime = (dateTime) => {
+    if (!dateTime) return '-';
+    try {
+        const d = new Date(dateTime);
+        if (isNaN(d.getTime())) return dateTime;
+        const date = d.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        const time = d.toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        return `${date} ${time}`;
+    } catch (e) {
+        return dateTime;
     }
 };

@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Link } from '@inertiajs/vue3';
+import { formatDate } from '@/helpers';
 
 defineProps({
     ncrs: Object,
@@ -39,7 +40,7 @@ defineProps({
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 <tr v-for="ncr in ncrs.data" :key="ncr.id">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                        {{ new Date(ncr.created_at).toLocaleDateString() }}
+                                        {{ formatDate(ncr.created_at) }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {{ ncr.inspection?.reference_type?.split('\\').pop() }} #{{ ncr.inspection?.reference_id }}

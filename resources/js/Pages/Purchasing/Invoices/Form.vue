@@ -15,7 +15,7 @@ import {
     XCircleIcon,
 } from '@heroicons/vue/24/outline';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
-import { formatNumber, formatCurrency } from '@/helpers';
+import { formatNumber, formatCurrency, formatDate } from '@/helpers';
 
 const props = defineProps({
     suppliers: Array,
@@ -281,7 +281,7 @@ onMounted(() => {
                                         </div>
                                         <div class="text-right">
                                             <div class="text-xs font-bold text-slate-600 dark:text-slate-300">Items: {{ receipt.items.length }}</div>
-                                            <div class="text-[10px] text-slate-500 uppercase mt-0.5">{{ new Date(receipt.receipt_date).toLocaleDateString() }}</div>
+                                            <div class="text-[10px] text-slate-500 uppercase mt-0.5">{{ formatDate(receipt.receipt_date) }}</div>
                                         </div>
                                     </div>
                                 </div>

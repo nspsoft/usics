@@ -5,6 +5,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import TextArea from '@/Components/TextArea.vue'; // Assuming TextArea component exists, else use textarea HTML
+import { formatDate } from '@/helpers';
 
 const props = defineProps({
     ncr: Object,
@@ -42,7 +43,7 @@ const submitDisposition = () => {
                         </div>
                         <div>
                             <p class="text-sm text-gray-500">Date Detected</p>
-                            <p class="text-base font-semibold">{{ new Date(ncr.created_at).toLocaleDateString() }}</p>
+                            <p class="text-base font-semibold">{{ formatDate(ncr.created_at) }}</p>
                         </div>
                         <div class="col-span-2">
                             <p class="text-sm text-gray-500">Defect Description</p>

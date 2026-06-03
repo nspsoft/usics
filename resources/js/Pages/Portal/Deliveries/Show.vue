@@ -7,6 +7,7 @@ import {
     MapPinIcon,
     CalendarIcon
 } from '@heroicons/vue/24/outline';
+import { formatDate } from '@/helpers';
 
 defineProps({
     delivery: Object,
@@ -56,7 +57,7 @@ defineProps({
                     <div class="space-y-3">
                         <div class="flex justify-between">
                             <span class="text-slate-500">Date</span>
-                            <span class="font-bold text-slate-900 dark:text-white">{{ new Date(delivery.receipt_date).toLocaleDateString() }}</span>
+                            <span class="font-bold text-slate-900 dark:text-white">{{ formatDate(delivery.receipt_date) }}</span>
                         </div>
                          <div class="flex justify-between">
                             <span class="text-slate-500">GRN System ID</span>

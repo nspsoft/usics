@@ -6,6 +6,7 @@ import {
     PaperAirplaneIcon
 } from '@heroicons/vue/24/outline';
 import { computed, reactive } from 'vue';
+import { formatDate } from '@/helpers';
 
 const props = defineProps({
     filters: Object,
@@ -16,10 +17,6 @@ const props = defineProps({
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { 
     style: 'currency', currency: 'IDR', maximumFractionDigits: 0 
 }).format(value);
-
-const formatDate = (date) => new Date(date).toLocaleDateString('id-ID', {
-    day: '2-digit', month: 'short'
-});
 
 const form = reactive({
     as_of: props.filters?.as_of ?? new Date().toISOString().slice(0, 10),

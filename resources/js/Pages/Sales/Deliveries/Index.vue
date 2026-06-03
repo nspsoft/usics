@@ -28,6 +28,7 @@ import {
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 import Board from './Board.vue';
+import { formatDate } from '@/helpers';
 
 const props = defineProps({
     deliveryOrders: Object,
@@ -111,10 +112,6 @@ const getInvoiceStatusDescription = (status) => {
         invoiced: 'Seluruh barang sudah berhasil ditagih (Lunas Invois).',
     };
     return descriptions[status] || '';
-};
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 const getStatusDescription = (status) => {

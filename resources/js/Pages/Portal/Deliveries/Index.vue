@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
 import { ChevronRightIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import { formatDate } from '@/helpers';
 
 const props = defineProps({
     deliveries: Object,
@@ -36,7 +37,7 @@ const props = defineProps({
                         <tr v-for="delivery in deliveries.data" :key="delivery.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="px-6 py-4 font-medium text-slate-900 dark:text-white">{{ delivery.delivery_note_number }}</td>
                             <td class="px-6 py-4 text-indigo-600">{{ delivery.purchase_order?.po_number }}</td>
-                            <td class="px-6 py-4">{{ new Date(delivery.receipt_date).toLocaleDateString() }}</td>
+                            <td class="px-6 py-4">{{ formatDate(delivery.receipt_date) }}</td>
                             <td class="px-6 py-4">{{ delivery.warehouse?.name || '-' }}</td>
                             <td class="px-6 py-4">{{ delivery.items_count || 0 }} Items</td>
                             <td class="px-6 py-4">

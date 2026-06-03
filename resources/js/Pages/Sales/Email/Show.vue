@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { formatDateTime } from '@/helpers';
 import { 
     ChevronLeftIcon,
     CalendarIcon,
@@ -31,16 +32,6 @@ const stripHtml = (html) => {
 
 const emailBody = () => {
     return props.email.body_text || stripHtml(props.email.body_html) || '';
-};
-
-const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('id-ID', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
 };
 
 const getSentimentColor = (sentiment) => {
@@ -111,7 +102,7 @@ const copyToClipboard = (text) => {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <CalendarIcon class="w-4 h-4 text-gray-400" />
-                                    <span>{{ formatDate(email.email_date) }}</span>
+                                    <span>{{ formatDateTime(email.email_date) }}</span>
                                 </div>
                             </div>
 

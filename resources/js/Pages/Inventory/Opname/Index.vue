@@ -3,7 +3,7 @@ import { ref, watch, computed } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
-import { formatCurrency } from '@/helpers';
+import { formatCurrency, formatDate } from '@/helpers';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -181,10 +181,6 @@ const getStatusBadge = (status) => {
         cancelled: 'bg-red-500/20 text-red-400 border-red-500/30',
     };
     return badges[status] || 'bg-slate-500/20 text-slate-500 dark:text-slate-400 border-slate-500/30';
-};
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 const deleteOpname = (opname) => {

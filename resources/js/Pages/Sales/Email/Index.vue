@@ -23,7 +23,7 @@ import {
     StarIcon as StarIconSolid 
 } from '@heroicons/vue/24/solid';
 import { ref, computed, onMounted, watch } from 'vue';
-import moment from 'moment';
+import { formatDate, formatDateTime } from '@/helpers';
 
 const props = defineProps({
     emails: Object,
@@ -56,19 +56,29 @@ if (props.filters.status) {
 }
 
 // Formatting Functions
-const formatDate = (dateString) => {
-    const date = moment(dateString);
-    if (date.isSame(moment(), 'day')) {
-        return date.format('HH:mm');
-    } else if (date.isSame(moment().subtract(1, 'days'), 'day')) {
-        return 'Yesterday';
-    } else {
-        return date.format('D MMM');
+const isSameDay = (a, b) => {
+    if (!a || !b) return false;
+    const da = new Date(a);
+    const db = new Date(b);
+    if (isNaN(da.getTime()) || isNaN(db.getTime())) return false;
+    return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
+};
+
+const formatListDate = (dateString) => {
+    const now = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (isSameDay(dateString, now)) {
+        const d = new Date(dateString);
+        return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
+    if (isSameDay(dateString, yesterday)) return 'Kemarin';
+    return formatDate(dateString);
 };
 
 const formatFullDate = (dateString) => {
-    return moment(dateString).format('dddd, D MMMM YYYY • HH:mm');
+    return formatDateTime(dateString);
 };
 
 const getInitials = (name) => {
@@ -315,7 +325,7 @@ const removeAttachment = (index) => {
                                 </span>
                             </div>
                             <span class="text-[10px] text-slate-400 flex-shrink-0 whitespace-nowrap ml-2">
-                                {{ formatDate(email.email_date) }}
+                                {{ formatListDate(email.email_date) }}
                             </span>
                         </div>
 

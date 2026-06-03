@@ -194,9 +194,7 @@ class SalesInvoiceController extends Controller
 
         try {
             \DB::transaction(function () use ($salesInvoice, $validated) {
-                $salesInvoice->tax_amount = $validated['tax_amount'];
-                $salesInvoice->total = $salesInvoice->subtotal + $salesInvoice->tax_amount - $salesInvoice->discount_amount;
-                $salesInvoice->balance = $salesInvoice->total - $salesInvoice->paid_amount;
+                $salesInvoice->tax_amount_manual = $validated['tax_amount'];
                 $salesInvoice->save();
             });
 

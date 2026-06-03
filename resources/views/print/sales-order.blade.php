@@ -344,9 +344,9 @@
                             <td width="33%">Prepared</td>
                         </tr>
                         <tr>
-                            <td class="italic">Date : {{ $salesOrder->confirmed_at ? \Carbon\Carbon::parse($salesOrder->confirmed_at)->format('d-m-Y') : '-' }}</td>
-                            <td class="italic">Date : {{ \Carbon\Carbon::parse($salesOrder->order_date)->format('d-m-Y') }}</td>
-                            <td class="italic">Date : {{ \Carbon\Carbon::parse($salesOrder->order_date)->format('d-m-Y') }}</td>
+                            <td class="italic">Date : {{ $salesOrder->confirmed_at ? \Carbon\Carbon::parse($salesOrder->confirmed_at)->format('d/m/Y') : '-' }}</td>
+                            <td class="italic">Date : {{ \Carbon\Carbon::parse($salesOrder->order_date)->format('d/m/Y') }}</td>
+                            <td class="italic">Date : {{ \Carbon\Carbon::parse($salesOrder->order_date)->format('d/m/Y') }}</td>
                         </tr>
                         <tr>
                             <td style="height: 60px;"></td>

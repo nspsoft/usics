@@ -10,6 +10,7 @@ import {
     XCircleIcon
 } from '@heroicons/vue/24/outline';
 import { ref, watch } from 'vue';
+import { formatDate } from '@/helpers';
 
 const props = defineProps({
     rfqs: Object,
@@ -92,7 +93,7 @@ const getStatusColor = (status) => {
                             <p class="text-xs text-slate-400 mb-1">Deadline</p>
                             <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-end gap-1">
                                 <CalendarIcon class="w-4 h-4" />
-                                {{ new Date(rfq.deadline).toLocaleDateString() }}
+                                {{ formatDate(rfq.deadline) }}
                             </p>
                         </div>
                         <Link 

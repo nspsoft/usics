@@ -8,6 +8,7 @@ import {
     DocumentTextIcon,
     CheckCircleIcon
 } from '@heroicons/vue/24/outline';
+import { formatDate } from '@/helpers';
 
 const props = defineProps({
     order: Object,
@@ -183,7 +184,7 @@ const submit = () => {
                                 <div>
                                     <p class="font-bold text-slate-900 dark:text-white">{{ delivery.delivery_note_number }}</p>
                                     <p class="text-xs text-slate-500">
-                                        {{ new Date(delivery.receipt_date).toLocaleDateString() }} • GRN: {{ delivery.grn_number }}
+                                        {{ formatDate(delivery.receipt_date) }} • GRN: {{ delivery.grn_number }}
                                     </p>
                                 </div>
                             </div>
@@ -222,7 +223,7 @@ const submit = () => {
                                     <td class="px-6 py-4">
                                         <p class="font-bold text-slate-900 dark:text-white">{{ item.product_name }}</p>
                                         <p class="text-xs text-slate-500">
-                                            DN: {{ item.delivery_note }} • {{ new Date(item.receipt_date).toLocaleDateString() }}
+                                            DN: {{ item.delivery_note }} • {{ formatDate(item.receipt_date) }}
                                         </p>
                                     </td>
                                     <td class="px-6 py-4 text-center font-bold text-slate-900 dark:text-white">{{ Number(item.qty).toLocaleString('id-ID') }}</td>

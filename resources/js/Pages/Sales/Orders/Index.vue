@@ -23,7 +23,7 @@ import {
 import debounce from 'lodash/debounce';
 import Pagination from '@/Components/Pagination.vue';
 import { ShoppingCartIcon, ClockIcon, ArrowDownTrayIcon, SparklesIcon } from '@heroicons/vue/24/outline';
-import { formatNumber, formatCurrency } from '@/helpers';
+import { formatNumber, formatCurrency, formatDate } from '@/helpers';
 import POImportModal from './POImportModal.vue';
 
 const showImportModal = ref(false);
@@ -202,10 +202,6 @@ const getStatusDescription = (status) => {
     return descriptions[status] || '';
 };
 
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-};
 
 const calculatePercentage = (value, total) => {
     const v = parseFloat(value || 0);

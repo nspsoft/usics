@@ -9,6 +9,7 @@ import {
 } from '@heroicons/vue/24/outline';
 import { ref, watch } from 'vue';
 import debounce from 'lodash/debounce';
+import { formatDate } from '@/helpers';
 
 const props = defineProps({
     returns: Object,
@@ -74,7 +75,7 @@ const getStatusColor = (status) => {
                             <td class="px-6 py-4 font-bold text-slate-900 dark:text-white">{{ ret.number }}</td>
                             <td class="px-6 py-4 text-indigo-600">{{ ret.purchase_order?.po_number || '-' }}</td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-400">
-                                {{ new Date(ret.return_date).toLocaleDateString() }}
+                                {{ formatDate(ret.return_date) }}
                             </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-400 max-w-xs truncate">{{ ret.reason }}</td>
                             <td class="px-6 py-4">

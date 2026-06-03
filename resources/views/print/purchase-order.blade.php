@@ -379,9 +379,9 @@
                                 <td width="33%" class="font-bold">PREPARED</td>
                             </tr>
                             <tr>
-                                <td class="italic" style="font-size: 7pt;">Date: {{ $purchaseOrder->approved_at ? \Carbon\Carbon::parse($purchaseOrder->approved_at)->format('d-m-Y') : '__________' }}</td>
-                                <td class="italic" style="font-size: 7pt;">Date: {{ \Carbon\Carbon::parse($purchaseOrder->updated_at)->format('d-m-Y') }}</td>
-                                <td class="italic" style="font-size: 7pt;">Date: {{ \Carbon\Carbon::parse($purchaseOrder->updated_at)->format('d-m-Y') }}</td>
+                                <td class="italic" style="font-size: 7pt;">Date: {{ $purchaseOrder->approved_at ? \Carbon\Carbon::parse($purchaseOrder->approved_at)->format('d/m/Y') : '__________' }}</td>
+                                <td class="italic" style="font-size: 7pt;">Date: {{ \Carbon\Carbon::parse($purchaseOrder->updated_at)->format('d/m/Y') }}</td>
+                                <td class="italic" style="font-size: 7pt;">Date: {{ \Carbon\Carbon::parse($purchaseOrder->updated_at)->format('d/m/Y') }}</td>
                             </tr>
                             <tr>
                                 <td class="sig-space">

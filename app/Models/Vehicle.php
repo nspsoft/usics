@@ -12,6 +12,7 @@ class Vehicle extends Model
 
     protected $fillable = [
         'company_id',
+        'traccar_device_id',
         'license_plate',
         'vehicle_type',
         'brand',
@@ -35,6 +36,10 @@ class Vehicle extends Model
         'ownership',
         'purchase_date',
         'purchase_price'
+    ];
+
+    protected $casts = [
+        'traccar_device_id' => 'integer',
     ];
 
     protected $appends = ['driver_photo_url', 'vehicle_photo_url'];

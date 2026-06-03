@@ -169,7 +169,7 @@
                         <tr>
                             <td style="padding: 1px 0; white-space: nowrap; text-align: left; font-size: 9pt;">Date</td>
                             <td style="text-align: center; font-size: 9pt;">:</td>
-                            <td class="meta-value" style="font-size: 9pt;">{{ $order->delivery_date->format('F d, Y') }}</td>
+                            <td class="meta-value" style="font-size: 9pt;">{{ $order->delivery_date->format('d/m/Y') }}</td>
                         </tr>
                         <tr>
                             <td style="padding: 1px 0; white-space: nowrap; text-align: left; font-size: 9pt;">PO No</td>

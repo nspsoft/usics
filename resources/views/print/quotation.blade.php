@@ -154,12 +154,12 @@
                         <tr>
                             <td class="meta-label">Date</td>
                             <td class="meta-separator">:</td>
-                            <td class="meta-value">{{ $quotation->quotation_date->format('d F Y') }}</td>
+                            <td class="meta-value">{{ $quotation->quotation_date->format('d/m/Y') }}</td>
                         </tr>
                         <tr>
                             <td class="meta-label">Valid Until</td>
                             <td class="meta-separator">:</td>
-                            <td class="meta-value font-bold" style="color: #E21E26;">{{ $quotation->valid_until->format('d F Y') }}</td>
+                            <td class="meta-value font-bold" style="color: #E21E26;">{{ $quotation->valid_until->format('d/m/Y') }}</td>
                         </tr>
                     </table>
                 </div>
