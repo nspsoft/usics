@@ -476,15 +476,16 @@ const navigation = [
         href: '#',
         icon: BuildingOfficeIcon,
         current: false,
+        permission: 'general_affair.view',
         children: [
-            { name: 'Dashboard', href: '/general-affair?section=dashboard', icon: PresentationChartBarIcon },
-            { name: 'Tickets', href: '/general-affair/tickets', icon: ClipboardDocumentListIcon },
-            { name: 'Assets', href: '/general-affair/assets', icon: CubeIcon },
-            { name: 'Preventive Maintenance', href: '/general-affair/pm-schedules', icon: CalendarDaysIcon },
-            { name: 'Armada Operasional', href: '/general-affair/fleet', icon: TruckIcon },
-            { name: 'Peminjaman Kendaraan', href: '/general-affair/vehicle-bookings', icon: ClipboardDocumentCheckIcon },
-            { name: 'Locations', href: '/general-affair/locations', icon: MapPinIcon },
-            { name: 'Requests (PR)', href: '/general-affair/requests', icon: DocumentPlusIcon },
+            { name: 'Dashboard', href: '/general-affair?section=dashboard', icon: PresentationChartBarIcon, permission: 'general_affair.dashboard.view' },
+            { name: 'Tickets', href: '/general-affair/tickets', icon: ClipboardDocumentListIcon, permission: 'general_affair.tickets.view' },
+            { name: 'Assets', href: '/general-affair/assets', icon: CubeIcon, permission: 'general_affair.assets.view' },
+            { name: 'Preventive Maintenance', href: '/general-affair/pm-schedules', icon: CalendarDaysIcon, permission: 'general_affair.preventive_maintenance.view' },
+            { name: 'Armada Operasional', href: '/general-affair/fleet', icon: TruckIcon, permission: 'general_affair.armada_operasional.view' },
+            { name: 'Peminjaman Kendaraan', href: '/general-affair/vehicle-bookings', icon: ClipboardDocumentCheckIcon, permission: 'general_affair.peminjaman_kendaraan.view' },
+            { name: 'Locations', href: '/general-affair/locations', icon: MapPinIcon, permission: 'general_affair.locations.view' },
+            { name: 'Requests (PR)', href: '/general-affair/requests', icon: DocumentPlusIcon, permission: 'general_affair.requests_pr.view' },
         ]
     },
     { 
@@ -502,9 +503,10 @@ const navigation = [
         href: '#',
         icon: VideoCameraIcon,
         current: false,
+        permission: 'meeting_command.view',
         children: [
-            { name: 'Dashboard / List', href: '/meeting-command', icon: PresentationChartBarIcon },
-            { name: 'New Meeting', href: '/meeting-command/create', icon: PlusCircleIcon },
+            { name: 'Dashboard / List', href: '/meeting-command', icon: PresentationChartBarIcon, permission: 'meeting_command.dashboard_list.view' },
+            { name: 'New Meeting', href: '/meeting-command/create', icon: PlusCircleIcon, permission: 'meeting_command.new_meeting.create' },
         ]
     },
     { 

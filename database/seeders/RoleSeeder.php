@@ -46,6 +46,13 @@ class RoleSeeder extends Seeder
             'HR & Payroll' => [
                 'Employee Directory', 'Attendance', 'Payroll'
             ],
+            'General Affair' => [
+                'Dashboard', 'Tickets', 'Assets', 'Preventive Maintenance',
+                'Armada Operasional', 'Peminjaman Kendaraan', 'Locations', 'Requests PR'
+            ],
+            'Meeting Command' => [
+                'Dashboard List', 'New Meeting'
+            ],
             'Settings' => [
                 'User Management', 'Roles & Permissions', 'Company Profile', 'AI Configuration', 'Document Numbering', 'Regional & Tax', 'System Preferences', 'Workflow Approval', 'Mobile Navbar', 'Import & Export', 'Database Management', 'Activity Logs'
             ]
@@ -130,6 +137,11 @@ class RoleSeeder extends Seeder
             }
             elseif ($roleName === 'Finance Manager') {
                 $permissions = Permission::where('name', 'like', 'finance.%')->get();
+            }
+            elseif ($roleName === 'HR & Payroll') {
+                $permissions = Permission::where('name', 'like', 'hr_payroll.%')
+                    ->orWhere('name', 'like', 'general_affair.%')
+                    ->get();
             }
             elseif ($roleName === 'Production Operator') {
                 $permissions = Permission::whereIn('name', [

@@ -59,6 +59,8 @@ class RoleController extends Controller
             'logistics' => 'Logistics',
             'finance' => 'Finance',
             'hr_payroll' => 'HR & Payroll',
+            'general_affair' => 'General Affair',
+            'meeting_command' => 'Meeting Command',
             'settings' => 'Settings'
         ];
 
