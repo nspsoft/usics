@@ -19,7 +19,7 @@ class LogisticsDashboardController extends Controller
 
         // 1. KPI Stats
         $activeShipments = DeliveryOrder::whereIn('status', ['shipped', 'packed'])->count();
-        $availableVehicles = Vehicle::where('status', 'available')->where('is_active', true)->count();
+        $availableVehicles = Vehicle::where('status', 'available')->where('is_active', true)->whereIn('usage_type', ['logistics', 'both'])->count();
         
         // Delayed = Status not delivered but delivery_date < today
         $delayedDeliveries = DeliveryOrder::whereNotIn('status', ['delivered', 'completed', 'cancelled'])
@@ -46,7 +46,7 @@ class LogisticsDashboardController extends Controller
         ];
 
         // 3. Fleet Status
-        $fleetStatus = Vehicle::where('is_active', true)->get()->map(fn($v) => [
+        $fleetStatus = Vehicle::where('is_active', true)->whereIn('usage_type', ['logistics', 'both'])->get()->map(fn($v) => [
             'id' => $v->id,
             'plate' => $v->license_plate,
             'type' => $v->vehicle_type,

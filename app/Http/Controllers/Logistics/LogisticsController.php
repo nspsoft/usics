@@ -24,6 +24,7 @@ class LogisticsController extends Controller
             ->get();
 
         $vehicles = Vehicle::where('is_active', true)
+            ->whereIn('usage_type', ['logistics', 'both'])
             ->where('status', 'available')
             ->get();
 
@@ -41,18 +42,43 @@ class LogisticsController extends Controller
             'delivery_order_ids.*' => 'exists:delivery_orders,id',
             'vehicle_id' => 'required|exists:vehicles,id',
             'driver_name' => 'nullable|string',
+            'travel_allowance' => 'nullable|numeric|min:0',
+            'travel_allowance_notes' => 'nullable|string',
         ]);
 
         $vehicle = Vehicle::findOrFail($request->vehicle_id);
         
-        DeliveryOrder::whereIn('id', $request->delivery_order_ids)
-            ->update([
+        $driverName = $request->driver_name ?? $vehicle->driver_name;
+        $driverUser = \App\Models\User::where('name', $driverName)->first();
+        $driverUserId = $driverUser ? $driverUser->id : null;
+
+        // Generate shipment number: SHP-YYMMDD-XXX
+        $todayStr = date('ymd');
+        $todayCount = DeliveryOrder::where('shipment_number', 'like', "SHP-{$todayStr}-%")->distinct()->count('shipment_number');
+        $sequence = str_pad($todayCount + 1, 3, '0', STR_PAD_LEFT);
+        $shipmentNumber = "SHP-{$todayStr}-{$sequence}";
+
+        $deliveryOrderIds = $request->delivery_order_ids;
+        $primaryDoId = $deliveryOrderIds[0];
+        
+        $travelAllowance = $request->travel_allowance ?? 0;
+        $travelAllowanceStatus = $travelAllowance > 0 ? 'requested' : 'none';
+
+        foreach ($deliveryOrderIds as $id) {
+            $isPrimary = ($id == $primaryDoId);
+            DeliveryOrder::where('id', $id)->update([
                 'vehicle_id' => $vehicle->id,
                 'vehicle_number' => $vehicle->license_plate,
-                'driver_name' => $request->driver_name ?? $vehicle->driver_name,
-                'status' => 'packed', // Update status to packed when scheduled
+                'driver_name' => $driverName,
+                'driver_user_id' => $driverUserId,
+                'shipment_number' => $shipmentNumber,
+                'travel_allowance' => $isPrimary ? $travelAllowance : 0,
+                'travel_allowance_notes' => $isPrimary ? $request->travel_allowance_notes : null,
+                'travel_allowance_status' => $isPrimary ? $travelAllowanceStatus : 'none',
+                'status' => 'packed',
             ]);
+        }
 
-        return redirect()->back()->with('success', 'Vehicles assigned to delivery orders successfully.');
+        return redirect()->back()->with('success', 'Vehicles and travel allowance assigned to shipment ' . $shipmentNumber . ' successfully.');
     }
 }

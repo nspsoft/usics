@@ -82,6 +82,7 @@ import {
     TrophyIcon,
     CalendarIcon,
     CalendarDaysIcon as CalendarAltIcon,
+    VideoCameraIcon,
 } from '@heroicons/vue/24/outline';
 import TechnoHeaderBg from '@/Components/TechnoHeaderBg.vue';
 
@@ -470,6 +471,22 @@ const navigation = [
             { name: 'Payroll', href: '/hr/payroll', icon: BanknotesIcon, permission: 'hr_payroll.payroll.view' },
         ]
     },
+    {
+        name: 'General Affair',
+        href: '#',
+        icon: BuildingOfficeIcon,
+        current: false,
+        children: [
+            { name: 'Dashboard', href: '/general-affair?section=dashboard', icon: PresentationChartBarIcon },
+            { name: 'Tickets', href: '/general-affair/tickets', icon: ClipboardDocumentListIcon },
+            { name: 'Assets', href: '/general-affair/assets', icon: CubeIcon },
+            { name: 'Preventive Maintenance', href: '/general-affair/pm-schedules', icon: CalendarDaysIcon },
+            { name: 'Armada Operasional', href: '/general-affair/fleet', icon: TruckIcon },
+            { name: 'Peminjaman Kendaraan', href: '/general-affair/vehicle-bookings', icon: ClipboardDocumentCheckIcon },
+            { name: 'Locations', href: '/general-affair/locations', icon: MapPinIcon },
+            { name: 'Requests (PR)', href: '/general-affair/requests', icon: DocumentPlusIcon },
+        ]
+    },
     { 
         name: 'Project Matrix', 
         href: '#', 
@@ -478,6 +495,16 @@ const navigation = [
         children: [
             { name: 'Project Dashboard', href: '/projects', icon: PresentationChartBarIcon },
             { name: 'Initiate Project', href: '/projects/create', icon: PlusCircleIcon },
+        ]
+    },
+    {
+        name: 'Meeting Command',
+        href: '#',
+        icon: VideoCameraIcon,
+        current: false,
+        children: [
+            { name: 'Dashboard / List', href: '/meeting-command', icon: PresentationChartBarIcon },
+            { name: 'New Meeting', href: '/meeting-command/create', icon: PlusCircleIcon },
         ]
     },
     { 

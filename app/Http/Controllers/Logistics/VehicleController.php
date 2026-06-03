@@ -16,6 +16,7 @@ class VehicleController extends Controller
     public function index(Request $request): Response
     {
         $vehicles = Vehicle::query()
+            ->whereIn('usage_type', ['logistics', 'both'])
             ->when($request->search, function ($q, $search) {
                 $q->where('license_plate', 'like', "%{$search}%")
                   ->orWhere('driver_name', 'like', "%{$search}%")
@@ -101,6 +102,7 @@ class VehicleController extends Controller
             $validated['vehicle_photo'] = $request->file('vehicle_photo')->store('vehicles/fleet', 'public');
         }
 
+        $validated['usage_type'] = 'logistics';
         Vehicle::create($validated);
 
         return redirect()->back()->with('success', 'Vehicle created successfully.');

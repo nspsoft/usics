@@ -253,7 +253,7 @@ class DeliveryOrderController extends Controller
         return Inertia::render('Sales/Deliveries/Create', [
             'salesOrder' => $salesOrder,
             'salesOrders' => $pendingSalesOrders,
-            'vehicles' => Vehicle::where('is_active', true)->orderBy('license_plate')->get(),
+            'vehicles' => Vehicle::where('is_active', true)->whereIn('usage_type', ['logistics', 'both'])->orderBy('license_plate')->get(),
             'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
             'customers' => \App\Models\Customer::orderBy('name')->get(['id', 'name', 'code']),
             'products' => \App\Models\Product::with('unit:id,name,symbol')->orderBy('name')->get(['id', 'name', 'sku', 'unit_id'])->each->setAppends([]),
@@ -634,9 +634,18 @@ class DeliveryOrderController extends Controller
         // Hide expensive appends
         $deliveryOrder->items->each->makeHidden(['current_stock']);
 
+        // Fetch shipment primary DO if shipment_number is set
+        $primaryDo = null;
+        if ($deliveryOrder->shipment_number) {
+            $primaryDo = DeliveryOrder::where('shipment_number', $deliveryOrder->shipment_number)
+                ->orderBy('id')
+                ->first();
+        }
+
         return Inertia::render('Sales/Deliveries/Show', [
             'deliveryOrder' => $deliveryOrder,
-            'vehicles' => Vehicle::where('is_active', true)->orderBy('license_plate')->get(),
+            'primaryDo' => $primaryDo,
+            'vehicles' => Vehicle::where('is_active', true)->whereIn('usage_type', ['logistics', 'both'])->orderBy('license_plate')->get(),
         ]);
     }
 
@@ -1413,5 +1422,14 @@ class DeliveryOrderController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal menghapus DO: ' . $e->getMessage());
         }
+    }
+
+    public function disburseTravelAllowance(Request $request, $shipmentNumber)
+    {
+        DeliveryOrder::where('shipment_number', $shipmentNumber)
+            ->where('travel_allowance_status', 'requested')
+            ->update(['travel_allowance_status' => 'paid']);
+
+        return redirect()->back()->with('success', 'Uang jalan untuk Shipment ' . $shipmentNumber . ' berhasil dicairkan! 💸');
     }
 }

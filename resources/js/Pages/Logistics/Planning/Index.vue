@@ -38,7 +38,9 @@ const toggleExpand = (id) => {
 const form = useForm({
     delivery_order_ids: [],
     vehicle_id: '',
-    driver_name: ''
+    driver_name: '',
+    travel_allowance: 0,
+    travel_allowance_notes: ''
 });
 
 const toggleSelectAll = (e) => {
@@ -274,6 +276,30 @@ const getStatusColor = (status) => {
                                         class="w-full bg-slate-50 dark:bg-slate-800 border-0 ring-1 ring-slate-200 dark:ring-slate-700 rounded-2xl pl-14 pr-5 py-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all shadow-inner font-medium"
                                     />
                                 </div>
+                            </div>
+
+                            <!-- Travel Allowance (Uang Jalan) -->
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Uang Jalan (Opsional)</label>
+                                <div class="relative">
+                                    <span class="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                                    <input 
+                                        v-model="form.travel_allowance" 
+                                        type="number" 
+                                        placeholder="0"
+                                        class="w-full bg-slate-50 dark:bg-slate-800 border-0 ring-1 ring-slate-200 dark:ring-slate-700 rounded-2xl pl-14 pr-5 py-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all shadow-inner font-bold"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Catatan Uang Jalan / Perjalanan</label>
+                                <textarea 
+                                    v-model="form.travel_allowance_notes" 
+                                    placeholder="Petunjuk rute, pengisian solar, dll."
+                                    rows="2"
+                                    class="w-full bg-slate-50 dark:bg-slate-800 border-0 ring-1 ring-slate-200 dark:ring-slate-700 rounded-2xl px-5 py-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all shadow-inner font-medium text-xs"
+                                ></textarea>
                             </div>
 
                             <!-- Summary Selection -->

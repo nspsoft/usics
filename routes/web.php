@@ -50,6 +50,7 @@ use App\Http\Controllers\CRM\CampaignController;
 use App\Http\Controllers\Project\ProjectController;
 use App\Http\Controllers\Project\ProjectTaskController;
 use App\Http\Controllers\Project\ProjectMemberController;
+use App\Http\Controllers\GeneralAffair\GeneralAffairController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -353,6 +354,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::post('/deliveries/bulk-invoice', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'bulkInvoice'])->name('deliveries.bulk-invoice');
     Route::post('/deliveries/bulk-invoice-preview', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'bulkInvoicePreview'])->name('deliveries.bulk-invoice-preview');
     Route::get('/deliveries-export', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'export'])->name('deliveries.export');
+    Route::post('/deliveries/shipment/{shipment_number}/disburse', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'disburseTravelAllowance'])->name('deliveries.disburse-allowance');
 
 
     Route::post('/deliveries-import', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'import'])->name('deliveries.import');
@@ -488,6 +490,28 @@ Route::middleware(['auth'])->prefix('maintenance')->name('maintenance.')->group(
     Route::put('/spareparts/{sparepart}', [App\Http\Controllers\Maintenance\MaintenanceSparepartController::class, 'update'])->name('spareparts.update');
 });
 
+Route::middleware(['auth'])->prefix('general-affair')->name('ga.')->group(function () {
+    Route::get('/', [GeneralAffairController::class, 'index'])->name('index');
+    Route::resource('locations', App\Http\Controllers\GeneralAffair\GaLocationController::class);
+    Route::resource('assets', App\Http\Controllers\GeneralAffair\GaAssetController::class);
+    Route::resource('tickets', App\Http\Controllers\GeneralAffair\GaTicketController::class);
+    Route::resource('pm-schedules', App\Http\Controllers\GeneralAffair\GaPmController::class);
+    Route::post('pm-schedules/{schedule}/logs', [App\Http\Controllers\GeneralAffair\GaPmController::class, 'storeLog'])->name('pm-schedules.logs.store');
+    
+    // Vehicle Bookings
+    Route::resource('vehicle-bookings', App\Http\Controllers\GeneralAffair\GaVehicleBookingController::class)->names('vehicle-bookings');
+    Route::post('vehicle-bookings/{booking}/approve', [App\Http\Controllers\GeneralAffair\GaVehicleBookingController::class, 'approve'])->name('vehicle-bookings.approve');
+    Route::post('vehicle-bookings/{booking}/reject', [App\Http\Controllers\GeneralAffair\GaVehicleBookingController::class, 'reject'])->name('vehicle-bookings.reject');
+    Route::post('vehicle-bookings/{booking}/start', [App\Http\Controllers\GeneralAffair\GaVehicleBookingController::class, 'startTrip'])->name('vehicle-bookings.start');
+    Route::post('vehicle-bookings/{booking}/complete', [App\Http\Controllers\GeneralAffair\GaVehicleBookingController::class, 'completeTrip'])->name('vehicle-bookings.complete');
+    
+    // Vehicle Fleet Management for GA
+    Route::resource('fleet', App\Http\Controllers\GeneralAffair\GaVehicleController::class)->names('fleet');
+
+    // Requests (PR) for GA
+    Route::resource('requests', App\Http\Controllers\GeneralAffair\GaPurchaseRequestController::class)->names('requests');
+});
+
 // Finance
 Route::middleware(['auth'])->prefix('finance')->name('finance.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Finance\FinanceDashboardController::class, 'index'])->name('dashboard');
@@ -595,6 +619,28 @@ Route::prefix('projects')->name('projects.')->middleware(['auth'])->group(functi
     Route::post('/{project}/members', [ProjectMemberController::class, 'store'])->name('members.store');
     Route::delete('/{project}/members/{user}', [ProjectMemberController::class, 'destroy'])->name('members.destroy');
 });
+
+// Meeting Command
+Route::middleware(['auth'])->prefix('meeting-command')->name('meeting-command.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Meeting\MeetingController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\Meeting\MeetingController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\Meeting\MeetingController::class, 'store'])->name('store');
+    Route::get('/action-items/board', [App\Http\Controllers\Meeting\MeetingController::class, 'actionItemsBoard'])->name('action-items.board');
+    Route::put('/action-items/{item}/status', [App\Http\Controllers\Meeting\MeetingController::class, 'updateActionItemStatus'])->name('action-items.status-update');
+    Route::get('/{meeting}', [App\Http\Controllers\Meeting\MeetingController::class, 'show'])->name('show');
+    Route::get('/{meeting}/edit', [App\Http\Controllers\Meeting\MeetingController::class, 'edit'])->name('edit');
+    Route::put('/{meeting}', [App\Http\Controllers\Meeting\MeetingController::class, 'update'])->name('update');
+    Route::delete('/{meeting}', [App\Http\Controllers\Meeting\MeetingController::class, 'destroy'])->name('destroy');
+    Route::post('/action-items/{item}/toggle', [App\Http\Controllers\Meeting\MeetingController::class, 'toggleActionItemStatus'])->name('action-items.toggle');
+    Route::post('/ai-process', [App\Http\Controllers\Meeting\MeetingController::class, 'aiProcess'])->name('ai-process');
+    Route::post('/ai-process-audio', [App\Http\Controllers\Meeting\MeetingController::class, 'aiProcessAudio'])->name('ai-process-audio');
+    Route::post('/{meeting}/approve', [App\Http\Controllers\Meeting\MeetingController::class, 'approveMeeting'])->name('approve');
+    Route::post('/{meeting}/dispatch-notifications', [App\Http\Controllers\Meeting\MeetingController::class, 'dispatchNotifications'])->name('dispatch-notifications');
+});
+
+// Public Check-in Routes
+Route::get('/meeting-command/{meeting}/check-in', [App\Http\Controllers\Meeting\MeetingController::class, 'showCheckIn'])->name('meeting-command.check-in');
+Route::post('/meeting-command/{meeting}/check-in', [App\Http\Controllers\Meeting\MeetingController::class, 'submitCheckIn'])->name('meeting-command.check-in.submit');
 
 // Costing
 Route::middleware(['auth'])->prefix('costing')->name('costing.')->group(function () {

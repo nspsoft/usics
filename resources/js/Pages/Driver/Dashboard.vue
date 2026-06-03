@@ -53,6 +53,21 @@ const statusColor = computed(() => {
     if (s === 'maintenance') return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
     return 'bg-slate-500/10 text-slate-500 border-slate-500/20';
 });
+
+const groupedShipments = computed(() => {
+    const groups = {};
+    props.deliveryOrders.forEach(order => {
+        const key = order.shipment_number || 'no_shipment';
+        if (!groups[key]) {
+            groups[key] = {
+                shipment_number: order.shipment_number || null,
+                orders: []
+            };
+        }
+        groups[key].orders.push(order);
+    });
+    return Object.values(groups);
+});
 </script>
 
 <template>
@@ -188,58 +203,79 @@ const statusColor = computed(() => {
             </Link>
         </div>
 
-        <!-- DO Cards -->
-        <div class="space-y-3">
-            <div
-                v-for="order in deliveryOrders"
-                :key="order.id"
-                class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all"
+        <!-- DO Cards Grouped by Shipment -->
+        <div class="space-y-6">
+            <div 
+                v-for="shipment in groupedShipments" 
+                :key="shipment.shipment_number || 'single'" 
+                class="space-y-3"
             >
-                <div class="flex items-start justify-between mb-3">
-                    <div>
-                        <div class="text-sm font-black text-slate-900 dark:text-white">{{ order.do_number }}</div>
-                        <div class="text-[10px] text-slate-400 mt-0.5">{{ order.sales_order?.so_number }}</div>
+                <!-- Shipment Header -->
+                <div v-if="shipment.shipment_number" class="flex items-center justify-between bg-blue-500/10 border border-blue-500/20 px-4 py-3 rounded-2xl">
+                    <div class="flex items-center gap-2">
+                        <TruckIcon class="h-4 w-4 text-blue-500" />
+                        <span class="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                            Shipment: {{ shipment.shipment_number }}
+                        </span>
                     </div>
-                    <span :class="doStatusStyle(order.status)" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border">
-                        {{ order.status }}
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-650">
+                        {{ shipment.orders.length }} Stop
                     </span>
                 </div>
 
-                <div class="space-y-2 mb-4">
-                    <div class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
-                        <UserIcon class="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        <span class="font-bold truncate">{{ order.customer?.name }}</span>
-                    </div>
-                    <div v-if="order.shipping_address" class="flex items-start gap-2 text-xs text-slate-500">
-                        <MapPinIcon class="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
-                        <span class="line-clamp-2">{{ order.shipping_address }}</span>
-                    </div>
-                    <div class="flex items-center gap-4 text-[10px] text-slate-400">
-                        <span class="flex items-center gap-1">
-                            <CalendarIcon class="h-3 w-3" />
-                            {{ formatDate(order.delivery_date) }}
-                        </span>
-                        <span class="flex items-center gap-1">
-                            <CubeIcon class="h-3 w-3" />
-                            {{ order.items?.length || 0 }} items
-                        </span>
-                        <span v-if="order.vehicle_number" class="flex items-center gap-1">
-                            <TruckIcon class="h-3 w-3" />
-                            {{ order.vehicle_number }}
-                        </span>
-                    </div>
-                </div>
+                <div class="space-y-3">
+                    <div
+                        v-for="order in shipment.orders"
+                        :key="order.id"
+                        class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all"
+                    >
+                        <div class="flex items-start justify-between mb-3">
+                            <div>
+                                <div class="text-sm font-black text-slate-900 dark:text-white">{{ order.do_number }}</div>
+                                <div class="text-[10px] text-slate-400 mt-0.5">{{ order.sales_order?.so_number }}</div>
+                            </div>
+                            <span :class="doStatusStyle(order.status)" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border">
+                                {{ order.status }}
+                            </span>
+                        </div>
 
-                <Link
-                    v-if="order.status === 'shipped'"
-                    :href="'/driver/scan'"
-                    class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/30 hover:from-emerald-500 hover:to-emerald-400 active:scale-95 transition-all"
-                >
-                    <QrCodeIcon class="h-4 w-4" />
-                    SCAN QR KONFIRMASI SAMPAI
-                </Link>
-                <div v-else class="w-full text-center py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700/50 text-slate-400 text-xs font-bold">
-                    ⏳ Menunggu status SHIPPED untuk konfirmasi
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                                <UserIcon class="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                <span class="font-bold truncate">{{ order.customer?.name }}</span>
+                            </div>
+                            <div v-if="order.shipping_address" class="flex items-start gap-2 text-xs text-slate-500">
+                                <MapPinIcon class="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
+                                <span class="line-clamp-2">{{ order.shipping_address }}</span>
+                            </div>
+                            <div class="flex items-center gap-4 text-[10px] text-slate-400">
+                                <span class="flex items-center gap-1">
+                                    <CalendarIcon class="h-3 w-3" />
+                                    {{ formatDate(order.delivery_date) }}
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <CubeIcon class="h-3 w-3" />
+                                    {{ order.items?.length || 0 }} items
+                                </span>
+                                <span v-if="order.vehicle_number" class="flex items-center gap-1">
+                                    <TruckIcon class="h-3 w-3" />
+                                    {{ order.vehicle_number }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <Link
+                            v-if="order.status === 'shipped'"
+                            :href="'/driver/scan'"
+                            class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/30 hover:from-emerald-500 hover:to-emerald-400 active:scale-95 transition-all"
+                        >
+                            <QrCodeIcon class="h-4 w-4" />
+                            SCAN QR KONFIRMASI SAMPAI
+                        </Link>
+                        <div v-else class="w-full text-center py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700/50 text-slate-400 text-xs font-bold">
+                            ⏳ Menunggu status SHIPPED untuk konfirmasi
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

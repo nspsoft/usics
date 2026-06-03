@@ -23,7 +23,7 @@ class DispatchController extends Controller
             ->orderBy('delivery_date')
             ->paginate(10)->withQueryString();
 
-        $vehicles = Vehicle::where('is_active', true)->orderBy('license_plate')->get();
+        $vehicles = Vehicle::where('is_active', true)->whereIn('usage_type', ['logistics', 'both'])->orderBy('license_plate')->get();
 
         return Inertia::render('Logistics/Dispatch/Index', [
             'deliveryOrders' => $deliveryOrders,

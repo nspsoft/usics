@@ -47,12 +47,28 @@ class DeliveryOrder extends Model
         'delivered_at',
         'driver_user_id',
         'revision',
+        'shipment_number',
+        'travel_allowance',
+        'travel_allowance_notes',
+        'travel_allowance_status',
+        'odometer_start',
+        'odometer_end',
+        'real_fuel_cost',
+        'real_toll_cost',
+        'real_other_cost',
+        'real_costs_receipt_path',
     ];
 
     protected $appends = [
         'invoice_status',
         'status_color',
+        'real_costs_receipt_url',
     ];
+
+    public function getRealCostsReceiptUrlAttribute()
+    {
+        return $this->real_costs_receipt_path ? asset('storage/' . $this->real_costs_receipt_path) : null;
+    }
 
     public function vehicle(): BelongsTo
     {

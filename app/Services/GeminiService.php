@@ -689,4 +689,157 @@ Keep the analysis practical, data-driven, and focused on actionable insights. Us
         - Only include entries where quantity > 0.
         - Return pure JSON without any markdown formatting.";
     }
+
+    /**
+     * Generate meeting minutes, summary, and action items from raw meeting notes or transcripts.
+     */
+    public function generateMeetingMinutes(string $rawNotes): ?array
+    {
+        $this->ensureConfigured();
+        
+        $usersList = \App\Models\User::select('id', 'name')->get()->map(function($u) {
+            return "ID: {$u->id}, Name: {$u->name}";
+        })->implode("\n");
+
+        $prompt = "You are an expert executive secretary and AI assistant.
+Analyze the following raw meeting notes, transcript, or bullet points, and generate a structured Minutes of Meeting (Notulen Rapat) in **Bahasa Indonesia**.
+
+Here is the list of active users in the system who can be assigned as Chairperson, Secretary, or PIC for Action Items:
+{$usersList}
+
+RAW MEETING CONTENT:
+\"{$rawNotes}\"
+
+YOUR TASK:
+1. Generate a structured title/agenda for the meeting.
+2. Structure the 'discussion_notes' into neat paragraphs with agenda headings and clear bullet points. Write this strictly in **Bahasa Indonesia**.
+3. Identify all Action Items (Tugas Tindak Lanjut) mentioned in the notes.
+4. For each Action Item, extract:
+   - 'description': What needs to be done.
+   - 'pic_id': The ID of the user assigned to this task (match from the user list above. If a name matches closely, use their ID. If no match is found, assign a default or leave it empty).
+   - 'due_date': The deadline for the task (in YYYY-MM-DD format. If no date is mentioned, estimate a reasonable deadline, e.g. 7 days from today. Assume today is " . now()->toDateString() . ").
+
+Output format:
+Extract and return ONLY a valid JSON object with this exact structure:
+{
+    \"title\": \"Proposed Meeting Title\",
+    \"discussion_notes\": \"Detailed structured minutes of discussion in Indonesian\",
+    \"action_items\": [
+        {
+            \"description\": \"Task description\",
+            \"pic_id\": 1,
+            \"due_date\": \"YYYY-MM-DD\"
+        }
+    ]
 }
+
+Return pure JSON without any markdown formatting or backticks.";
+
+        if ($this->driver === 'ollama') {
+            return $this->callOllama($prompt, true);
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(120)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [['parts' => [['text' => $prompt]]]],
+                'generationConfig' => ['response_mime_type' => 'application/json']
+            ]);
+            return $this->parseResponse($response);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Exception in GeminiService (Meeting AI): ' . $e->getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Generate meeting minutes, summary, and action items directly from an uploaded audio file.
+     */
+    public function generateMeetingMinutesFromAudio(string $filePath, string $mimeType): ?array
+    {
+        $this->ensureConfigured();
+
+        // Local model Ollama usually does not support direct multimodal audio input as easily,
+        // so we restrict direct audio parsing to the Gemini API.
+        if ($this->driver === 'ollama') {
+            Log::warning('Ollama does not natively support direct audio multimodal parsing in this context.');
+            return null;
+        }
+
+        if (!$this->apiKey) {
+            Log::error('Gemini API Key is not configured for Audio Processing.');
+            return null;
+        }
+
+        $fileData = base64_encode(file_get_contents($filePath));
+        $prompt = $this->getAudioMeetingMinutesPrompt();
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(180)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt],
+                            [
+                                'inline_data' => [
+                                    'mime_type' => $mimeType,
+                                    'data' => $fileData
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'response_mime_type' => 'application/json'
+                ]
+            ]);
+
+            return $this->parseResponse($response);
+        } catch (\Exception $e) {
+            Log::error('Exception in GeminiService (Audio Meeting AI): ' . $e->getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Get prompt for audio meeting minutes extraction.
+     */
+    protected function getAudioMeetingMinutesPrompt(): string
+    {
+        $usersList = \App\Models\User::select('id', 'name')->get()->map(function($u) {
+            return "ID: {$u->id}, Name: {$u->name}";
+        })->implode("\n");
+
+        return "You are an expert executive secretary and AI assistant.
+Listen to this audio recording of a meeting carefully, transcribe/understand it, and generate a structured Minutes of Meeting (Notulen Rapat) in **Bahasa Indonesia**.
+
+Here is the list of active users in the system who can be assigned as Chairperson, Secretary, or PIC for Action Items:
+{$usersList}
+
+YOUR TASK:
+1. Generate a structured title/agenda for the meeting based on the spoken content.
+2. Structure the 'discussion_notes' into neat paragraphs with agenda headings and clear bullet points. Write this strictly in **Bahasa Indonesia**.
+3. Identify all Action Items (Tugas Tindak Lanjut) mentioned in the audio.
+4. For each Action Item, extract:
+   - 'description': What needs to be done.
+   - 'pic_id': The ID of the user assigned to this task (match from the user list above. If a name matches closely, use their ID. If no match is found, assign a default or leave it empty).
+   - 'due_date': The deadline for the task (in YYYY-MM-DD format. If no date is mentioned, estimate a reasonable deadline, e.g. 7 days from today. Assume today is " . now()->toDateString() . ").
+
+Output format:
+Extract and return ONLY a valid JSON object with this exact structure:
+{
+    \"title\": \"Proposed Meeting Title\",
+    \"discussion_notes\": \"Detailed structured minutes of discussion in Indonesian\",
+    \"action_items\": [
+        {
+            \"description\": \"Task description\",
+            \"pic_id\": 1,
+            \"due_date\": \"YYYY-MM-DD\"
+        }
+    ]
+}
+
+Return pure JSON without any markdown formatting or backticks.";
+    }
+}
+
+

@@ -92,6 +92,7 @@ const forcePrint = () => {
 
 const props = defineProps({
     deliveryOrder: Object,
+    primaryDo: Object,
     vehicles: Array
 });
 
@@ -128,6 +129,18 @@ const updateDelivery = () => {
 const completeDelivery = () => {
     if (confirm('Are you sure you want to complete this delivery? This will reduce stock and update the Sales Order.')) {
         form.post(route('sales.deliveries.complete', props.deliveryOrder.id));
+    }
+};
+
+const disburseAllowance = () => {
+    if (!props.primaryDo || !props.primaryDo.shipment_number) return;
+    if (confirm('Konfirmasi pencairan uang jalan untuk Shipment ' + props.primaryDo.shipment_number + '?\nStatus uang jalan seluruh DO di grup ini akan berubah menjadi PAID.')) {
+        router.post(route('sales.deliveries.disburse-allowance', props.primaryDo.shipment_number), {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                // success message handled by session flash
+            }
+        });
     }
 };
 
@@ -697,6 +710,138 @@ const handleSmartAction = () => {
                                 <div class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1">Customer</div>
                                 <div class="text-sm text-slate-900 dark:text-white font-bold">{{ deliveryOrder.sales_order?.customer?.name }}</div>
                                 <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{{ deliveryOrder.shipping_address || deliveryOrder.sales_order?.shipping_address }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Travel Allowance & Shipment Details Card -->
+                    <div v-if="primaryDo && primaryDo.shipment_number" class="rounded-2xl glass-card p-6 shadow-sm space-y-5">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest pb-3 border-b border-slate-200 dark:border-slate-800">
+                            Shipment & Uang Jalan
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <!-- Shipment Number -->
+                            <div>
+                                <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1">Shipment Number</span>
+                                <div class="flex items-center gap-2">
+                                    <div class="px-3 py-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold rounded-xl text-sm border border-blue-500/20">
+                                        {{ primaryDo.shipment_number }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Travel Allowance Status Badge -->
+                            <div>
+                                <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1">Status Uang Jalan</span>
+                                <span v-if="primaryDo.travel_allowance_status === 'none'" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20 uppercase">
+                                    Tidak Ada Uang Jalan
+                                </span>
+                                <span v-else-if="primaryDo.travel_allowance_status === 'requested'" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase animate-pulse">
+                                    Menunggu Pencairan (Requested)
+                                </span>
+                                <span v-else-if="primaryDo.travel_allowance_status === 'paid'" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase">
+                                    Sudah Dicairkan (Paid)
+                                </span>
+                                <span v-else-if="primaryDo.travel_allowance_status === 'reconciled'" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
+                                    Sudah Direkonsiliasi (Reconciled)
+                                </span>
+                            </div>
+
+                            <!-- Travel Allowance Amount (Budget) -->
+                            <div v-if="primaryDo.travel_allowance > 0">
+                                <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1">Uang Jalan (Budget)</span>
+                                <div class="text-lg font-black text-slate-900 dark:text-white">
+                                    {{ formatCurrency(primaryDo.travel_allowance) }}
+                                </div>
+                                <p v-if="primaryDo.travel_allowance_notes" class="text-xs text-slate-500 dark:text-slate-400 italic mt-1 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                                    "{{ primaryDo.travel_allowance_notes }}"
+                                </p>
+                            </div>
+
+                            <!-- Finance Action Button -->
+                            <div v-if="primaryDo.travel_allowance_status === 'requested' && hasRole('Finance', 'Super Admin', 'Director', 'Sales Manager')">
+                                <button 
+                                    @click="disburseAllowance" 
+                                    class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-white text-xs font-bold shadow-lg shadow-amber-500/30 hover:from-amber-500 hover:to-amber-400 active:scale-95 transition-all"
+                                >
+                                    💸 CAIRKAN UANG JALAN
+                                </button>
+                            </div>
+
+                            <!-- Reconciled Expenses Details -->
+                            <div v-if="primaryDo.travel_allowance_status === 'reconciled' || primaryDo.odometer_end > 0" class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                                <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Laporan Biaya Sopir</h4>
+                                
+                                <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                                    <div>
+                                        <span class="text-slate-400 font-bold block text-[9px] uppercase tracking-tight">Odometer Awal</span>
+                                        <span class="font-bold text-slate-700 dark:text-slate-300">{{ primaryDo.odometer_start ? primaryDo.odometer_start.toLocaleString('id-ID') : 0 }} KM</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400 font-bold block text-[9px] uppercase tracking-tight">Odometer Akhir</span>
+                                        <span class="font-bold text-slate-700 dark:text-slate-300">{{ primaryDo.odometer_end ? primaryDo.odometer_end.toLocaleString('id-ID') : 0 }} KM</span>
+                                    </div>
+                                    <div class="col-span-2 pt-1 border-t border-slate-200 dark:border-slate-800/50 mt-1">
+                                        <span class="text-slate-400 font-bold block text-[9px] uppercase tracking-tight">Jarak Tempuh</span>
+                                        <span class="font-bold text-blue-500">{{ ((primaryDo.odometer_end || 0) - (primaryDo.odometer_start || 0)).toLocaleString('id-ID') }} KM</span>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-1.5 text-xs">
+                                    <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/50">
+                                        <span class="text-slate-500">Biaya Solar (BBM)</span>
+                                        <span class="font-bold text-slate-900 dark:text-white">{{ formatCurrency(primaryDo.real_fuel_cost) }}</span>
+                                    </div>
+                                    <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/50">
+                                        <span class="text-slate-500">Biaya Tol</span>
+                                        <span class="font-bold text-slate-900 dark:text-white">{{ formatCurrency(primaryDo.real_toll_cost) }}</span>
+                                    </div>
+                                    <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/50">
+                                        <span class="text-slate-500">Biaya Lainnya</span>
+                                        <span class="font-bold text-slate-900 dark:text-white">{{ formatCurrency(primaryDo.real_other_cost) }}</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 text-sm border-b-2 border-double border-slate-200 dark:border-slate-800">
+                                        <span class="font-bold text-slate-900 dark:text-white">Total Biaya Perjalanan</span>
+                                        <span class="font-black text-slate-900 dark:text-white">
+                                            {{ formatCurrency(Number(primaryDo.real_fuel_cost || 0) + Number(primaryDo.real_toll_cost || 0) + Number(primaryDo.real_other_cost || 0)) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Selisih Uang Jalan -->
+                                <div class="p-3 rounded-xl border text-xs" :class="[
+                                    (Number(primaryDo.travel_allowance || 0) - (Number(primaryDo.real_fuel_cost || 0) + Number(primaryDo.real_toll_cost || 0) + Number(primaryDo.real_other_cost || 0))) >= 0
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                                        : 'bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400'
+                                ]">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-bold">
+                                            {{ (Number(primaryDo.travel_allowance || 0) - (Number(primaryDo.real_fuel_cost || 0) + Number(primaryDo.real_toll_cost || 0) + Number(primaryDo.real_other_cost || 0))) >= 0
+                                                ? 'Sisa Uang Jalan (Refund)'
+                                                : 'Kurang Bayar (Klaim Driver)'
+                                        }}
+                                        </span>
+                                        <span class="font-black text-sm">
+                                            {{ formatCurrency(Math.abs(Number(primaryDo.travel_allowance || 0) - (Number(primaryDo.real_fuel_cost || 0) + Number(primaryDo.real_toll_cost || 0) + Number(primaryDo.real_other_cost || 0)))) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Receipt Image Preview -->
+                                <div v-if="primaryDo.real_costs_receipt_url" class="space-y-1.5">
+                                    <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Bukti Struk/Kuitansi</span>
+                                    <a 
+                                        :href="primaryDo.real_costs_receipt_url" 
+                                        target="_blank" 
+                                        class="block rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:opacity-90 transition-opacity"
+                                    >
+                                        <img :src="primaryDo.real_costs_receipt_url" class="w-full max-h-48 object-cover" />
+                                        <div class="py-2 text-center text-[10px] font-bold text-blue-500 hover:underline uppercase bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
+                                            Lihat Foto Penuh 🔍
+                                        </div>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -25,6 +25,24 @@ const scanError = ref('');
 const confirming = ref(false);
 const lookingUp = ref(false);
 
+// New states for travel allowance and expenses
+const requiresCosts = ref(false);
+const travelAllowance = ref(0);
+const odometerEnd = ref('');
+const realFuelCost = ref(0);
+const realTollCost = ref(0);
+const realOtherCost = ref(0);
+const receiptFile = ref(null);
+const receiptPreviewUrl = ref(null);
+
+const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        receiptFile.value = file;
+        receiptPreviewUrl.value = URL.createObjectURL(file);
+    }
+};
+
 const startScanner = async () => {
     scanError.value = '';
     scannedDo.value = null;
@@ -89,6 +107,16 @@ const onScanSuccess = async (decodedText) => {
             scanError.value = data.error || 'DO tidak ditemukan.';
         } else {
             scannedDo.value = data.deliveryOrder;
+            requiresCosts.value = data.requires_costs || false;
+            travelAllowance.value = data.travel_allowance || 0;
+            
+            // Reset input values
+            odometerEnd.value = '';
+            realFuelCost.value = 0;
+            realTollCost.value = 0;
+            realOtherCost.value = 0;
+            receiptFile.value = null;
+            receiptPreviewUrl.value = null;
         }
     } catch (err) {
         scanError.value = 'Error: ' + err.message;
@@ -99,13 +127,56 @@ const onScanSuccess = async (decodedText) => {
 
 const confirmArrival = () => {
     if (!scannedDo.value) return;
+
+    if (requiresCosts.value) {
+        if (!odometerEnd.value || odometerEnd.value <= 0) {
+            alert('Harap isi Odometer Akhir dengan benar.');
+            return;
+        }
+        if (realFuelCost.value === '' || realFuelCost.value < 0) {
+            alert('Harap isi Biaya Solar dengan benar.');
+            return;
+        }
+        if (realTollCost.value === '' || realTollCost.value < 0) {
+            alert('Harap isi Biaya Tol dengan benar.');
+            return;
+        }
+        if (realOtherCost.value === '' || realOtherCost.value < 0) {
+            alert('Harap isi Biaya Lainnya dengan benar.');
+            return;
+        }
+    }
+
     if (!confirm('📍 KONFIRMASI SAMPAI\n\nDO: ' + scannedDo.value.do_number + '\nCustomer: ' + (scannedDo.value.customer?.name || '-') + '\n\nBarang sudah sampai di lokasi?\nStatus akan berubah menjadi DELIVERED.')) return;
 
     confirming.value = true;
-    router.patch(route('driver.confirm', scannedDo.value.id), {}, {
+    
+    const formData = {};
+    if (requiresCosts.value) {
+        formData.odometer_end = odometerEnd.value;
+        formData.real_fuel_cost = realFuelCost.value;
+        formData.real_toll_cost = realTollCost.value;
+        formData.real_other_cost = realOtherCost.value;
+        if (receiptFile.value) {
+            formData.image = receiptFile.value;
+        }
+    }
+
+    router.post(route('confirm', scannedDo.value.id), {
+        _method: 'PATCH',
+        ...formData
+    }, {
         onFinish: () => confirming.value = false,
         onSuccess: () => {
             scannedDo.value = null;
+            requiresCosts.value = false;
+            travelAllowance.value = 0;
+            odometerEnd.value = '';
+            realFuelCost.value = 0;
+            realTollCost.value = 0;
+            realOtherCost.value = 0;
+            receiptFile.value = null;
+            receiptPreviewUrl.value = null;
         },
     });
 };
@@ -114,6 +185,14 @@ const resetScanner = () => {
     scannedDo.value = null;
     scanError.value = '';
     confirming.value = false;
+    requiresCosts.value = false;
+    travelAllowance.value = 0;
+    odometerEnd.value = '';
+    realFuelCost.value = 0;
+    realTollCost.value = 0;
+    realOtherCost.value = 0;
+    receiptFile.value = null;
+    receiptPreviewUrl.value = null;
 };
 
 const formatDate = (date) => {
@@ -222,6 +301,86 @@ onBeforeUnmount(async () => {
                             <span class="flex items-center gap-1">
                                 <CubeIcon class="h-3 w-3" /> {{ scannedDo.items?.length || 0 }} items
                             </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Biaya Operasional Perjalanan -->
+                <div v-if="requiresCosts" class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-amber-300 dark:border-amber-700 shadow-lg space-y-4">
+                    <div class="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-700">
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                            <TruckIcon class="h-5 w-5 text-amber-500" />
+                        </div>
+                        <div>
+                            <span class="text-xs font-black uppercase tracking-widest text-amber-600 block">Laporan Biaya Perjalanan</span>
+                            <span class="text-[10px] text-slate-400">Pemberhentian Terakhir (Uang Jalan: Rp {{ travelAllowance.toLocaleString('id-ID') }})</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Odometer Akhir (KM)</label>
+                            <input 
+                                type="number" 
+                                v-model.number="odometerEnd" 
+                                placeholder="Masukkan Odometer Akhir"
+                                class="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 font-bold"
+                                required
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Solar (Rp)</label>
+                                <input 
+                                    type="number" 
+                                    v-model.number="realFuelCost" 
+                                    placeholder="0"
+                                    class="w-full px-2 py-3 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 font-bold"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Tol (Rp)</label>
+                                <input 
+                                    type="number" 
+                                    v-model.number="realTollCost" 
+                                    placeholder="0"
+                                    class="w-full px-2 py-3 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 font-bold"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Lainnya (Rp)</label>
+                                <input 
+                                    type="number" 
+                                    v-model.number="realOtherCost" 
+                                    placeholder="0"
+                                    class="w-full px-2 py-3 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 font-bold"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Unggah Struk / Bukti Pengeluaran</label>
+                            <div class="flex items-center gap-3">
+                                <label class="flex-1 flex flex-col items-center justify-center px-4 py-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-all">
+                                    <CameraIcon class="h-6 w-6 text-slate-400 mb-1" />
+                                    <span class="text-xs text-slate-500 font-bold">Ambil Foto Struk</span>
+                                    <input type="file" accept="image/*" capture="environment" @change="handleFileChange" class="hidden" />
+                                </label>
+                                <div v-if="receiptPreviewUrl" class="w-16 h-16 rounded-xl border border-slate-200 dark:border-slate-750 overflow-hidden relative group shrink-0">
+                                    <img :src="receiptPreviewUrl" class="w-full h-full object-cover" />
+                                    <button 
+                                        type="button" 
+                                        @click="receiptFile = null; receiptPreviewUrl = null" 
+                                        class="absolute inset-0 bg-red-500/85 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <XCircleIcon class="h-5 w-5 text-white" />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

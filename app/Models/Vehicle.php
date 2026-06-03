@@ -35,7 +35,8 @@ class Vehicle extends Model
         'fuel_type',
         'ownership',
         'purchase_date',
-        'purchase_price'
+        'purchase_price',
+        'usage_type'
     ];
 
     protected $casts = [
@@ -57,5 +58,10 @@ class Vehicle extends Model
     public function deliveryOrders()
     {
         return $this->hasMany(DeliveryOrder::class);
+    }
+
+    public function gaBookings()
+    {
+        return $this->hasMany(GaVehicleBooking::class);
     }
 }
