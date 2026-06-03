@@ -17,6 +17,9 @@ use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WorkOrder;
 use App\Models\MaterialConsumption;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderItem;
+use App\Models\SubcontractOrder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -28,7 +31,7 @@ class WorkOrderController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = WorkOrder::with(['product', 'bom', 'warehouse'])
+        $query = WorkOrder::with(['product', 'bom', 'warehouse', 'subcontractOrders.purchaseOrder'])
             ->when($request->search, function ($q, $search) {
                 $q->where(function ($q) use ($search) {
                     $q->where('wo_number', 'like', "%{$search}%")
@@ -55,6 +58,10 @@ class WorkOrderController extends Controller
         $workOrders->getCollection()->transform(function ($wo) {
             $wo->progress_percent = $wo->progress_percent;
             $wo->remaining_qty = $wo->remaining_qty;
+
+            $latestSubcontractOrder = $wo->subcontractOrders?->sortByDesc('id')->first();
+            $wo->subcontract_po_id = $latestSubcontractOrder?->purchase_order_id;
+            $wo->subcontract_po_number = $latestSubcontractOrder?->purchaseOrder?->po_number;
             return $wo;
         });
 
@@ -324,6 +331,182 @@ class WorkOrderController extends Controller
         });
 
         return back()->with('success', "Started {$count} work orders (filtered).");
+    }
+
+    public function bulkCreateSubcontractPurchaseOrder(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:work_orders,id',
+            'expected_date' => 'nullable|date',
+            'notes' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.work_order_id' => 'required|integer|exists:work_orders,id',
+            'items.*.unit_price' => 'required|numeric|min:0',
+        ]);
+
+        $ids = collect($validated['ids'])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $priceByWorkOrderId = collect($validated['items'])
+            ->map(fn ($row) => [
+                'work_order_id' => (int) ($row['work_order_id'] ?? 0),
+                'unit_price' => (float) ($row['unit_price'] ?? 0),
+            ])
+            ->keyBy('work_order_id');
+
+        $workOrders = WorkOrder::query()
+            ->with(['product', 'subcontractOrders'])
+            ->where('company_id', session('company_id'))
+            ->whereIn('id', $ids)
+            ->get();
+
+        if ($workOrders->count() !== $ids->count()) {
+            return back()->with('error', 'Ada Work Order yang tidak ditemukan.');
+        }
+
+        if ($workOrders->contains(fn ($wo) => $wo->production_type !== 'subcontract')) {
+            return back()->with('error', 'Hanya Work Order tipe subcontract yang boleh dibuatkan PO Subcontract.');
+        }
+
+        if ($workOrders->contains(fn ($wo) => in_array($wo->status, [WorkOrder::STATUS_COMPLETED, WorkOrder::STATUS_CANCELLED], true))) {
+            return back()->with('error', 'Work Order berstatus Completed/Cancelled tidak boleh dibuatkan PO Subcontract.');
+        }
+
+        $supplierId = (int) $workOrders->first()->supplier_id;
+        if ($supplierId <= 0 || $workOrders->contains(fn ($wo) => (int) $wo->supplier_id !== $supplierId)) {
+            return back()->with('error', 'Supplier Work Order tidak sama. 1 PO hanya boleh untuk 1 supplier.');
+        }
+
+        $warehouseId = (int) $workOrders->first()->warehouse_id;
+        if ($warehouseId <= 0 || $workOrders->contains(fn ($wo) => (int) $wo->warehouse_id !== $warehouseId)) {
+            return back()->with('error', 'Output warehouse Work Order tidak sama. 1 PO hanya boleh untuk 1 warehouse.');
+        }
+
+        $supplier = Supplier::query()
+            ->where('company_id', session('company_id'))
+            ->where('id', $supplierId)
+            ->first();
+
+        if (!$supplier) {
+            return back()->with('error', 'Supplier tidak ditemukan.');
+        }
+
+        if (!$supplier->subcontract_warehouse_id) {
+            return back()->with('error', 'Supplier belum punya Subcontract Warehouse. Set terlebih dahulu agar sisa material di subcont bisa dipantau.');
+        }
+
+        $missingPriceIds = $ids->filter(fn ($id) => !$priceByWorkOrderId->has($id))->values();
+        if ($missingPriceIds->isNotEmpty()) {
+            return back()->with('error', 'Unit price belum lengkap untuk semua Work Order yang dipilih.');
+        }
+
+        $linkedByPoItems = PurchaseOrderItem::query()
+            ->whereIn('work_order_id', $ids)
+            ->pluck('work_order_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!empty($linkedByPoItems)) {
+            return back()->with('error', 'Ada Work Order yang sudah terhubung ke PO sebelumnya.');
+        }
+
+        $linkedBySubcontractOrders = SubcontractOrder::query()
+            ->whereIn('work_order_id', $ids)
+            ->whereNotNull('purchase_order_id')
+            ->pluck('work_order_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!empty($linkedBySubcontractOrders)) {
+            return back()->with('error', 'Ada Work Order yang sudah terhubung ke PO sebelumnya.');
+        }
+
+        try {
+            return DB::transaction(function () use ($validated, $ids, $priceByWorkOrderId, $workOrders, $supplierId, $warehouseId, $supplier) {
+                $workOrdersById = $workOrders->keyBy('id');
+
+                foreach ($ids as $id) {
+                    $wo = $workOrdersById->get($id);
+                    if (!$wo) {
+                        continue;
+                    }
+                    if (!$wo->subcontractOrders()->exists()) {
+                        $this->generateSubcontractOrder($wo);
+                        $wo->loadMissing('subcontractOrders');
+                    }
+                }
+
+                $scoNumbers = $workOrders->flatMap(function ($wo) {
+                    return $wo->subcontractOrders?->sortByDesc('id')->take(1)->pluck('order_number') ?? [];
+                })->filter()->values();
+
+                $woNumbers = $workOrders->pluck('wo_number')->filter()->values();
+
+                $notes = $scoNumbers->isNotEmpty()
+                    ? "Service PO for Subcont Orders: {$scoNumbers->implode(', ')} (WO: {$woNumbers->implode(', ')})"
+                    : "Service PO for Subcontract WO: {$woNumbers->implode(', ')}";
+
+                if (!empty($validated['notes'])) {
+                    $notes .= "\n" . $validated['notes'];
+                }
+
+                $po = PurchaseOrder::create([
+                    'po_number' => PurchaseOrder::generatePoNumber($supplier, now()),
+                    'supplier_id' => $supplierId,
+                    'warehouse_id' => $warehouseId,
+                    'order_date' => now(),
+                    'expected_date' => $validated['expected_date'] ?? null,
+                    'status' => PurchaseOrder::STATUS_DRAFT,
+                    'notes' => $notes,
+                    'created_by' => auth()->id(),
+                ]);
+
+                foreach ($ids as $id) {
+                    $wo = $workOrdersById->get($id);
+                    if (!$wo) {
+                        continue;
+                    }
+
+                    $unitPrice = (float) ($priceByWorkOrderId->get($id)['unit_price'] ?? 0);
+
+                    PurchaseOrderItem::create([
+                        'purchase_order_id' => $po->id,
+                        'work_order_id' => $wo->id,
+                        'product_id' => $wo->product_id,
+                        'description' => "Subcontract Service (WO: {$wo->wo_number})",
+                        'qty' => $wo->qty_planned,
+                        'unit_id' => $wo->product?->unit_id ?? null,
+                        'unit_price' => $unitPrice,
+                        'discount_percent' => 0,
+                    ]);
+
+                    $subcontractOrder = $wo->subcontractOrders
+                        ?->sortByDesc('id')
+                        ->first();
+
+                    if ($subcontractOrder && !$subcontractOrder->purchase_order_id) {
+                        $subcontractOrder->update([
+                            'purchase_order_id' => $po->id,
+                            'service_fee' => $unitPrice,
+                        ]);
+                    }
+                }
+
+                return redirect()
+                    ->route('purchasing.orders.show', $po->id)
+                    ->with('success', 'PO Subcontract Draft berhasil dibuat: ' . $po->po_number);
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            if (str_contains(strtolower($e->getMessage()), 'work_order_id')) {
+                return back()->with('error', 'Gagal membuat PO: ada WO yang sudah terhubung ke PO Subcontract (terjadi double submit/duplikasi).');
+            }
+            throw $e;
+        }
     }
 
     public function complete(WorkOrder $workOrder)

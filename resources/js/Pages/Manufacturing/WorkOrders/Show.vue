@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import { 
     ArrowLeftIcon, 
     CogIcon,
@@ -16,6 +17,7 @@ import {
     ArrowPathIcon,
     UserIcon,
     BeakerIcon,
+    PrinterIcon,
     XMarkIcon,
     PencilIcon,
 } from '@heroicons/vue/24/outline';
@@ -83,6 +85,57 @@ const canRecordProduction = computed(() => props.workOrder.status === 'in_progre
 const canComplete = computed(() => props.workOrder.status === 'in_progress' && parseFloat(props.workOrder.qty_produced) > 0 && props.workOrder.production_type !== 'subcontract');
 const canCancel = computed(() => !['completed', 'cancelled'].includes(props.workOrder.status));
 const canReopen = computed(() => props.workOrder.status === 'cancelled');
+
+const showCreatePoModal = ref(false);
+
+const latestSubcontractOrder = computed(() => {
+    const rows = props.workOrder.subcontract_orders || [];
+    if (rows.length <= 0) return null;
+    return [...rows].sort((a, b) => (b.id || 0) - (a.id || 0))[0] || null;
+});
+
+const canCreateSubcontractPo = computed(() => {
+    if (props.workOrder.production_type !== 'subcontract') return false;
+    if (['completed', 'cancelled'].includes(props.workOrder.status)) return false;
+    return !latestSubcontractOrder.value?.purchase_order_id;
+});
+
+const createPoForm = useForm({
+    ids: [],
+    expected_date: '',
+    notes: '',
+    items: [],
+});
+
+const openCreatePo = () => {
+    if (!canCreateSubcontractPo.value) {
+        return;
+    }
+
+    createPoForm.reset();
+    createPoForm.clearErrors();
+
+    createPoForm.ids = [props.workOrder.id];
+    createPoForm.items = [{
+        work_order_id: props.workOrder.id,
+        unit_price: '',
+    }];
+
+    showCreatePoModal.value = true;
+};
+
+const closeCreatePo = () => {
+    showCreatePoModal.value = false;
+    createPoForm.reset();
+    createPoForm.clearErrors();
+};
+
+const submitCreatePo = () => {
+    createPoForm.post(route('manufacturing.work-orders.bulk-create-subcontract-po'), {
+        preserveScroll: true,
+        onSuccess: () => closeCreatePo(),
+    });
+};
 </script>
 
 <template>
@@ -128,6 +181,21 @@ const canReopen = computed(() => props.workOrder.status === 'cancelled');
                         <PrinterIcon class="h-5 w-5" />
                         Print WO
                     </a>
+                    <Link
+                        v-if="latestSubcontractOrder?.purchase_order_id"
+                        :href="route('purchasing.orders.show', latestSubcontractOrder.purchase_order_id)"
+                        class="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
+                    >
+                        View PO
+                    </Link>
+                    <button
+                        v-if="canCreateSubcontractPo"
+                        type="button"
+                        class="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 transition-all"
+                        @click="openCreatePo"
+                    >
+                        Create PO
+                    </button>
                     <a 
                         v-if="workOrder.production_type === 'subcontract' && workOrder.subcontract_orders?.length > 0"
                         :href="route('manufacturing.subcontract-orders.print', workOrder.subcontract_orders[0].id)" 
@@ -204,6 +272,82 @@ const canReopen = computed(() => props.workOrder.status === 'cancelled');
                     </button>
                 </div>
             </div>
+
+            <Modal :show="showCreatePoModal" @close="closeCreatePo">
+                <div class="px-6 py-4">
+                    <div class="text-lg font-semibold text-slate-900 dark:text-white">Create PO Subcontract</div>
+                    <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        1 WO = 1 PO item. Unit price bisa berbeda per WO.
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Expected Date</label>
+                            <input
+                                v-model="createPoForm.expected_date"
+                                type="date"
+                                class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800/50 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            />
+                            <div v-if="createPoForm.errors.expected_date" class="text-red-400 text-[11px] mt-1 font-semibold">{{ createPoForm.errors.expected_date }}</div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Notes (optional)</label>
+                            <input
+                                v-model="createPoForm.notes"
+                                type="text"
+                                class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800/50 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                                placeholder="Catatan PO..."
+                            />
+                            <div v-if="createPoForm.errors.notes" class="text-red-400 text-[11px] mt-1 font-semibold">{{ createPoForm.errors.notes }}</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5">
+                        <div class="flex items-center justify-between gap-3 mb-2">
+                            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">WO</div>
+                            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Unit Price</div>
+                        </div>
+                        <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 px-4 py-3">
+                            <div>
+                                <div class="text-sm font-bold text-slate-900 dark:text-white">{{ workOrder.wo_number }}</div>
+                                <div class="text-[11px] text-slate-500">{{ workOrder.product?.name }} • Qty {{ formatNumber(workOrder.qty_planned) }}</div>
+                            </div>
+                            <div class="w-48">
+                                <input
+                                    v-model="createPoForm.items[0].unit_price"
+                                    type="number"
+                                    min="0"
+                                    step="0.0001"
+                                    class="w-full rounded-xl border-0 bg-white dark:bg-slate-900 py-2 px-3 text-right text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                                    placeholder="0"
+                                />
+                                <div v-if="createPoForm.errors['items.0.unit_price']" class="text-red-400 text-[11px] mt-1 font-semibold">
+                                    {{ createPoForm.errors['items.0.unit_price'] }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-900 px-6 py-4">
+                    <button
+                        type="button"
+                        class="rounded-lg bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        @click="closeCreatePo"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60 transition-colors"
+                        :disabled="createPoForm.processing"
+                        @click="submitCreatePo"
+                    >
+                        Create PO
+                    </button>
+                </div>
+            </Modal>
 
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
                 <div class="xl:col-span-8 space-y-8">

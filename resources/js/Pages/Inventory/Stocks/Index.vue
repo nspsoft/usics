@@ -26,6 +26,7 @@ const props = defineProps({
 const search = ref(props.filters.search || '');
 const selectedWarehouse = ref(props.filters.warehouse_id || '');
 const selectedCategory = ref(props.filters.category || '');
+const selectedAction = ref(props.filters.action || '');
 const sortField = ref(props.filters.sort || 'product_name');
 const sortDirection = ref(props.filters.direction || 'asc');
 const showFilters = ref(false);
@@ -35,6 +36,7 @@ const applyFilters = debounce(() => {
         search: search.value || undefined,
         warehouse_id: selectedWarehouse.value || undefined,
         category: selectedCategory.value || undefined,
+        action: selectedAction.value || undefined,
         sort: sortField.value,
         direction: sortDirection.value,
     }, {
@@ -43,7 +45,7 @@ const applyFilters = debounce(() => {
     });
 }, 300);
 
-watch([search, selectedWarehouse, selectedCategory], applyFilters);
+watch([search, selectedWarehouse, selectedCategory, selectedAction], applyFilters);
 
 const sort = (field) => {
     if (sortField.value === field) {
@@ -59,6 +61,7 @@ const clearFilters = () => {
     search.value = '';
     selectedWarehouse.value = '';
     selectedCategory.value = '';
+    selectedAction.value = '';
     sortField.value = 'product_name';
     sortDirection.value = 'asc';
     applyFilters();
@@ -239,7 +242,7 @@ const bulkReorder = () => {
                 leave-to-class="opacity-0 -translate-y-2"
             >
                 <div v-if="showFilters" class="rounded-2xl glass-card p-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Warehouse</label>
                             <select
@@ -264,6 +267,18 @@ const bulkReorder = () => {
                                 </option>
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Action</label>
+                            <select
+                                v-model="selectedAction"
+                                class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            >
+                                <option value="">All</option>
+                                <option value="urgent">Urgent</option>
+                                <option value="reorder">Reorder</option>
+                                <option value="ok">Stock OK</option>
+                            </select>
+                        </div>
                         <div class="flex items-end">
                             <button 
                                 @click="clearFilters"
@@ -280,7 +295,7 @@ const bulkReorder = () => {
             <div class="rounded-2xl glass-card overflow-hidden">
                 <div class="overflow-x-auto overflow-y-auto max-h-[600px]">
                     <table class="w-full text-left text-sm text-slate-500 dark:text-slate-400">
-                        <thead class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm bg-white dark:bg-slate-950 text-slate-200 font-medium border-b border-slate-200 dark:border-slate-800">
+                        <thead class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm text-slate-900 dark:text-slate-200 font-medium border-b border-slate-200 dark:border-slate-800">
                             <tr>
                                 <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm pl-6 pr-3 py-4 w-10">
                                     <input 
@@ -300,7 +315,7 @@ const bulkReorder = () => {
                                             <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
                                             <ChevronDownIcon v-else class="h-3 w-3" />
                                         </span>
-                                        <span v-else class="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span v-else class="text-slate-500 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <ChevronUpIcon class="h-3 w-3" />
                                         </span>
                                     </div>
@@ -317,7 +332,7 @@ const bulkReorder = () => {
                                             <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
                                             <ChevronDownIcon v-else class="h-3 w-3" />
                                         </span>
-                                        <span v-else class="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span v-else class="text-slate-500 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <ChevronUpIcon class="h-3 w-3" />
                                         </span>
                                     </div>
@@ -356,7 +371,7 @@ const bulkReorder = () => {
                                             <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
                                             <ChevronDownIcon v-else class="h-3 w-3" />
                                         </span>
-                                        <span v-else class="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span v-else class="text-slate-500 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <ChevronUpIcon class="h-3 w-3" />
                                         </span>
                                     </div>
@@ -372,7 +387,7 @@ const bulkReorder = () => {
                                             <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
                                             <ChevronDownIcon v-else class="h-3 w-3" />
                                         </span>
-                                        <span v-else class="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span v-else class="text-slate-500 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <ChevronUpIcon class="h-3 w-3" />
                                         </span>
                                     </div>

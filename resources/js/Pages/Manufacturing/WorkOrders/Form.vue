@@ -8,7 +8,6 @@ import {
     CubeIcon,
 } from '@heroicons/vue/24/outline';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
-import DmyDateInput from '@/Components/DmyDateInput.vue';
 
 const props = defineProps({
     workOrder: Object,
@@ -253,8 +252,9 @@ watch(() => form.planned_start, (newVal) => {
 
                         <div>
                             <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Planned Start *</label>
-                            <DmyDateInput
+                            <input
                                 v-model="form.planned_start"
+                                type="date"
                                 class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
                                 required
                             />
@@ -263,8 +263,9 @@ watch(() => form.planned_start, (newVal) => {
 
                         <div>
                             <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Planned End *</label>
-                            <DmyDateInput
+                            <input
                                 v-model="form.planned_end"
+                                type="date"
                                 class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
                                 required
                             />

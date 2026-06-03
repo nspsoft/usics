@@ -176,97 +176,217 @@ class GoodsReceipt extends Model
             return;
         }
 
-        $subcontractOrder = SubcontractOrder::query()
+        $this->loadMissing(['purchaseOrder.items', 'items.purchaseOrderItem']);
+
+        $po = $this->purchaseOrder;
+        if (!$po) {
+            return;
+        }
+
+        $poItems = $po->items
+            ->whereNotNull('work_order_id')
+            ->values();
+
+        if ($poItems->isEmpty()) {
+            $subcontractOrder = SubcontractOrder::query()
+                ->with(['supplier.subcontractWarehouse', 'workOrder.components'])
+                ->where('purchase_order_id', $this->purchase_order_id)
+                ->first();
+
+            if (!$subcontractOrder) {
+                return;
+            }
+
+            $workOrder = $subcontractOrder->workOrder;
+            if (!$workOrder) {
+                return;
+            }
+
+            $subcontWarehouseId = $subcontractOrder->supplier?->subcontract_warehouse_id;
+            if (!$subcontWarehouseId) {
+                return;
+            }
+
+            $qtyReceived = (float) $this->items
+                ->where('product_id', $workOrder->product_id)
+                ->sum('qty_received');
+
+            if ($qtyReceived <= 0) {
+                return;
+            }
+
+            foreach ($workOrder->components as $component) {
+                $usagePerUnit = $workOrder->qty_planned > 0 ? ((float) $component->qty_required / (float) $workOrder->qty_planned) : 0;
+                $qtyToConsume = $usagePerUnit * $qtyReceived;
+
+                if ($qtyToConsume <= 0) {
+                    continue;
+                }
+
+                $subcontStock = ProductStock::firstOrCreate(
+                    [
+                        'product_id' => $component->product_id,
+                        'warehouse_id' => $subcontWarehouseId,
+                    ],
+                    [
+                        'qty_on_hand' => 0,
+                        'qty_reserved' => 0,
+                        'qty_incoming' => 0,
+                        'qty_outgoing' => 0,
+                        'avg_cost' => 0,
+                    ]
+                );
+
+                $subcontStock->adjustStock(
+                    -$qtyToConsume,
+                    null,
+                    StockMovement::TYPE_PRODUCTION_OUT,
+                    $subcontractOrder,
+                    "Auto backflush from GR #{$this->grn_number} for WO: {$workOrder->wo_number} (Ref: {$subcontractOrder->order_number})",
+                    "GRN:{$this->grn_number}"
+                );
+            }
+
+            if ($workOrder->status === WorkOrder::STATUS_CANCELLED) {
+                return;
+            }
+
+            $totalProduced = (float) DB::table('goods_receipt_items as gri')
+                ->join('goods_receipts as gr', 'gr.id', '=', 'gri.goods_receipt_id')
+                ->where('gr.purchase_order_id', $this->purchase_order_id)
+                ->where('gr.status', self::STATUS_COMPLETED)
+                ->where('gri.product_id', $workOrder->product_id)
+                ->sum('gri.qty_received');
+
+            if ($totalProduced <= 0) {
+                return;
+            }
+
+            if ($totalProduced >= (float) $workOrder->qty_planned) {
+                $subcontractOrder->update(['status' => 'completed']);
+                $workOrder->update([
+                    'qty_produced' => $totalProduced,
+                    'status' => WorkOrder::STATUS_COMPLETED,
+                    'actual_end' => now(),
+                    'actual_start' => $workOrder->actual_start ?? now(),
+                ]);
+                return;
+            }
+
+            $subcontractOrder->update(['status' => 'received']);
+            $workOrder->update([
+                'qty_produced' => $totalProduced,
+                'status' => WorkOrder::STATUS_IN_PROGRESS,
+                'actual_start' => $workOrder->actual_start ?? now(),
+            ]);
+
+            return;
+        }
+
+        $workOrderIds = $poItems
+            ->pluck('work_order_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $subcontractOrdersByWorkOrderId = SubcontractOrder::query()
             ->with(['supplier.subcontractWarehouse', 'workOrder.components'])
             ->where('purchase_order_id', $this->purchase_order_id)
-            ->first();
+            ->whereIn('work_order_id', $workOrderIds)
+            ->get()
+            ->keyBy('work_order_id');
 
-        if (!$subcontractOrder) {
-            return;
-        }
-
-        $workOrder = $subcontractOrder->workOrder;
-        if (!$workOrder) {
-            return;
-        }
-
-        $subcontWarehouseId = $subcontractOrder->supplier?->subcontract_warehouse_id;
-        if (!$subcontWarehouseId) {
-            return;
-        }
-
-        $qtyReceived = (float) $this->items
-            ->where('product_id', $workOrder->product_id)
-            ->sum('qty_received');
-
-        if ($qtyReceived <= 0) {
-            return;
-        }
-
-        foreach ($workOrder->components as $component) {
-            $usagePerUnit = $workOrder->qty_planned > 0 ? ((float) $component->qty_required / (float) $workOrder->qty_planned) : 0;
-            $qtyToConsume = $usagePerUnit * $qtyReceived;
-
-            if ($qtyToConsume <= 0) {
+        foreach ($poItems as $poItem) {
+            $workOrderId = (int) $poItem->work_order_id;
+            if ($workOrderId <= 0) {
                 continue;
             }
 
-            $subcontStock = ProductStock::firstOrCreate(
-                [
-                    'product_id' => $component->product_id,
-                    'warehouse_id' => $subcontWarehouseId,
-                ],
-                [
-                    'qty_on_hand' => 0,
-                    'qty_reserved' => 0,
-                    'qty_incoming' => 0,
-                    'qty_outgoing' => 0,
-                    'avg_cost' => 0,
-                ]
-            );
+            $subcontractOrder = $subcontractOrdersByWorkOrderId->get($workOrderId);
+            if (!$subcontractOrder) {
+                continue;
+            }
 
-            $subcontStock->adjustStock(
-                -$qtyToConsume,
-                null,
-                StockMovement::TYPE_PRODUCTION_OUT,
-                $subcontractOrder,
-                "Auto backflush from GR #{$this->grn_number} for WO: {$workOrder->wo_number} (Ref: {$subcontractOrder->order_number})",
-                "GRN:{$this->grn_number}"
-            );
-        }
+            $workOrder = $subcontractOrder->workOrder;
+            if (!$workOrder || $workOrder->status === WorkOrder::STATUS_CANCELLED) {
+                continue;
+            }
 
-        if ($workOrder->status === WorkOrder::STATUS_CANCELLED) {
-            return;
-        }
+            $subcontWarehouseId = $subcontractOrder->supplier?->subcontract_warehouse_id;
+            if (!$subcontWarehouseId) {
+                continue;
+            }
 
-        $totalProduced = (float) DB::table('goods_receipt_items as gri')
-            ->join('goods_receipts as gr', 'gr.id', '=', 'gri.goods_receipt_id')
-            ->where('gr.purchase_order_id', $this->purchase_order_id)
-            ->where('gr.status', self::STATUS_COMPLETED)
-            ->where('gri.product_id', $workOrder->product_id)
-            ->sum('gri.qty_received');
+            $qtyReceived = (float) $this->items
+                ->where('purchase_order_item_id', $poItem->id)
+                ->sum('qty_received');
 
-        if ($totalProduced <= 0) {
-            return;
-        }
+            if ($qtyReceived <= 0) {
+                continue;
+            }
 
-        if ($totalProduced >= (float) $workOrder->qty_planned) {
-            $subcontractOrder->update(['status' => 'completed']);
+            foreach ($workOrder->components as $component) {
+                $usagePerUnit = $workOrder->qty_planned > 0 ? ((float) $component->qty_required / (float) $workOrder->qty_planned) : 0;
+                $qtyToConsume = $usagePerUnit * $qtyReceived;
+
+                if ($qtyToConsume <= 0) {
+                    continue;
+                }
+
+                $subcontStock = ProductStock::firstOrCreate(
+                    [
+                        'product_id' => $component->product_id,
+                        'warehouse_id' => $subcontWarehouseId,
+                    ],
+                    [
+                        'qty_on_hand' => 0,
+                        'qty_reserved' => 0,
+                        'qty_incoming' => 0,
+                        'qty_outgoing' => 0,
+                        'avg_cost' => 0,
+                    ]
+                );
+
+                $subcontStock->adjustStock(
+                    -$qtyToConsume,
+                    null,
+                    StockMovement::TYPE_PRODUCTION_OUT,
+                    $subcontractOrder,
+                    "Auto backflush from GR #{$this->grn_number} for WO: {$workOrder->wo_number} (Ref: {$subcontractOrder->order_number})",
+                    "GRN:{$this->grn_number}"
+                );
+            }
+
+            $totalProduced = (float) DB::table('goods_receipt_items as gri')
+                ->join('goods_receipts as gr', 'gr.id', '=', 'gri.goods_receipt_id')
+                ->where('gr.purchase_order_id', $this->purchase_order_id)
+                ->where('gr.status', self::STATUS_COMPLETED)
+                ->where('gri.purchase_order_item_id', $poItem->id)
+                ->sum('gri.qty_received');
+
+            if ($totalProduced <= 0) {
+                continue;
+            }
+
+            if ($totalProduced >= (float) $workOrder->qty_planned) {
+                $subcontractOrder->update(['status' => 'completed']);
+                $workOrder->update([
+                    'qty_produced' => $totalProduced,
+                    'status' => WorkOrder::STATUS_COMPLETED,
+                    'actual_end' => now(),
+                    'actual_start' => $workOrder->actual_start ?? now(),
+                ]);
+                continue;
+            }
+
+            $subcontractOrder->update(['status' => 'received']);
             $workOrder->update([
                 'qty_produced' => $totalProduced,
-                'status' => WorkOrder::STATUS_COMPLETED,
-                'actual_end' => now(),
+                'status' => WorkOrder::STATUS_IN_PROGRESS,
                 'actual_start' => $workOrder->actual_start ?? now(),
             ]);
-            return;
         }
-
-        $subcontractOrder->update(['status' => 'received']);
-        $workOrder->update([
-            'qty_produced' => $totalProduced,
-            'status' => WorkOrder::STATUS_IN_PROGRESS,
-            'actual_start' => $workOrder->actual_start ?? now(),
-        ]);
     }
 
     /**

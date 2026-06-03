@@ -404,7 +404,7 @@ const typeLabel = (type) => {
                                     <span class="font-bold text-slate-900 dark:text-white">{{ formatNumber(selectedLocation.capacity) }}</span>
                                 </div>
                                 <div class="flex justify-between text-sm">
-                                    <span class="text-slate-500 dark:text-slate-400 font-medium">Current Stock</span>
+                                    <span class="text-slate-700 dark:text-slate-400 font-medium">Current Stock</span>
                                     <span class="font-bold text-slate-900 dark:text-white">{{ formatNumber(selectedLocation.total_stock_qty) }}</span>
                                 </div>
                                 <div>

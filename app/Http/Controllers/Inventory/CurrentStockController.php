@@ -7,6 +7,7 @@ use App\Models\ProductStock;
 use App\Models\Warehouse;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,6 +18,17 @@ class CurrentStockController extends Controller
      */
     public function index(Request $request): Response
     {
+        $availableExpr = '(SUM(qty_on_hand) - SUM(qty_reserved))';
+        $hasMinStock = DB::selectOne("SHOW COLUMNS FROM products LIKE 'min_stock'") !== null;
+        $hasReorderPoint = DB::selectOne("SHOW COLUMNS FROM products LIKE 'reorder_point'") !== null;
+
+        $minStockCol = 'MAX(products.min_stock)';
+        $reorderPointCol = 'MAX(products.reorder_point)';
+
+        $minStockExpr = $hasMinStock ? "({$minStockCol} > 0 AND {$availableExpr} <= {$minStockCol})" : '0=1';
+        $reorderExpr = $hasReorderPoint ? "({$reorderPointCol} > 0 AND {$availableExpr} <= {$reorderPointCol})" : '0=1';
+        $urgentExpr = "({$availableExpr} < 0 OR {$minStockExpr})";
+
         $query = ProductStock::query()
             ->with(['product', 'product.category', 'warehouse'])
             ->join('products', 'product_stocks.product_id', '=', 'products.id')
@@ -38,6 +50,21 @@ class CurrentStockController extends Controller
                 $q->whereHas('product', function ($p) use ($category) {
                     $p->where('category_id', $category);
                 });
+            })
+            ->when($request->action, function ($q, $action) use ($urgentExpr, $reorderExpr) {
+                if ($action === 'urgent') {
+                    $q->havingRaw($urgentExpr);
+                    return;
+                }
+
+                if ($action === 'reorder') {
+                    $q->havingRaw("NOT {$urgentExpr} AND {$reorderExpr}");
+                    return;
+                }
+
+                if ($action === 'ok') {
+                    $q->havingRaw("NOT {$urgentExpr} AND NOT ({$reorderExpr})");
+                }
             })
             ->addSelect([
                 'on_order_qty' => \App\Models\PurchaseOrderItem::selectRaw('COALESCE(SUM(qty - qty_received), 0)')
@@ -73,7 +100,7 @@ class CurrentStockController extends Controller
             'stocks' => $stocks,
             'warehouses' => Warehouse::orderBy('name')->get(),
             'categories' => Category::where('type', 'product')->orderBy('name')->get(),
-            'filters' => $request->only(['search', 'warehouse_id', 'category', 'sort', 'direction']),
+            'filters' => $request->only(['search', 'warehouse_id', 'category', 'action', 'sort', 'direction']),
         ]);
     }
 }

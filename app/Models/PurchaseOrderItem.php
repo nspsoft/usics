@@ -16,6 +16,7 @@ class PurchaseOrderItem extends Model
 
     protected $fillable = [
         'purchase_order_id',
+        'work_order_id',
         'product_id',
         'description',
         'notes',
@@ -30,6 +31,7 @@ class PurchaseOrderItem extends Model
     ];
 
     protected $casts = [
+        'work_order_id' => 'integer',
         'qty' => 'float',
         'unit_price' => 'double',
         'discount_percent' => 'float',
@@ -47,6 +49,11 @@ class PurchaseOrderItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function workOrder(): BelongsTo
+    {
+        return $this->belongsTo(WorkOrder::class);
     }
 
     public function unit(): BelongsTo

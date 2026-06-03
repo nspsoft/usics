@@ -477,6 +477,7 @@ class SubcontractOrderController extends Controller
             // 2. Create PO Item (Service)
             PurchaseOrderItem::create([
                 'purchase_order_id' => $po->id,
+                'work_order_id' => $workOrder->id,
                 'product_id' => $workOrder->product_id,
                 'description' => "Subcontract Service: " . ($workOrder->product->name ?? 'Service'),
                 'qty' => $workOrder->qty_planned,

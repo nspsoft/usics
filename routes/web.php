@@ -419,6 +419,7 @@ Route::prefix('manufacturing')->name('manufacturing.')->middleware(['auth'])->gr
     Route::post('/work-orders/{workOrder}/start', [WorkOrderController::class, 'start'])->name('work-orders.start');
     Route::post('/work-orders/bulk-start', [WorkOrderController::class, 'bulkStart'])->name('work-orders.bulk-start');
     Route::post('/work-orders/bulk-start-filtered', [WorkOrderController::class, 'bulkStartFiltered'])->name('work-orders.bulk-start-filtered');
+    Route::post('/work-orders/bulk-create-subcontract-po', [WorkOrderController::class, 'bulkCreateSubcontractPurchaseOrder'])->name('work-orders.bulk-create-subcontract-po');
     Route::post('/work-orders/{workOrder}/complete', [WorkOrderController::class, 'complete'])->name('work-orders.complete');
     Route::post('/work-orders/{workOrder}/cancel', [WorkOrderController::class, 'cancel'])->name('work-orders.cancel');
     Route::post('/work-orders/{workOrder}/reopen', [WorkOrderController::class, 'reopen'])->name('work-orders.reopen');
