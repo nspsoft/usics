@@ -219,13 +219,24 @@ class StockOpnameController extends Controller
 
     public function show(StockOpname $opname): Response
     {
-        $opname->load(['warehouse', 'createdBy', 'items.product']);
+        $opname->load(['warehouse', 'createdBy', 'checkedBy', 'approvedBy', 'items.product.unit']);
 
         return Inertia::render('Inventory/Opname/Show', [
             'opname' => array_merge($opname->toArray(), [
                 'created_by_user' => $opname->createdBy ? [
                     'id' => $opname->createdBy->id,
                     'name' => $opname->createdBy->name,
+                    'signature_path' => $opname->createdBy->signature_path,
+                ] : null,
+                'checked_by_user' => $opname->checkedBy ? [
+                    'id' => $opname->checkedBy->id,
+                    'name' => $opname->checkedBy->name,
+                    'signature_path' => $opname->checkedBy->signature_path,
+                ] : null,
+                'approved_by_user' => $opname->approvedBy ? [
+                    'id' => $opname->approvedBy->id,
+                    'name' => $opname->approvedBy->name,
+                    'signature_path' => $opname->approvedBy->signature_path,
                 ] : null,
             ]),
         ]);
@@ -523,7 +534,7 @@ class StockOpnameController extends Controller
         }
 
         return view('print.stock-opname', [
-            'opname' => $opname->load(['warehouse', 'createdBy', 'items.product.unit']),
+            'opname' => $opname->load(['warehouse', 'createdBy', 'checkedBy', 'approvedBy', 'items.product.unit']),
         ]);
     }
 
@@ -660,12 +671,12 @@ class StockOpnameController extends Controller
 
     public function publicValidate($uuid)
     {
-        $opname = StockOpname::with(['warehouse', 'createdBy', 'items.product.unit'])
+        $opname = StockOpname::with(['warehouse', 'createdBy', 'checkedBy', 'approvedBy', 'items.product.unit'])
             ->where('public_uuid', $uuid)
             ->first();
 
         if (!$opname && is_numeric($uuid)) {
-            $opname = StockOpname::with(['warehouse', 'createdBy', 'items.product.unit'])->findOrFail($uuid);
+            $opname = StockOpname::with(['warehouse', 'createdBy', 'checkedBy', 'approvedBy', 'items.product.unit'])->findOrFail($uuid);
         }
 
         if (!$opname) {
@@ -748,5 +759,37 @@ class StockOpnameController extends Controller
             ],
             'product_ids' => $productIds,
         ]);
+    }
+
+    public function check(StockOpname $opname)
+    {
+        if ($opname->status !== 'completed') {
+            return back()->with('error', 'Dokumen harus berstatus Completed untuk dapat diverifikasi.');
+        }
+
+        $opname->update([
+            'checked_by' => auth()->id(),
+            'checked_at' => now(),
+        ]);
+
+        return back()->with('success', 'Dokumen berhasil diverifikasi sebagai Supervisor.');
+    }
+
+    public function approve(StockOpname $opname)
+    {
+        if ($opname->status !== 'completed') {
+            return back()->with('error', 'Dokumen harus berstatus Completed untuk dapat disetujui.');
+        }
+
+        if (is_null($opname->checked_by)) {
+            return back()->with('error', 'Dokumen harus diperiksa oleh Supervisor terlebih dahulu.');
+        }
+
+        $opname->update([
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+        ]);
+
+        return back()->with('success', 'Dokumen berhasil disetujui sebagai Manager.');
     }
 }

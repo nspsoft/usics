@@ -29,6 +29,11 @@ class CheckLowStockCommand extends Command
      */
     public function handle(WhatsappBotService $whatsapp)
     {
+        if (!AppSetting::get('notify_low_stock', true)) {
+            $this->info('Low stock notifications are disabled in System Preferences.');
+            return Command::SUCCESS;
+        }
+
         $this->info('Starting Low Stock Check...');
 
         // Get products that are below reorder point AND stock managed and active

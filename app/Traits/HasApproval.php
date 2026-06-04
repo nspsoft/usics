@@ -30,6 +30,38 @@ trait HasApproval
             return null; // No approval needed
         }
 
+        if ($workflow->is_auto_approve) {
+            // Create approval request with status approved
+            $request = ApprovalRequest::create([
+                'workflow_id' => $workflow->id,
+                'document_type' => $documentType,
+                'document_id' => $this->id,
+                'current_step' => 0,
+                'status' => ApprovalRequest::STATUS_APPROVED,
+                'requested_by' => auth()->id() ?? 1,
+                'completed_at' => now(),
+            ]);
+
+            \App\Models\ApprovalHistory::create([
+                'approval_request_id' => $request->id,
+                'step_order' => 0,
+                'action' => 'approved',
+                'acted_by' => auth()->id() ?? 1,
+                'notes' => 'Auto Approved by System',
+            ]);
+
+            $this->approval_status = 'approved';
+            
+            // Also update the document status if it has custom update logic
+            if (method_exists($this, 'updateApprovalStatus')) {
+                $this->updateApprovalStatus('approved');
+            } else {
+                $this->saveQuietly();
+            }
+
+            return $request;
+        }
+
         // Create approval request
         $request = ApprovalRequest::create([
             'workflow_id' => $workflow->id,
@@ -37,7 +69,7 @@ trait HasApproval
             'document_id' => $this->id,
             'current_step' => 1,
             'status' => ApprovalRequest::STATUS_PENDING,
-            'requested_by' => auth()->id(),
+            'requested_by' => auth()->id() ?? 1,
         ]);
 
         // Update document status
@@ -52,9 +84,8 @@ trait HasApproval
      */
     public function approvalRequest()
     {
-        return ApprovalRequest::where('document_type', class_basename($this))
-            ->where('document_id', $this->id)
-            ->first();
+        return $this->hasOne(ApprovalRequest::class, 'document_id')
+            ->where('document_type', class_basename($this));
     }
 
     /**

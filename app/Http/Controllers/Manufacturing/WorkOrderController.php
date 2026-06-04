@@ -188,7 +188,7 @@ class WorkOrderController extends Controller
 
     public function show(WorkOrder $workOrder): Response
     {
-        $workOrder->load(['product', 'bom', 'warehouse', 'supplier', 'components.product', 'productionEntries.operatorEmployee', 'productionEntries.entryUser', 'productionEntries.producedBy', 'materialConsumptions.product', 'subcontractOrders']);
+        $workOrder->load(['product', 'bom', 'warehouse', 'supplier', 'components.product', 'productionEntries.operatorEmployee', 'productionEntries.entryUser', 'productionEntries.producedBy', 'materialConsumptions.product', 'subcontractOrders', 'approvalRequest.histories.actedBy', 'approvalRequest.requester', 'approvalRequest.workflow.steps']);
 
         $subcontractGrReceipts = [];
         if ($workOrder->production_type === 'subcontract') {
@@ -252,6 +252,21 @@ class WorkOrderController extends Controller
         $workOrder->update(['status' => 'draft']);
 
         return back()->with('success', 'Work Order reverted to draft for revision.');
+    }
+
+    public function submitForApproval(WorkOrder $workOrder)
+    {
+        if ($workOrder->status !== 'draft') {
+            return back()->with('error', 'Only draft work orders can be submitted for approval.');
+        }
+        
+        $request = $workOrder->checkAndCreateApprovalRequest();
+        
+        if ($request) {
+            return back()->with('success', 'Work Order submitted for approval.');
+        }
+        
+        return back()->with('warning', 'No applicable approval workflow found. You can confirm it directly.');
     }
 
     public function start(WorkOrder $workOrder)
@@ -880,13 +895,13 @@ class WorkOrderController extends Controller
     public function print(WorkOrder $workOrder)
     {
         return view('print.work-order', [
-            'workOrder' => $workOrder->load(['product.unit', 'bom', 'warehouse', 'supplier', 'createdBy', 'components.product.unit', 'components.unit', 'productionEntries.operatorEmployee', 'productionEntries.entryUser', 'productionEntries.producedBy', 'materialConsumptions.product.unit'])
+            'workOrder' => $workOrder->load(['product.unit', 'bom', 'warehouse', 'supplier', 'createdBy', 'components.product.unit', 'components.unit', 'productionEntries.operatorEmployee', 'productionEntries.entryUser', 'productionEntries.producedBy', 'materialConsumptions.product.unit', 'approvalRequest.histories.actedBy', 'approvalRequest.requester', 'approvalRequest.workflow.steps'])
         ]);
     }
 
     public function publicValidate($id)
     {
-        $workOrder = WorkOrder::with(['product', 'warehouse', 'supplier'])
+        $workOrder = WorkOrder::with(['product', 'warehouse', 'supplier', 'approvalRequest.histories.actedBy', 'approvalRequest.workflow.steps'])
             ->findOrFail($id);
 
         return view('print.public-work-order-validation', [

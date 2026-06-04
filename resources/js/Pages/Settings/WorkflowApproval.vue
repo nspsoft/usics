@@ -37,6 +37,7 @@ const defaultForm = () => ({
     condition_operator: '>',
     condition_value: null,
     priority: 0,
+    is_auto_approve: false,
     steps: [{ approver_type: 'role', approver_id: null, can_skip: false, timeout_days: null }],
 });
 
@@ -75,6 +76,7 @@ const openForm = (workflow = null) => {
             condition_operator: workflow.condition_operator || '>',
             condition_value: workflow.condition_value,
             priority: workflow.priority,
+            is_auto_approve: !!workflow.is_auto_approve,
             steps: workflow.steps.map(s => ({
                 approver_type: s.approver_type,
                 approver_id: s.approver_id,
@@ -200,7 +202,10 @@ const formatCurrency = (value) => {
                                 workflow.is_active ? 'bg-green-500' : 'bg-slate-400'
                             ]"></div>
                             <div>
-                                <h3 class="font-bold text-slate-900 dark:text-white">{{ workflow.name }}</h3>
+                                <h3 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    {{ workflow.name }}
+                                    <span v-if="workflow.is_auto_approve" class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs uppercase tracking-wider">Auto Approve</span>
+                                </h3>
                                 <p class="text-sm text-slate-500">
                                     {{ documentTypes[workflow.document_type] }}
                                     <span v-if="workflow.condition_field && workflow.condition_value">
@@ -302,8 +307,20 @@ const formatCurrency = (value) => {
                             <p class="text-xs text-slate-500 mt-2">Leave value empty to apply this workflow to all documents of this type</p>
                         </div>
 
+                        <!-- Auto Approve Toggle -->
+                        <div class="flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                            <div>
+                                <h4 class="text-sm font-semibold text-indigo-900 dark:text-indigo-300">Auto Approve</h4>
+                                <p class="text-xs text-indigo-700/70 dark:text-indigo-400 mt-1">If enabled, documents matching this condition will be automatically approved by the system without requiring manual steps.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" v-model="form.is_auto_approve" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+
                         <!-- Approval Steps -->
-                        <div>
+                        <div v-if="!form.is_auto_approve">
                             <div class="flex items-center justify-between mb-3">
                                 <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Approval Steps</label>
                                 <button @click="addStep" type="button" class="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">

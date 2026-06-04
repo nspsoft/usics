@@ -331,6 +331,22 @@ const deleteOpname = () => {
     }
 };
 
+const checkOpname = () => {
+    if (confirm('Verifikasi dokumen ini sebagai Supervisor?')) {
+        router.post(`/inventory/opname/${props.opname.id}/check`, {}, {
+            preserveScroll: true
+        });
+    }
+};
+
+const approveOpname = () => {
+    if (confirm('Setujui dokumen ini sebagai Manager?')) {
+        router.post(`/inventory/opname/${props.opname.id}/approve`, {}, {
+            preserveScroll: true
+        });
+    }
+};
+
 // Helpers
 const getStatusBadge = (status) => ({
     draft: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
@@ -404,14 +420,14 @@ const getDiffBg = (diff) => {
                         <span class="hidden sm:inline">Complete & Post</span>
                         <span class="sm:hidden">Complete</span>
                     </button>
-                    <button
-                        type="button"
+                    <a
+                        :href="`/inventory/opname/${opname.id}/print`"
+                        target="_blank"
                         class="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700"
-                        @click="window.open(`/inventory/opname/${opname.id}/print`, '_blank')"
                     >
                         <PrinterIcon class="h-4 w-4" />
                         Print
-                    </button>
+                    </a>
                 </div>
             </div>
 
@@ -447,6 +463,65 @@ const getDiffBg = (diff) => {
                         Lokasi: <span class="font-bold">{{ scannedLocation.code }}</span> — {{ scannedLocation.name }}
                     </div>
                     <button @click="clearLocationFilter" class="text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200">Clear</button>
+                </div>
+            </div>
+
+            <!-- Approval & Signature Card -->
+            <div class="rounded-2xl glass-card p-4 sm:p-6 space-y-4">
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Persetujuan & Tanda Tangan Dokumen</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Petugas Opname -->
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50/50 dark:bg-slate-900/30 flex flex-col items-center">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase">Petugas Opname</span>
+                        <div class="h-20 w-40 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-1 bg-white dark:bg-slate-950 flex items-center justify-center mb-2">
+                            <img v-if="opname.created_by_user?.signature_path" :src="'/storage/' + opname.created_by_user.signature_path" class="max-h-full max-w-full object-contain dark:invert" alt="Signature Petugas">
+                            <span v-else class="text-xs text-slate-500 italic">No Signature</span>
+                        </div>
+                        <span class="text-sm font-bold text-slate-900 dark:text-white">{{ opname.created_by_user?.name || '-' }}</span>
+                        <span class="text-[10px] text-slate-500 mt-1">Pembuat Dokumen</span>
+                    </div>
+
+                    <!-- Supervisor -->
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50/50 dark:bg-slate-900/30 flex flex-col items-center">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase">Diperiksa (Supervisor)</span>
+                        <div class="h-20 w-40 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-1 bg-white dark:bg-slate-950 flex items-center justify-center mb-2">
+                            <img v-if="opname.checked_by_user?.signature_path" :src="'/storage/' + opname.checked_by_user.signature_path" class="max-h-full max-w-full object-contain dark:invert" alt="Signature Supervisor">
+                            <div v-else class="flex flex-col items-center gap-1">
+                                <span class="text-xs text-slate-500 italic">Belum Diperiksa</span>
+                                <button
+                                    v-if="opname.status === 'completed' && !opname.checked_by"
+                                    @click="checkOpname"
+                                    class="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase transition-colors"
+                                >
+                                    Verifikasi
+                                </button>
+                            </div>
+                        </div>
+                        <span class="text-sm font-bold text-slate-900 dark:text-white">{{ opname.checked_by_user?.name || '—' }}</span>
+                        <span v-if="opname.checked_at" class="text-[10px] text-emerald-400 mt-1 font-mono">Diverifikasi: {{ formatDate(opname.checked_at) }}</span>
+                        <span v-else class="text-[10px] text-slate-500 mt-1">Belum diverifikasi</span>
+                    </div>
+
+                    <!-- Manager -->
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50/50 dark:bg-slate-900/30 flex flex-col items-center">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase">Disetujui (Manager)</span>
+                        <div class="h-20 w-40 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-1 bg-white dark:bg-slate-950 flex items-center justify-center mb-2">
+                            <img v-if="opname.approved_by_user?.signature_path" :src="'/storage/' + opname.approved_by_user.signature_path" class="max-h-full max-w-full object-contain dark:invert" alt="Signature Manager">
+                            <div v-else class="flex flex-col items-center gap-1">
+                                <span class="text-xs text-slate-500 italic">Belum Disetujui</span>
+                                <button
+                                    v-if="opname.status === 'completed' && opname.checked_by && !opname.approved_by"
+                                    @click="approveOpname"
+                                    class="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold uppercase transition-colors"
+                                >
+                                    Setujui
+                                </button>
+                            </div>
+                        </div>
+                        <span class="text-sm font-bold text-slate-900 dark:text-white">{{ opname.approved_by_user?.name || '—' }}</span>
+                        <span v-if="opname.approved_at" class="text-[10px] text-emerald-400 mt-1 font-mono">Disetujui: {{ formatDate(opname.approved_at) }}</span>
+                        <span v-else class="text-[10px] text-slate-500 mt-1">Belum disetujui</span>
+                    </div>
                 </div>
             </div>
 

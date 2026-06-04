@@ -36,13 +36,14 @@ class WorkflowController extends Controller
             'document_type' => 'required|string|max:50',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'is_auto_approve' => 'boolean',
             'condition_field' => 'nullable|string|max:50',
             'condition_operator' => 'nullable|string|max:20',
             'condition_value' => 'nullable|numeric',
             'priority' => 'integer',
-            'steps' => 'required|array|min:1',
-            'steps.*.approver_type' => 'required|in:user,role',
-            'steps.*.approver_id' => 'required|integer',
+            'steps' => 'required_unless:is_auto_approve,true|array|min:1',
+            'steps.*.approver_type' => 'required_unless:is_auto_approve,true|in:user,role',
+            'steps.*.approver_id' => 'required_unless:is_auto_approve,true|integer',
             'steps.*.can_skip' => 'boolean',
             'steps.*.timeout_days' => 'nullable|integer|min:1',
         ]);
@@ -52,22 +53,25 @@ class WorkflowController extends Controller
             'document_type' => $validated['document_type'],
             'description' => $validated['description'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
+            'is_auto_approve' => $validated['is_auto_approve'] ?? false,
             'condition_field' => $validated['condition_field'],
             'condition_operator' => $validated['condition_operator'],
             'condition_value' => $validated['condition_value'],
             'priority' => $validated['priority'] ?? 0,
         ]);
 
-        // Create steps
-        foreach ($validated['steps'] as $index => $step) {
-            WorkflowStep::create([
-                'workflow_id' => $workflow->id,
-                'step_order' => $index + 1,
-                'approver_type' => $step['approver_type'],
-                'approver_id' => $step['approver_id'],
-                'can_skip' => $step['can_skip'] ?? false,
-                'timeout_days' => $step['timeout_days'] ?? null,
-            ]);
+        // Create steps if not auto approve
+        if (empty($validated['is_auto_approve'])) {
+            foreach ($validated['steps'] ?? [] as $index => $step) {
+                WorkflowStep::create([
+                    'workflow_id' => $workflow->id,
+                    'step_order' => $index + 1,
+                    'approver_type' => $step['approver_type'],
+                    'approver_id' => $step['approver_id'],
+                    'can_skip' => $step['can_skip'] ?? false,
+                    'timeout_days' => $step['timeout_days'] ?? null,
+                ]);
+            }
         }
 
         return back()->with('success', 'Workflow created successfully.');
@@ -83,13 +87,14 @@ class WorkflowController extends Controller
             'document_type' => 'required|string|max:50',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'is_auto_approve' => 'boolean',
             'condition_field' => 'nullable|string|max:50',
             'condition_operator' => 'nullable|string|max:20',
             'condition_value' => 'nullable|numeric',
             'priority' => 'integer',
-            'steps' => 'required|array|min:1',
-            'steps.*.approver_type' => 'required|in:user,role',
-            'steps.*.approver_id' => 'required|integer',
+            'steps' => 'required_unless:is_auto_approve,true|array|min:1',
+            'steps.*.approver_type' => 'required_unless:is_auto_approve,true|in:user,role',
+            'steps.*.approver_id' => 'required_unless:is_auto_approve,true|integer',
             'steps.*.can_skip' => 'boolean',
             'steps.*.timeout_days' => 'nullable|integer|min:1',
         ]);
@@ -99,24 +104,27 @@ class WorkflowController extends Controller
             'document_type' => $validated['document_type'],
             'description' => $validated['description'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
+            'is_auto_approve' => $validated['is_auto_approve'] ?? false,
             'condition_field' => $validated['condition_field'],
             'condition_operator' => $validated['condition_operator'],
             'condition_value' => $validated['condition_value'],
             'priority' => $validated['priority'] ?? 0,
         ]);
 
-        // Delete existing steps and recreate
+        // Delete existing steps and recreate if not auto approve
         $workflow->steps()->delete();
         
-        foreach ($validated['steps'] as $index => $step) {
-            WorkflowStep::create([
-                'workflow_id' => $workflow->id,
-                'step_order' => $index + 1,
-                'approver_type' => $step['approver_type'],
-                'approver_id' => $step['approver_id'],
-                'can_skip' => $step['can_skip'] ?? false,
-                'timeout_days' => $step['timeout_days'] ?? null,
-            ]);
+        if (empty($validated['is_auto_approve'])) {
+            foreach ($validated['steps'] ?? [] as $index => $step) {
+                WorkflowStep::create([
+                    'workflow_id' => $workflow->id,
+                    'step_order' => $index + 1,
+                    'approver_type' => $step['approver_type'],
+                    'approver_id' => $step['approver_id'],
+                    'can_skip' => $step['can_skip'] ?? false,
+                    'timeout_days' => $step['timeout_days'] ?? null,
+                ]);
+            }
         }
 
         return back()->with('success', 'Workflow updated successfully.');

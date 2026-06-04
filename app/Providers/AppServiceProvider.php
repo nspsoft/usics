@@ -26,6 +26,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (!app()->runningInConsole() || app()->environment('testing')) {
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasTable('app_settings')) {
+                    config([
+                        'session.lifetime' => (int) \App\Models\AppSetting::get('session_timeout', 120),
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Ignore DB exceptions during setup/migrations
+            }
+        }
+
         RateLimiter::for('public-validate-view', function (Request $request) {
             return [
                 Limit::perMinute(60)->by($request->ip()),

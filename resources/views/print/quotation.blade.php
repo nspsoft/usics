@@ -281,10 +281,46 @@
                             With kind regards<br><br><br>
                         </div>
 
-                        <div style="margin-top: 40px;">
-                            <span class="font-bold" style="text-decoration: underline; font-size: 11pt;">Nanang Mulyana</span><br>
-                            Marketing Departement
-                        </div>
+                        <table width="100%" style="margin-top: 20px; border: none;">
+                            <tr>
+                                <td style="text-align: left; border: none; vertical-align: bottom; padding: 0; width: {{ $quotation->approvalRequest && $quotation->approvalRequest->histories->count() > 0 ? '35%' : '100%' }};">
+                                    <div style="height: 70px; position: relative; width: 150px;">
+                                        @if($quotation->createdBy && $quotation->createdBy->signature_path)
+                                            <img src="/storage/{{ $quotation->createdBy->signature_path }}" style="max-height: 65px; max-width: 100%; object-fit: contain; position: absolute; bottom: 0; left: 0;">
+                                        @else
+                                            <div style="position: absolute; bottom: 10px; left: 0; color: #008000; font-size: 8pt; border: 1px solid #008000; padding: 2px 5px; border-radius: 3px; background-color: rgba(255,255,255,0.8);">
+                                                DIGITAL SIGNATURE<br>VALID
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="font-bold" style="text-decoration: underline; font-size: 11pt;">{{ $quotation->createdBy->name ?? '________________' }}</div>
+                                    <div>Marketing Department</div>
+                                </td>
+                                
+                                @if($quotation->approvalRequest && $quotation->approvalRequest->histories->count() > 0)
+                                    @foreach($quotation->approvalRequest->histories->where('action', 'approved')->sortBy('step_order') as $history)
+                                    <td style="text-align: left; border: none; vertical-align: bottom; padding: 0; width: {{ 65 / max(1, $quotation->approvalRequest->histories->where('action', 'approved')->count()) }}%;">
+                                        <div style="margin-bottom: 5px;">{{ $history->step_order == 0 ? 'Disetujui Otomatis,' : ($history->step_name ?? 'Disetujui,') }}</div>
+                                        <div style="height: 70px; position: relative; width: 150px;">
+                                            @if($history->step_order == 0)
+                                                <div style="position: absolute; bottom: 10px; left: 0; color: #008000; font-size: 8pt; border: 1px solid #008000; padding: 2px 5px; border-radius: 3px; background-color: rgba(255,255,255,0.8);">
+                                                    SYSTEM<br>AUTO APPROVED
+                                                </div>
+                                            @elseif($history->actedBy && $history->actedBy->signature_path)
+                                                <img src="/storage/{{ $history->actedBy->signature_path }}" style="max-height: 65px; max-width: 100%; object-fit: contain; position: absolute; bottom: 0; left: 0;">
+                                            @else
+                                                <div style="position: absolute; bottom: 10px; left: 0; color: #008000; font-size: 8pt; border: 1px solid #008000; padding: 2px 5px; border-radius: 3px; background-color: rgba(255,255,255,0.8);">
+                                                    DIGITAL SIGNATURE<br>VALID
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <div class="font-bold" style="text-decoration: underline; font-size: 11pt;">{{ $history->step_order == 0 ? 'Sistem (ERP)' : ($history->actedBy->name ?? '________________') }}</div>
+                                        <div>{{ $history->step_order == 0 ? 'Otomatis' : 'Management' }}</div>
+                                    </td>
+                                    @endforeach
+                                @endif
+                            </tr>
+                        </table>
                     </div>
                 </td>
                 <td width="30%" style="vertical-align: bottom; text-align: right; border: none; padding: 0;">

@@ -74,9 +74,9 @@ class ApprovalRequest extends Model
     /**
      * Get current workflow step
      */
-    public function getCurrentStepAttribute(): ?WorkflowStep
+    public function currentWorkflowStep(): ?WorkflowStep
     {
-        return $this->workflow->steps()->where('step_order', $this->current_step)->first();
+        return $this->workflow->steps()->where('step_order', $this->attributes['current_step'])->first();
     }
 
     /**
@@ -84,7 +84,7 @@ class ApprovalRequest extends Model
      */
     public function canBeApprovedBy(User $user): bool
     {
-        $step = $this->current_step;
+        $step = $this->currentWorkflowStep();
         return $step && $step->canBeApprovedBy($user);
     }
 
@@ -93,7 +93,7 @@ class ApprovalRequest extends Model
      */
     public function approve(User $user, ?string $notes = null): bool
     {
-        $currentStep = $this->workflow->steps()->where('step_order', $this->current_step)->first();
+        $currentStep = $this->currentWorkflowStep();
         
         if (!$currentStep || !$currentStep->canBeApprovedBy($user)) {
             return false;
@@ -132,7 +132,7 @@ class ApprovalRequest extends Model
      */
     public function reject(User $user, ?string $notes = null): bool
     {
-        $currentStep = $this->workflow->steps()->where('step_order', $this->current_step)->first();
+        $currentStep = $this->currentWorkflowStep();
         
         if (!$currentStep || !$currentStep->canBeApprovedBy($user)) {
             return false;

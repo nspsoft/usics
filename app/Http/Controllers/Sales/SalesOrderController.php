@@ -142,7 +142,7 @@ class SalesOrderController extends Controller
     {
         $validated = $request->validate([
             'so_number' => 'required|string|max:30|unique:sales_orders,so_number',
-            'customer_po_number' => 'nullable|string|max:50',
+            'customer_po_number' => \App\Models\AppSetting::get('require_po_number', false) ? 'required|string|max:50' : 'nullable|string|max:50',
             'customer_id' => 'required|exists:customers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'order_date' => 'required|date',
@@ -259,7 +259,7 @@ class SalesOrderController extends Controller
         }
 
         $validated = $request->validate([
-            'customer_po_number' => 'nullable|string|max:50',
+            'customer_po_number' => \App\Models\AppSetting::get('require_po_number', false) ? 'required|string|max:50' : 'nullable|string|max:50',
             'customer_id' => 'required|exists:customers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'order_date' => 'required|date',

@@ -17,20 +17,35 @@ return new class extends Migration
             return;
         }
 
-        $dbName = DB::selectOne('select database() as name')?->name;
-        if (!$dbName) {
-            return;
-        }
-
         $indexName = 'whatsapp_messages_direction_is_read_phone_index';
-        $exists = DB::table('information_schema.statistics')
-            ->where('table_schema', $dbName)
-            ->where('table_name', 'whatsapp_messages')
-            ->where('index_name', $indexName)
-            ->exists();
+        $driver = DB::getDriverName();
+        if ($driver !== 'mysql') {
+            if ($driver === 'sqlite') {
+                $exists = DB::table('sqlite_master')
+                    ->where('type', 'index')
+                    ->where('name', $indexName)
+                    ->exists();
+                if ($exists) {
+                    return;
+                }
+            } else {
+                return;
+            }
+        } else {
+            $dbName = DB::selectOne('select database() as name')?->name;
+            if (!$dbName) {
+                return;
+            }
 
-        if ($exists) {
-            return;
+            $exists = DB::table('information_schema.statistics')
+                ->where('table_schema', $dbName)
+                ->where('table_name', 'whatsapp_messages')
+                ->where('index_name', $indexName)
+                ->exists();
+
+            if ($exists) {
+                return;
+            }
         }
 
         Schema::table('whatsapp_messages', function (Blueprint $table) use ($indexName) {
@@ -45,15 +60,26 @@ return new class extends Migration
         }
 
         $indexName = 'whatsapp_messages_direction_is_read_phone_index';
-        $dbName = DB::selectOne('select database() as name')?->name;
+        $driver = DB::getDriverName();
 
-        if ($dbName) {
-            $exists = DB::table('information_schema.statistics')
-                ->where('table_schema', $dbName)
-                ->where('table_name', 'whatsapp_messages')
-                ->where('index_name', $indexName)
+        if ($driver === 'mysql') {
+            $dbName = DB::selectOne('select database() as name')?->name;
+            if ($dbName) {
+                $exists = DB::table('information_schema.statistics')
+                    ->where('table_schema', $dbName)
+                    ->where('table_name', 'whatsapp_messages')
+                    ->where('index_name', $indexName)
+                    ->exists();
+
+                if (!$exists) {
+                    return;
+                }
+            }
+        } elseif ($driver === 'sqlite') {
+            $exists = DB::table('sqlite_master')
+                ->where('type', 'index')
+                ->where('name', $indexName)
                 ->exists();
-
             if (!$exists) {
                 return;
             }

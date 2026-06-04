@@ -724,12 +724,16 @@ class DeliveryOrderController extends Controller
 
         // Define status groups
         // 'Deducted' group: Statuses where stock SHOULD be deducted
-        // According to new requirement: SHIPPED, DELIVERED, COMPLETED
+        $autoUpdateStock = \App\Models\AppSetting::get('auto_update_stock', true);
+        
         $deductedStatuses = [
-            DeliveryOrder::STATUS_SHIPPED, 
             DeliveryOrder::STATUS_DELIVERED, 
             DeliveryOrder::STATUS_COMPLETED
         ];
+
+        if ($autoUpdateStock) {
+            $deductedStatuses[] = DeliveryOrder::STATUS_SHIPPED;
+        }
 
         // 'Not Deducted' group: DRAFT, PICKING, PACKED
         $notDeductedStatuses = [
@@ -738,63 +742,71 @@ class DeliveryOrderController extends Controller
             DeliveryOrder::STATUS_PACKED
         ];
 
-        DB::transaction(function () use ($deliveryOrder, $newStatus, $oldStatus, $deductedStatuses, $notDeductedStatuses) {
-            
-            // ROBUST LOGIC: Always enforce state based on New Status
-            
-            // 1. If New Status requires Deduction (Shipped, Delivered, Completed)
-            if (in_array($newStatus, $deductedStatuses)) {
-                // This method is now idempotent: it will only deduct if not already deducted.
-                // This covers: 
-                // - Normal flow (Draft -> Shipped)
-                // - Re-ship flow (Packed -> Shipped)
-                // - Repair flow (Black Hole Shipped -> Delivered)
-                $this->deductStock($deliveryOrder);
-            }
-            
-            // 2. If New Status requires NO Deduction (Draft, Picking, Packed)
-            // AND the Old Status WAS Deducted
-            elseif (in_array($newStatus, $notDeductedStatuses) && in_array($oldStatus, $deductedStatuses)) {
-                // Only restore if we are moving back from a deducted state
-                $this->restoreStock($deliveryOrder);
-            }
+        if (!$autoUpdateStock) {
+            $notDeductedStatuses[] = DeliveryOrder::STATUS_SHIPPED;
+        }
 
-            // Update Status
-            $deliveryOrder->status = $newStatus;
-            
-            // Update timestamps
-            if ($newStatus === DeliveryOrder::STATUS_DELIVERED && !$deliveryOrder->delivered_at) {
-                // If moving directly to delivered (unlikely via updateStatus but possible)
-                // Actually delivered_at usually set at complete/verified or driver action.
-                // Let's keep it null here unless explicitly setting it? 
-                // Driver app might set it. For admin panel status update, we might leave it.
-            }
-            
-            if (in_array($newStatus, $notDeductedStatuses)) {
-                 $deliveryOrder->delivered_at = null;
-            }
-
-            $deliveryOrder->save();
-             
-            // Force Recalculate Sales Order Items because DO Status change affects qty_delivered totals
-            // (e.g. moving from Packed -> Shipped adds to qty_delivered)
-            foreach ($deliveryOrder->items as $item) {
-                if ($item->salesOrderItem) {
-                    $item->salesOrderItem->recalculateTotals();
+        try {
+            DB::transaction(function () use ($deliveryOrder, $newStatus, $oldStatus, $deductedStatuses, $notDeductedStatuses) {
+                
+                // ROBUST LOGIC: Always enforce state based on New Status
+                
+                // 1. If New Status requires Deduction (Shipped, Delivered, Completed)
+                if (in_array($newStatus, $deductedStatuses)) {
+                    // This method is now idempotent: it will only deduct if not already deducted.
+                    // This covers: 
+                    // - Normal flow (Draft -> Shipped)
+                    // - Re-ship flow (Packed -> Shipped)
+                    // - Repair flow (Black Hole Shipped -> Delivered)
+                    $this->deductStock($deliveryOrder);
                 }
-            }
-             
-             // Update SO Status if needed
-             // If reverting from Delivered/Completed to something else, check SO.
-             if ($deliveryOrder->salesOrder && $deliveryOrder->salesOrder->status === \App\Models\SalesOrder::STATUS_DELIVERED) {
-                 if (in_array($newStatus, $notDeductedStatuses)) {
-                      $deliveryOrder->salesOrder->status = \App\Models\SalesOrder::STATUS_PROCESSING;
-                      $deliveryOrder->salesOrder->save();
-                 }
-             }
-        });
+                
+                // 2. If New Status requires NO Deduction (Draft, Picking, Packed)
+                // AND the Old Status WAS Deducted
+                elseif (in_array($newStatus, $notDeductedStatuses) && in_array($oldStatus, $deductedStatuses)) {
+                    // Only restore if we are moving back from a deducted state
+                    $this->restoreStock($deliveryOrder);
+                }
 
-        return back()->with('success', "Delivery Order status updated to {$newStatus}.");
+                // Update Status
+                $deliveryOrder->status = $newStatus;
+                
+                // Update timestamps
+                if ($newStatus === DeliveryOrder::STATUS_DELIVERED && !$deliveryOrder->delivered_at) {
+                    // If moving directly to delivered (unlikely via updateStatus but possible)
+                    // Actually delivered_at usually set at complete/verified or driver action.
+                    // Let's keep it null here unless explicitly setting it? 
+                    // Driver app might set it. For admin panel status update, we might leave it.
+                }
+                
+                if (in_array($newStatus, $notDeductedStatuses)) {
+                     $deliveryOrder->delivered_at = null;
+                }
+
+                $deliveryOrder->save();
+                 
+                // Force Recalculate Sales Order Items because DO Status change affects qty_delivered totals
+                // (e.g. moving from Packed -> Shipped adds to qty_delivered)
+                foreach ($deliveryOrder->items as $item) {
+                    if ($item->salesOrderItem) {
+                        $item->salesOrderItem->recalculateTotals();
+                    }
+                }
+                 
+                 // Update SO Status if needed
+                 // If reverting from Delivered/Completed to something else, check SO.
+                 if ($deliveryOrder->salesOrder && $deliveryOrder->salesOrder->status === \App\Models\SalesOrder::STATUS_DELIVERED) {
+                     if (in_array($newStatus, $notDeductedStatuses)) {
+                          $deliveryOrder->salesOrder->status = \App\Models\SalesOrder::STATUS_PROCESSING;
+                          $deliveryOrder->salesOrder->save();
+                     }
+                 }
+            });
+
+            return back()->with('success', "Delivery Order status updated to {$newStatus}.");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memperbarui status DO: ' . $e->getMessage());
+        }
     }
 
 
@@ -1341,15 +1353,43 @@ class DeliveryOrderController extends Controller
                 ->where('warehouse_id', $deliveryOrder->warehouse_id)
                 ->first();
 
-            if ($stock) {
-                $stock->adjustStock(
-                    -$item->qty_delivered,
-                    null,
-                    \App\Models\StockMovement::TYPE_SO_DELIVERY,
-                    $deliveryOrder,
-                    "Delivery Order #{$deliveryOrder->do_number} (Shipped)"
-                );
+            $qtyToDeduct = $item->qty_delivered;
+            
+            // Check stock availability if negative stock is NOT allowed
+            $allowNegativeSystem = \App\Models\AppSetting::get('allow_negative_stock', false);
+            $allowNegativeWarehouse = $deliveryOrder->warehouse ? $deliveryOrder->warehouse->allow_negative_stock : false;
+            
+            if (!$allowNegativeSystem && !$allowNegativeWarehouse) {
+                $currentQty = $stock ? $stock->qty_on_hand : 0;
+                if ($currentQty < $qtyToDeduct) {
+                    throw new \RuntimeException(sprintf(
+                        "Stok tidak mencukupi untuk produk %s di gudang %s. Dibutuhkan: %s, Tersedia: %s.",
+                        $item->product->name ?? 'ID ' . $item->product_id,
+                        $deliveryOrder->warehouse->name ?? 'ID ' . $deliveryOrder->warehouse_id,
+                        $qtyToDeduct,
+                        $currentQty
+                    ));
+                }
             }
+
+            if (!$stock) {
+                $stock = \App\Models\ProductStock::create([
+                    'product_id' => $item->product_id,
+                    'warehouse_id' => $deliveryOrder->warehouse_id,
+                    'qty_on_hand' => 0,
+                    'qty_reserved' => 0,
+                    'qty_incoming' => 0,
+                    'qty_outgoing' => 0,
+                ]);
+            }
+
+            $stock->adjustStock(
+                -$qtyToDeduct,
+                null,
+                \App\Models\StockMovement::TYPE_SO_DELIVERY,
+                $deliveryOrder,
+                "Delivery Order #{$deliveryOrder->do_number} (Shipped)"
+            );
         }
     }
 

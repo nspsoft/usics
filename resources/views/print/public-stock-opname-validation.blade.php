@@ -73,6 +73,83 @@
                 <p>Created By: {{ $opname->createdBy->name ?? '-' }}</p>
                 <p>Verified on: {{ date('d/m/Y H:i:s') }}</p>
             </div>
+
+            <!-- Approval Status Section -->
+            <div class="mt-4">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Status Persetujuan</p>
+                <div class="space-y-3">
+                    <!-- Petugas Opname -->
+                    <div class="flex items-center gap-3 bg-slate-50 rounded-xl border border-slate-100 p-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-bold text-slate-700">Petugas Opname</p>
+                            <p class="text-[10px] text-slate-500">{{ $opname->createdBy->name ?? '-' }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-mono text-emerald-600">✓ Dibuat</p>
+                            <p class="text-[9px] text-slate-400">{{ $opname->created_at ? \Carbon\Carbon::parse($opname->created_at)->format('d/m/Y H:i') : '-' }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Supervisor -->
+                    <div class="flex items-center gap-3 bg-slate-50 rounded-xl border border-slate-100 p-3">
+                        <div class="flex-shrink-0 w-8 h-8 {{ $opname->checked_by ? 'bg-emerald-100' : 'bg-amber-100' }} rounded-full flex items-center justify-center">
+                            @if($opname->checked_by)
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            @else
+                                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            @endif
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-bold text-slate-700">Diperiksa (Supervisor)</p>
+                            <p class="text-[10px] text-slate-500">{{ $opname->checkedBy->name ?? 'Menunggu...' }}</p>
+                        </div>
+                        <div class="text-right">
+                            @if($opname->checked_at)
+                                <p class="text-[10px] font-mono text-emerald-600">✓ Diperiksa</p>
+                                <p class="text-[9px] text-slate-400">{{ \Carbon\Carbon::parse($opname->checked_at)->format('d/m/Y H:i') }}</p>
+                            @else
+                                <p class="text-[10px] font-mono text-amber-600">Pending</p>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Manager -->
+                    <div class="flex items-center gap-3 bg-slate-50 rounded-xl border border-slate-100 p-3">
+                        <div class="flex-shrink-0 w-8 h-8 {{ $opname->approved_by ? 'bg-emerald-100' : 'bg-amber-100' }} rounded-full flex items-center justify-center">
+                            @if($opname->approved_by)
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            @else
+                                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            @endif
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-bold text-slate-700">Disetujui (Manager)</p>
+                            <p class="text-[10px] text-slate-500">{{ $opname->approvedBy->name ?? 'Menunggu...' }}</p>
+                        </div>
+                        <div class="text-right">
+                            @if($opname->approved_at)
+                                <p class="text-[10px] font-mono text-emerald-600">✓ Disetujui</p>
+                                <p class="text-[9px] text-slate-400">{{ \Carbon\Carbon::parse($opname->approved_at)->format('d/m/Y H:i') }}</p>
+                            @else
+                                <p class="text-[10px] font-mono text-amber-600">Pending</p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="bg-slate-50 border-t border-slate-100 p-6 text-center">

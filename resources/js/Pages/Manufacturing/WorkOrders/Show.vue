@@ -28,9 +28,20 @@ const props = defineProps({
     subcontractGrReceipts: Array,
 });
 
+const localHasNoWorkflow = ref(false);
+
 const confirmAction = (action) => {
+    if (action === 'submit-for-approval') {
+        localHasNoWorkflow.value = true;
+    }
+    
     router.post(route(`manufacturing.work-orders.${action}`, props.workOrder.id), {}, {
         preserveScroll: true,
+        onSuccess: (page) => {
+            if (action === 'submit-for-approval' && page.props.flash?.warning) {
+                localHasNoWorkflow.value = true;
+            }
+        }
     });
 };
 
@@ -79,8 +90,9 @@ const remainingQty = computed(() => {
     return Math.max(0, planned - produced);
 });
 
-const canConfirm = computed(() => props.workOrder.status === 'draft');
-const canStart = computed(() => props.workOrder.status === 'confirmed');
+const canSubmitForApproval = computed(() => props.workOrder.status === 'draft' && !props.workOrder.approvalRequest && !localHasNoWorkflow.value);
+const canConfirm = computed(() => props.workOrder.status === 'draft' && !props.workOrder.approvalRequest && localHasNoWorkflow.value);
+const canStart = computed(() => props.workOrder.status === 'confirmed' || (props.workOrder.approval_status === 'approved' && props.workOrder.status === 'draft'));
 const canRecordProduction = computed(() => props.workOrder.status === 'in_progress' && props.workOrder.production_type !== 'subcontract');
 const canComplete = computed(() => props.workOrder.status === 'in_progress' && parseFloat(props.workOrder.qty_produced) > 0 && props.workOrder.production_type !== 'subcontract');
 const canCancel = computed(() => !['completed', 'cancelled'].includes(props.workOrder.status));
@@ -136,6 +148,44 @@ const submitCreatePo = () => {
         onSuccess: () => closeCreatePo(),
     });
 };
+
+const approvalForm = useForm({
+    notes: ''
+});
+
+const canApprove = computed(() => {
+    if (!props.workOrder.approvalRequest || props.workOrder.approvalRequest.status !== 'pending') return false;
+    const currentStepNum = props.workOrder.approvalRequest.current_step;
+    const step = props.workOrder.approvalRequest.workflow?.steps?.find(s => s.step_order === currentStepNum);
+    if (!step) return false;
+    
+    // In a real app we'd pass user roles/permissions to Vue, 
+    // for this demo we assume the backend handles the actual permission check 
+    // when submitted, but we show the buttons if the request is pending.
+    return true; 
+});
+
+const approveDocument = () => {
+    approvalForm.post(route('approvals.approve', props.workOrder.approvalRequest.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            approvalForm.reset();
+        }
+    });
+};
+
+const rejectDocument = () => {
+    const notes = prompt("Enter rejection reason:");
+    if (notes) {
+        approvalForm.notes = notes;
+        approvalForm.post(route('approvals.reject', props.workOrder.approvalRequest.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                approvalForm.reset();
+            }
+        });
+    }
+};
 </script>
 
 <template>
@@ -157,6 +207,13 @@ const submitCreatePo = () => {
                             <h2 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{{ workOrder.wo_number }}</h2>
                             <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider" :class="getStatusBadge(workOrder.status)">
                                 {{ getStatusLabel(workOrder.status) }}
+                            </span>
+                            <span 
+                                v-if="workOrder.approval_status"
+                                class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                                :class="workOrder.approval_status === 'approved' ? 'bg-green-500/20 text-green-400 border-green-500/30' : (workOrder.approval_status === 'rejected' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30')"
+                            >
+                                Approval: {{ workOrder.approval_status }}
                             </span>
                             <span 
                                 class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border"
@@ -214,12 +271,35 @@ const submitCreatePo = () => {
                         Edit WO
                     </Link>
                     <button 
-                        v-if="canConfirm"
-                        @click="confirmAction('confirm')"
+                        v-if="canSubmitForApproval"
+                        @click="confirmAction('submit-for-approval')"
                         class="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white dark:text-white hover:bg-blue-500 transition-all"
                     >
-                        <ClipboardDocumentCheckIcon class="h-5 w-5" />
-                        Confirm
+                        Submit for Approval
+                    </button>
+                    <button 
+                        v-if="canConfirm"
+                        @click="confirmAction('confirm')"
+                        class="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
+                        title="Skip approval and confirm manually"
+                    >
+                        Confirm Directly
+                    </button>
+                    <button 
+                        v-if="canApprove"
+                        @click="approveDocument"
+                        class="flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500 transition-all"
+                    >
+                        <CheckCircleIcon class="h-5 w-5" />
+                        Approve
+                    </button>
+                    <button 
+                        v-if="canApprove"
+                        @click="rejectDocument"
+                        class="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 transition-all"
+                    >
+                        <XCircleIcon class="h-5 w-5" />
+                        Reject
                     </button>
                     <button 
                         v-if="canStart"
@@ -440,6 +520,67 @@ const submitCreatePo = () => {
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+
+                    <!-- Approval Chain -->
+                    <div v-if="workOrder.approvalRequest" class="glass-card rounded-3xl shadow-sm overflow-hidden">
+                        <div class="p-6 border-b border-slate-200 dark:border-slate-800">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 font-mono">
+                                <div class="h-6 w-1 bg-yellow-500 rounded-full"></div>
+                                APPROVAL_CHAIN
+                            </h3>
+                            <div class="text-[11px] text-slate-500 mt-1 uppercase tracking-widest font-bold">Workflow: {{ workOrder.approvalRequest.workflow?.name }}</div>
+                        </div>
+                        <div class="p-6">
+                            <div class="relative">
+                                <!-- Line connecting steps -->
+                                <div class="absolute left-6 top-10 bottom-10 w-0.5 bg-slate-200 dark:bg-slate-800"></div>
+                                
+                                <div class="space-y-8">
+                                    <div v-for="step in workOrder.approvalRequest.workflow?.steps" :key="step.id" class="relative pl-14">
+                                        <!-- Step Indicator -->
+                                        <div class="absolute left-0 top-1 w-12 h-12 rounded-full border-4 border-white dark:border-slate-900 flex items-center justify-center z-10"
+                                             :class="[
+                                                 workOrder.approvalRequest.current_step > step.step_order || workOrder.approval_status === 'approved' 
+                                                    ? 'bg-green-500 text-white' 
+                                                    : (workOrder.approvalRequest.current_step === step.step_order && workOrder.approval_status !== 'rejected'
+                                                        ? 'bg-yellow-500 text-white'
+                                                        : 'bg-slate-200 dark:bg-slate-700 text-slate-500')
+                                             ]"
+                                        >
+                                            <span v-if="workOrder.approvalRequest.current_step > step.step_order || workOrder.approval_status === 'approved'"><CheckCircleIcon class="h-6 w-6"/></span>
+                                            <span v-else-if="workOrder.approvalRequest.current_step === step.step_order && workOrder.approval_status === 'rejected'"><XCircleIcon class="h-6 w-6 text-red-500"/></span>
+                                            <span v-else class="font-bold font-mono">{{ step.step_order }}</span>
+                                        </div>
+                                        
+                                        <!-- Step Content -->
+                                        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-800">
+                                            <div class="flex items-start justify-between">
+                                                <div>
+                                                    <div class="text-sm font-bold text-slate-900 dark:text-white">{{ step.name }}</div>
+                                                    <div class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">
+                                                        Approver: {{ step.approver_type === 'role' ? `Role - ${step.role?.name}` : `User - ${step.user?.name}` }}
+                                                    </div>
+                                                </div>
+                                                <!-- History -->
+                                                <div v-if="workOrder.approvalRequest.histories?.find(h => h.step_order === step.step_order)" class="text-right">
+                                                    <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Action By</div>
+                                                    <div class="text-xs font-bold" :class="workOrder.approvalRequest.histories?.find(h => h.step_order === step.step_order).action === 'approved' ? 'text-green-500' : 'text-red-500'">
+                                                        {{ workOrder.approvalRequest.histories?.find(h => h.step_order === step.step_order).acted_by?.name }}
+                                                    </div>
+                                                    <div class="text-[10px] text-slate-500">{{ formatDate(workOrder.approvalRequest.histories?.find(h => h.step_order === step.step_order).created_at) }}</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Notes -->
+                                            <div v-if="workOrder.approvalRequest.histories?.find(h => h.step_order === step.step_order)?.notes" class="mt-3 bg-white dark:bg-slate-900 rounded-xl p-3 text-xs text-slate-600 dark:text-slate-300 italic border border-slate-100 dark:border-slate-800">
+                                                "{{ workOrder.approvalRequest.histories?.find(h => h.step_order === step.step_order).notes }}"
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

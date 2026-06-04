@@ -207,8 +207,8 @@ class PurchaseOrder extends Model
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning("Document Numbering failing for purchase_order: " . $e->getMessage());
             
-            $year = date('Y');
-            $month = date('m');
+            $year = now()->format('Y');
+            $month = now()->format('m');
             $prefix = "PO-{$year}{$month}-";
             
             $lastPo = static::where('po_number', 'like', "{$prefix}%")

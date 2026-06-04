@@ -8,10 +8,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use App\Traits\HasApproval;
 
 class Quotation extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, HasApproval;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -35,6 +36,7 @@ class Quotation extends Model
         'total',
         'created_by',
         'revision',
+        'approval_status',
     ];
 
     protected $casts = [
@@ -45,6 +47,17 @@ class Quotation extends Model
         'tax' => 'double',
         'total' => 'double',
     ];
+
+    public function updateApprovalStatus(string $status): void
+    {
+        $this->approval_status = $status;
+        
+        if ($status === 'approved') {
+            // Can add specific logic if needed when approved. Currently just keep as draft or approved status.
+        }
+        
+        $this->saveQuietly();
+    }
 
     protected static function booted(): void
     {

@@ -122,11 +122,26 @@ class QuotationController extends Controller
 
     public function show(Quotation $quotation): Response
     {
-        $quotation->load(['customer', 'items.product', 'createdBy']);
+        $quotation->load(['customer', 'items.product', 'createdBy', 'approvalRequest.histories.actedBy', 'approvalRequest.requester', 'approvalRequest.workflow.steps']);
 
         return Inertia::render('Sales/Quotations/Show', [
             'quotation' => $quotation,
         ]);
+    }
+
+    public function submitForApproval(Quotation $quotation)
+    {
+        if ($quotation->status !== 'draft') {
+            return back()->with('error', 'Only draft quotations can be submitted for approval.');
+        }
+        
+        $request = $quotation->checkAndCreateApprovalRequest();
+        
+        if ($request) {
+            return back()->with('success', 'Quotation submitted for approval.');
+        }
+        
+        return back()->with('warning', 'No applicable approval workflow found. You can send it directly.');
     }
 
     public function edit(Quotation $quotation): Response
@@ -208,7 +223,43 @@ class QuotationController extends Controller
 
     public function accept(Quotation $quotation)
     {
-        $quotation->update(['status' => 'accepted']);
+        DB::transaction(function () use ($quotation) {
+            $quotation->update(['status' => 'accepted']);
+            
+            if (\App\Models\AppSetting::get('auto_so_from_quotation', false)) {
+                $so = \App\Models\SalesOrder::create([
+                    'company_id' => $quotation->customer->company_id ?? 1,
+                    'so_number' => \App\Models\SalesOrder::generateSoNumber(),
+                    'customer_id' => $quotation->customer_id,
+                    'warehouse_id' => \App\Models\Warehouse::first()->id ?? 1,
+                    'order_date' => now(),
+                    'status' => 'draft',
+                    'subtotal' => $quotation->subtotal,
+                    'tax_amount' => $quotation->tax,
+                    'tax_percent' => 11,
+                    'total' => $quotation->total,
+                    'notes' => "Automatically converted from Quotation #{$quotation->number}",
+                    'created_by' => auth()->id(),
+                ]);
+
+                foreach ($quotation->items as $item) {
+                    $so->items()->create([
+                        'product_id' => $item->product_id,
+                        'qty' => $item->qty,
+                        'unit_id' => $item->product->unit_id,
+                        'unit_price' => $item->unit_price,
+                        'subtotal' => $item->total_price,
+                    ]);
+                }
+
+                $quotation->update(['status' => 'converted']);
+            }
+        });
+
+        if (\App\Models\AppSetting::get('auto_so_from_quotation', false)) {
+            return back()->with('success', 'Quotation accepted and automatically converted to Sales Order.');
+        }
+
         return back()->with('success', 'Quotation accepted.');
     }
 

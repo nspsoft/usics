@@ -34,6 +34,7 @@ class User extends Authenticatable
         'password',
         'supplier_id',
         'profile_photo_path',
+        'signature_path',
     ];
 
     public function supplier()

@@ -298,18 +298,37 @@
         <tr>
             <td width="33%">
                 Petugas Opname,
-                <div class="sig-box"></div>
+                <div class="sig-box">
+                    @if($opname->createdBy && $opname->createdBy->signature_path)
+                        <img src="{{ asset('storage/' . $opname->createdBy->signature_path) }}" style="max-height: 60px; max-width: 90%; margin: 5px auto; display: block; object-fit: contain;">
+                    @endif
+                </div>
                 <div class="font-bold">( {{ $opname->createdBy->name ?? '________________' }} )</div>
+                <div style="font-size: 7pt; color: #888;">{{ $opname->created_at ? \Carbon\Carbon::parse($opname->created_at)->format('d/m/Y H:i') : '' }}</div>
             </td>
             <td width="34%">
                 Diperiksa (Supervisor),
-                <div class="sig-box"></div>
-                <div class="font-bold">( ________________ )</div>
+                <div class="sig-box">
+                    @if($opname->checkedBy && $opname->checkedBy->signature_path)
+                        <img src="{{ asset('storage/' . $opname->checkedBy->signature_path) }}" style="max-height: 60px; max-width: 90%; margin: 5px auto; display: block; object-fit: contain;">
+                    @endif
+                </div>
+                <div class="font-bold">( {{ $opname->checkedBy->name ?? '________________' }} )</div>
+                @if($opname->checked_at)
+                    <div style="font-size: 7pt; color: #008000;">Diverifikasi: {{ \Carbon\Carbon::parse($opname->checked_at)->format('d/m/Y H:i') }}</div>
+                @endif
             </td>
             <td width="33%">
                 Disetujui (Mgr),
-                <div class="sig-box"></div>
-                <div class="font-bold">( ________________ )</div>
+                <div class="sig-box">
+                    @if($opname->approvedBy && $opname->approvedBy->signature_path)
+                        <img src="{{ asset('storage/' . $opname->approvedBy->signature_path) }}" style="max-height: 60px; max-width: 90%; margin: 5px auto; display: block; object-fit: contain;">
+                    @endif
+                </div>
+                <div class="font-bold">( {{ $opname->approvedBy->name ?? '________________' }} )</div>
+                @if($opname->approved_at)
+                    <div style="font-size: 7pt; color: #008000;">Disetujui: {{ \Carbon\Carbon::parse($opname->approved_at)->format('d/m/Y H:i') }}</div>
+                @endif
             </td>
         </tr>
     </table>

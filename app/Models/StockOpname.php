@@ -35,6 +35,10 @@ class StockOpname extends Model
         'status',
         'notes',
         'created_by',
+        'checked_by',
+        'checked_at',
+        'approved_by',
+        'approved_at',
     ];
 
     protected $casts = [
@@ -68,6 +72,16 @@ class StockOpname extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function checkedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'checked_by');
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public static function generateNumber(): string

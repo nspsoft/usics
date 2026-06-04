@@ -15,6 +15,7 @@ class Workflow extends Model
         'document_type',
         'description',
         'is_active',
+        'is_auto_approve',
         'condition_field',
         'condition_operator',
         'condition_value',
@@ -25,6 +26,7 @@ class Workflow extends Model
     {
         return [
             'is_active' => 'boolean',
+            'is_auto_approve' => 'boolean',
             'condition_value' => 'decimal:2',
             'priority' => 'integer',
         ];
@@ -52,10 +54,30 @@ class Workflow extends Model
     public static function getDocumentTypes(): array
     {
         return [
-            'PurchaseOrder' => 'Purchase Order',
+            // Purchasing
             'PurchaseRequest' => 'Purchase Request',
+            'PurchaseOrder' => 'Purchase Order',
+            'SubcontractOrder' => 'Subcontract Order',
+            'PurchaseInvoice' => 'Purchase Invoice',
+            'PurchaseReturn' => 'Purchase Return',
+            'PurchasePayment' => 'Purchase Payment',
+
+            // Sales
+            'Quotation' => 'Sales Quotation',
             'SalesOrder' => 'Sales Order',
-            'SalesQuotation' => 'Sales Quotation',
+            'DeliveryOrder' => 'Delivery Order',
+            'SalesInvoice' => 'Sales Invoice',
+            'SalesReturn' => 'Sales Return',
+
+            // Manufacturing & Inventory
+            'WorkOrder' => 'Work Order',
+            'StockOpname' => 'Stock Opname',
+            'StockTransfer' => 'Stock Transfer',
+            'StockAdjustment' => 'Stock Adjustment',
+
+            // Finance & HR
+            'Payroll' => 'Payroll',
+            'CoaDocument' => 'Jurnal Akuntansi',
         ];
     }
 

@@ -1,13 +1,29 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeftIcon, PrinterIcon, PaperAirplaneIcon, CheckCircleIcon, DocumentTextIcon, PencilSquareIcon, XCircleIcon
+import { ArrowLeftIcon, PrinterIcon, PaperAirplaneIcon, CheckCircleIcon, DocumentTextIcon, PencilSquareIcon, XCircleIcon, ShieldCheckIcon
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
+import { ref, computed } from 'vue';
+import ApprovalChain from '@/Components/ApprovalChain.vue';
 
 const props = defineProps({
     quotation: Object,
 });
+
+const localHasNoWorkflow = ref(false);
+
+const submitForApproval = () => {
+    localHasNoWorkflow.value = true;
+    router.post(route('sales.quotations.submit-for-approval', props.quotation.id), {}, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            if (page.props.flash?.warning) {
+                localHasNoWorkflow.value = true;
+            }
+        }
+    });
+};
 
 const sendQuotation = () => {
     router.post(`/sales/quotations/${props.quotation.id}/send`);
@@ -29,7 +45,6 @@ const convertToSO = () => {
     }
 };
 
-
 const formatDate = (date) => {
     return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 };
@@ -44,6 +59,10 @@ const getStatusBadge = (status) => {
     };
     return badges[status] || 'bg-slate-500/20 text-slate-500 dark:text-slate-400';
 };
+
+const canSubmitForApproval = computed(() => props.quotation.status === 'draft' && !props.quotation.approvalRequest && !localHasNoWorkflow.value && props.quotation.approval_status !== 'approved');
+const canSendDirectly = computed(() => props.quotation.status === 'draft' && (!props.quotation.approvalRequest && localHasNoWorkflow.value || props.quotation.approval_status === 'approved'));
+
 </script>
 
 <template>
@@ -62,21 +81,21 @@ const getStatusBadge = (status) => {
                     <Link :href="route('sales.quotations.edit', quotation.id)" v-if="!['accepted', 'converted'].includes(quotation.status)" class="inline-flex items-center gap-2 rounded-xl bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-500 hover:bg-amber-500/20 border border-amber-500/20">
                         <PencilSquareIcon class="h-4 w-4" /> Edit
                     </Link>
-                    <button v-if="quotation.status === 'draft'" @click="sendQuotation" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500">
-                        <PaperAirplaneIcon class="h-4 w-4" /> Send to Customer
+                    
+                    <button v-if="canSubmitForApproval" @click="submitForApproval" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20">
+                        <ShieldCheckIcon class="h-4 w-4" /> Submit for Approval
                     </button>
+                    
+                    <button v-if="canSendDirectly" @click="sendQuotation" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500">
+                        <PaperAirplaneIcon class="h-4 w-4" /> Send directly to Customer
+                    </button>
+                    
                     <button v-if="quotation.status === 'sent'" @click="acceptQuotation" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-emerald-500">
                         <CheckCircleIcon class="h-4 w-4" /> Accept
                     </button>
                     <button v-if="quotation.status === 'sent'" @click="rejectQuotation" class="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-red-500">
                         <XCircleIcon class="h-4 w-4" /> Reject
                     </button>
-                    <!-- Convert to SO disabled -->
-                    <!--
-                    <button v-if="quotation.status === 'accepted'" @click="convertToSO" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 shadow-lg shadow-blue-500/20">
-                        <CheckCircleIcon class="h-4 w-4" /> Convert to Sales Order
-                    </button>
-                    -->
                 </div>
             </div>
 
@@ -138,6 +157,10 @@ const getStatusBadge = (status) => {
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <div class="mt-6" v-if="quotation.approvalRequest">
+                        <ApprovalChain :request="quotation.approvalRequest" :approvalStatus="quotation.approval_status" />
                     </div>
                 </div>
             </div>

@@ -25,6 +25,8 @@ class ProfileController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'photo' => ['nullable', 'image', 'max:10240'], // 10MB Max
+            'signature' => ['nullable', 'image', 'max:10240'], // 10MB Max
+            'signature_data' => ['nullable', 'string'], // Base64 from canvas
         ]);
 
         if ($request->hasFile('photo')) {
@@ -61,6 +63,68 @@ class ProfileController extends Controller
 
             $validated['profile_photo_path'] = $path;
         }
+
+        // Handle signature from file upload
+        if ($request->hasFile('signature')) {
+            // Delete old signature if exists
+            if ($user->signature_path) {
+                Storage::disk('public')->delete($user->signature_path);
+            }
+
+            $file = $request->file('signature');
+            $filename = hash_file('sha256', $file->getRealPath()) . '.png';
+            $path = 'signatures/' . $filename;
+
+            // Compress and Resize Image
+            $sourceImage = imagecreatefromstring(file_get_contents($file));
+            $width = imagesx($sourceImage);
+            $height = imagesy($sourceImage);
+            
+            $maxWidth = 800;
+            if ($width > $maxWidth) {
+                $newWidth = $maxWidth;
+                $newHeight = floor($height * ($maxWidth / $width));
+                $tempImage = imagescale($sourceImage, $newWidth, $newHeight);
+                imagedestroy($sourceImage);
+                $sourceImage = $tempImage;
+            }
+
+            // Capture output buffer for PNG with transparency
+            ob_start();
+            imagepng($sourceImage, null, 9); // PNG compression 9
+            $imageContents = ob_get_clean();
+            imagedestroy($sourceImage);
+
+            Storage::disk('public')->put($path, $imageContents);
+
+            $validated['signature_path'] = $path;
+        }
+        // Handle signature from canvas drawing (base64)
+        elseif (!empty($validated['signature_data'])) {
+            $base64 = $validated['signature_data'];
+
+            // Validate and extract base64 data
+            if (preg_match('/^data:image\/png;base64,(.+)$/', $base64, $matches)) {
+                $imageData = base64_decode($matches[1]);
+
+                if ($imageData !== false) {
+                    // Delete old signature if exists
+                    if ($user->signature_path) {
+                        Storage::disk('public')->delete($user->signature_path);
+                    }
+
+                    $filename = hash('sha256', $imageData) . '.png';
+                    $path = 'signatures/' . $filename;
+
+                    Storage::disk('public')->put($path, $imageData);
+
+                    $validated['signature_path'] = $path;
+                }
+            }
+        }
+
+        // Remove non-model fields before update
+        unset($validated['signature_data']);
 
         $user->update($validated);
 

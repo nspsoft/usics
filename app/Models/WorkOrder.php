@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use App\Traits\HasApproval;
 
 class WorkOrder extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity, HasApproval;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -43,6 +44,7 @@ class WorkOrder extends Model
         'created_by',
         'production_type',
         'supplier_id',
+        'approval_status',
     ];
 
     protected $casts = [
@@ -263,6 +265,19 @@ class WorkOrder extends Model
             self::STATUS_CANCELLED => 'red',
             default => 'slate',
         };
+    }
+
+    public function updateApprovalStatus(string $status): void
+    {
+        $this->approval_status = $status;
+        
+        if ($status === 'approved') {
+            $this->status = self::STATUS_CONFIRMED;
+        } elseif ($status === 'rejected') {
+            $this->status = self::STATUS_DRAFT;
+        }
+        
+        $this->saveQuietly();
     }
 
     public function getPriorityColorAttribute(): string

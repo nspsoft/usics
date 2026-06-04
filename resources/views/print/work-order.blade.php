@@ -343,20 +343,52 @@
     <table width="100%" class="sig-table">
         <tr>
             <td width="33%">
-                Direncanakan (PPC/Admin),
-                <div class="sig-box"></div>
-                <div class="font-bold">( {{ str_replace('(PPC)', '', $workOrder->createdBy->name ?? '________________') }} )</div>
+                Dibuat Oleh,
+                <div class="sig-box" style="border: none; position: relative; text-align: center; display: flex; align-items: center; justify-content: center;">
+                    @if($workOrder->createdBy && $workOrder->createdBy->signature_path)
+                        <img src="/storage/{{ $workOrder->createdBy->signature_path }}" style="max-height: 65px; max-width: 100%; object-fit: contain;">
+                    @else
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #008000; font-size: 8pt; border: 1px solid #008000; padding: 2px 5px; border-radius: 3px; background-color: rgba(255,255,255,0.8);">
+                            DIGITAL SIGNATURE<br>VALID
+                        </div>
+                    @endif
+                </div>
+                <div class="font-bold">( {{ $workOrder->createdBy->name ?? '________________' }} )</div>
+                <div style="font-size: 7pt; color: #555;">{{ date('d/m/Y H:i', strtotime($workOrder->created_at)) }}</div>
             </td>
-            <td width="34%">
-                Pelaksana (Produksi),
-                <div class="sig-box"></div>
-                <div class="font-bold">( ________________ )</div>
-            </td>
-            <td width="33%">
-                Disetujui (Supt/Mgr),
-                <div class="sig-box"></div>
-                <div class="font-bold">( ________________ )</div>
-            </td>
+            @if($workOrder->approvalRequest && $workOrder->approvalRequest->histories->count() > 0)
+                @foreach($workOrder->approvalRequest->histories->where('action', 'approved')->sortBy('step_order') as $history)
+                <td width="{{ 67 / max(1, $workOrder->approvalRequest->histories->where('action', 'approved')->count()) }}%">
+                    {{ $history->step_order == 0 ? 'Disetujui Otomatis' : ($history->step_name ?? 'Disetujui') }},
+                    <div class="sig-box" style="border: none; position: relative; text-align: center; display: flex; align-items: center; justify-content: center;">
+                        @if($history->step_order == 0)
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #008000; font-size: 8pt; border: 1px solid #008000; padding: 2px 5px; border-radius: 3px; text-align: center; background-color: rgba(255,255,255,0.8);">
+                                SYSTEM<br>AUTO APPROVED
+                            </div>
+                        @elseif($history->actedBy && $history->actedBy->signature_path)
+                            <img src="/storage/{{ $history->actedBy->signature_path }}" style="max-height: 65px; max-width: 100%; object-fit: contain;">
+                        @else
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #008000; font-size: 8pt; border: 1px solid #008000; padding: 2px 5px; border-radius: 3px; text-align: center; background-color: rgba(255,255,255,0.8);">
+                                DIGITAL SIGNATURE<br>VALID
+                            </div>
+                        @endif
+                    </div>
+                    <div class="font-bold">( {{ $history->step_order == 0 ? 'Sistem (ERP)' : ($history->actedBy->name ?? '________________') }} )</div>
+                    <div style="font-size: 7pt; color: #555;">{{ date('d/m/Y H:i', strtotime($history->created_at)) }}</div>
+                </td>
+                @endforeach
+            @else
+                <td width="34%">
+                    Pelaksana (Produksi),
+                    <div class="sig-box"></div>
+                    <div class="font-bold">( ________________ )</div>
+                </td>
+                <td width="33%">
+                    Disetujui,
+                    <div class="sig-box"></div>
+                    <div class="font-bold">( ________________ )</div>
+                </td>
+            @endif
         </tr>
     </table>
 

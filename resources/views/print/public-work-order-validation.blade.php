@@ -57,6 +57,32 @@
                 </div>
             </div>
 
+            @if($workOrder->approvalRequest && $workOrder->approval_status === 'approved')
+            <div class="mt-6 border-t border-slate-800/50 pt-4">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Tanda Tangan Digital</div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                        <div class="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1">Dibuat Oleh</div>
+                        <div class="text-sm font-bold text-white">{{ $workOrder->createdBy->name ?? '-' }}</div>
+                        <div class="text-[10px] text-green-400 mt-1 flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                            Signed
+                        </div>
+                    </div>
+                    @foreach($workOrder->approvalRequest->histories->where('action', 'approved')->sortBy('step_order') as $history)
+                    <div class="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                        <div class="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1">{{ $history->step_order == 0 ? 'Disetujui Otomatis' : ($history->step_name ?? 'Disetujui') }}</div>
+                        <div class="text-sm font-bold text-white">{{ $history->step_order == 0 ? 'Sistem (ERP)' : ($history->actedBy->name ?? '-') }}</div>
+                        <div class="text-[10px] text-green-400 mt-1 flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                            {{ $history->step_order == 0 ? 'Auto Approved' : 'Approved' }}
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             <div class="pt-6 text-center">
                 <p class="text-[9px] text-slate-500 italic">Data ditarik secara sistem pada {{ date('d/m/Y H:i:s') }}. Dokumen ini sah sebagai perintah produksi resmi PT. Jidoka Result Indonesia.</p>
             </div>

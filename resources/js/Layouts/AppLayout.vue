@@ -110,10 +110,12 @@ let waUnreadInterval = null;
 // Flash Notifications Logic
 const flashSuccess = computed(() => page.props.flash?.success);
 const flashError = computed(() => page.props.flash?.error);
+const flashWarning = computed(() => page.props.flash?.warning);
+const flashInfo = computed(() => page.props.flash?.info);
 const showFlash = ref(false);
 
-watch([flashSuccess, flashError], ([newSuccess, newError]) => {
-    if (newSuccess || newError) {
+watch([flashSuccess, flashError, flashWarning, flashInfo], ([newSuccess, newError, newWarning, newInfo]) => {
+    if (newSuccess || newError || newWarning || newInfo) {
         showFlash.value = true;
         setTimeout(() => {
             showFlash.value = false;
@@ -1264,13 +1266,15 @@ onUnmounted(() => {
                     <div class="flex-shrink-0">
                         <CheckCircleIcon v-if="flashSuccess" class="h-6 w-6 text-emerald-500" />
                         <ShieldExclamationIcon v-if="flashError" class="h-6 w-6 text-red-500" />
+                        <ShieldExclamationIcon v-if="flashWarning" class="h-6 w-6 text-amber-500" />
+                        <InformationCircleIcon v-if="flashInfo" class="h-6 w-6 text-blue-500" />
                     </div>
                     <div class="flex-1 pt-0.5">
                         <h3 class="text-sm font-bold text-slate-900 dark:text-white">
-                            {{ flashSuccess ? 'Berhasil' : 'Perhatian' }}
+                            {{ flashSuccess ? 'Berhasil' : (flashError ? 'Perhatian' : (flashWarning ? 'Peringatan' : 'Informasi')) }}
                         </h3>
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-                            {{ flashSuccess || flashError }}
+                            {{ flashSuccess || flashError || flashWarning || flashInfo }}
                         </p>
                     </div>
                     <button @click="showFlash = false" class="flex-shrink-0 text-slate-400 hover:text-slate-500 dark:hover:text-slate-300">
@@ -1280,7 +1284,7 @@ onUnmounted(() => {
                 <div class="h-1 w-full bg-slate-100 dark:bg-slate-700">
                     <div 
                         class="h-full transition-all duration-[5000ms] ease-linear w-0"
-                        :class="[flashSuccess ? 'bg-emerald-500' : 'bg-red-500', showFlash ? 'w-full' : 'w-0']"
+                        :class="[flashSuccess ? 'bg-emerald-500' : (flashError ? 'bg-red-500' : (flashWarning ? 'bg-amber-500' : 'bg-blue-500')), showFlash ? 'w-full' : 'w-0']"
                     ></div>
                 </div>
             </div>

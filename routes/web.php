@@ -146,6 +146,8 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::get('/opname/{opname}/location-stock', [App\Http\Controllers\Inventory\StockOpnameController::class, 'locationStock'])->name('opname.location-stock');
     Route::get('/opname/{opname}/print', [App\Http\Controllers\Inventory\StockOpnameController::class, 'print'])->name('opname.print');
     Route::post('/opname/{opname}/complete', [App\Http\Controllers\Inventory\StockOpnameController::class, 'complete'])->name('opname.complete');
+    Route::post('/opname/{opname}/check', [App\Http\Controllers\Inventory\StockOpnameController::class, 'check'])->name('opname.check');
+    Route::post('/opname/{opname}/approve', [App\Http\Controllers\Inventory\StockOpnameController::class, 'approve'])->name('opname.approve');
     // Reports
     Route::get('/reports', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/inventory-balance', [App\Http\Controllers\ReportController::class, 'inventoryBalance'])->name('reports.inventory-balance');
@@ -326,6 +328,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
 
     Route::get('/quotations/next-number', [App\Http\Controllers\Sales\QuotationController::class, 'generateNextNumber'])->name('quotations.next-number');
     Route::resource('quotations', App\Http\Controllers\Sales\QuotationController::class);
+    Route::post('/quotations/{quotation}/submit-for-approval', [App\Http\Controllers\Sales\QuotationController::class, 'submitForApproval'])->name('quotations.submit-for-approval');
     Route::post('/quotations/{quotation}/send', [App\Http\Controllers\Sales\QuotationController::class, 'send'])->name('quotations.send');
     Route::post('/quotations/{quotation}/accept', [App\Http\Controllers\Sales\QuotationController::class, 'accept'])->name('quotations.accept');
     Route::post('/quotations/{quotation}/reject', [App\Http\Controllers\Sales\QuotationController::class, 'reject'])->name('quotations.reject');
@@ -425,6 +428,7 @@ Route::prefix('manufacturing')->name('manufacturing.')->middleware(['auth'])->gr
     Route::post('/work-orders/{workOrder}/complete', [WorkOrderController::class, 'complete'])->name('work-orders.complete');
     Route::post('/work-orders/{workOrder}/cancel', [WorkOrderController::class, 'cancel'])->name('work-orders.cancel');
     Route::post('/work-orders/{workOrder}/reopen', [WorkOrderController::class, 'reopen'])->name('work-orders.reopen');
+    Route::post('/work-orders/{workOrder}/submit-for-approval', [WorkOrderController::class, 'submitForApproval'])->name('work-orders.submit-for-approval');
     Route::get('/work-orders/{workOrder}/print', [WorkOrderController::class, 'print'])->name('work-orders.print');
     Route::get('/work-orders/{workOrder}/record-production', [WorkOrderController::class, 'recordProductionForm'])->name('work-orders.record-production-form');
     Route::post('/work-orders/{workOrder}/record-production', [WorkOrderController::class, 'recordProduction'])->name('work-orders.record-production');
