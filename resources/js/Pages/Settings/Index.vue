@@ -1,5 +1,5 @@
 <script setup>
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
     Cog6ToothIcon,
@@ -15,7 +15,7 @@ const settingsSections = [
         title: 'Company Settings',
         description: 'Manage company information and branding',
         icon: BuildingOffice2Icon,
-        href: '#',
+        href: route('settings.company'),
         color: 'text-blue-400',
         bg: 'bg-blue-500/10',
     },
@@ -23,7 +23,7 @@ const settingsSections = [
         title: 'Regional Settings',
         description: 'Configure timezone, language, and currency',
         icon: GlobeAltIcon,
-        href: '#',
+        href: route('settings.regional'),
         color: 'text-emerald-400',
         bg: 'bg-emerald-500/10',
     },
@@ -31,7 +31,7 @@ const settingsSections = [
         title: 'Notification Preferences',
         description: 'Manage email and push notification settings',
         icon: BellIcon,
-        href: '#',
+        href: route('settings.preferences'),
         color: 'text-amber-400',
         bg: 'bg-amber-500/10',
     },
@@ -39,7 +39,7 @@ const settingsSections = [
         title: 'Security & Access',
         description: 'Manage roles, permissions, and security settings',
         icon: ShieldCheckIcon,
-        href: '#',
+        href: route('settings.roles'),
         color: 'text-red-400',
         bg: 'bg-red-500/10',
     },
@@ -60,7 +60,7 @@ const settingsSections = [
     <AppLayout title="Settings">
         <div class="max-w-full px-4 sm:px-6 lg:px-8 mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <a 
+                <Link 
                     v-for="section in settingsSections" 
                     :key="section.title"
                     :href="section.href"
@@ -77,7 +77,7 @@ const settingsSections = [
                             <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ section.description }}</p>
                         </div>
                     </div>
-                </a>
+                </Link>
             </div>
 
             <!-- App Info -->
