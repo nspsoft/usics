@@ -6,8 +6,9 @@ import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import { ChevronLeftIcon, PhotoIcon } from '@heroicons/vue/24/outline';
+import { ChevronLeftIcon, PhotoIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
 import moment from 'moment';
+import axios from 'axios';
 
 const props = defineProps({
     leaveTypes: Array,
@@ -33,6 +34,26 @@ const calculatedDays = computed(() => {
     if (end.isBefore(start)) return 0;
     return end.diff(start, 'days') + 1;
 });
+
+const peersOnLeave = ref([]);
+const checkingPeers = ref(false);
+
+const checkPeers = async () => {
+    if (!form.start_date || !form.end_date) return;
+    
+    checkingPeers.value = true;
+    try {
+        const response = await axios.post(route('my-timeoff.check-peers'), {
+            start_date: form.start_date,
+            end_date: form.end_date
+        });
+        peersOnLeave.value = response.data;
+    } catch (error) {
+        console.error('Error checking peers:', error);
+    } finally {
+        checkingPeers.value = false;
+    }
+};
 
 const photoPreview = ref(null);
 const fileInput = ref(null);
@@ -112,6 +133,7 @@ const submit = () => {
                                 v-model="form.start_date"
                                 type="date"
                                 class="mt-1 block w-full text-base sm:text-sm"
+                                @change="checkPeers"
                                 required
                             />
                             <InputError :message="form.errors.start_date" class="mt-2" />
@@ -124,6 +146,7 @@ const submit = () => {
                                 type="date"
                                 :min="form.start_date"
                                 class="mt-1 block w-full text-base sm:text-sm"
+                                @change="checkPeers"
                                 required
                             />
                             <InputError :message="form.errors.end_date" class="mt-2" />
@@ -136,6 +159,25 @@ const submit = () => {
                             <span>Duration requested:</span>
                             <span class="font-bold text-lg">{{ calculatedDays }} day(s)</span>
                         </p>
+                    </div>
+
+                    <!-- Smart Leave Warning -->
+                    <div v-if="peersOnLeave.length > 0" class="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-xl border border-yellow-200 dark:border-yellow-800">
+                        <div class="flex items-start gap-3">
+                            <ExclamationTriangleIcon class="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <h4 class="text-sm font-semibold text-yellow-800 dark:text-yellow-300">Understaffing Warning</h4>
+                                <p class="text-sm text-yellow-700 dark:text-yellow-400 mt-1">
+                                    You have {{ peersOnLeave.length }} peer(s) in your department already on leave during this period:
+                                </p>
+                                <ul class="list-disc pl-5 mt-2 text-sm text-yellow-700 dark:text-yellow-400">
+                                    <li v-for="peer in peersOnLeave" :key="peer.id">
+                                        {{ peer.employee?.full_name }} ({{ moment(peer.start_date).format('DD MMM') }} - {{ moment(peer.end_date).format('DD MMM') }})
+                                    </li>
+                                </ul>
+                                <p class="text-xs text-yellow-600 mt-2 font-medium">Your request might require further review by HR or your Manager.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Reason -->

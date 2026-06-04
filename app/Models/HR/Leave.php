@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Leave extends Model
 {
+    use \App\Traits\HasApproval;
+
     protected $table = 'hr_leaves';
     protected $fillable = [
         'employee_id', 'leave_type_id', 'start_date', 'end_date', 
         'total_days', 'reason', 'status', 'attachment_path', 
-        'approved_by', 'approved_at', 'rejection_reason'
+        'approved_by', 'approved_at', 'rejection_reason', 'approval_status'
     ];
     
     protected $casts = [

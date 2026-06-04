@@ -131,4 +131,36 @@ class LeaveController extends Controller
 
         return redirect()->route('my-timeoff.index')->with('success', 'Leave request submitted successfully.');
     }
+
+    public function checkPeersOnLeave(Request $request)
+    {
+        $employee = auth()->user()->employee;
+        if (!$employee) return response()->json([]);
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date',
+        ]);
+
+        $start = Carbon::parse($request->start_date)->startOfDay();
+        $end = Carbon::parse($request->end_date)->endOfDay();
+
+        $peersOnLeave = Leave::with('employee')
+            ->whereHas('employee', function($q) use ($employee) {
+                $q->where('department_id', $employee->department_id)
+                  ->where('id', '!=', $employee->id);
+            })
+            ->where(function($q) use ($start, $end) {
+                $q->whereBetween('start_date', [$start, $end])
+                  ->orWhereBetween('end_date', [$start, $end])
+                  ->orWhere(function($q2) use ($start, $end) {
+                      $q2->where('start_date', '<=', $start)
+                         ->where('end_date', '>=', $end);
+                  });
+            })
+            ->whereIn('approval_status', ['pending', 'approved'])
+            ->get();
+
+        return response()->json($peersOnLeave);
+    }
 }

@@ -467,9 +467,18 @@ const navigation = [
         current: false,
         children: [
             { name: 'My Time-Off', href: '/my-timeoff', icon: CalendarIcon },
+            { name: 'My Attendance', href: '/employee/attendance', icon: ClockIcon },
+            { name: 'My Leaves', href: '/employee/leaves', icon: CalendarIcon },
+            { name: 'My Reimbursements', href: '/employee/reimbursements', icon: BanknotesIcon },
+            { name: 'My Performance', href: '/employee/performance', icon: ChartBarIcon },
+            { name: 'Smart Attendance', href: '/employee/attendance/clock', icon: VideoCameraIcon },
             { name: 'Employee Directory', href: '/hr/employees', icon: IdentificationIcon, permission: 'hr_payroll.employee_directory.view' },
+            { name: 'Job Postings (ATS)', href: '/hr/recruitment/jobs', icon: BriefcaseIcon, permission: 'hr_payroll.employee_directory.view' },
+            { name: 'Applicant Tracking', href: '/hr/recruitment/applicants', icon: UsersIcon, permission: 'hr_payroll.employee_directory.view' },
+            { name: 'Performance Monitoring', href: '/hr/performance', icon: ChartBarIcon, permission: 'hr_payroll.employee_directory.view' },
             { name: 'Attendance', href: '/hr/attendance', icon: ClockIcon, permission: 'hr_payroll.attendance.view' },
             { name: 'Leave Management', href: '/hr/leaves', icon: CalendarAltIcon, permission: 'hr_payroll.attendance.view' },
+            { name: 'HR Reimbursements', href: '/hr/reimbursements', icon: BanknotesIcon, permission: 'hr_payroll.payroll.view' },
             { name: 'Payroll', href: '/hr/payroll', icon: BanknotesIcon, permission: 'hr_payroll.payroll.view' },
         ]
     },
@@ -1148,7 +1157,10 @@ onUnmounted(() => {
 
 
             <!-- Page header -->
-            <div v-if="renderHeader" class="mb-8 print:hidden">
+            <div class="mb-8 print:hidden" v-if="$slots.header">
+                <slot name="header" />
+            </div>
+            <div v-else-if="renderHeader" class="mb-8 print:hidden">
                 <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ title }}</h1>
             </div>
 

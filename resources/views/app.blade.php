@@ -35,8 +35,8 @@
         <link rel="manifest" href="/manifest.webmanifest">
 
         <!-- Scripts -->
-        @php echo app(\Tighten\Ziggy\BladeRouteGenerator::class)->generate(); @endphp
-        @vite(['resources/js/app.js'])
+        @routes
+        @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
         
         <!-- Theme Flash Prevention -->
@@ -46,6 +46,19 @@
             } else {
                 document.documentElement.classList.remove('dark');
             }
+
+            window.addEventListener('error', function(e) {
+                const errDiv = document.createElement('div');
+                errDiv.style.cssText = 'position:fixed; top:0; left:0; width:100%; z-index:999999; background:red; color:white; padding:20px; font-weight:bold; font-family:monospace;';
+                errDiv.innerHTML = 'JS Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+                document.body.prepend(errDiv);
+            });
+            window.addEventListener('unhandledrejection', function(e) {
+                const errDiv = document.createElement('div');
+                errDiv.style.cssText = 'position:fixed; top:0; left:0; width:100%; z-index:999999; background:red; color:white; padding:20px; font-weight:bold; font-family:monospace;';
+                errDiv.innerHTML = 'Unhandled Promise Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason);
+                document.body.prepend(errDiv);
+            });
         </script>
     </head>
     <body class="font-sans antialiased bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">

@@ -527,9 +527,23 @@ Route::middleware(['auth'])->prefix('finance')->name('finance.')->group(function
 // HR
 Route::middleware(['auth'])->prefix('hr')->name('hr.')->group(function () {
     Route::get('/employees-export', [EmployeeController::class, 'export'])->name('employees.export');
+    
+    // Performance Management (HR view)
+    Route::get('performance', [\App\Http\Controllers\HR\PerformanceController::class, 'index'])->name('performance.index');
+    Route::get('performance/employee/{employee}', [\App\Http\Controllers\HR\PerformanceController::class, 'show'])->name('performance.show');
+
+    // HR Recruitment / ATS
+    Route::resource('recruitment/jobs', \App\Http\Controllers\HR\JobPostingController::class)->names('jobs');
+    Route::get('recruitment/applicants', [\App\Http\Controllers\HR\ApplicantController::class, 'index'])->name('applicants.index');
+    Route::put('recruitment/applicants/{applicant}/status', [\App\Http\Controllers\HR\ApplicantController::class, 'updateStatus'])->name('applicants.status');
+    
     Route::get('/employees-template', [EmployeeController::class, 'template'])->name('employees.template');
     Route::post('/employees-import', [EmployeeController::class, 'import'])->name('employees.import');
     Route::resource('employees', EmployeeController::class);
+    
+    // Employee Face Registration
+    Route::get('/employees/{employee}/face', [\App\Http\Controllers\HR\EmployeeFaceController::class, 'show'])->name('employees.face.show');
+    Route::post('/employees/{employee}/face', [\App\Http\Controllers\HR\EmployeeFaceController::class, 'store'])->name('employees.face.store');
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
     Route::get('/attendance-template', [AttendanceController::class, 'template'])->name('attendance.template');
     Route::post('/attendance-import', [AttendanceController::class, 'import'])->name('attendance.import');
@@ -548,6 +562,10 @@ Route::middleware(['auth'])->prefix('hr')->name('hr.')->group(function () {
     Route::get('/leaves', [\App\Http\Controllers\HR\LeaveController::class, 'index'])->name('leaves.index');
     Route::post('/leaves/{leave}/approve', [\App\Http\Controllers\HR\LeaveController::class, 'approve'])->name('leaves.approve');
     Route::post('/leaves/{leave}/reject', [\App\Http\Controllers\HR\LeaveController::class, 'reject'])->name('leaves.reject');
+    
+    // Reimbursements
+    Route::resource('reimbursements', \App\Http\Controllers\HR\ReimbursementController::class)->only(['index', 'show']);
+    Route::post('/reimbursements/{reimbursement}/pay', [\App\Http\Controllers\HR\ReimbursementController::class, 'markAsPaid'])->name('reimbursements.pay');
 
     // Attendance Requests Management
     Route::post('/attendance-requests/{attendanceRequest}/approve', [\App\Http\Controllers\HR\AttendanceRequestController::class, 'approve'])->name('attendance-requests.approve');
@@ -665,9 +683,29 @@ Route::middleware(['auth'])->prefix('my-timeoff')->name('my-timeoff.')->group(fu
     Route::get('/', [\App\Http\Controllers\Employee\LeaveController::class, 'index'])->name('index');
     Route::get('/create', [\App\Http\Controllers\Employee\LeaveController::class, 'create'])->name('create');
     Route::post('/', [\App\Http\Controllers\Employee\LeaveController::class, 'store'])->name('store');
+    Route::post('/check-peers', [\App\Http\Controllers\Employee\LeaveController::class, 'checkPeersOnLeave'])->name('check-peers');
     
     // Attendance Exception Request
     Route::post('/attendance-request', [\App\Http\Controllers\Employee\AttendanceRequestController::class, 'store'])->name('attendance-request.store');
+});
+
+// Employee Routes
+Route::middleware(['auth'])->prefix('employee')->name('employee.')->group(function () {
+    Route::resource('reimbursements', \App\Http\Controllers\Employee\ReimbursementController::class)->only(['index', 'create', 'store', 'show']);
+    Route::resource('leaves', \App\Http\Controllers\Employee\LeaveController::class);
+    
+    // Attendance
+    Route::get('attendance', [\App\Http\Controllers\Employee\AttendanceController::class, 'index'])->name('attendance.index');
+    
+    // Smart Attendance Clock In/Out
+    Route::get('/attendance/clock', [\App\Http\Controllers\Employee\AttendanceController::class, 'clockInOut'])->name('attendance.clock');
+    Route::post('/attendance/clock', [\App\Http\Controllers\Employee\AttendanceController::class, 'processClock'])->name('attendance.clock.process');
+
+    // OKR Performance
+    Route::get('performance', [\App\Http\Controllers\Employee\PerformanceController::class, 'index'])->name('performance.index');
+    Route::post('performance/objective', [\App\Http\Controllers\Employee\PerformanceController::class, 'storeObjective'])->name('performance.storeObjective');
+    Route::post('performance/objective/{objective}/kr', [\App\Http\Controllers\Employee\PerformanceController::class, 'storeKeyResult'])->name('performance.storeKeyResult');
+    Route::put('performance/kr/{keyResult}', [\App\Http\Controllers\Employee\PerformanceController::class, 'updateKeyResult'])->name('performance.updateKeyResult');
 });
 
 // Settings
@@ -825,3 +863,8 @@ Route::middleware([
     Route::get('help', [App\Http\Controllers\Portal\PortalHelpController::class, 'index'])->name('help.index');
 
 });
+
+// Public Careers Portal
+Route::get('/careers', [\App\Http\Controllers\CareersController::class, 'index'])->name('careers.index');
+Route::get('/careers/{job}', [\App\Http\Controllers\CareersController::class, 'show'])->name('careers.show');
+Route::post('/careers/{job}/apply', [\App\Http\Controllers\CareersController::class, 'apply'])->name('careers.apply');

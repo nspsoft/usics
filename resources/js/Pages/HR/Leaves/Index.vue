@@ -121,7 +121,7 @@ const closeModal = () => {
                                         <div class="flex items-center">
                                             <div>
                                                 <div class="text-sm font-medium text-slate-900 dark:text-white">
-                                                    {{ leave.employee.first_name }} {{ leave.employee.last_name }}
+                                                    {{ leave.employee.full_name }}
                                                 </div>
                                                 <div class="text-[11px] text-slate-500">
                                                     {{ leave.employee.department?.name }} | {{ leave.employee.position?.title }}
@@ -192,7 +192,7 @@ const closeModal = () => {
                             Approve Leave Request
                         </h2>
                         <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                            Are you sure you want to approve this {{ selectedLeave?.total_days }}-day(s) leave for {{ selectedLeave?.employee?.first_name }}? The balance will be automatically deducted.
+                            Are you sure you want to approve this {{ selectedLeave?.total_days }}-day(s) leave for {{ selectedLeave?.employee?.full_name }}? The balance will be automatically deducted.
                         </p>
                         <div class="mt-6 flex justify-end space-x-3">
                             <SecondaryButton @click="closeModal">Cancel</SecondaryButton>
