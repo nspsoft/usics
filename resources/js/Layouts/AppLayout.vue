@@ -466,20 +466,24 @@ const navigation = [
         icon: UsersIcon, 
         current: false,
         children: [
-            { name: 'My Time-Off', href: '/my-timeoff', icon: CalendarIcon },
+            { name: 'Employee Self Service', isHeader: true },
+            { name: 'Smart Attendance', href: '/employee/attendance/clock', icon: VideoCameraIcon },
             { name: 'My Attendance', href: '/employee/attendance', icon: ClockIcon },
-            { name: 'My Leaves', href: '/employee/leaves', icon: CalendarIcon },
+            { name: 'My Time-Off', href: '/my-timeoff', icon: CalendarIcon },
+            { name: 'My Overtime', href: '/employee/overtime', icon: ClockIcon },
             { name: 'My Reimbursements', href: '/employee/reimbursements', icon: BanknotesIcon },
             { name: 'My Performance', href: '/employee/performance', icon: ChartBarIcon },
-            { name: 'Smart Attendance', href: '/employee/attendance/clock', icon: VideoCameraIcon },
+            
+            { name: 'HR Administration', isHeader: true },
             { name: 'Employee Directory', href: '/hr/employees', icon: IdentificationIcon, permission: 'hr_payroll.employee_directory.view' },
-            { name: 'Job Postings (ATS)', href: '/hr/recruitment/jobs', icon: BriefcaseIcon, permission: 'hr_payroll.employee_directory.view' },
-            { name: 'Applicant Tracking', href: '/hr/recruitment/applicants', icon: UsersIcon, permission: 'hr_payroll.employee_directory.view' },
-            { name: 'Performance Monitoring', href: '/hr/performance', icon: ChartBarIcon, permission: 'hr_payroll.employee_directory.view' },
             { name: 'Attendance', href: '/hr/attendance', icon: ClockIcon, permission: 'hr_payroll.attendance.view' },
             { name: 'Leave Management', href: '/hr/leaves', icon: CalendarAltIcon, permission: 'hr_payroll.attendance.view' },
+            { name: 'Overtime Requests', href: '/hr/overtime', icon: ClockIcon, permission: 'hr_payroll.attendance.view' },
             { name: 'HR Reimbursements', href: '/hr/reimbursements', icon: BanknotesIcon, permission: 'hr_payroll.payroll.view' },
             { name: 'Payroll', href: '/hr/payroll', icon: BanknotesIcon, permission: 'hr_payroll.payroll.view' },
+            { name: 'Performance Monitoring', href: '/hr/performance', icon: ChartBarIcon, permission: 'hr_payroll.employee_directory.view' },
+            { name: 'Job Postings (ATS)', href: '/hr/recruitment/jobs', icon: BriefcaseIcon, permission: 'hr_payroll.employee_directory.view' },
+            { name: 'Applicant Tracking', href: '/hr/recruitment/applicants', icon: UsersIcon, permission: 'hr_payroll.employee_directory.view' },
         ]
     },
     {
@@ -560,9 +564,30 @@ const filteredNavigation = computed(() => {
         .filter(item => hasPermission(item.permission))
         .map(item => {
             if (item.children) {
+                // First filter by permission
+                const filteredChildren = item.children.filter(child => {
+                    // Header items themselves have no explicit permission requirement
+                    if (child.isHeader) return true;
+                    return hasPermission(child.permission);
+                });
+                
+                // Remove headers that don't have any normal items following them
+                const cleanedChildren = [];
+                for (let i = 0; i < filteredChildren.length; i++) {
+                    const child = filteredChildren[i];
+                    if (child.isHeader) {
+                        const nextChild = filteredChildren[i + 1];
+                        if (nextChild && !nextChild.isHeader) {
+                            cleanedChildren.push(child);
+                        }
+                    } else {
+                        cleanedChildren.push(child);
+                    }
+                }
+                
                 return {
                     ...item,
-                    children: item.children.filter(child => hasPermission(child.permission))
+                    children: cleanedChildren
                 };
             }
             return item;
@@ -776,7 +801,11 @@ onUnmounted(() => {
                                 >
                                     <ul v-if="expandedMenus[item.name]" class="mt-1 space-y-1 pl-4">
                                         <li v-for="child in item.children" :key="child.name">
+                                            <div v-if="child.isHeader" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 pt-3 pb-1 mt-2 first:mt-0 border-b border-white/5 mb-1">
+                                                {{ child.name }}
+                                            </div>
                                             <component
+                                                v-else
                                                 :is="child.target ? 'a' : Link"
                                                 :href="child.href"
                                                 :target="child.target"
@@ -871,17 +900,21 @@ onUnmounted(() => {
                                         <div class="px-4 py-2 text-xs font-semibold text-slate-500 border-b border-white/5 mb-1">
                                             {{ item.name }}
                                         </div>
-                                        <component
-                                            v-for="child in item.children" 
-                                            :key="child.name"
-                                            :is="child.target ? 'a' : Link"
-                                            :href="child.href"
-                                            :target="child.target"
-                                            class="flex items-center gap-3 px-4 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors group"
-                                        >
-                                            <component :is="child.icon" v-if="child.icon" class="h-4 w-4 shrink-0 transition-colors group-hover:text-white" />
-                                            {{ child.name }}
-                                        </component>
+                                        <template v-for="child in item.children" :key="child.name">
+                                            <div v-if="child.isHeader" class="px-4 py-1 text-[9px] font-bold text-slate-500 uppercase tracking-wider border-t border-white/5 mt-1 first:mt-0 first:border-0">
+                                                {{ child.name }}
+                                            </div>
+                                            <component
+                                                v-else
+                                                :is="child.target ? 'a' : Link"
+                                                :href="child.href"
+                                                :target="child.target"
+                                                class="flex items-center gap-3 px-4 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors group"
+                                            >
+                                                <component :is="child.icon" v-if="child.icon" class="h-4 w-4 shrink-0 transition-colors group-hover:text-white" />
+                                                {{ child.name }}
+                                            </component>
+                                        </template>
                                     </div>
 
                                     <Transition
@@ -895,7 +928,11 @@ onUnmounted(() => {
                                     >
                                         <ul v-if="expandedMenus[item.name]" class="mt-1 space-y-1 pl-4">
                                             <li v-for="child in item.children" :key="child.name">
+                                                <div v-if="child.isHeader" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 pt-3 pb-1 mt-2 first:mt-0 border-b border-white/5 mb-1">
+                                                    {{ child.name }}
+                                                </div>
                                                 <component
+                                                    v-else
                                                     :is="child.target ? 'a' : Link"
                                                     :href="child.href"
                                                     :target="child.target"

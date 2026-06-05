@@ -567,6 +567,11 @@ Route::middleware(['auth'])->prefix('hr')->name('hr.')->group(function () {
     Route::resource('reimbursements', \App\Http\Controllers\HR\ReimbursementController::class)->only(['index', 'show']);
     Route::post('/reimbursements/{reimbursement}/pay', [\App\Http\Controllers\HR\ReimbursementController::class, 'markAsPaid'])->name('reimbursements.pay');
 
+    // Overtime Management
+    Route::get('/overtime', [\App\Http\Controllers\HR\OvertimeController::class, 'index'])->name('overtime.index');
+    Route::post('/overtime/{overtime}/approve', [\App\Http\Controllers\HR\OvertimeController::class, 'approve'])->name('overtime.approve');
+    Route::post('/overtime/{overtime}/reject', [\App\Http\Controllers\HR\OvertimeController::class, 'reject'])->name('overtime.reject');
+
     // Attendance Requests Management
     Route::post('/attendance-requests/{attendanceRequest}/approve', [\App\Http\Controllers\HR\AttendanceRequestController::class, 'approve'])->name('attendance-requests.approve');
     Route::post('/attendance-requests/{attendanceRequest}/reject', [\App\Http\Controllers\HR\AttendanceRequestController::class, 'reject'])->name('attendance-requests.reject');
@@ -706,6 +711,10 @@ Route::middleware(['auth'])->prefix('employee')->name('employee.')->group(functi
     Route::post('performance/objective', [\App\Http\Controllers\Employee\PerformanceController::class, 'storeObjective'])->name('performance.storeObjective');
     Route::post('performance/objective/{objective}/kr', [\App\Http\Controllers\Employee\PerformanceController::class, 'storeKeyResult'])->name('performance.storeKeyResult');
     Route::put('performance/kr/{keyResult}', [\App\Http\Controllers\Employee\PerformanceController::class, 'updateKeyResult'])->name('performance.updateKeyResult');
+
+    // Overtime
+    Route::get('overtime', [\App\Http\Controllers\Employee\OvertimeController::class, 'index'])->name('overtime.index');
+    Route::post('overtime', [\App\Http\Controllers\Employee\OvertimeController::class, 'store'])->name('overtime.store');
 });
 
 // Settings

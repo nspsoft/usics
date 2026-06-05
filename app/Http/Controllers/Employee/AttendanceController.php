@@ -114,13 +114,13 @@ class AttendanceController extends Controller
         );
 
         if ($request->type === 'in') {
-            $attendance->time_in = $now->format('H:i:s');
+            $attendance->clock_in = $now;
             $attendance->photo_in_path = $photoPath;
             $attendance->distance_in_meters = $distance;
             $attendance->is_geofenced = $isGeofenced;
             $attendance->is_face_verified = $isFaceVerified;
         } else {
-            $attendance->time_out = $now->format('H:i:s');
+            $attendance->clock_out = $now;
             $attendance->photo_out_path = $photoPath;
             $attendance->distance_out_meters = $distance;
             // For simplicity, we could store 'out' verification separately, but we'll just update it

@@ -78,7 +78,12 @@ class PayrollController extends Controller
                 // Sum minutes
                 $totalLateMinutes = $presence->sum('late_minutes');
                 $totalEarlyMinutes = $presence->sum('early_leave_minutes');
-                $totalOvertimeMinutes = $presence->sum('overtime_minutes');
+                // Sum minutes from approved overtime requests
+                $totalOvertimeMinutes = \App\Models\HR\OvertimeRequest::where('employee_id', $employee->id)
+                    ->whereMonth('date', $month)
+                    ->whereYear('date', $year)
+                    ->where('status', 'approved')
+                    ->sum('approved_minutes');
                 $totalOvertimeHours = round($totalOvertimeMinutes / 60, 2);
 
                 // --- Allowances Calculation ---

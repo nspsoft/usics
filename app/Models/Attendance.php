@@ -32,6 +32,18 @@ class Attendance extends Model
         'clock_out' => 'datetime',
     ];
 
+    protected $appends = ['time_in', 'time_out'];
+
+    public function getTimeInAttribute()
+    {
+        return $this->clock_in ? $this->clock_in->format('H:i:s') : null;
+    }
+
+    public function getTimeOutAttribute()
+    {
+        return $this->clock_out ? $this->clock_out->format('H:i:s') : null;
+    }
+
     public function employee(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Employee::class);

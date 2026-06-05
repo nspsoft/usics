@@ -176,41 +176,41 @@ onUnmounted(() => {
     <AppLayout>
         <template #header>
             <div class="flex justify-between items-center">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                <h2 class="font-semibold text-lg text-gray-800 dark:text-slate-100 leading-tight">
                     Smart Attendance
                 </h2>
             </div>
         </template>
 
-        <div class="py-12">
-            <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 text-center">
+        <div class="py-6">
+            <div class="max-w-xl mx-auto sm:px-4 lg:px-6">
+                <div class="bg-white dark:bg-slate-900 overflow-hidden shadow-sm sm:rounded-lg p-4 text-center border border-gray-150 dark:border-slate-800">
                     
-                    <h3 class="text-2xl font-bold mb-2">{{ new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}</h3>
-                    <p class="text-gray-500 mb-6">{{ new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
-
-                    <div class="mb-4 p-3 rounded-md" :class="inRadius ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                    <h3 class="text-xl font-bold mb-1 dark:text-slate-100">{{ new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}</h3>
+                    <p class="text-xs text-gray-500 dark:text-slate-400 mb-4">{{ new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
+ 
+                    <div class="mb-3 p-2 text-xs rounded-md font-semibold" :class="inRadius ? 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400'">
                         {{ locationStatus }}
                     </div>
                     
-                    <div class="mb-4 p-3 rounded-md bg-blue-100 text-blue-800">
+                    <div class="mb-3 p-2 text-xs rounded-md bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400 font-semibold">
                         {{ statusMessage }}
                     </div>
                     
-                    <div class="flex justify-center mb-6">
+                    <div class="flex justify-center mb-4">
                         <div class="relative bg-gray-900 rounded-lg overflow-hidden border-4" 
-                             :class="inRadius ? 'border-green-500' : 'border-red-500'" 
+                             :class="inRadius ? 'border-green-500 dark:border-green-600' : 'border-red-500 dark:border-red-600'" 
                              style="width: 480px; height: 360px;">
                             <video ref="videoRef" width="480" height="360" autoplay muted class="absolute top-0 left-0 w-full h-full object-cover"></video>
                         </div>
                     </div>
                     
-                    <div class="flex justify-center mt-4">
+                    <div class="flex justify-center mt-3">
                         <PrimaryButton 
                             v-if="!todayAttendance?.time_in"
                             @click="captureAndClock" 
                             :disabled="isLoading || !inRadius || form.processing" 
-                            class="py-4 px-12 text-lg bg-indigo-600 hover:bg-indigo-700">
+                            class="py-2.5 px-8 text-base bg-indigo-600 hover:bg-indigo-700">
                             {{ form.processing ? 'Clocking In...' : 'Clock In' }}
                         </PrimaryButton>
                         
@@ -218,11 +218,11 @@ onUnmounted(() => {
                             v-else-if="!todayAttendance?.time_out"
                             @click="captureAndClock" 
                             :disabled="isLoading || !inRadius || form.processing" 
-                            class="py-4 px-12 text-lg bg-orange-600 hover:bg-orange-700 focus:bg-orange-700 active:bg-orange-900">
+                            class="py-2.5 px-8 text-base bg-orange-600 hover:bg-orange-700 focus:bg-orange-700 active:bg-orange-900">
                             {{ form.processing ? 'Clocking Out...' : 'Clock Out' }}
                         </PrimaryButton>
                         
-                        <div v-else class="text-green-600 font-bold text-xl">
+                        <div v-else class="text-green-600 dark:text-green-400 font-bold text-lg">
                             You have completed your shift today! 🎉
                         </div>
                     </div>

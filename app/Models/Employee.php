@@ -55,4 +55,9 @@ class Employee extends Model
     {
         return $this->hasMany(\App\Models\HR\AttendanceRequest::class);
     }
+
+    public function overtimeRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\HR\OvertimeRequest::class);
+    }
 }
