@@ -162,8 +162,8 @@ const completeTask = (id) => {
                     <form @submit.prevent="submit" class="space-y-4">
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Machine</label>
-                            <select v-model="form.machine_id" class="w-full bg-white/5 border border-white/10 rounded p-2 text-white outline-none focus:border-cyan-500">
-                                <option v-for="m in machines" :key="m.id" :value="m.id">{{ m.name }} ({{ m.code }})</option>
+                            <select v-model="form.machine_id" class="w-full bg-[#0f172a] border border-white/10 rounded p-2 text-white outline-none focus:border-cyan-500">
+                                <option v-for="m in machines" :key="m.id" :value="m.id" class="bg-[#0f172a] text-white">{{ m.name }} ({{ m.code }})</option>
                             </select>
                         </div>
                         <div>

@@ -189,7 +189,7 @@
                         <tr>
                             <td class="meta-label">Date</td>
                             <td class="meta-separator">:</td>
-                            <td class="meta-value">{{ $invoice->invoice_date->format('d/m/Y') }}</td>
+                            <td class="meta-value">{{ $invoice->invoice_date->locale('id')->translatedFormat('d F Y') }}</td>
                         </tr>
                         <tr>
                             <td class="meta-label">PO No.</td>
@@ -220,7 +220,7 @@
                             <tr>
                                 <td class="font-bold" width="100">DUE DATE</td>
                                 <td width="15">:</td>
-                                <td class="font-bold" style="color: #E21E26;">{{ $invoice->due_date->format('d/m/Y') }}</td>
+                                <td class="font-bold" style="color: #E21E26;">{{ $invoice->due_date->locale('id')->translatedFormat('d F Y') }}</td>
                             </tr>
                             <tr>
                                 <td class="font-bold">CURRENCY</td>
@@ -370,7 +370,7 @@
                 <tr>
                     <td width="55%" style="vertical-align: top;">
                         <div class="signature-box" style="float: left; text-align: center; margin-left: 0;">
-                            <div>Cikarang, {{ $invoice->invoice_date->format('d/m/Y') }}</div>
+                            <div>Cikarang, {{ $invoice->invoice_date->locale('id')->translatedFormat('d F Y') }}</div>
                             <div style="height: 60px;"></div>
                             <div class="font-bold" style="text-decoration: underline; font-size: 11pt;">JAHRUDIN</div>
                             <div style="font-weight: bold; color: #666;">Direktur</div>
@@ -419,7 +419,7 @@
                             @if($soDos->count() > 0)
                                 Related Deliveries: 
                                 @foreach($soDos as $sd)
-                                    {{ $sd->do_number }} ({{ $sd->delivery_date->format('d/m/Y') }}){{ !$loop->last ? ', ' : '' }}
+                                    {{ $sd->do_number }} ({{ $sd->delivery_date->locale('id')->translatedFormat('d F Y') }}){{ !$loop->last ? ', ' : '' }}
                                 @endforeach
                             @else
                                 Manual / Legacy Delivery (No Reference)
@@ -428,7 +428,7 @@
                             Surat Jalan: {{ $doNumber }}
                             @if($items->first()->deliveryOrder)
                                 <span style="margin-left: 20px; font-size: 9pt; color: #666; font-weight: normal;">
-                                    Delivery Date: {{ $items->first()->deliveryOrder->delivery_date->format('d/m/Y') }}
+                                    Delivery Date: {{ $items->first()->deliveryOrder->delivery_date->locale('id')->translatedFormat('d F Y') }}
                                 </span>
                             @endif
                         @endif

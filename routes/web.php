@@ -7,6 +7,9 @@ use App\Http\Controllers\HR\PayrollSettingController;
 // Public Payroll Validation (No login required)
 Route::get('/favicon.png', [App\Http\Controllers\FaviconController::class, 'show'])->name('favicon');
 Route::get('/favicon.ico', [App\Http\Controllers\FaviconController::class, 'show'])->name('favicon.ico');
+// Public Breakdown Reporting
+Route::get('/m/{uuid}/breakdown', [App\Http\Controllers\Maintenance\PublicBreakdownController::class, 'show'])->name('maintenance.public.breakdown');
+Route::post('/m/{uuid}/breakdown', [App\Http\Controllers\Maintenance\PublicBreakdownController::class, 'store'])->name('maintenance.public.breakdown.store');
 
 Route::middleware('throttle:public-validate-view')->group(function () {
     Route::get('/v/p/{uuid}', [PayrollController::class, 'publicValidate'])->name('payroll.public-validate');
@@ -479,6 +482,9 @@ Route::middleware(['auth'])->prefix('qc')->name('qc.')->group(function () {
 
 // Maintenance
 Route::middleware(['auth'])->prefix('maintenance')->name('maintenance.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [App\Http\Controllers\Maintenance\MaintenanceDashboardController::class, 'index'])->name('dashboard');
+
     // Schedule
     Route::get('/schedule', [App\Http\Controllers\Maintenance\MaintenanceScheduleController::class, 'index'])->name('schedule');
     Route::post('/schedule', [App\Http\Controllers\Maintenance\MaintenanceScheduleController::class, 'store'])->name('schedule.store');
@@ -490,9 +496,11 @@ Route::middleware(['auth'])->prefix('maintenance')->name('maintenance.')->group(
     Route::put('/breakdown/{log}', [App\Http\Controllers\Maintenance\MaintenanceLogController::class, 'update'])->name('breakdown.update');
 
     // Spareparts
+    Route::post('/spareparts/auto-pr-bulk', [App\Http\Controllers\Maintenance\MaintenanceSparepartController::class, 'generateAutoPrBulk'])->name('spareparts.auto-pr-bulk');
     Route::get('/spareparts', [App\Http\Controllers\Maintenance\MaintenanceSparepartController::class, 'index'])->name('spareparts');
     Route::post('/spareparts', [App\Http\Controllers\Maintenance\MaintenanceSparepartController::class, 'store'])->name('spareparts.store');
     Route::put('/spareparts/{sparepart}', [App\Http\Controllers\Maintenance\MaintenanceSparepartController::class, 'update'])->name('spareparts.update');
+    Route::post('/spareparts/{sparepart}/auto-pr', [App\Http\Controllers\Maintenance\MaintenanceSparepartController::class, 'generateAutoPr'])->name('spareparts.auto-pr');
 });
 
 Route::middleware(['auth'])->prefix('general-affair')->name('ga.')->group(function () {

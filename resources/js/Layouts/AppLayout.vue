@@ -410,6 +410,7 @@ const navigation = [
         current: false,
         permission: 'maintenance.view',
         children: [
+            { name: 'Maintenance Dashboard', href: '/maintenance/dashboard', icon: PresentationChartBarIcon, permission: 'maintenance.view' },
             { name: 'Preventive Schedule', href: '/maintenance/schedule', icon: CalendarDaysIcon, permission: 'maintenance.schedule.view' },
             { name: 'Breakdown Logs', href: '/maintenance/breakdown', icon: WrenchIcon, permission: 'maintenance.breakdown.view' },
             { name: 'Spareparts Inventory', href: '/maintenance/spareparts', icon: Cog6ToothIcon, permission: 'maintenance.spareparts.view' },

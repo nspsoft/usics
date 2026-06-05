@@ -187,8 +187,8 @@ const submitResolve = () => {
                     <form @submit.prevent="submitReport" class="space-y-4">
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Machine</label>
-                            <select v-model="reportForm.machine_id" class="w-full bg-white/5 border border-white/10 rounded p-2 text-white outline-none focus:border-rose-500">
-                                <option v-for="m in machines" :key="m.id" :value="m.id">{{ m.name }} ({{ m.code }})</option>
+                            <select v-model="reportForm.machine_id" class="w-full bg-[#0f172a] border border-white/10 rounded p-2 text-white outline-none focus:border-rose-500">
+                                <option v-for="m in machines" :key="m.id" :value="m.id" class="bg-[#0f172a] text-white">{{ m.name }} ({{ m.code }})</option>
                             </select>
                         </div>
                         <div>
@@ -215,9 +215,9 @@ const submitResolve = () => {
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1">Status</label>
-                                <select v-model="resolveForm.status" class="w-full bg-white/5 border border-white/10 rounded p-2 text-white outline-none focus:border-emerald-500">
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="resolved">Resolved (Close Ticket)</option>
+                                <select v-model="resolveForm.status" class="w-full bg-[#0f172a] border border-white/10 rounded p-2 text-white outline-none focus:border-emerald-500">
+                                    <option value="in_progress" class="bg-[#0f172a] text-white">In Progress</option>
+                                    <option value="resolved" class="bg-[#0f172a] text-white">Resolved (Close Ticket)</option>
                                 </select>
                             </div>
                             <div>
@@ -229,9 +229,9 @@ const submitResolve = () => {
                         <div class="border-t border-white/10 pt-4">
                             <label class="block text-xs text-slate-400 mb-2">Record Spareparts Used</label>
                             <div class="flex gap-2 mb-2">
-                                <select v-model="newPart.id" class="flex-1 bg-white/5 border border-white/10 rounded p-2 text-white text-xs">
-                                    <option value="" disabled>Select Part</option>
-                                    <option v-for="part in spareparts" :key="part.id" :value="part.id">{{ part.part_number }} - {{ part.name }} (Stock: {{ part.stock }})</option>
+                                <select v-model="newPart.id" class="flex-1 bg-[#0f172a] border border-white/10 rounded p-2 text-white text-xs outline-none">
+                                    <option value="" disabled class="bg-[#0f172a] text-slate-400">Select Part</option>
+                                    <option v-for="part in spareparts" :key="part.id" :value="part.id" class="bg-[#0f172a] text-white">{{ part.part_number }} - {{ part.name }} (Stock: {{ part.stock }})</option>
                                 </select>
                                 <input v-model="newPart.qty" type="number" min="1" class="w-16 bg-white/5 border border-white/10 rounded p-2 text-white text-xs" placeholder="Qty">
                                 <button type="button" @click="addPartToResolve" class="px-3 bg-white/10 rounded hover:bg-white/20 text-white">+</button>
