@@ -72,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Observers
         \App\Models\SalesOrder::observe(\App\Observers\OrderStatusObserver::class);
+        \App\Models\PurchaseOrder::observe(\App\Observers\PurchaseOrderObserver::class);
 
         Event::listen(Login::class, function ($event) {
             activity('auth')

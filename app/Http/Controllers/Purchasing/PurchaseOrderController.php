@@ -509,9 +509,10 @@ class PurchaseOrderController extends Controller
         }
 
         DB::transaction(function () use ($eligibleIds) {
-            PurchaseOrder::whereIn('id', $eligibleIds)->update([
-                'status' => 'ordered',
-            ]);
+            $orders = PurchaseOrder::whereIn('id', $eligibleIds)->get();
+            foreach ($orders as $order) {
+                $order->update(['status' => 'ordered']);
+            }
         });
 
         $message = "Marked {$eligibleIds->count()} purchase orders as ordered.";
