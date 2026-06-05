@@ -471,6 +471,7 @@ const navigation = [
         href: '#', 
         icon: UsersIcon, 
         current: false,
+        permission: 'hr_payroll.view',
         children: [
             { name: 'Employee Self Service', isHeader: true },
             { name: 'Smart Attendance', href: '/employee/attendance/clock', icon: VideoCameraIcon },
@@ -483,13 +484,13 @@ const navigation = [
             { name: 'HR Administration', isHeader: true },
             { name: 'Employee Directory', href: '/hr/employees', icon: IdentificationIcon, permission: 'hr_payroll.employee_directory.view' },
             { name: 'Attendance', href: '/hr/attendance', icon: ClockIcon, permission: 'hr_payroll.attendance.view' },
-            { name: 'Leave Management', href: '/hr/leaves', icon: CalendarAltIcon, permission: 'hr_payroll.attendance.view' },
-            { name: 'Overtime Requests', href: '/hr/overtime', icon: ClockIcon, permission: 'hr_payroll.attendance.view' },
-            { name: 'HR Reimbursements', href: '/hr/reimbursements', icon: BanknotesIcon, permission: 'hr_payroll.payroll.view' },
+            { name: 'Leave Management', href: '/hr/leaves', icon: CalendarAltIcon, permission: 'hr_payroll.leave_management.view' },
+            { name: 'Overtime Requests', href: '/hr/overtime', icon: ClockIcon, permission: 'hr_payroll.overtime.view' },
+            { name: 'HR Reimbursements', href: '/hr/reimbursements', icon: BanknotesIcon, permission: 'hr_payroll.reimbursements.view' },
             { name: 'Payroll', href: '/hr/payroll', icon: BanknotesIcon, permission: 'hr_payroll.payroll.view' },
-            { name: 'Performance Monitoring', href: '/hr/performance', icon: ChartBarIcon, permission: 'hr_payroll.employee_directory.view' },
-            { name: 'Job Postings (ATS)', href: '/hr/recruitment/jobs', icon: BriefcaseIcon, permission: 'hr_payroll.employee_directory.view' },
-            { name: 'Applicant Tracking', href: '/hr/recruitment/applicants', icon: UsersIcon, permission: 'hr_payroll.employee_directory.view' },
+            { name: 'Performance Monitoring', href: '/hr/performance', icon: ChartBarIcon, permission: 'hr_payroll.performance.view' },
+            { name: 'Job Postings (ATS)', href: '/hr/recruitment/jobs', icon: BriefcaseIcon, permission: 'hr_payroll.recruitment.view' },
+            { name: 'Applicant Tracking', href: '/hr/recruitment/applicants', icon: UsersIcon, permission: 'hr_payroll.recruitment.view' },
         ]
     },
     {

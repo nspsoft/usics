@@ -34,6 +34,9 @@ class RoleSeeder extends Seeder
             'Manufacturing' => [
                 'Bill of Materials', 'Work Orders', 'Production', 'Input Output', 'Shift Management', 'Machine Management', 'Subcontract Orders'
             ],
+            'Maintenance' => [
+                'Schedule', 'Breakdown', 'Spareparts'
+            ],
             'QC' => [
                 'Incoming Inspection', 'In-Process QC', 'Quality Checklists'
             ],
@@ -44,7 +47,8 @@ class RoleSeeder extends Seeder
                 'General Ledger', 'Profit & Loss', 'AP & AR Monitoring', 'Production Costing', 'Overhead Allocation', 'Profitability Analytic'
             ],
             'HR & Payroll' => [
-                'Employee Directory', 'Attendance', 'Payroll'
+                'Employee Directory', 'Attendance', 'Leave Management',
+                'Overtime', 'Reimbursements', 'Payroll', 'Performance', 'Recruitment'
             ],
             'General Affair' => [
                 'Dashboard', 'Tickets', 'Assets', 'Preventive Maintenance',
@@ -84,6 +88,7 @@ class RoleSeeder extends Seeder
             'Marketing Manager',
             'Purchasing Manager',
             'Production Manager',
+            'Maintenance Manager',
             'Warehouse Manager',
             'Logistics Manager',
             'Quality Control Manager',
@@ -125,6 +130,9 @@ class RoleSeeder extends Seeder
             }
             elseif ($roleName === 'Production Manager') {
                 $permissions = Permission::where('name', 'like', 'manufacturing.%')->get();
+            }
+            elseif ($roleName === 'Maintenance Manager') {
+                $permissions = Permission::where('name', 'like', 'maintenance.%')->get();
             }
             elseif ($roleName === 'Warehouse Manager') {
                 $permissions = Permission::where('name', 'like', 'inventory.%')->get();
