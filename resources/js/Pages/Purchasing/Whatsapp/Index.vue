@@ -24,6 +24,7 @@ import {
     PhoneIcon,
     DocumentDuplicateIcon,
     ChevronDownIcon,
+    ArrowLeftIcon,
 } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 
@@ -332,10 +333,10 @@ const startNewChat = () => {
     <Head title="Purchasing WhatsApp Center" />
 
     <AppLayout title="Purchasing WhatsApp Center">
-        <div class="h-[calc(100vh-12rem)] w-full flex gap-6 overflow-hidden" @click.self="closeDropdowns">
+        <div class="h-[calc(100vh-16rem)] lg:h-[calc(100vh-12rem)] w-full flex lg:gap-6 overflow-hidden" @click.self="closeDropdowns">
             
             <!-- Chat List (Left) -->
-            <div class="w-1/3 flex flex-col gap-4">
+            <div class="w-full lg:w-1/3 flex flex-col gap-4" :class="{'hidden lg:flex': activeContact, 'flex': !activeContact}">
                 <!-- Search + New Chat Button -->
                 <div class="flex gap-2">
                     <div class="relative flex-1">
@@ -464,7 +465,7 @@ const startNewChat = () => {
             </div>
 
             <!-- Chat Area (Center & Right) -->
-            <div class="flex-1 flex gap-6">
+            <div class="w-full lg:flex-1 flex lg:gap-6" :class="{'flex': activeContact, 'hidden lg:flex': !activeContact}">
                 <!-- Main Chat Window -->
                 <div class="flex-1 bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl flex flex-col overflow-hidden relative backdrop-blur-sm shadow-lg dark:shadow-none">
                     
@@ -472,6 +473,10 @@ const startNewChat = () => {
                         <!-- Header -->
                         <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 flex justify-between items-center backdrop-blur-md z-10">
                             <div class="flex items-center gap-3">
+                                <!-- Back Button for Mobile -->
+                                <button @click="activeContact = null" class="lg:hidden p-2 -ml-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors mr-1">
+                                    <ArrowLeftIcon class="h-5 w-5" />
+                                </button>
                                 <div class="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/20">
                                     {{ (activeContact.supplier?.name || activeContact.phone).charAt(0) }}
                                 </div>
