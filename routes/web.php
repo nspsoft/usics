@@ -77,6 +77,7 @@ Route::view('/features', 'features')->name('features');
 
 // Public WhatsApp Webhook (Exempt from CSRF in bootstrap/app.php)
 Route::post('/whatsapp/webhook', [App\Http\Controllers\Api\WhatsappWebhookController::class, 'handle'])->name('whatsapp.webhook');
+Route::post('/whatsapp-purchasing/webhook', [App\Http\Controllers\Api\PurchasingWhatsappWebhookController::class, 'handle'])->name('whatsapp.purchasing.webhook');
 
 use App\Http\Controllers\Admin\BlueprintInteractiveController;
 
@@ -263,6 +264,15 @@ Route::prefix('purchasing')->name('purchasing.')->middleware(['auth'])->group(fu
     
     // Information
     Route::get('/information', [App\Http\Controllers\Purchasing\PurchasingInformationController::class, 'index'])->name('information');
+
+    // WhatsApp Center for Purchasing
+    Route::get('/whatsapp', [App\Http\Controllers\Purchasing\PurchasingWhatsappCenterController::class, 'index'])->name('whatsapp.index');
+    Route::get('/whatsapp/history/{phone}', [App\Http\Controllers\Purchasing\PurchasingWhatsappCenterController::class, 'history'])->name('whatsapp.history');
+    Route::delete('/whatsapp/history/{phone}', [App\Http\Controllers\Purchasing\PurchasingWhatsappCenterController::class, 'destroy'])->name('whatsapp.destroy');
+    Route::post('/whatsapp/send', [App\Http\Controllers\Purchasing\PurchasingWhatsappCenterController::class, 'send'])->name('whatsapp.send');
+    Route::get('/whatsapp/unread-count', [App\Http\Controllers\Purchasing\PurchasingWhatsappCenterController::class, 'unreadCount'])->name('whatsapp.unread-count');
+    Route::post('/whatsapp/labels', [App\Http\Controllers\Purchasing\PurchasingWhatsappCenterController::class, 'addLabel'])->name('whatsapp.labels.store');
+    Route::delete('/whatsapp/labels/{label}', [App\Http\Controllers\Purchasing\PurchasingWhatsappCenterController::class, 'removeLabel'])->name('whatsapp.labels.destroy');
 });
 
 // Sales Module

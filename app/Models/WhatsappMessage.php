@@ -13,12 +13,14 @@ class WhatsappMessage extends Model
     protected $fillable = [
         'phone',
         'customer_id',
+        'supplier_id',
         'direction',
         'message',
         'intent',
         'metadata',
         'fonnte_message_id',
         'is_read',
+        'module',
     ];
 
     protected $casts = [
@@ -32,6 +34,22 @@ class WhatsappMessage extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Get the supplier that owns the message
+     */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
+    /**
+     * Scope for filtering by module
+     */
+    public function scopeModule($query, string $module)
+    {
+        return $query->where('module', $module);
     }
 
     /**

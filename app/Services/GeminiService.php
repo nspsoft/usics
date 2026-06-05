@@ -840,6 +840,112 @@ Extract and return ONLY a valid JSON object with this exact structure:
 
 Return pure JSON without any markdown formatting or backticks.";
     }
+
+    /**
+     * Analyze supplier intent for Purchasing bot
+     */
+    public function analyzeSupplierIntent(string $message, ?array $supplierContext = null, array $conversationHistory = []): array
+    {
+        $this->ensureConfigured();
+        $contextInfo = $supplierContext ? "Supplier Name: {$supplierContext['name']}" : "Unknown supplier";
+        
+        $purchasingInstruction = AppSetting::get('purchasing_whatsapp_bot_instruction', '');
+        $systemInstruction = $purchasingInstruction 
+            ? "Personality & Context: {$purchasingInstruction}"
+            : "You are a friendly and professional procurement/purchasing assistant for PT JIDOKA RESULT INDONESIA. Your job is to serve our suppliers and vendors.";
+
+        $historyText = '';
+        if (!empty($conversationHistory)) {
+            $historyText = "\n\nRecent conversation history (for context):\n";
+            foreach ($conversationHistory as $msg) {
+                $role = $msg['role'] === 'supplier' ? 'Supplier' : 'Bot';
+                $historyText .= "{$role}: {$msg['message']}\n";
+            }
+        }
+
+        $prompt = "{$systemInstruction}
+Analyze this message from a Supplier/Vendor and classify the intent precisely.
+
+Context: {$contextInfo}{$historyText}
+New Message: \"{$message}\"
+
+Intents:
+- greeting: Sapaan awal (Halo, Selamat siang, Pagi, dll)
+- casual_chat: Percakapan santai (terima kasih, ok, baik, siap, dll)
+- po_status: Tanya status Purchase Order / pesanan pembelian yang kami kirimkan ke supplier
+- grn_status: Tanya status penerimaan barang / Goods Receipt Note (GRN) di gudang kami
+- rfq_status: Tanya info RFQ (Request for Quotation) atau permintaan penawaran harga
+- supplier_invoice: Tanya status pembayaran invoice tagihan dari supplier ke kami
+- faq: Pertanyaan umum seputar kantor kami (lokasi kirim, jam bongkar muat, dll)
+- unknown: Tidak bisa diklasifikasikan
+
+Return JSON strictly: { \"intent\": \"...\", \"parameters\": { \"po_number\": \"...\", \"rfq_number\": \"...\" }, \"confidence\": 0.9 }";
+
+        if ($this->driver === 'ollama') {
+            $result = $this->callOllama($prompt, true);
+            return $result ?? ['intent' => 'unknown', 'parameters' => []];
+        }
+
+        try {
+            $response = Http::timeout(30)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [['parts' => [['text' => $prompt]]]],
+                'generationConfig' => ['response_mime_type' => 'application/json'],
+            ]);
+            $result = $this->parseResponse($response);
+            return $result ?? ['intent' => 'unknown', 'parameters' => []];
+        } catch (\Exception $e) {
+            Log::error('Supplier Intent Error: ' . $e->getMessage());
+        }
+        return ['intent' => 'unknown', 'parameters' => []];
+    }
+
+    /**
+     * FAQ Response for Supplier Bot
+     */
+    public function generateSupplierFAQResponse(string $question, array $conversationHistory = []): string
+    {
+        $this->ensureConfigured();
+        $purchasingInstruction = AppSetting::get('purchasing_whatsapp_bot_instruction', '');
+        $systemInstruction = $purchasingInstruction 
+            ? "Personality & Context: {$purchasingInstruction}"
+            : "You are a helpful purchasing assistant for PT JIDOKA RESULT INDONESIA, dealing with suppliers.";
+
+        $historyText = '';
+        if (!empty($conversationHistory)) {
+            $historyText = "\n\nRecent conversation for context:\n";
+            foreach ($conversationHistory as $msg) {
+                $role = $msg['role'] === 'supplier' ? 'Supplier' : 'Bot';
+                $historyText .= "{$role}: {$msg['message']}\n";
+            }
+        }
+
+        $prompt = "{$systemInstruction}
+Answer this supplier question in Indonesian, friendly and concise (max 200 chars).{$historyText}
+Question: \"{$question}\"";
+
+        if ($this->driver === 'ollama') {
+            try {
+                $payload = ['model' => $this->ollamaModel, 'prompt' => $prompt, 'stream' => false];
+                $url = rtrim($this->ollamaUrl, '/');
+                $res = Http::timeout(30)->post("{$url}/api/generate", $payload);
+                if ($res->successful()) return $res->json()['response'] ?? "Maaf, error.";
+            } catch (\Exception $e) {}
+            return "Maaf, layanan sedang sibuk.";
+        }
+
+        try {
+            $response = Http::timeout(30)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [['parts' => [['text' => $prompt]]]],
+            ]);
+            if ($response->successful()) {
+                return $response->json()['candidates'][0]['content']['parts'][0]['text'] ?? "Maaf, saya tidak mengerti.";
+            }
+        } catch (\Exception $e) {
+            Log::error("Supplier Gemini FAQ Error: " . $e->getMessage());
+        }
+
+        return "Maaf, saat ini asisten virtual purchasing sedang sibuk. Silakan hubungi bagian pengadaan kami secara langsung.";
+    }
 }
 
 

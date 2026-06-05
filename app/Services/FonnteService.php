@@ -18,6 +18,15 @@ class FonnteService
     }
 
     /**
+     * Set credentials dynamically (e.g. for purchasing module)
+     */
+    public function setCredentials(string $apiToken): self
+    {
+        $this->apiToken = $apiToken;
+        return $this;
+    }
+
+    /**
      * Send a text message via Fonnte
      */
     public function sendMessage(string $phone, string $message): array

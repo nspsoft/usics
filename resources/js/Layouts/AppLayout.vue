@@ -106,6 +106,8 @@ const isInstalled = ref(false);
 const isDark = ref(false);
 const waUnreadCount = ref(0);
 let waUnreadInterval = null;
+const waPurchasingUnreadCount = ref(0);
+let waPurchasingUnreadInterval = null;
 
 // Flash Notifications Logic
 const flashSuccess = computed(() => page.props.flash?.success);
@@ -351,6 +353,7 @@ const navigation = [
             { name: 'Delivery Schedule', href: '/purchasing/delivery-schedule', icon: CalendarDaysIcon, permission: 'purchasing.view' },
             { name: 'Procurement Forecast', href: '/purchasing/procurement-forecast', icon: ChartBarSquareIcon, permission: 'purchasing.view' },
             { name: 'Supplier Scorecard', href: '/purchasing/supplier-scorecard', icon: TrophyIcon, permission: 'purchasing.view' },
+            { name: 'WhatsApp Center', href: '/purchasing/whatsapp', icon: ChatBubbleLeftRightIcon, permission: 'purchasing.view', badgeKey: 'waPurchasingUnread' },
             { name: 'Information', href: '/purchasing/information', icon: InformationCircleIcon, permission: 'purchasing.view' },
             { name: 'Suppliers', href: '/purchasing/suppliers', icon: BuildingOfficeIcon, permission: 'purchasing.suppliers.view' },
             { name: 'Purchase Requests', href: '/purchasing/requests', icon: DocumentPlusIcon, permission: 'purchasing.purchase_requests.view' },
@@ -683,6 +686,15 @@ onMounted(() => {
     fetchWaUnread();
     waUnreadInterval = setInterval(fetchWaUnread, 30000);
 
+    // Poll Purchasing WhatsApp unread count every 30 seconds
+    const fetchWaPurchasingUnread = () => {
+        axios.get('/purchasing/whatsapp/unread-count').then(r => {
+            waPurchasingUnreadCount.value = r.data?.total || 0;
+        }).catch(() => {});
+    };
+    fetchWaPurchasingUnread();
+    waPurchasingUnreadInterval = setInterval(fetchWaPurchasingUnread, 30000);
+
     // Listen to fullscreen change events
     document.addEventListener('fullscreenchange', () => {
         isFullscreen.value = !!document.fullscreenElement;
@@ -729,11 +741,13 @@ const toggleTheme = () => {
 // Badge value resolver
 const getBadge = (child) => {
     if (child.badgeKey === 'waUnread') return waUnreadCount.value;
+    if (child.badgeKey === 'waPurchasingUnread') return waPurchasingUnreadCount.value;
     return 0;
 };
 
 onUnmounted(() => {
     if (waUnreadInterval) clearInterval(waUnreadInterval);
+    if (waPurchasingUnreadInterval) clearInterval(waPurchasingUnreadInterval);
 });
 
 </script>

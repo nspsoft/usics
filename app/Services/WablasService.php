@@ -19,6 +19,18 @@ class WablasService
     }
 
     /**
+     * Set credentials dynamically (e.g. for purchasing module)
+     */
+    public function setCredentials(string $apiToken, ?string $baseUrl = null): self
+    {
+        $this->apiToken = $apiToken;
+        if ($baseUrl) {
+            $this->baseUrl = $baseUrl;
+        }
+        return $this;
+    }
+
+    /**
      * Send a text message via Wablas
      */
     public function sendMessage(string $phone, string $message): array

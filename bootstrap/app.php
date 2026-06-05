@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->validateCsrfTokens(except: [
             'whatsapp/webhook',
+            'whatsapp-purchasing/webhook',
             'api/*',
         ]);
         // $middleware->trustProxies(at: '*');
