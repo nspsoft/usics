@@ -373,7 +373,7 @@ const startNewChat = () => {
                 </div>
 
                 <!-- Guide Link -->
-                <a href="/whatsapp_guide.html" target="_blank" class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all group">
+                <a href="/whatsapp_guide.html?module=purchasing" target="_blank" class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all group">
                     <div class="flex items-center gap-3">
                         <div class="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm">
                             <BookOpenIcon class="h-5 w-5 text-white" />
@@ -387,18 +387,18 @@ const startNewChat = () => {
                 </a>
 
                 <!-- Information Link -->
-                <Link :href="route('purchasing.information')" class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all group duration-300 hover:scale-[1.02]">
+                <a href="/whatsapp_guide.html?module=purchasing" target="_blank" class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all group duration-300 hover:scale-[1.02]">
                     <div class="flex items-center gap-3">
                         <div class="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm group-hover:rotate-12 transition-transform duration-300">
                             <InformationCircleIcon class="h-5 w-5 text-white" />
                         </div>
                         <div class="text-left">
-                            <div class="text-xs font-bold opacity-90">Kemampuan Modul?</div>
-                            <div class="text-sm font-bold">Informasi Modul Purchasing</div>
+                            <div class="text-xs font-bold opacity-90">Bisa Apa Saja?</div>
+                            <div class="text-sm font-bold">Kemampuan WhatsApp Bot</div>
                         </div>
                     </div>
                     <ArrowTopRightOnSquareIcon class="h-5 w-5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
-                </Link>
+                </a>
 
                 <!-- Contact List -->
                 <div class="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">

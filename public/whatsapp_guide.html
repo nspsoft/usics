@@ -6,7 +6,6 @@
     <title>Panduan WhatsApp Center - JICOS ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@heroicons/vue/24/outline"></script>
     <style>
         body { font-family: 'Outfit', sans-serif; }
         .glass {
@@ -14,8 +13,13 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .gradient-text {
+        .gradient-text-sales {
             background: linear-gradient(to right, #22d3ee, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gradient-text-purchasing {
+            background: linear-gradient(to right, #a855f7, #ec4899);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -44,45 +48,54 @@
 
     <!-- Background Effects -->
     <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 rounded-full blur-[120px]"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px]"></div>
+        <div id="bg-glow-1" class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 rounded-full blur-[120px] transition-all duration-500"></div>
+        <div id="bg-glow-2" class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] transition-all duration-500"></div>
     </div>
 
     <!-- Navigation -->
     <nav class="fixed top-0 w-full z-50 glass border-b border-white/5 bg-slate-900/80">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <div id="nav-logo" class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 transition-all duration-500">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-white">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.197.302-1.668.209-2.76 1.614-2.76 3.235v6.235a2.125 2.125 0 001.053 1.886"/>
                     </svg>
                 </div>
-                <span class="font-bold text-xl tracking-tight">JICOS <span class="text-cyan-400">WhatsApp Center</span></span>
+                <span class="font-bold text-xl tracking-tight">JICOS <span id="nav-title" class="text-cyan-400 transition-colors duration-300">WhatsApp Center</span></span>
             </div>
-            <a href="#demo" class="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-sm font-medium transition-all border border-white/10">Lihat Demo</a>
+            
+            <!-- Module Switcher Tabs -->
+            <div class="bg-slate-800/80 p-1 rounded-xl border border-white/5 flex gap-1 text-xs">
+                <button id="btn-nav-sales" onclick="switchModule('sales')" class="px-4 py-2 rounded-lg font-bold transition-all duration-300">
+                    🛍️ Customer (Sales)
+                </button>
+                <button id="btn-nav-purchasing" onclick="switchModule('purchasing')" class="px-4 py-2 rounded-lg font-bold transition-all duration-300">
+                    📦 Supplier (Purchasing)
+                </button>
+            </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <header class="relative pt-32 pb-20 px-6">
+    <header class="relative pt-36 pb-16 px-6">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
             <div class="flex-1 space-y-8 slide-up">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold tracking-wider uppercase">
-                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                <div id="hero-badge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold tracking-wider uppercase transition-all duration-500">
+                    <span id="hero-badge-dot" class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse transition-all duration-500"></span>
                     Fitur Baru v4.0
                 </div>
-                <h1 class="text-5xl md:text-7xl font-black leading-tight">
+                <h1 id="hero-title" class="text-5xl md:text-7xl font-black leading-tight">
                     Otomatisasi <br>
-                    <span class="gradient-text">Customer Service</span>
+                    <span class="gradient-text-sales" id="hero-title-gradient">Customer Service</span>
                 </h1>
-                <p class="text-lg text-slate-400 max-w-xl leading-relaxed">
+                <p id="hero-desc" class="text-lg text-slate-400 max-w-xl leading-relaxed">
                     Satu pintu untuk semua interaksi WhatsApp. Lacak pesanan, cek invoice, dan katalog produk secara otomatis menggunakan Bot cerdas yang terintegrasi langsung dengan ERP.
                 </p>
                 <div class="flex flex-wrap gap-4">
-                    <a href="#config" class="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-white rounded-2xl font-bold shadow-lg shadow-cyan-500/30 transition-all hover:scale-105">
+                    <a href="#config" id="hero-btn-primary" class="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-white rounded-2xl font-bold shadow-lg shadow-cyan-500/30 transition-all hover:scale-105 duration-300">
                         Mulai Konfigurasi
                     </a>
-                    <a href="#features" class="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold border border-slate-700 transition-all">
+                    <a href="#features" class="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold border border-slate-700 transition-all duration-300">
                         Pelajari Fitur
                     </a>
                 </div>
@@ -90,7 +103,7 @@
 
             <!-- Hero Image / Illustration -->
             <div class="flex-1 relative slide-up delay-200">
-                <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/30 to-purple-500/30 rounded-full blur-[100px] -z-10"></div>
+                <div id="hero-glow" class="absolute inset-0 bg-gradient-to-tr from-cyan-500/30 to-purple-500/30 rounded-full blur-[100px] -z-10 transition-all duration-500"></div>
                 <div class="relative w-full max-w-sm mx-auto float">
                     <!-- Phone Mockup -->
                     <div class="bg-slate-900 border-8 border-slate-800 rounded-[3rem] shadow-2xl overflow-hidden relative">
@@ -102,9 +115,9 @@
                             <!-- App Header -->
                             <div class="px-6 pb-4 border-b border-slate-800 flex items-center justify-between">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white text-xs font-bold shadow-lg">JICOS</div>
+                                    <div id="phone-avatar" class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-lg transition-all duration-500">JICOS</div>
                                     <div>
-                                        <div class="text-sm font-bold">JICOS Bot</div>
+                                        <div id="phone-name" class="text-sm font-bold">JICOS Bot</div>
                                         <div class="text-[10px] text-emerald-400 flex items-center gap-1">
                                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Online
                                         </div>
@@ -127,7 +140,7 @@
                     <!-- Floating Badge -->
                     <div class="absolute -right-10 top-20 glass p-4 rounded-2xl shadow-xl animate-[bounce_3s_infinite]">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">⚡</div>
+                            <div id="badge-icon" class="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 transition-all duration-500">⚡</div>
                             <div>
                                 <div class="text-xs text-slate-400 uppercase font-bold">Respon Bot</div>
                                 <div class="text-lg font-bold">0.5 Detik</div>
@@ -143,39 +156,39 @@
     <section id="config" class="py-20 bg-slate-900 relative">
         <div class="max-w-5xl mx-auto px-6">
             <div class="text-center mb-16 slide-up">
-                <h2 class="text-3xl font-bold mb-4">Cara, Setup & Konfigurasi</h2>
-                <div class="h-1 w-20 bg-cyan-500 mx-auto rounded-full"></div>
+                <h2 class="text-3xl font-bold mb-4">Cara Setup & Konfigurasi</h2>
+                <div id="config-line" class="h-1 w-20 bg-cyan-500 mx-auto rounded-full transition-all duration-500"></div>
             </div>
 
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div class="space-y-8">
                     <!-- Step 1 -->
-                    <div class="group relative pl-8 border-l-2 border-slate-800 hover:border-cyan-500 transition-colors slide-up delay-100">
+                    <div id="step-1" class="group relative pl-8 border-l-2 border-slate-800 hover:border-cyan-500 transition-colors slide-up delay-100 duration-300">
                         <span class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-800 group-hover:bg-cyan-500 transition-colors border-4 border-slate-900"></span>
-                        <h3 class="text-xl font-bold mb-2 group-hover:text-cyan-400 transition-colors">1. Pilih Provider Gateway</h3>
-                        <p class="text-slate-400 mb-4">Masuk ke <span class="text-white font-mono bg-slate-800 px-2 rounded">Settings > WhatsApp</span>. Kami merekomendasikan <strong>Wablas</strong> atau <strong>Fonnte</strong>.</p>
+                        <h3 id="step-1-title" class="text-xl font-bold mb-2 group-hover:text-cyan-400 transition-colors duration-300">1. Pilih Provider Gateway</h3>
+                        <p class="text-slate-400 mb-4">Masuk ke <span class="text-white font-mono bg-slate-800 px-2 rounded">Settings > WhatsApp Center</span>. Kami merekomendasikan <strong>Wablas</strong> atau <strong>Fonnte</strong>.</p>
                         <div class="inline-flex gap-2">
-                            <span class="px-3 py-1 rounded bg-orange-500/10 text-orange-400 text-xs border border-orange-500/20 font-bold">Rekomendasi: Wablas</span>
+                            <span id="step-1-recommendation" class="px-3 py-1 rounded bg-cyan-500/10 text-cyan-400 text-xs border border-cyan-500/20 font-bold transition-all duration-500">Rekomendasi: Wablas / Fonnte</span>
                         </div>
                     </div>
 
                     <!-- Step 2 -->
-                    <div class="group relative pl-8 border-l-2 border-slate-800 hover:border-purple-500 transition-colors slide-up delay-200">
-                        <span class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-800 group-hover:bg-purple-500 transition-colors border-4 border-slate-900"></span>
-                        <h3 class="text-xl font-bold mb-2 group-hover:text-purple-400 transition-colors">2. Input API Token</h3>
+                    <div id="step-2" class="group relative pl-8 border-l-2 border-slate-800 hover:border-cyan-500 transition-colors slide-up delay-200 duration-300">
+                        <span class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-800 group-hover:bg-cyan-500 transition-colors border-4 border-slate-900"></span>
+                        <h3 id="step-2-title" class="text-xl font-bold mb-2 group-hover:text-cyan-400 transition-colors duration-300">2. Input API Token & Server URL</h3>
                         <p class="text-slate-400">
-                            Dapatkan API Token dari dashboard provider Anda. Paste ke kolom yang tersedia lalu klik <strong>Save</strong>.
+                            Dapatkan API Token dari dashboard provider Anda. Paste ke kolom sesuai modul (Sales atau Purchasing) lalu klik <strong>Save Settings</strong>.
                         </p>
                     </div>
 
                     <!-- Step 3 -->
-                    <div class="group relative pl-8 border-l-2 border-slate-800 hover:border-emerald-500 transition-colors slide-up delay-300">
-                        <span class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-800 group-hover:bg-emerald-500 transition-colors border-4 border-slate-900"></span>
-                        <h3 class="text-xl font-bold mb-2 group-hover:text-emerald-400 transition-colors">3. Setup Webhook (PENTING!)</h3>
+                    <div id="step-3" class="group relative pl-8 border-l-2 border-slate-800 hover:border-cyan-500 transition-colors slide-up delay-300 duration-300">
+                        <span class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-800 group-hover:bg-cyan-500 transition-colors border-4 border-slate-900"></span>
+                        <h3 id="step-3-title" class="text-xl font-bold mb-2 group-hover:text-cyan-400 transition-colors duration-300">3. Setup Webhook (PENTING!)</h3>
                         <p class="text-slate-400 mb-4">
-                            Salin URL Webhook dari halaman settings ERP, dan tempelkan di dashboard provider WhatsApp Anda.
+                            Salin URL Webhook di bawah ini sesuai modul dan tempelkan pada dashboard provider Anda (Fonnte/Wablas) agar pesan masuk dapat direspon AI otomatis.
                         </p>
-                        <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 font-mono text-xs text-slate-400 break-all">
+                        <div id="webhook-box" class="p-4 bg-slate-950 rounded-xl border border-slate-800 font-mono text-xs text-slate-400 break-all select-all transition-all duration-300">
                             https://jicos.jidoka.co.id/api/whatsapp/webhook
                         </div>
                     </div>
@@ -183,16 +196,27 @@
 
                 <!-- Interactive Preview Panel -->
                 <div class="bg-slate-800 rounded-3xl p-2 border border-slate-700 shadow-2xl transform rotate-2 hover:rotate-0 transition-transform duration-500 slide-up delay-200">
-                    <img src="/api/placeholder/600/400" alt="Setting Interface Mockup" class="w-full h-auto rounded-2xl opacity-50 bg-slate-900" />
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="text-center p-8">
-                            <div class="w-16 h-16 bg-slate-700 rounded-full mx-auto mb-4 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-slate-400">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-                                </svg>
+                    <div class="relative w-full rounded-2xl bg-slate-950 p-6 border border-slate-800 text-left">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                            <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                            <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                        </div>
+                        <h4 class="font-bold text-lg mb-1" id="preview-panel-title">WhatsApp Bot Configuration</h4>
+                        <p class="text-xs text-slate-500 mb-4" id="preview-panel-subtitle">Settings > WhatsApp Settings (Sales Bot)</p>
+                        <div class="space-y-3 font-mono text-xs">
+                            <div class="p-3 bg-slate-900 rounded-xl border border-white/5 space-y-1">
+                                <div class="text-slate-500">PROVIDER</div>
+                                <div class="text-white">Wablas Gateway</div>
                             </div>
-                            <h4 class="font-bold text-lg mb-2">Halaman Konfigurasi</h4>
-                            <p class="text-sm text-slate-400">Settings > WhatsApp Center</p>
+                            <div class="p-3 bg-slate-900 rounded-xl border border-white/5 space-y-1">
+                                <div class="text-slate-500">API TOKEN</div>
+                                <div class="text-white truncate">wablas_token_active_••••••••••••••••</div>
+                            </div>
+                            <div class="p-3 bg-slate-900 rounded-xl border border-white/5 space-y-1">
+                                <div class="text-slate-500">WEBHOOK STATUS</div>
+                                <div class="text-emerald-400 flex items-center gap-1">🟢 Connected & Listening</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -201,155 +225,400 @@
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="py-20 bg-slate-950">
+    <section id="features" class="py-20 bg-slate-955 transition-colors duration-500">
         <div class="max-w-7xl mx-auto px-6">
-            <div class="grid md:grid-cols-3 gap-8">
-                <!-- Feature 1 -->
-                <div class="p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-900/80 transition-all group slide-up delay-100">
-                    <div class="w-12 h-12 bg-cyan-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-cyan-400">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3 text-white">Status Pesanan</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Pelanggan cukup ketik nomor SO (contoh: <code>SO-2023001</code>) dan bot akan membalas status terkini (Processing, Shipped, Delivered) beserta info kurir.
-                    </p>
-                </div>
-
-                <!-- Feature 2 -->
-                <div class="p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 hover:bg-slate-900/80 transition-all group slide-up delay-200">
-                    <div class="w-12 h-12 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-purple-400">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3 text-white">Cek Invoice</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Ketik <code>Cek Tagihan</code> untuk melihat daftar invoice yang belum dibayar. Bot otomatis menghitung total outstanding secara real-time.
-                    </p>
-                </div>
-
-                <!-- Feature 3 -->
-                <div class="p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900/80 transition-all group slide-up delay-300">
-                    <div class="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-emerald-400">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3 text-white">Produk & Stok</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Pencarian pintar. Ketik nama barang (misal: <code>Pipa Besi</code>), bot akan menampilkan harga dan stok terkini dari gudang.
-                    </p>
-                </div>
+            <div class="text-center mb-16">
+                <h2 id="features-section-title" class="text-3xl font-bold mb-4">Fitur Kemampuan WhatsApp Bot</h2>
+                <div id="features-line" class="h-1 w-20 bg-cyan-500 mx-auto rounded-full transition-all duration-500"></div>
+            </div>
+            <div id="features-grid" class="grid md:grid-cols-3 gap-8">
+                <!-- Swapped dynamically by JS -->
             </div>
         </div>
     </section>
 
     <!-- Interactive Simulator -->
-    <section id="demo" class="py-20 px-6">
+    <section id="demo" class="py-20 px-6 bg-slate-900/60">
         <div class="max-w-4xl mx-auto bg-slate-800/50 rounded-3xl overflow-hidden border border-slate-700 shadow-2xl backdrop-blur-xl">
             <div class="p-8 border-b border-slate-700 text-center">
-                <h3 class="text-2xl font-bold mb-2">Coba Simulator Bot</h3>
-                <p class="text-slate-400 text-sm">Klik tombol di bawah untuk melihat respon bot (Simulasi).</p>
+                <h3 id="sim-title" class="text-2xl font-bold mb-2">Simulator WhatsApp Bot</h3>
+                <p id="sim-subtitle" class="text-slate-400 text-sm">Klik tombol simulasi di bawah untuk melihat bagaimana WhatsApp Bot merespon secara otomatis.</p>
             </div>
-            <div class=" p-8 min-h-[400px] flex flex-col">
-                <div id="sim-chat-area" class="flex-1 space-y-4 mb-8">
-                    <!-- Chat Start -->
-                    <div class="flex justify-start">
-                        <div class="bg-slate-700 rounded-2xl rounded-tl-sm px-4 py-3 text-slate-200 text-sm max-w-[80%]">
-                            Halo! Selamat datang di JICOS Bot. Apa yang bisa saya bantu? 👋
-                        </div>
-                    </div>
+            <div class="p-8 min-h-[420px] flex flex-col justify-between">
+                <div id="sim-chat-area" class="flex-1 space-y-4 mb-8 overflow-y-auto max-h-[300px] phone-scroll pr-2">
+                    <!-- Initial message injected by script -->
                 </div>
 
                 <!-- Sim Controls -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <button onclick="simulateChat('status')" class="p-3 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-bold text-white transition-colors border border-slate-600">
-                        📦 Cek Status SO
-                    </button>
-                    <button onclick="simulateChat('invoice')" class="p-3 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-bold text-white transition-colors border border-slate-600">
-                        📄 Cek Invoice
-                    </button>
-                    <button onclick="simulateChat('product')" class="p-3 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-bold text-white transition-colors border border-slate-600">
-                        🔍 Cari Produk
-                    </button>
-                    <button onclick="simulateChat('human')" class="p-3 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-bold text-white transition-colors border border-slate-600">
-                        👤 Chat Sales
-                    </button>
+                <div id="sim-buttons" class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <!-- Swapped dynamically by JS -->
                 </div>
             </div>
         </div>
     </section>
 
-    <footer class="py-12 bg-slate-950 text-center text-slate-600 text-sm">
+    <footer class="py-12 bg-slate-950 text-center text-slate-600 text-sm border-t border-white/5">
         <p>&copy; 2026 JICOS ERP System. All rights reserved.</p>
     </footer>
 
     <script>
-        // Hero Phone Animation
-        const heroMessages = [
-            { text: "Cek status pesanan saya dong", type: "out", delay: 1000 },
-            { text: "Halo! Boleh minta nomor SO-nya?", type: "in", delay: 2000 },
-            { text: "SO-202602-001", type: "out", delay: 3500 },
-            { text: "📦 *Status Pesanan*\n\n*SO-202602-001*\nStatus: 🚚 Dikirim\nEstimasi: Besok Sampai", type: "in", delay: 5000 }
-        ];
+        // Content Database
+        const modules = {
+            sales: {
+                theme: 'sales',
+                navTitle: 'WhatsApp Center (Sales)',
+                badgeText: 'Fitur Baru v4.0 - Sales',
+                title: 'Otomatisasi <br><span class="gradient-text-sales">Customer Service</span>',
+                desc: 'Satu pintu untuk semua interaksi WhatsApp dengan customer. Lacak pesanan, cek outstanding invoice, dan berikan informasi katalog produk secara otomatis menggunakan bot AI yang terhubung langsung ke database ERP.',
+                btnClass: 'bg-cyan-500 hover:bg-cyan-400 shadow-cyan-500/30',
+                glow1: 'bg-cyan-500/10',
+                glow2: 'bg-indigo-500/10',
+                avatarClass: 'bg-gradient-to-br from-cyan-500 to-blue-600',
+                avatarText: 'JICOS',
+                phoneName: 'JICOS CS Bot',
+                webhook: 'https://jicos.jidoka.co.id/api/whatsapp/webhook',
+                previewSub: 'Settings > WhatsApp Settings (Sales Bot)',
+                badgeIcon: '⚡',
+                badgeIconClass: 'bg-cyan-500/20 text-cyan-400',
+                accentColor: 'cyan-500',
+                features: [
+                    {
+                        title: 'Status Pesanan (SO)',
+                        icon: `<svg class="w-7 h-7 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>`,
+                        desc: 'Pelanggan cukup mengetik nomor Sales Order (SO) mereka, dan bot akan mengambil data terkini dari sistem ERP untuk melaporkan status pengerjaan, pengemasan, atau kurir pengiriman secara instan.',
+                        themeClass: 'hover:border-cyan-500/50 text-cyan-400 bg-cyan-500/10'
+                    },
+                    {
+                        title: 'Outstanding Invoice',
+                        icon: `<svg class="w-7 h-7 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>`,
+                        desc: 'Customer dapat memantau invoice yang masih belum terbayar atau jatuh tempo dengan mengetik kata kunci seperti "cek tagihan" atau "cek invoice". Sangat membantu mempercepat proses piutang.',
+                        themeClass: 'hover:border-purple-500/50 text-purple-400 bg-purple-500/10'
+                    },
+                    {
+                        title: 'Katalog & Cek Stok',
+                        icon: `<svg class="w-7 h-7 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/></svg>`,
+                        desc: 'Customer dapat langsung mencari spesifikasi produk dan ketersediaan stok di gudang utama dengan mengetik nama produk (misalnya: "Pipa Galvanis 3 inch"). Mengurangi waktu tunggu info sales.',
+                        themeClass: 'hover:border-emerald-500/50 text-emerald-400 bg-emerald-500/10'
+                    }
+                ],
+                phoneLoop: [
+                    { text: "Cek status pesanan SO-2026-009", type: "out", delay: 1000 },
+                    { text: "📦 *Status Sales Order*\n\n*SO-2026-009*\nStatus: 🚚 Shipped (Terkirim)\nTanggal Kirim: 02 Jun 2026\nDriver: Ahmad (B 1234 XYZ)", type: "in", delay: 2000 },
+                    { text: "Cek tagihan saya", type: "out", delay: 4000 },
+                    { text: "📄 *Outstanding Invoices*\n\n1. *INV-26012*\n   Total: Rp 8.500.000\n   Jatuh Tempo: 20 Jun 2026\n\nSilakan lakukan pembayaran sebelum tanggal tempo.", type: "in", delay: 5000 }
+                ],
+                simGreeting: "Halo! Selamat datang di JICOS Bot Sales. Apa yang bisa kami bantu? 👋",
+                simControls: [
+                    { label: "📦 Cek Status SO", cmd: "status_so" },
+                    { label: "📄 Cek Tagihan", cmd: "tagihan" },
+                    { label: "🔍 Cari Pipa Galvanis", cmd: "stok" },
+                    { label: "💬 Bantuan Sales", cmd: "bantuan" }
+                ],
+                simResponses: {
+                    status_so: {
+                        user: "Cek pesanan SO-2026-0015",
+                        bot: "📦 *SO-2026-0015*\nStatus: *SELESAI (DELIVERED)*\nDiterima oleh: Bp. Hendra\nTanggal: 04 Jun 2026 14:30\nSurat Jalan: SJ-99238"
+                    },
+                    tagihan: {
+                        user: "Berapa invoice saya yang outstanding?",
+                        bot: "📄 *Daftar Outstanding Invoices Anda:*\n\n• *INV-26081* - Rp 12.450.000\n  Jatuh Tempo: 18 Jun 2026\n\n*Total Outstanding:* Rp 12.450.000\nSilakan transfer ke BCA Rek. 882012938 a.n. PT SPINDO."
+                    },
+                    stok: {
+                        user: "Apakah Pipa Galvanis 2 inch ready?",
+                        bot: "🔍 *Pipa Galvanis 2 Inch*\nStok Ready: *480 Batang*\nHarga: Rp 185.000/btg\n\nHubungi Sales Anda untuk langsung memesan."
+                    },
+                    bantuan: {
+                        user: "Tolong hubungkan saya dengan sales manual",
+                        bot: "Baik, permintaan Anda telah kami teruskan. Tim Sales kami akan segera menghubungi Anda melalui nomor ini dalam beberapa menit. Terima kasih!"
+                    }
+                }
+            },
+            purchasing: {
+                theme: 'purchasing',
+                navTitle: 'WhatsApp Center (Purchasing)',
+                badgeText: 'Fitur Baru v4.0 - Purchasing Bot',
+                title: 'Otomatisasi <br><span class="gradient-text-purchasing">Supplier Assistant</span>',
+                desc: 'Asisten otomatis untuk supplier dan vendor Anda. Melalui nomor khusus purchasing ini, supplier dapat memeriksa status Purchase Order (PO), mengonfirmasi penerimaan barang (GRN), memantau RFQ aktif, dan memeriksa tagihan invoice yang belum terbayar secara mandiri dibantu AI Gemini.',
+                btnClass: 'bg-purple-600 hover:bg-purple-500 shadow-purple-500/30',
+                glow1: 'bg-purple-500/10',
+                glow2: 'bg-pink-500/10',
+                avatarClass: 'bg-gradient-to-br from-purple-500 to-indigo-600',
+                avatarText: 'PURCH',
+                phoneName: 'Purchasing Bot (Supplier)',
+                webhook: 'https://jicos.jidoka.co.id/api/whatsapp-purchasing/webhook',
+                previewSub: 'Settings > WhatsApp Settings (Purchasing Bot)',
+                badgeIcon: '🤖',
+                badgeIconClass: 'bg-purple-500/20 text-purple-400',
+                accentColor: 'purple-500',
+                features: [
+                    {
+                        title: 'Cek Status PO Supplier',
+                        icon: `<svg class="w-7 h-7 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>`,
+                        desc: 'Supplier terdaftar cukup mengetik nomor PO (contoh: "status PO-2026-0043") untuk memeriksa apakah PO tersebut sudah disetujui internal, serta melihat rincian item barang beserta total kuantitas yang dipesan.',
+                        themeClass: 'hover:border-purple-500/50 text-purple-400 bg-purple-500/10'
+                    },
+                    {
+                        title: 'Lacak Penerimaan Barang (GRN)',
+                        icon: `<svg class="w-7 h-7 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177V3.917c0-.621-.504-1.125-1.125-1.125H9.75M16.5 7.573a9.016 9.016 0 00-1.5-1.427M9.75 2.75a1.5 1.5 0 00-3 0m3 0a1.5 1.5 0 01-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177V3.917c0-.621-.504-1.125-1.125-1.125H9.75M16.5 7.573a9.016 9.016 0 00-1.5-1.427"/></svg>`,
+                        desc: 'Supplier dapat melacak status pengiriman dan penerimaan barang (GRN/sj) yang masuk ke pabrik. Cukup ketik nomor GRN (contoh: "GRN-2026-012") untuk melihat tanggal terima, berat, dan supir pengirim.',
+                        themeClass: 'hover:border-indigo-500/50 text-indigo-400 bg-indigo-500/10'
+                    },
+                    {
+                        title: 'Pantau RFQ Aktif & Invoice',
+                        icon: `<svg class="w-7 h-7 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.839 2.51l-4.66-2.51m0 0l-1.023-.55a2.25 2.25 0 00-2.134 0l-1.022.55m0 0l-4.661 2.51m16.5-1.84V9a2.25 2.25 0 00-2.25-2.25H3.75A2.25 2.25 0 001.5 9v10.5A2.25 2.25 0 003.75 21.75h16.5a2.25 2.25 0 002.25-2.25z"/></svg>`,
+                        desc: 'Ketik "cek RFQ" untuk melihat daftar permintaan harga (RFQ) dari tim Purchasing yang ditujukan kepada supplier Anda. Ketik "cek invoice" untuk melacak sisa tagihan & jatuh tempo.',
+                        themeClass: 'hover:border-pink-500/50 text-pink-400 bg-pink-500/10'
+                    }
+                ],
+                phoneLoop: [
+                    { text: "Cek PO PO-2026-0043", type: "out", delay: 1000 },
+                    { text: "📦 *Detail Purchase Order*\n\n*PO-2026-0043*\nStatus: *DIPESAN (ORDERED)*\nTanggal PO: 04 Jun 2026\n\n*Item Pesanan:*\n• Pipa Hitam 1.5 Inch (500 Batang)", type: "in", delay: 2000 },
+                    { text: "Cek invoice tagihan supplier kami", type: "out", delay: 4500 },
+                    { text: "📄 *Outstanding Supplier Invoices*\n\n• *PI-992318*\n  Sisa Tagihan: Rp 45.000.000\n  Jatuh Tempo: ⚠️ JATUH TEMPO\n\nTotal tagihan belum terbayar: Rp 45.000.000.", type: "in", delay: 5500 }
+                ],
+                simGreeting: "Halo! Selamat datang di Purchasing WhatsApp Bot PT SPINDO. Saya asisten virtual khusus supplier. Ada yang bisa saya bantu? 🤝",
+                simControls: [
+                    { label: "📦 Cek Status PO", cmd: "status_po" },
+                    { label: "🚚 Cek GRN Terima", cmd: "status_grn" },
+                    { label: "📨 Cek RFQ Penawaran", cmd: "status_rfq" },
+                    { label: "📄 Outstanding Invoice", cmd: "invoice" },
+                    { label: "🕰️ Info Jam Bongkar", cmd: "jam_bongkar" }
+                ],
+                simResponses: {
+                    status_po: {
+                        user: "Tolong cek status PO-2026-0091",
+                        bot: "📦 *Status Purchase Order*\n\n*PO-2026-0091*\nStatus: *DISETUJUI (APPROVED)*\nTgl PO: 02 Jun 2026\nEstimasi Kirim: 12 Jun 2026\n\n*Rincian Item:*\n• Plat Besi 4x8 tebal 2mm (100 Lembar)"
+                    },
+                    status_grn: {
+                        user: "Apakah kiriman dengan GRN-2026-015 sudah masuk?",
+                        bot: "🚚 *Penerimaan Barang (GRN)*\n\n*GRN-2026-015*\nStatus: *SELESAI (MASUK STOK)*\nTanggal Terima: 05 Jun 2026\nSupir: Budi Santoso (L 9982 UA)\nSurat Jalan: SJ-SUPP-988"
+                    },
+                    status_rfq: {
+                        user: "Cek RFQ aktif untuk perusahaan kami",
+                        bot: "📨 *Request for Quotation (RFQ) Aktif*\n\n• *RFQ-2026-002* - Pengadaan Fitting Pipa\n  Batas Waktu: 15 Jun 2026 17:00\n  Status Respon Anda: *BELUM MERESPON*\n\nSilakan kirim penawaran melalui portal vendor kami."
+                    },
+                    invoice: {
+                        user: "Cek tagihan invoice yang belum terbayar",
+                        bot: "📄 *Outstanding Invoices Supplier*\n\n• *PI-2026-0120*\n  Total Tagihan: Rp 180.000.000\n  Sisa Belum Terbayar: Rp 180.000.000\n  Jatuh Tempo: 📅 25 Jun 2026\n\nTermin pembayaran (TOP) akan dilakukan sesuai kesepakatan kontrak."
+                    },
+                    jam_bongkar: {
+                        user: "Jam berapa operasional bongkar muat gudang?",
+                        bot: "🕰️ *Info Operasional Gudang PT SPINDO:*\n\n*Bongkar Muat Bahan Baku & Spareparts:*\n• Senin - Jumat: 08:00 - 15:30 WIB\n• Sabtu: 08:00 - 11:30 WIB\n• Minggu & Hari Libur Nasional: *TUTUP*\n\nPastikan supir membawa salinan PO dan Surat Jalan asli yang sah."
+                    }
+                }
+            }
+        };
 
-        const heroScroll = document.getElementById('hero-chat-scroll');
+        let currentModule = 'sales';
+        let phoneAnimationTimer = null;
 
-        function playHeroAnimation() {
-            heroScroll.innerHTML = '';
-            let totalDelay = 0;
+        // Switch Module Logic
+        function switchModule(moduleName) {
+            currentModule = moduleName;
+            const data = modules[moduleName];
+            
+            // Set hash/URL params silently
+            const url = new URL(window.location);
+            url.searchParams.set('module', moduleName);
+            window.history.pushState({}, '', url);
 
-            heroMessages.forEach(msg => {
-                totalDelay += msg.delay;
-                setTimeout(() => {
-                    const div = document.createElement('div');
-                    div.className = `flex ${msg.type === 'out' ? 'justify-end' : 'justify-start'} animate-bounce-in`;
-                    
-                    const bubble = document.createElement('div');
-                    bubble.className = msg.type === 'out' 
-                        ? 'bg-cyan-600 text-white rounded-2xl rounded-tr-sm px-4 py-2 max-w-[80%] shadow-lg' 
-                        : 'bg-slate-700 text-white rounded-2xl rounded-tl-sm px-4 py-2 max-w-[80%] border border-slate-600';
-                    
-                    bubble.innerHTML = msg.text.replace(/\n/g, '<br>');
-                    div.appendChild(bubble);
-                    heroScroll.appendChild(div);
-                    heroScroll.scrollTop = heroScroll.scrollHeight;
-                }, totalDelay);
+            // Update tab UI
+            const isSales = moduleName === 'sales';
+            
+            // Nav Tab Button colors
+            document.getElementById('btn-nav-sales').className = isSales 
+                ? "px-4 py-2 rounded-lg font-bold transition-all bg-cyan-500 text-white shadow shadow-cyan-500/10"
+                : "px-4 py-2 rounded-lg font-bold transition-all text-slate-400 hover:text-white";
+                
+            document.getElementById('btn-nav-purchasing').className = !isSales
+                ? "px-4 py-2 rounded-lg font-bold transition-all bg-purple-600 text-white shadow shadow-purple-500/10"
+                : "px-4 py-2 rounded-lg font-bold transition-all text-slate-400 hover:text-white";
+
+            // Colors & Theme classes
+            const logo = document.getElementById('nav-logo');
+            const navTitle = document.getElementById('nav-title');
+            const badge = document.getElementById('hero-badge');
+            const dot = document.getElementById('hero-badge-dot');
+            const gradientText = document.getElementById('hero-title-gradient');
+            const btnPrimary = document.getElementById('hero-btn-primary');
+            const glow1 = document.getElementById('bg-glow-1');
+            const glow2 = document.getElementById('bg-glow-2');
+            const phoneAvatar = document.getElementById('phone-avatar');
+            const floatBadgeIcon = document.getElementById('badge-icon');
+            const configLine = document.getElementById('config-line');
+            const featuresLine = document.getElementById('features-line');
+
+            if (isSales) {
+                // Sales (Cyan Theme)
+                logo.className = "w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 transition-all duration-500";
+                navTitle.className = "text-cyan-400 transition-colors duration-300";
+                badge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold tracking-wider uppercase transition-all duration-500";
+                dot.className = "w-2 h-2 rounded-full bg-cyan-400 animate-pulse transition-all duration-500";
+                gradientText.className = "gradient-text-sales transition-all duration-500";
+                btnPrimary.className = "px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-white rounded-2xl font-bold shadow-lg shadow-cyan-500/30 transition-all hover:scale-105 duration-300";
+                glow1.className = "absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 rounded-full blur-[120px] transition-all duration-500";
+                glow2.className = "absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] transition-all duration-500";
+                phoneAvatar.className = "w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-lg transition-all duration-500";
+                floatBadgeIcon.className = "w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 transition-all duration-500";
+                configLine.className = "h-1 w-20 bg-cyan-500 mx-auto rounded-full transition-all duration-500";
+                featuresLine.className = "h-1 w-20 bg-cyan-500 mx-auto rounded-full transition-all duration-500";
+                
+                // border config highlight hover
+                document.querySelectorAll('#config .group').forEach(el => {
+                    el.className = "group relative pl-8 border-l-2 border-slate-800 hover:border-cyan-500 transition-colors slide-up duration-300";
+                });
+                document.querySelectorAll('#config .group span').forEach(el => {
+                    el.className = "absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-800 group-hover:bg-cyan-500 transition-colors border-4 border-slate-900";
+                });
+                document.querySelectorAll('#config .group h3').forEach(el => {
+                    el.className = "text-xl font-bold mb-2 group-hover:text-cyan-400 transition-colors duration-300";
+                });
+                document.getElementById('step-1-recommendation').className = "px-3 py-1 rounded bg-cyan-500/10 text-cyan-400 text-xs border border-cyan-500/20 font-bold transition-all duration-500";
+            } else {
+                // Purchasing (Purple Theme)
+                logo.className = "w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20 transition-all duration-500";
+                navTitle.className = "text-purple-400 transition-colors duration-300";
+                badge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold tracking-wider uppercase transition-all duration-500";
+                dot.className = "w-2 h-2 rounded-full bg-purple-400 animate-pulse transition-all duration-500";
+                gradientText.className = "gradient-text-purchasing transition-all duration-500";
+                btnPrimary.className = "px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold shadow-lg shadow-purple-500/30 transition-all hover:scale-105 duration-300";
+                glow1.className = "absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[120px] transition-all duration-500";
+                glow2.className = "absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-500/10 rounded-full blur-[120px] transition-all duration-500";
+                phoneAvatar.className = "w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-lg transition-all duration-500";
+                floatBadgeIcon.className = "w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 transition-all duration-500";
+                configLine.className = "h-1 w-20 bg-purple-600 mx-auto rounded-full transition-all duration-500";
+                featuresLine.className = "h-1 w-20 bg-purple-600 mx-auto rounded-full transition-all duration-500";
+
+                // border config highlight hover
+                document.querySelectorAll('#config .group').forEach(el => {
+                    el.className = "group relative pl-8 border-l-2 border-slate-800 hover:border-purple-600 transition-colors slide-up duration-300";
+                });
+                document.querySelectorAll('#config .group span').forEach(el => {
+                    el.className = "absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-800 group-hover:bg-purple-500 transition-colors border-4 border-slate-900";
+                });
+                document.querySelectorAll('#config .group h3').forEach(el => {
+                    el.className = "text-xl font-bold mb-2 group-hover:text-purple-400 transition-colors duration-300";
+                });
+                document.getElementById('step-1-recommendation').className = "px-3 py-1 rounded bg-purple-500/10 text-purple-400 text-xs border border-purple-500/20 font-bold transition-all duration-500";
+            }
+
+            // Update Text Contents
+            navTitle.textContent = data.navTitle;
+            badge.childNodes[2].textContent = " " + data.badgeText;
+            gradientText.innerHTML = isSales ? "Customer Service" : "Supplier Assistant";
+            document.getElementById('hero-desc').textContent = data.desc;
+            document.getElementById('phone-name').textContent = data.phoneName;
+            phoneAvatar.textContent = data.avatarText;
+            document.getElementById('webhook-box').textContent = data.webhook;
+            document.getElementById('preview-panel-subtitle').textContent = data.previewSub;
+
+            // Features Grid Update
+            const grid = document.getElementById('features-grid');
+            grid.innerHTML = '';
+            data.features.forEach(f => {
+                const div = document.createElement('div');
+                div.className = `p-8 rounded-3xl bg-slate-900 border border-slate-800 ${f.themeClass} hover:bg-slate-900/80 transition-all group duration-300`;
+                div.innerHTML = `
+                    <div class="w-12 h-12 bg-slate-800/80 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        ${f.icon}
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-white">${f.title}</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">${f.desc}</p>
+                `;
+                grid.appendChild(div);
             });
+
+            // Simulator Update
+            document.getElementById('sim-title').textContent = `Simulator Bot (${isSales ? 'Sales' : 'Purchasing'})`;
+            const simArea = document.getElementById('sim-chat-area');
+            simArea.innerHTML = `
+                <div class="flex justify-start">
+                    <div class="bg-slate-700 rounded-2xl rounded-tl-sm px-4 py-3 text-slate-200 text-sm max-w-[80%]">
+                        ${data.simGreeting}
+                    </div>
+                </div>
+            `;
+
+            const btnContainer = document.getElementById('sim-buttons');
+            btnContainer.innerHTML = '';
+            data.simControls.forEach(c => {
+                const btn = document.createElement('button');
+                btn.onclick = () => simulateChat(c.cmd);
+                btn.className = isSales
+                    ? "p-3 bg-slate-700 hover:bg-cyan-600 hover:border-cyan-500 rounded-xl text-xs font-bold text-white transition-all border border-slate-600 duration-300"
+                    : "p-3 bg-slate-700 hover:bg-purple-600 hover:border-purple-500 rounded-xl text-xs font-bold text-white transition-all border border-slate-600 duration-300";
+                btn.textContent = c.label;
+                btnContainer.appendChild(btn);
+            });
+
+            // Restart Hero Phone Loop
+            playPhoneAnimation(data.phoneLoop);
+        }
+
+        // Phone Loop Animation
+        function playPhoneAnimation(messagesList) {
+            if (phoneAnimationTimer) {
+                clearInterval(phoneAnimationTimer);
+            }
+            
+            const scroll = document.getElementById('hero-chat-scroll');
+            
+            function runLoop() {
+                scroll.innerHTML = '';
+                let totalDelay = 0;
+
+                messagesList.forEach(msg => {
+                    totalDelay += msg.delay;
+                    setTimeout(() => {
+                        const div = document.createElement('div');
+                        div.className = `flex ${msg.type === 'out' ? 'justify-end' : 'justify-start'} animate-[popIn_0.3s_ease-out]`;
+                        
+                        const bubble = document.createElement('div');
+                        const isSales = currentModule === 'sales';
+                        bubble.className = msg.type === 'out' 
+                            ? `${isSales ? 'bg-cyan-600' : 'bg-purple-600'} text-white rounded-2xl rounded-tr-sm px-4 py-2 max-w-[80%] shadow-lg` 
+                            : 'bg-slate-800 text-white rounded-2xl rounded-tl-sm px-4 py-2 max-w-[80%] border border-slate-700';
+                        
+                        bubble.innerHTML = msg.text.replace(/\n/g, '<br>');
+                        div.appendChild(bubble);
+                        scroll.appendChild(div);
+                        scroll.scrollTop = scroll.scrollHeight;
+                    }, totalDelay);
+                });
+            }
+
+            runLoop();
+            phoneAnimationTimer = setInterval(runLoop, 13000);
         }
 
         // Simulator Logic
-        const simArea = document.getElementById('sim-chat-area');
-        
-        function simulateChat(type) {
-            let userMsg = "";
-            let botMsg = "";
+        function simulateChat(cmd) {
+            const data = modules[currentModule];
+            const response = data.simResponses[cmd];
+            
+            if (!response) return;
 
-            if (type === 'status') {
-                userMsg = "Tolong cek SO-2023-999";
-                botMsg = "📦 *SO-2023-999* sedang diproses di gudang. Estimasi pengiriman hari ini pukul 14:00.";
-            } else if (type === 'invoice') {
-                userMsg = "Lihat tagihan saya";
-                botMsg = "📄 Anda memiliki 1 invoice jatuh tempo:\n\n*INV-001*: Rp 15.000.000\nJatuh Tempo: 12 Feb 2026\n\nSilakan transfer ke BCA 1234567890.";
-            } else if (type === 'product') {
-                userMsg = "Ada pipa besi 2 inch?";
-                botMsg = "🔍 *Pipa Besi 2 Inch*\nStok: 150 Batang\nHarga: Rp 125.000/btg\n\nKetik 'Pesan 50' untuk order.";
-            } else if (type === 'human') {
-                userMsg = "Saya mau bicara sama orang";
-                botMsg = "Baik, saya sambungkan ke Sales kami. Mohon tunggu sebentar... 👨‍💼";
-            }
-
-            addMessage(userMsg, 'out');
-            setTimeout(() => addMessage(botMsg, 'in'), 1000);
+            // Add user message
+            addMessage(response.user, 'out');
+            
+            // Add bot response with delay
+            setTimeout(() => {
+                addMessage(response.bot, 'in');
+            }, 800);
         }
 
         function addMessage(text, type) {
+            const simArea = document.getElementById('sim-chat-area');
             const div = document.createElement('div');
             div.className = `flex ${type === 'out' ? 'justify-end' : 'justify-start'}`;
+            
+            const isSales = currentModule === 'sales';
+            const bubbleBg = type === 'out' 
+                ? (isSales ? 'bg-cyan-600' : 'bg-purple-600') 
+                : 'bg-slate-700';
+
             div.innerHTML = `
-                <div class="${type === 'out' ? 'bg-indigo-600' : 'bg-slate-700'} rounded-2xl ${type === 'out' ? 'rounded-tr-sm' : 'rounded-tl-sm'} px-4 py-3 text-slate-200 text-sm max-w-[80%] animate-[popIn_0.3s_ease-out]">
+                <div class="${bubbleBg} rounded-2xl ${type === 'out' ? 'rounded-tr-sm' : 'rounded-tl-sm'} px-4 py-3 text-slate-200 text-sm max-w-[80%] shadow-lg animate-[popIn_0.3s_ease-out]">
                     ${text.replace(/\n/g, '<br>')}
                 </div>
             `;
@@ -357,18 +626,13 @@
             simArea.scrollTop = simArea.scrollHeight;
         }
 
-        // Start animation on load
-        window.onload = () => {
-            playHeroAnimation();
-            setInterval(playHeroAnimation, 10000);
-        };
+        // Init on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check query param
+            const params = new URLSearchParams(window.location.search);
+            const initialModule = params.get('module') || 'sales';
+            switchModule(initialModule);
+        });
     </script>
-
-    <style>
-        @keyframes popIn {
-            0% { opacity: 0; transform: scale(0.9); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-    </style>
 </body>
 </html>
