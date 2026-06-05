@@ -7,8 +7,11 @@ import {
     MagnifyingGlassIcon,
     FunnelIcon,
     TrashIcon,
-    PencilSquareIcon
+    PencilSquareIcon,
+    MapIcon,
+    MapPinIcon
 } from '@heroicons/vue/24/outline';
+import MapPicker from '@/Components/MapPicker.vue';
 
 const props = defineProps({
     leads: Array,
@@ -20,6 +23,7 @@ const form = useForm({
     company: '',
     email: '',
     phone: '',
+    address: '',
     status: 'new',
     source: '',
     latitude: '',
@@ -28,6 +32,13 @@ const form = useForm({
 
 const showCreateModal = ref(false);
 const editingLead = ref(null);
+const showMap = ref(false);
+
+const onMapConfirm = (location) => {
+    form.address = location.address;
+    if (location.latitude) form.latitude = location.latitude;
+    if (location.longitude) form.longitude = location.longitude;
+};
 
 const submit = () => {
     if (editingLead.value) {
@@ -54,6 +65,7 @@ const editLead = (lead) => {
     form.company = lead.company;
     form.email = lead.email;
     form.phone = lead.phone;
+    form.address = lead.address ?? '';
     form.status = lead.status;
     form.source = lead.source;
     form.latitude = lead.latitude ?? '';
@@ -268,6 +280,19 @@ const getStatusColor = (status) => {
                         </div>
                     </div>
 
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Address</label>
+                        <textarea v-model="form.address" rows="2" placeholder="Full address..." class="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-lg pl-4 pr-24 py-2 text-slate-900 dark:text-white focus:border-cyan-500 outline-none transition-colors"></textarea>
+                        <button 
+                            type="button" 
+                            @click="showMap = true"
+                            class="absolute right-2 bottom-3 px-2 py-1 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-bold transition-all shadow flex items-center gap-1 z-10"
+                        >
+                            <MapIcon class="h-3 w-3 text-cyan-400" />
+                            Pick Map
+                        </button>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Source</label>
                         <input v-model="form.source" type="text" placeholder="e.g. LinkedIn, Website, Referral" class="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:border-cyan-500 outline-none transition-colors">
@@ -293,5 +318,11 @@ const getStatusColor = (status) => {
                 </form>
             </div>
         </div>
+
+        <MapPicker 
+            :show="showMap" 
+            @close="showMap = false" 
+            @confirm="onMapConfirm"
+        />
     </AppLayout>
 </template>
