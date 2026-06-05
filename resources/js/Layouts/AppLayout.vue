@@ -336,6 +336,8 @@ const navigation = [
             { name: 'Leads Management', href: '/crm/leads', icon: FunnelIcon, permission: 'sales_crm.leads_management.view' },
             { name: 'Opportunity Tracking', href: '/crm/opportunities', icon: FlagIcon, permission: 'sales_crm.opportunity_tracking.view' },
             { name: 'Marketing Campaigns', href: '/crm/campaigns', icon: MegaphoneIcon, permission: 'sales_crm.marketing_campaigns.view' },
+            { name: 'Sales Visits', href: '/crm/visits', icon: MapPinIcon, permission: 'sales_crm.view' },
+            { name: 'Visits Map', href: '/crm/visits/map', icon: MapIcon, permission: 'sales_crm.view' },
         ]
     },
     { 

@@ -47,6 +47,7 @@ use App\Http\Controllers\Sales\SalesReturnController;
 use App\Http\Controllers\CRM\LeadController;
 use App\Http\Controllers\CRM\OpportunityController;
 use App\Http\Controllers\CRM\CampaignController;
+use App\Http\Controllers\CRM\SalesVisitController;
 use App\Http\Controllers\Project\ProjectController;
 use App\Http\Controllers\Project\ProjectTaskController;
 use App\Http\Controllers\Project\ProjectMemberController;
@@ -624,6 +625,12 @@ Route::middleware(['auth'])->prefix('crm')->name('crm.')->group(function () {
     Route::resource('leads', LeadController::class);
     Route::resource('opportunities', OpportunityController::class);
     Route::resource('campaigns', CampaignController::class);
+
+    // Sales Visits Routes
+    Route::get('/visits/map', [SalesVisitController::class, 'mapView'])->name('visits.map');
+    Route::post('/visits/{visit}/check-in', [SalesVisitController::class, 'checkIn'])->name('visits.check-in');
+    Route::post('/visits/{visit}/check-out', [SalesVisitController::class, 'checkOut'])->name('visits.check-out');
+    Route::resource('visits', SalesVisitController::class);
 });
 
 // Project Management Module

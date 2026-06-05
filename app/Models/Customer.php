@@ -30,6 +30,8 @@ class Customer extends Model
         'name',
         'contact_person',
         'address',
+        'latitude',
+        'longitude',
         'city',
         'state',
         'postal_code',
