@@ -99,6 +99,8 @@ const reverseGeocode = async (lat, lng) => {
         address.value = data.display_name;
         addressDetails.value = {
             address: data.display_name,
+            latitude: lat,
+            longitude: lng,
             city: data.address.city || data.address.town || data.address.village || '',
             state: data.address.state || '',
             postal_code: data.address.postcode || '',

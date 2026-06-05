@@ -21,7 +21,9 @@ const form = useForm({
     email: '',
     phone: '',
     status: 'new',
-    source: ''
+    source: '',
+    latitude: '',
+    longitude: ''
 });
 
 const showCreateModal = ref(false);
@@ -54,6 +56,8 @@ const editLead = (lead) => {
     form.phone = lead.phone;
     form.status = lead.status;
     form.source = lead.source;
+    form.latitude = lead.latitude ?? '';
+    form.longitude = lead.longitude ?? '';
     showCreateModal.value = true;
 };
 
@@ -267,6 +271,17 @@ const getStatusColor = (status) => {
                     <div>
                         <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Source</label>
                         <input v-model="form.source" type="text" placeholder="e.g. LinkedIn, Website, Referral" class="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:border-cyan-500 outline-none transition-colors">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Latitude</label>
+                            <input v-model="form.latitude" type="text" placeholder="-6.2088" class="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:border-cyan-500 outline-none transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Longitude</label>
+                            <input v-model="form.longitude" type="text" placeholder="106.8456" class="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:border-cyan-500 outline-none transition-colors">
+                        </div>
                     </div>
 
                     <div class="flex justify-end gap-3 mt-6">

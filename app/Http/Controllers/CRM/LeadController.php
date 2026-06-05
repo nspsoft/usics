@@ -42,6 +42,8 @@ class LeadController extends Controller
             'phone' => 'nullable|string|max:50',
             'status' => 'required|in:new,contacted,qualified,lost',
             'source' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
 
         Lead::create($validated);
@@ -58,6 +60,8 @@ class LeadController extends Controller
             'phone' => 'nullable|string|max:50',
             'status' => 'required|in:new,contacted,qualified,lost',
             'source' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
 
         $lead->update($validated);

@@ -33,6 +33,8 @@ const form = useForm({
     email: props.customer?.email ?? '',
     phone: props.customer?.phone ?? '',
     address: props.customer?.address ?? '',
+    latitude: props.customer?.latitude ?? '',
+    longitude: props.customer?.longitude ?? '',
     city: props.customer?.city ?? '',
     state: props.customer?.state ?? '',
     postal_code: props.customer?.postal_code ?? '',
@@ -88,10 +90,11 @@ const openMap = () => {
 
 const onMapConfirm = (location) => {
     form.address = location.address;
+    if (location.latitude) form.latitude = location.latitude;
+    if (location.longitude) form.longitude = location.longitude;
     if (location.city) form.city = location.city;
     if (location.state) form.state = location.state;
     if (location.postal_code) form.postal_code = location.postal_code;
-    // form.country = location.country; // Optional if we want to sync country
 };
 
 const submit = () => {
@@ -269,6 +272,19 @@ const submit = () => {
                                     <MapIcon class="h-4 w-4 text-emerald-400" />
                                     Pick from Map
                                 </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 ml-1">Latitude</label>
+                                <input v-model="form.latitude" type="text" placeholder="-6.2088" 
+                                    class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl py-2.5 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-inner" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 ml-1">Longitude</label>
+                                <input v-model="form.longitude" type="text" placeholder="106.8456" 
+                                    class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl py-2.5 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-inner" />
                             </div>
                         </div>
                     </div>
