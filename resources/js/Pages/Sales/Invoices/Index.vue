@@ -150,14 +150,14 @@ const submitImport = () => {
             <div class="flex items-center gap-2">
                 <a
                     :href="route('sales.invoices.export')"
-                    class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-500 transition-all"
+                    class="hidden md:inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-500 transition-all"
                 >
                     <ArrowDownTrayIcon class="h-5 w-5" />
                     Export
                 </a>
                 <button
                     @click="showImportModal = true"
-                    class="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 hover:bg-amber-500 transition-all"
+                    class="hidden md:inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 hover:bg-amber-500 transition-all"
                 >
                     <ArrowUpTrayIcon class="h-5 w-5" />
                     Import

@@ -151,7 +151,7 @@ const openMap = (address, city) => {
             </div>
             
             <div class="flex items-center gap-3">
-                <div class="relative group">
+                <div class="relative group hidden md:block">
                     <button class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                         <ArrowDownTrayIcon class="h-5 w-5" />
                         Export
@@ -168,7 +168,7 @@ const openMap = (address, city) => {
                     </div>
                 </div>
 
-                <div class="relative group">
+                <div class="relative group hidden md:block">
                     <button class="inline-flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                         <ArrowUpTrayIcon class="h-5 w-5" />
                         Import

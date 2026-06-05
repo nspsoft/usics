@@ -240,17 +240,17 @@ const getAchievementTextColor = (pct) => {
     <AppLayout title="Sales Planning Dashboard" :renderHeader="false">
         <div class="p-6 bg-slate-50 dark:bg-slate-950 min-h-[calc(100vh-130px)]" v-if="stats">
             <!-- ═══ CUSTOM PAGE HEADER ═══ -->
-            <div class="mb-8 flex justify-between items-end border-b border-slate-200 dark:border-slate-800 pb-6">
-                <div class="flex items-center gap-4">
+            <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 dark:border-slate-800 pb-6 gap-4">
+                <div class="flex flex-wrap items-center gap-4 w-full md:w-auto">
                     <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
                         Sales Planning Dashboard
                     </h1>
-                    <button @click="showInfoModal = true" class="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20 active:scale-95" title="Panduan Sumber Data">
+                    <button @click="showInfoModal = true" class="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 shrink-0" title="Panduan Sumber Data">
                         <DocumentTextIcon class="w-5 h-5" />
                         <span class="text-sm font-bold">Data Info</span>
                     </button>
                 </div>
-                <div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm w-full md:w-auto justify-between md:justify-start">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-2">Period</span>
                     <input 
                         v-model="currentMonth"
@@ -576,10 +576,10 @@ const getAchievementTextColor = (pct) => {
                         <a :href="route('sales.planning.forecast.index')" class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
                             <ChartBarIcon class="w-4 h-4" /> View All Forecasts
                         </a>
-                        <a :href="route('sales.planning.forecast.index')" class="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
+                        <a :href="route('sales.planning.forecast.index')" class="hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
                             <DocumentTextIcon class="w-4 h-4" /> Import Forecast
                         </a>
-                        <a :href="route('sales.planning.forecast.export', { month: currentMonth })" class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
+                        <a :href="route('sales.planning.forecast.export', { month: currentMonth })" class="hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm">
                             <ArrowTrendingUpIcon class="w-4 h-4" /> Export Report
                         </a>
                     </div>

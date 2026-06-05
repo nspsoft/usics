@@ -629,8 +629,57 @@ const toggleMenu = (name) => {
     expandedMenus.value[name] = !expandedMenus.value[name];
 };
 
+const activeSubMenu = ref(null);
+
+const getMenuGlowStyle = (name) => {
+    const mapping = {
+        'Dashboard': 'from-indigo-500/10 to-purple-500/10 border-indigo-500/30 text-indigo-400 shadow-indigo-500/5',
+        'Sales': 'from-emerald-500/10 to-teal-500/10 border-emerald-500/30 text-emerald-400 shadow-emerald-500/5',
+        'CRM': 'from-cyan-500/10 to-blue-500/10 border-cyan-500/30 text-cyan-400 shadow-cyan-500/5',
+        'Purchasing': 'from-amber-500/10 to-orange-500/10 border-amber-500/30 text-amber-400 shadow-amber-500/5',
+        'Inventory': 'from-blue-500/10 to-sky-500/10 border-blue-500/30 text-blue-400 shadow-blue-500/5',
+        'Manufacturing': 'from-rose-500/10 to-red-500/10 border-rose-500/30 text-rose-400 shadow-rose-500/5',
+        'Maintenance': 'from-yellow-500/10 to-amber-500/10 border-yellow-500/30 text-yellow-400 shadow-yellow-500/5',
+        'Quality Control': 'from-green-500/10 to-emerald-500/10 border-green-500/30 text-green-400 shadow-green-500/5',
+        'Logistics': 'from-sky-500/10 to-indigo-500/10 border-sky-500/30 text-sky-400 shadow-sky-500/5',
+        'Finance': 'from-emerald-500/10 to-teal-500/10 border-emerald-500/30 text-emerald-400 shadow-emerald-500/5',
+        'Human Resources': 'from-violet-500/10 to-purple-500/10 border-violet-500/30 text-violet-400 shadow-violet-500/5',
+        'General GA': 'from-orange-500/10 to-red-500/10 border-orange-500/30 text-orange-400 shadow-orange-500/5',
+        'General Affair': 'from-orange-500/10 to-red-500/10 border-orange-500/30 text-orange-400 shadow-orange-500/5',
+        'Project Matrix': 'from-purple-500/10 to-pink-500/10 border-purple-500/30 text-purple-400 shadow-purple-500/5',
+        'Meeting Command': 'from-pink-500/10 to-rose-500/10 border-pink-500/30 text-pink-400 shadow-pink-500/5',
+        'Documentation': 'from-slate-500/10 to-zinc-500/10 border-slate-500/30 text-slate-400 shadow-slate-500/5',
+        'Settings': 'from-slate-500/10 to-zinc-500/10 border-slate-500/30 text-slate-400 shadow-slate-500/5',
+    };
+    return mapping[name] || 'from-slate-500/10 to-zinc-500/10 border-slate-500/30 text-slate-400 shadow-slate-500/5';
+};
+
+const getMenuIconGlow = (name) => {
+    const mapping = {
+        'Dashboard': 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]',
+        'Sales': 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]',
+        'CRM': 'text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]',
+        'Purchasing': 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]',
+        'Inventory': 'text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]',
+        'Manufacturing': 'text-rose-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]',
+        'Maintenance': 'text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]',
+        'Quality Control': 'text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]',
+        'Logistics': 'text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]',
+        'Finance': 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]',
+        'Human Resources': 'text-violet-400 drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]',
+        'General GA': 'text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]',
+        'General Affair': 'text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]',
+        'Project Matrix': 'text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]',
+        'Meeting Command': 'text-pink-400 drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]',
+        'Documentation': 'text-slate-400 drop-shadow-[0_0_8px_rgba(148,163,184,0.5)]',
+        'Settings': 'text-slate-400 drop-shadow-[0_0_8px_rgba(148,163,184,0.5)]',
+    };
+    return mapping[name] || 'text-slate-400';
+};
+
 const closeSidebar = () => {
     sidebarOpen.value = false;
+    activeSubMenu.value = null;
 };
 
 const toggleDesktopSidebar = () => {
@@ -761,96 +810,148 @@ onUnmounted(() => {
             @click="closeSidebar"
         />
 
-        <!-- Mobile sidebar -->
+        <!-- Mobile sidebar (Refactored to Premium Mobile Home Grid Menu) -->
         <Transition
-            enter-active-class="transition ease-in-out duration-300 transform"
-            enter-from-class="-translate-x-full"
-            enter-to-class="translate-x-0"
-            leave-active-class="transition ease-in-out duration-300 transform"
-            leave-from-class="translate-x-0"
-            leave-to-class="-translate-x-full"
+            enter-active-class="transition ease-out duration-300"
+            enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100"
+            leave-active-class="transition ease-in duration-200"
+            leave-from-class="opacity-100 scale-100"
+            leave-to-class="opacity-0 scale-95"
         >
             <div 
                 v-if="sidebarOpen"
-                class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 border-r border-white/5 lg:hidden print:hidden relative overflow-hidden"
+                class="fixed inset-0 z-50 bg-slate-950/98 backdrop-blur-xl lg:hidden print:hidden flex flex-col overflow-y-auto"
             >
-                <div class="absolute top-0 right-0 w-[140px] h-[140px] bg-cyan-500/6 rounded-full blur-[60px] pointer-events-none"></div>
-                <div class="absolute bottom-0 left-0 w-[140px] h-[140px] bg-indigo-500/6 rounded-full blur-[60px] pointer-events-none"></div>
-                <div class="flex h-16 shrink-0 items-center justify-between px-6 border-b border-white/5 bg-transparent relative">
+                <!-- Glowing BG Elements -->
+                <div class="absolute top-0 right-0 w-[250px] h-[250px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 w-[250px] h-[250px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+                <!-- Header -->
+                <div class="flex h-16 shrink-0 items-center justify-between px-6 border-b border-white/5 bg-slate-950/40 backdrop-blur-sm sticky top-0 z-10">
                     <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 border border-white/10 shadow-lg shadow-blue-500/20 overflow-hidden">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 border border-white/10 shadow-lg shadow-cyan-500/20 overflow-hidden">
                             <img :src="$page.props.company?.logo || '/images/jicos.png'" alt="Logo" class="w-full h-full object-cover" />
                         </div>
                         <div class="flex flex-col">
-                            <span class="text-xl font-black tracking-tighter text-white">{{ $page.props.company?.name || 'JICOS' }}</span>
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] -mt-1">Manufacturing System</span>
+                            <span class="text-lg font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-400 uppercase">JICOS MENU</span>
+                            <span class="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] -mt-1">Manufacturing System</span>
                         </div>
                     </div>
-                    <button @click="closeSidebar" class="text-slate-400 hover:text-white transition-colors">
+                    <button @click="closeSidebar" class="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-90">
                         <XMarkIcon class="w-6 h-6" />
                     </button>
                 </div>
-                <nav class="flex flex-1 flex-col px-4 py-4 overflow-y-auto bg-transparent relative">
-                    <ul class="space-y-1">
-                        <li v-for="item in filteredNavigation" :key="item.name">
-                            <template v-if="item.children">
+
+                <!-- Navigation Grid Content -->
+                <div class="flex-1 px-6 py-6 pb-24 relative z-0">
+                    <!-- SUB-MENU GRID VIEW -->
+                    <div v-if="activeSubMenu" class="space-y-6">
+                        <!-- Back Button -->
+                        <button 
+                            @click="activeSubMenu = null" 
+                            class="flex items-center gap-2 text-xs font-bold text-cyan-400 uppercase tracking-widest bg-cyan-950/30 border border-cyan-500/20 rounded-xl px-4 py-2.5 transition active:scale-95 shadow-md shadow-cyan-950/20"
+                        >
+                            <ArrowUturnLeftIcon class="h-4 w-4" />
+                            Kembali ke Menu Utama
+                        </button>
+
+                        <div class="space-y-4">
+                            <h2 class="text-xl font-black text-white uppercase tracking-wider border-l-4 border-cyan-500 pl-3">
+                                {{ activeSubMenu.name }}
+                            </h2>
+
+                            <div class="grid grid-cols-1 gap-2.5">
+                                <template v-for="child in activeSubMenu.children" :key="child.name">
+                                    <!-- Header child -->
+                                    <div v-if="child.isHeader" class="text-[10px] font-black text-slate-500 uppercase tracking-widest pt-4 pb-1 border-b border-white/5 mt-2 first:mt-0">
+                                        {{ child.name }}
+                                    </div>
+                                    <!-- Normal item child -->
+                                    <component
+                                        v-else
+                                        :is="child.target ? 'a' : Link"
+                                        :href="child.href"
+                                        :target="child.target"
+                                        @click="closeSidebar"
+                                        class="flex items-center gap-3.5 rounded-xl border border-white/5 bg-slate-900/60 hover:bg-slate-900/80 active:bg-slate-900 transition p-4 group"
+                                    >
+                                        <div class="h-10 w-10 rounded-lg bg-slate-950 border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
+                                            <component :is="child.icon" v-if="child.icon" class="h-5 w-5 text-cyan-400 transition-transform group-hover:scale-110" />
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <span class="text-sm font-bold text-slate-200 group-hover:text-white transition-colors block">{{ child.name }}</span>
+                                        </div>
+                                        <span v-if="getBadge(child)" class="inline-flex items-center justify-center px-2 py-0.5 text-[10px] font-black text-white bg-red-500 rounded-full min-w-[20px] shadow-lg shadow-red-500/40 animate-pulse">{{ getBadge(child) }}</span>
+                                    </component>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MAIN MENU GRID VIEW -->
+                    <div v-else class="space-y-4">
+                        <h2 class="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Modul Aplikasi</h2>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <template v-for="item in filteredNavigation" :key="item.name">
+                                <!-- Modul with children -->
                                 <button
-                                    @click="toggleMenu(item.name)"
-                                    class="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200"
-                                    :class="item.current 
-                                        ? 'bg-slate-900 text-white shadow-lg shadow-blue-500/10' 
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-900'"
+                                    v-if="item.children"
+                                    @click="activeSubMenu = item"
+                                    class="flex flex-col items-start gap-3 rounded-2xl border bg-gradient-to-br p-4 text-left transition-all duration-300 active:scale-95 shadow-sm group relative overflow-hidden"
+                                    :class="getMenuGlowStyle(item.name)"
                                 >
-                                    <component :is="item.icon" class="h-5 w-5 shrink-0" />
-                                    {{ item.name }}
-                                    <ChevronDownIcon 
-                                        class="ml-auto h-4 w-4 transition-transform duration-200"
-                                        :class="expandedMenus[item.name] ? 'rotate-180' : ''"
-                                    />
+                                    <div class="h-12 w-12 rounded-xl bg-slate-950/80 border border-white/10 flex items-center justify-center shadow-md">
+                                        <component :is="item.icon" class="h-6 w-6 transition-transform group-hover:scale-110" :class="getMenuIconGlow(item.name)" />
+                                    </div>
+                                    <div class="w-full">
+                                        <div class="text-sm font-black text-slate-100 group-hover:text-white tracking-wide truncate">{{ item.name }}</div>
+                                        <div class="text-[9px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">{{ item.children.filter(x => !x.isHeader).length }} Modul</div>
+                                    </div>
+                                    <div class="absolute top-3 right-3 h-2 w-2 rounded-full bg-cyan-500/50 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></div>
                                 </button>
-                                <Transition
-                                    enter-active-class="transition ease-out duration-200"
-                                    enter-from-class="opacity-0 -translate-y-1"
-                                    enter-to-class="opacity-100 translate-y-0"
-                                    leave-active-class="transition ease-in duration-150"
-                                    leave-from-class="opacity-100 translate-y-0"
-                                    leave-to-class="opacity-0 -translate-y-1"
-                                >
-                                    <ul v-if="expandedMenus[item.name]" class="mt-1 space-y-1 pl-4">
-                                        <li v-for="child in item.children" :key="child.name">
-                                            <div v-if="child.isHeader" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 pt-3 pb-1 mt-2 first:mt-0 border-b border-white/5 mb-1">
-                                                {{ child.name }}
-                                            </div>
-                                            <component
-                                                v-else
-                                                :is="child.target ? 'a' : Link"
-                                                :href="child.href"
-                                                :target="child.target"
-                                                class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-900 hover:text-white transition-colors"
-                                            >
-                                                <component :is="child.icon" v-if="child.icon" class="h-4 w-4 shrink-0 transition-colors group-hover:text-white" />
-                                                <span :class="child.icon ? '' : 'pl-7'">{{ child.name }}</span>
-                                                <span v-if="getBadge(child)" class="ml-auto inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold text-white bg-red-500 rounded-full min-w-[18px] shadow-lg shadow-red-500/30 animate-pulse">{{ getBadge(child) }}</span>
-                                            </component>
-                                        </li>
-                                    </ul>
-                                </Transition>
-                            </template>
-                            <template v-else>
-                                    <Link
+
+                                <!-- Modul without children -->
+                                <Link
+                                    v-else
                                     :href="item.href"
-                                    class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200"
-                                    :class="item.current 
-                                        ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-slate-900 dark:text-white border border-blue-500/30' 
-                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-white'"
+                                    @click="closeSidebar"
+                                    class="flex flex-col items-start gap-3 rounded-2xl border bg-gradient-to-br p-4 text-left transition-all duration-300 active:scale-95 shadow-sm group"
+                                    :class="getMenuGlowStyle(item.name)"
                                 >
-                                    <component :is="item.icon" class="h-5 w-5 shrink-0" />
-                                    {{ item.name }}
+                                    <div class="h-12 w-12 rounded-xl bg-slate-950/80 border border-white/10 flex items-center justify-center shadow-md">
+                                        <component :is="item.icon" class="h-6 w-6 transition-transform group-hover:scale-110" :class="getMenuIconGlow(item.name)" />
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-black text-slate-100 group-hover:text-white tracking-wide truncate">{{ item.name }}</div>
+                                        <div class="text-[9px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Buka Halaman</div>
+                                    </div>
                                 </Link>
                             </template>
-                        </li>
-                    </ul>
-                </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer / Profile info at bottom of menu -->
+                <div class="p-6 border-t border-white/5 bg-slate-950/50 backdrop-blur sticky bottom-0 z-10 mt-auto flex items-center gap-4">
+                    <img 
+                        v-if="$page.props.auth.user?.profile_photo_path" 
+                        :src="'/storage/' + $page.props.auth.user.profile_photo_path" 
+                        alt="User" 
+                        class="w-10 h-10 rounded-full object-cover border border-white/10 shadow-lg"
+                    />
+                    <div v-else class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 border border-white/10 shadow-lg">
+                        <span class="text-sm font-bold text-white">{{ $page.props.auth.user?.name?.charAt(0).toUpperCase() || 'U' }}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-white truncate">{{ $page.props.auth.user?.name || 'User' }}</p>
+                        <p class="text-xs text-slate-500 truncate">{{ $page.props.auth.user?.email || '' }}</p>
+                    </div>
+                    <Link href="/logout" method="post" as="button" @click="closeSidebar" class="h-10 w-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                        <ArrowRightStartOnRectangleIcon class="h-5 w-5" />
+                    </Link>
+                </div>
             </div>
         </Transition>
 

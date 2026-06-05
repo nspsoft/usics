@@ -125,7 +125,7 @@ const exportUrl = computed(() => {
                 <button 
                     @click="showFilters = !showFilters"
                     class="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent"
-                    :class="{ 'ring-2 ring-blue-500/50 border-blue-500/50': showFilters }"
+                    :class="{ 'ring-2 ring-blue-500/50': showFilters }"
                 >
                     <FunnelIcon class="h-5 w-5" />
                     Filters
@@ -135,7 +135,7 @@ const exportUrl = computed(() => {
             <div class="flex items-center gap-2 shrink-0">
                 <a
                     :href="exportUrl"
-                    class="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all group"
+                    class="hidden md:inline-flex items-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all group"
                 >
                     <ArrowDownTrayIcon class="h-5 w-5 text-emerald-500 group-hover:scale-110 transition-transform" />
                     Export Excel
