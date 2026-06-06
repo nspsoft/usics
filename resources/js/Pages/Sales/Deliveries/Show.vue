@@ -26,7 +26,7 @@ import {
     CameraIcon,
     ChevronDownIcon,
 } from '@heroicons/vue/24/outline';
-import { formatNumber, formatCurrency } from '@/helpers';
+import { formatNumber, formatCurrency, getLocalDateString } from '@/helpers';
 
 // --- ROLE-BASED ACCESS CONTROL ---
 const page = usePage();
@@ -100,7 +100,7 @@ const form = useForm({
     vehicle_id: props.deliveryOrder.vehicle_id || '',
     vehicle_number: props.deliveryOrder.vehicle_number || '',
     driver_name: props.deliveryOrder.driver_name || '',
-    delivery_date: props.deliveryOrder.delivery_date ? new Date(props.deliveryOrder.delivery_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    delivery_date: getLocalDateString(props.deliveryOrder.delivery_date || new Date()),
     items: props.deliveryOrder.items.map(item => ({
         id: item.id,
         qty_delivered: parseFloat(item.qty_delivered),
@@ -377,11 +377,28 @@ const getRemainingBeforeThis = (item) => {
 
 const formatDate = (date) => {
     if (!date) return '-';
-    return new Date(date).toLocaleDateString('id-ID', { 
-        day: '2-digit', 
-        month: 'long', 
-        year: 'numeric' 
-    });
+    try {
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            const [year, month, day] = date.split('-');
+            const months = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            return `${day} ${months[parseInt(month, 10) - 1]} ${year}`;
+        }
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return date;
+        const day = String(d.getDate()).padStart(2, '0');
+        const months = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        const month = months[d.getMonth()];
+        const year = d.getFullYear();
+        return `${day} ${month} ${year}`;
+    } catch (e) {
+        return date;
+    }
 };
 
 

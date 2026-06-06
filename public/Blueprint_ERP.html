@@ -365,6 +365,7 @@
 | **Integrasi WhatsApp** | API Fonnte & Wablas | `FonnteService.php`, `WablasService.php` |
 | **E-Meterai Digital** | Integrasi Kustom | Khusus untuk dokumen resmi (`EmeteraiService.php`) |
 | **Email** | SMTP + Laravel Mail | Notifikasi dan pengiriman email (`EmailService.php`) |
+| **Pelacakan Armada (GPS)** | Traccar GPS Integration | Pelacakan real-time armada pengiriman (`TraccarService.php`) |
 
 ## 1.2 Diagram Arsitektur
 
@@ -763,16 +764,98 @@ Ketika sebuah Work Order di-klik **Complete (Selesai)**, sistem secara otomatis:
 
 ## 3.5 Modul Kualitas (Quality Control / QC)
 
-- Terhubung dengan modul Gudang dan Pabrikasi. Bisa di-*setting* agar barang yang diterima harus di-inspeksi standarnya dulu (dimensi, berat, cat, dsb) sebelum sah bertambah menjadi stok yang bisa dijual.
-- Ada fasilitas pembuatan Sertifikat Kualitas Laboratorium (Certificate of Analysis / COA). 
+### Fitur Utama
+- **Incoming Inspection (IQC)**: Pemeriksaan bahan baku yang masuk dari supplier sebelum dimasukkan ke rak gudang.
+- **In-Process QC (IPQC)**: Inspeksi berjalan di lini produksi untuk mendeteksi cacat seawal mungkin (Gatekeeper System).
+- **Defect Management (NCR)**: Pencatatan produk cacat/Non-Conformance Report (NCR) dengan dokumentasi foto dan alasan cacat untuk tindakan korektif.
+- **COA Generator**: Pembuatan dokumen Certificate of Analysis (COA) secara otomatis untuk diserahkan ke pelanggan sebagai bukti kelulusan uji mutu.
 
 ---
 
-## 3.6 Modul Keuangan, HR, Lainnya
+## 3.6 Modul Logistik (Logistics)
 
-- **Catatan HR**: Mencatat jam absen sidik jari, dan kalkulator cetak slip gaji di akhir bulan.
-- **Catatan Pemeliharaan**: Jadwal kapan Oli Mesin Pabrik harus diganti / Jadwal Pemeliharaan Truk Ekspedisi.
-- **Bot Integrasi CRM**: Sistem akan secara otomatis memadukan permintaan klien yang datang lewat WA menjadi draft surat dokumen di sistem ERP melalui teknologi kecerdasan buatan Google Gemini. 
+### Fitur Utama
+- **Loading Queue**: Manajemen antrean truk pengangkut di area loading dock gudang.
+- **Delivery Planning**: Perencanaan rute kirim dan penugasan armada berdasarkan Delivery Order yang aktif.
+- **Dispatch**: Konfirmasi keberangkatan barang dan pencetakan Surat Jalan (Delivery Note) resmi.
+- **Fleet & Vehicle Management**: Manajemen data kendaraan operasional perusahaan.
+- **Fleet Tracking (Traccar)**: Integrasi pelacakan GPS armada pengiriman secara langsung di peta digital (Visits Map/Fleet Tracking).
+
+---
+
+## 3.7 Modul Pemeliharaan (Maintenance)
+
+### Fitur Utama
+- **Preventive Maintenance Schedule**: Jadwal pemeliharaan rutin mesin pabrik (ganti oli, filter, kalibrasi) untuk meminimalisir downtime.
+- **Breakdown Logs**: Pencatatan insiden kerusakan mesin secara darurat, estimasi perbaikan, dan penugasan teknisi.
+- **Spareparts Inventory**: Manajemen stok suku cadang khusus mesin produksi.
+
+---
+
+## 3.8 Modul Hubungan Pelanggan (CRM)
+
+### Fitur Utama
+- **WhatsApp Center**: Integrasi obrolan langsung (chat) dari pelanggan ke sistem ERP dengan fitur Multi-Agent dan status Unread.
+- **AI Email Inbox**: Kotak masuk email terintegrasi yang dianalisis oleh AI untuk memilah prioritas email masuk.
+- **Leads & Opportunity Management**: Pipa pemasaran (marketing pipeline) untuk memantau prospek penjualan dari kontak awal hingga deal.
+- **Marketing Campaigns**: Perencanaan kampanye pemasaran terpadu.
+- **Sales Visits & Visits Map**: Log kunjungan harian sales ke lokasi pelanggan dilengkapi dengan koordinat lokasi (check-in/check-out) yang dipetakan secara visual.
+
+---
+
+## 3.9 Modul Sumber Daya Manusia (HR & Payroll)
+
+### Fitur Utama
+- **Employee Self Service (ESS)**: Portal mandiri karyawan untuk melakukan absensi selfie (Smart Attendance), melihat jam kerja (My Attendance), mengajukan cuti (My Time-Off), lembur (My Overtime), reimbursement (My Reimbursements), dan performa (My Performance).
+- **HR Administration**: Manajemen direktori data karyawan (Employee Directory), absensi sidik jari/mesin (Attendance), persetujuan cuti (Leave Management), pengajuan lembur (Overtime Requests), dan penggajian bulanan otomatis (Payroll).
+- **Recruitment & ATS**: Pemasangan lowongan pekerjaan (Job Postings) dan pemantauan lamaran pelamar kerja (Applicant Tracking System).
+
+---
+
+## 3.10 Modul Umum (General GA)
+
+### Fitur Utama
+- **GA Tickets**: Sistem pelaporan masalah fasilitas kantor/pabrik (AC rusak, lampu padam, toilet bocor) dan pelacakan status perbaikannya.
+- **Asset Management**: Pendataan inventaris aset non-produksi (kursi, laptop, meja) beserta pelacakan penanggung jawabnya.
+- **GA Preventive Maintenance**: Jadwal perawatan rutin aset umum (servis AC berkala, perpanjang STNK kendaraan).
+- **Peminjaman Kendaraan**: Alur pengajuan peminjaman mobil/motor dinas operasional.
+- **GA Requests (PR)**: Pengajuan pembelian khusus kebutuhan GA (ATK, sabun, keperluan umum).
+
+---
+
+## 3.11 Modul Manajemen Proyek (Project Matrix)
+
+### Fitur Utama
+- **Project Dashboard**: Pemantauan progres proyek internal secara visual.
+- **Initiate Project**: Inisiasi pembuatan proyek baru, penugasan anggota tim, dan pembagian tugas (Task Management).
+
+---
+
+## 3.12 Modul Rapat (Meeting Command)
+
+### Fitur Utama
+- **Dashboard / List**: Kalender jadwal rapat perusahaan beserta daftar rapat mendatang.
+- **New Meeting**: Pembuatan rapat baru, pengiriman undangan rapat (via email/WA), pencatatan notulen, dan daftar hadir.
+
+---
+
+## 3.13 Modul Keuangan & Costing (Finance)
+
+### Fitur Utama
+- **Financial Command Center**: Visualisasi neraca keuangan, kas bank, dan laba rugi.
+- **General Ledger**: Pencatatan jurnal umum akuntansi dan buku besar.
+- **AP & AR Monitoring**: Pemantauan utang (Account Payable) dan piutang (Account Receivable) jatuh tempo.
+- **Production Costing**: Penghitungan Harga Pokok Produksi (HPP) aktual berbasis alokasi bahan baku.
+- **Overhead Allocation**: Alokasi biaya overhead pabrik (listrik, air, gaji tidak langsung) ke HPP produk.
+- **Profitability Analytic**: Analisis profitabilitas per segmen produk atau pelanggan.
+
+---
+
+## 3.14 Fitur Kecerdasan Buatan (AI Integration)
+
+### Fitur Utama
+- **AI PO Extractor (Sales)**: Pengekstrak file PDF Purchase Order (PO) pelanggan secara otomatis menggunakan Gemini AI menjadi draf Sales Order di ERP.
+- **AI Gen. Receipt (DN Extractor - Purchasing)**: Pengekstrak Surat Jalan / Delivery Note (DN) pemasok saat penerimaan barang untuk mempercepat input Goods Receipt.
 
 ---
 

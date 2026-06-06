@@ -90,7 +90,7 @@ const content = {
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                             </div>
                         </div>
-                        <div class="text-3xl font-black text-white mb-1">8+ Core</div>
+                        <div class="text-3xl font-black text-white mb-1">14 Modules</div>
                         <div class="text-xs text-slate-400 font-medium">Fully Integrated Ecosystem</div>
                     </div>
                 </div>
@@ -874,43 +874,133 @@ const content = {
                             <tbody class="divide-y divide-slate-800 text-slate-400 bg-slate-900/30">
                                 <!-- Modul Sales -->
                                 <tr class="hover:bg-slate-800/50 transition-colors">
-                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Sales (SO, Quotation)</td>
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Sales (Quotations, Orders, Invoices)</td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.15)]">Full Access</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
                                     <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
                                 </tr>
-                                <!-- Modul Inventory / Gudang -->
+                                <!-- Modul CRM -->
                                 <tr class="hover:bg-slate-800/50 transition-colors">
-                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Inventory (WH/Stock)</td>
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">CRM (Leads, WhatsApp, Email AI)</td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.15)]">Full Access</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
+                                </tr>
+                                <!-- Modul Purchasing -->
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Purchasing (PO, GRN, Suppliers)</td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.15)]">Full Access</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
                                     <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
                                 </tr>
-                                <!-- Modul Produksi -->
+                                <!-- Modul Inventory -->
                                 <tr class="hover:bg-slate-800/50 transition-colors">
-                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Production (SPK, WOS)</td>
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Inventory (Stock, WH, Movements)</td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.15)]">Full Access</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
+                                </tr>
+                                <!-- Modul Manufacturing -->
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Manufacturing (WO, BOM, Routing)</td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.15)]">Full Access</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
                                     <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
                                 </tr>
-                                <!-- Modul Keuangan -->
+                                <!-- Modul Maintenance -->
                                 <tr class="hover:bg-slate-800/50 transition-colors">
-                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Finance (Invoice)</td>
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Maintenance (Schedules, Breakdowns)</td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
+                                </tr>
+                                <!-- Modul Quality Control -->
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Quality Control (QC, NCR, COA)</td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
+                                </tr>
+                                <!-- Modul Logistics -->
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Logistics (Dispatch, Fleet Tracking)</td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
+                                </tr>
+                                <!-- Modul Finance -->
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Finance (Ledger, Costing, AP/AR)</td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.15)]">Full Access</span></td>
+                                    <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
+                                </tr>
+                                <!-- Modul Human Resources -->
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Human Resources (Attendance, Payroll)</td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
+                                </tr>
+                                <!-- Modul General Affair -->
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">General Affair (Tickets, Assets, Fleet)</td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
+                                </tr>
+                                <!-- Modul Project Matrix -->
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Project Matrix (Projects, Tasks)</td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
+                                </tr>
+                                <!-- Modul Meeting Command -->
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Meeting Command (Lists, Creation)</td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
+                                </tr>
+                                <!-- Modul Documentation -->
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-6 py-4 font-bold text-white border-r border-slate-800/50">Documentation (Blueprint, UAT)</td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
+                                    <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-slate-500/20 text-slate-400 border border-slate-600/50">Read Only</span></td>
                                     <td class="px-6 py-4 text-center"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">View & Approve</span></td>
                                 </tr>
                                 <!-- Global Config -->
                                 <tr class="hover:bg-slate-800/50 transition-colors bg-red-900/5">
-                                    <td class="px-6 py-4 font-bold text-red-400 border-r border-slate-800/50">System Settings</td>
+                                    <td class="px-6 py-4 font-bold text-red-400 border-r border-slate-800/50">System Settings & preferences</td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>
                                     <td class="px-6 py-4 text-center border-r border-slate-800/50"><span class="w-full inline-block px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500/50 border border-red-500/20">No Access</span></td>

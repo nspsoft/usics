@@ -67,7 +67,22 @@ const getOrdersByColumn = (colId, colStatuses) => {
 };
 
 const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+    if (!date) return '-';
+    try {
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            const [_, monthNum, day] = date.split('-');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+            return `${day} ${months[parseInt(monthNum, 10) - 1]}`;
+        }
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return date;
+        const day = String(d.getDate()).padStart(2, '0');
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+        const month = months[d.getMonth()];
+        return `${day} ${month}`;
+    } catch (e) {
+        return date;
+    }
 };
 
 const getStatusDescription = (status) => {

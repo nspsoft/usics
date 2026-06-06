@@ -4,7 +4,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import Pagination from '@/Components/Pagination.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
-import { formatNumber, formatCurrency } from '@/helpers';
+import { formatNumber, formatCurrency, getLocalDateString } from '@/helpers';
 import {
     ArrowLeftIcon,
     PlusIcon,
@@ -28,10 +28,10 @@ const form = useForm({
     customer_id: props.salesOrder?.customer_id || props.aiData?.matched_customer_id || '',
     warehouse_id: props.salesOrder?.warehouse_id || props.warehouses?.[0]?.id || '',
     order_date: props.salesOrder?.order_date 
-        ? new Date(props.salesOrder.order_date).toISOString().split('T')[0] 
-        : (props.aiData?.po_date || new Date().toISOString().split('T')[0]),
+        ? getLocalDateString(props.salesOrder.order_date) 
+        : (props.aiData?.po_date || getLocalDateString(new Date())),
     delivery_date: props.salesOrder?.delivery_date 
-        ? new Date(props.salesOrder.delivery_date).toISOString().split('T')[0] 
+        ? getLocalDateString(props.salesOrder.delivery_date) 
         : (props.aiData?.delivery_date || ''),
     discount_percent: props.salesOrder?.discount_percent || 0,
     tax_percent: props.salesOrder?.tax_percent || 11,

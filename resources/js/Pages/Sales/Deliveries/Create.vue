@@ -15,7 +15,7 @@ import {
     ChevronUpIcon,
 } from '@heroicons/vue/24/outline';
 import { CheckCircleIcon } from '@heroicons/vue/24/solid';
-import { formatNumber, formatCurrency } from '@/helpers';
+import { formatNumber, formatCurrency, getLocalDateString } from '@/helpers';
 import axios from 'axios';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 
@@ -60,7 +60,7 @@ const form = useForm({
     sales_order_id: props.salesOrder?.id || '',
     customer_id: '',
     warehouse_id: props.salesOrder?.warehouse_id || '',
-    delivery_date: new Date().toISOString().split('T')[0],
+    delivery_date: getLocalDateString(new Date()),
     shipping_address: props.salesOrder?.shipping_address || '',
     vehicle_id: '',
     vehicle_number: '',

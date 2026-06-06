@@ -81,7 +81,7 @@ class DeliveryOrder extends Model
     }
 
     protected $casts = [
-        'delivery_date' => 'date',
+        'delivery_date' => 'date:Y-m-d',
         'delivered_at' => 'datetime',
     ];
 

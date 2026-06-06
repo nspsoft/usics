@@ -39,22 +39,42 @@ export const formatCurrency = (num) => {
 };
 
 /**
- * Format date to DD/MM/YYYY
+ * Format date to DD/MM/YYYY (timezone-safe for date-only strings)
  * Examples: 2026-01-28 -> 28/01/2026
  */
 export const formatDate = (date) => {
     if (!date) return '-';
     try {
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            const [year, month, day] = date.split('-');
+            return `${day}/${month}/${year}`;
+        }
         const d = new Date(date);
         if (isNaN(d.getTime())) return date;
-        return d.toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
     } catch (e) {
         return date;
     }
+};
+
+/**
+ * Get YYYY-MM-DD string in local timezone
+ * If date is already YYYY-MM-DD, returns it directly
+ */
+export const getLocalDateString = (date) => {
+    if (!date) return '';
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return date;
+    }
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 };
 
 export const formatTime = (time) => {
