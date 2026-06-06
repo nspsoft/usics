@@ -253,7 +253,7 @@
                             <tr>
                                 <td class="info-label">Terms</td>
                                 <td class="info-separator">:</td>
-                                <td class="info-value">{{ $invoice->due_date->locale('id')->translatedFormat('d F Y') }}</td>
+                                <td class="info-value">30 Days</td>
                             </tr>
                             <tr>
                                 <td class="info-label">DO No.</td>
