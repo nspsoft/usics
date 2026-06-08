@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ref } from 'vue';
 import {
@@ -74,10 +74,13 @@ const submitPayment = () => {
 
 const confirmRevise = () => {
     if (confirm('Are you sure you want to revise this invoice? This will revert the status to Draft and increment the revision number (REV-X).')) {
-        router.post(route('invoices.revise', props.invoice.id), {}, {
+        router.post(route('sales.invoices.revise', props.invoice.id), {}, {
             preserveScroll: true,
             onSuccess: () => {
-                // Optional: Show toast or notification
+                router.reload({ preserveScroll: true });
+            },
+            onError: () => {
+                alert('Failed to revise invoice. Please refresh and try again.');
             }
         });
     }

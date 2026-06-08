@@ -440,10 +440,16 @@ class SalesOrderController extends Controller
             'reason' => 'nullable|string|max:255',
         ]);
 
-        // Block price changes if SO has invoices
         $so = $item->salesOrder;
-        if ($so->invoices()->exists()) {
-            return back()->with('error', 'Tidak bisa merevisi harga karena SO ini sudah memiliki Invoice.');
+        $hasBlockingInvoice = $so->invoices()
+            ->where(function ($q) {
+                $q->where('status', '!=', \App\Models\SalesInvoice::STATUS_DRAFT)
+                    ->orWhere('paid_amount', '>', 0);
+            })
+            ->exists();
+
+        if ($hasBlockingInvoice) {
+            return back()->with('error', 'Tidak bisa merevisi harga karena SO ini sudah memiliki Invoice yang sudah terbit atau sudah ada pembayaran.');
         }
 
         $oldPrice = $item->unit_price;
@@ -458,6 +464,29 @@ class SalesOrderController extends Controller
             
             // Recalculate totals for the parent SO
             $item->salesOrder->calculateTotals();
+
+            $draftInvoices = $item->salesOrder
+                ->invoices()
+                ->where('status', \App\Models\SalesInvoice::STATUS_DRAFT)
+                ->where('paid_amount', 0)
+                ->get();
+
+            foreach ($draftInvoices as $invoice) {
+                foreach ($invoice->items()->where('sales_order_item_id', $item->id)->get() as $invoiceItem) {
+                    $discountPercent = (float) ($invoiceItem->discount_percent ?? 0);
+                    $discountAmount = ($invoiceItem->qty * $newPrice) * ($discountPercent / 100);
+                    $subtotal = ($invoiceItem->qty * $newPrice) - $discountAmount;
+
+                    $invoiceItem->update([
+                        'unit_price' => $newPrice,
+                        'discount_amount' => $discountAmount,
+                        'subtotal' => $subtotal,
+                    ]);
+                }
+
+                $invoice->refresh();
+                $invoice->save();
+            }
 
             // Log the price change
             if (!empty($validated['reason'])) {

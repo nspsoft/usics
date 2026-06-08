@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
@@ -17,6 +17,16 @@ import { formatNumber, formatCurrency } from '@/helpers';
 
 const props = defineProps({
     salesOrder: Object,
+});
+
+const canEditPrice = computed(() => {
+    if (!props.salesOrder || props.salesOrder.status === 'cancelled') return false;
+
+    const invoices = props.salesOrder.invoices ?? [];
+    return !invoices.some((inv) => {
+        const paidAmount = Number(inv?.paid_amount ?? 0);
+        return inv?.status !== 'draft' || paidAmount > 0;
+    });
 });
 
 const editingItemId = ref(null);
@@ -233,7 +243,7 @@ const getStatusClass = (status) => {
                                             <div v-else class="flex items-center justify-end gap-2 group">
                                                 <span>{{ formatCurrency(item.unit_price) }}</span>
                                                 <button 
-                                                    v-if="salesOrder.status !== 'cancelled' && (!salesOrder.invoices || salesOrder.invoices.length === 0)"
+                                                    v-if="canEditPrice"
                                                     @click="startPriceEditing(item)"
                                                     class="p-1 rounded-md text-blue-500 bg-blue-500/5 hover:bg-blue-500/10 transition-all opacity-0 group-hover:opacity-100"
                                                     title="Revisi Harga"
