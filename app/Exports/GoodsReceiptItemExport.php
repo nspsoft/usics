@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Models\Company;
 use App\Models\GoodsReceiptItem;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -31,16 +32,21 @@ class GoodsReceiptItemExport implements FromQuery, WithHeadings, WithMapping, Sh
 
     public function query()
     {
+        $hasProductCode = DB::selectOne("SHOW COLUMNS FROM products LIKE 'code'") !== null;
+
         return GoodsReceiptItem::query()
             ->with(['goodsReceipt.supplier', 'goodsReceipt.warehouse', 'goodsReceipt.purchaseOrder', 'product', 'unit'])
             ->leftJoin('goods_receipts', 'goods_receipt_items.goods_receipt_id', '=', 'goods_receipts.id')
             ->select('goods_receipt_items.*')
-            ->when($this->filters['search'] ?? null, function ($q, $search) {
-                $q->where(function ($sub) use ($search) {
-                    $sub->whereHas('product', function ($p) use ($search) {
+            ->when($this->filters['search'] ?? null, function ($q, $search) use ($hasProductCode) {
+                $q->where(function ($sub) use ($search, $hasProductCode) {
+                    $sub->whereHas('product', function ($p) use ($search, $hasProductCode) {
                         $p->where('name', 'like', "%{$search}%")
-                          ->orWhere('sku', 'like', "%{$search}%")
-                          ->orWhere('code', 'like', "%{$search}%");
+                          ->orWhere('sku', 'like', "%{$search}%");
+
+                        if ($hasProductCode) {
+                            $p->orWhere('code', 'like', "%{$search}%");
+                        }
                     })
                     ->orWhereHas('goodsReceipt', function ($gr) use ($search) {
                         $gr->where('grn_number', 'like', "%{$search}%")
