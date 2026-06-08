@@ -39,13 +39,17 @@ class GoodsReceiptItemExport implements FromQuery, WithHeadings, WithMapping, Sh
                 $q->where(function ($sub) use ($search) {
                     $sub->whereHas('product', function ($p) use ($search) {
                         $p->where('name', 'like', "%{$search}%")
-                          ->orWhere('sku', 'like', "%{$search}%");
+                          ->orWhere('sku', 'like', "%{$search}%")
+                          ->orWhere('code', 'like', "%{$search}%");
                     })
                     ->orWhereHas('goodsReceipt', function ($gr) use ($search) {
                         $gr->where('grn_number', 'like', "%{$search}%")
                            ->orWhere('delivery_note_number', 'like', "%{$search}%")
                            ->orWhereHas('supplier', function ($s) use ($search) {
                                $s->where('name', 'like', "%{$search}%");
+                           })
+                           ->orWhereHas('purchaseOrder', function ($po) use ($search) {
+                               $po->where('po_number', 'like', "%{$search}%");
                            });
                     });
                 });
@@ -55,6 +59,11 @@ class GoodsReceiptItemExport implements FromQuery, WithHeadings, WithMapping, Sh
             })
             ->when($this->filters['supplier'] ?? null, function ($q, $supplier) {
                 $q->where('goods_receipts.supplier_id', $supplier);
+            })
+            ->when($this->filters['po_number'] ?? null, function ($q, $poNumber) {
+                $q->whereHas('goodsReceipt.purchaseOrder', function ($po) use ($poNumber) {
+                    $po->where('po_number', 'like', "%{$poNumber}%");
+                });
             })
             ->when($this->filters['date_range'] ?? null, function ($q, $range) {
                 if (is_array($range) && count($range) === 2) {

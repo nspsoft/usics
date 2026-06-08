@@ -49,6 +49,11 @@ class GoodsReceiptItemController extends Controller
             ->when($request->supplier, function ($q, $supplier) {
                 $q->where('goods_receipts.supplier_id', $supplier);
             })
+            ->when($request->po_number, function ($q, $poNumber) {
+                $q->whereHas('goodsReceipt.purchaseOrder', function ($po) use ($poNumber) {
+                    $po->where('po_number', 'like', "%{$poNumber}%");
+                });
+            })
             ->when($request->date_range, function ($q, $range) {
                 if (is_array($range) && count($range) === 2) {
                     $q->whereBetween('goods_receipts.receipt_date', $range);
@@ -73,7 +78,7 @@ class GoodsReceiptItemController extends Controller
         return Inertia::render('Purchasing/Reports/GoodsReceiptItems', [
             'items' => $items,
             'suppliers' => \App\Models\Supplier::orderBy('name')->get(['id', 'name', 'code']),
-            'filters' => $request->only(['search', 'status', 'supplier', 'date_range']),
+            'filters' => $request->only(['search', 'status', 'supplier', 'po_number', 'date_range']),
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'dispatched', 'label' => 'Dispatched'],

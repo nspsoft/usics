@@ -25,6 +25,7 @@ const props = defineProps({
 const search = ref(props.filters.search || '');
 const selectedStatus = ref(props.filters.status || '');
 const selectedSupplier = ref(props.filters.supplier || '');
+const poNumber = ref(props.filters.po_number || '');
 const dateFrom = ref(props.filters.date_range?.[0] || '');
 const dateTo = ref(props.filters.date_range?.[1] || '');
 const sortField = ref(props.filters.sort || 'goods_receipts.receipt_date');
@@ -43,6 +44,7 @@ const applyFilters = debounce(() => {
         search: search.value || undefined,
         status: selectedStatus.value || undefined,
         supplier: selectedSupplier.value || undefined,
+        po_number: poNumber.value || undefined,
         date_range: (dateFrom.value && dateTo.value) ? [dateFrom.value, dateTo.value] : undefined,
         sort: sortField.value,
         direction: sortDirection.value,
@@ -62,12 +64,13 @@ const sort = (field) => {
     applyFilters();
 };
 
-watch([search, selectedStatus, selectedSupplier, dateFrom, dateTo], applyFilters);
+watch([search, selectedStatus, selectedSupplier, poNumber, dateFrom, dateTo], applyFilters);
 
 const clearFilters = () => {
     search.value = '';
     selectedStatus.value = '';
     selectedSupplier.value = '';
+    poNumber.value = '';
     dateFrom.value = '';
     dateTo.value = '';
 };
@@ -94,6 +97,7 @@ const exportUrl = computed(() => {
     if (search.value) params.set('search', search.value);
     if (selectedStatus.value) params.set('status', selectedStatus.value);
     if (selectedSupplier.value) params.set('supplier', selectedSupplier.value);
+    if (poNumber.value) params.set('po_number', poNumber.value);
     if (dateFrom.value && dateTo.value) {
         params.set('date_range[0]', dateFrom.value);
         params.set('date_range[1]', dateTo.value);
@@ -118,7 +122,7 @@ const exportUrl = computed(() => {
                     <input
                         v-model="search"
                         type="search"
-                        placeholder="Search Product, GRN, Supplier..."
+                            placeholder="Search Product, GRN, Supplier, PO..."
                         class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-900/50 py-2 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/50 transition-all"
                     />
                 </div>
@@ -152,7 +156,7 @@ const exportUrl = computed(() => {
             leave-to-class="opacity-0 -translate-y-2"
         >
             <div v-if="showFilters" class="mb-6 rounded-2xl glass-card p-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Status</label>
                         <select
@@ -176,6 +180,15 @@ const exportUrl = computed(() => {
                                 {{ supplier.name }}
                             </option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">PO Number</label>
+                        <input
+                            v-model="poNumber"
+                            type="text"
+                            placeholder="e.g. JRI-BKP/..."
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/50"
+                        />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Date From</label>
