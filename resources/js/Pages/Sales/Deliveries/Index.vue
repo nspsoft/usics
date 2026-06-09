@@ -535,8 +535,17 @@ const submitImport = () => {
                             </th>
                             <th @click="sort('status')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors group">
                                 <div class="flex items-center justify-center gap-1">
-                                    Status
+                                    Delivery Status
                                     <span v-if="sortField === 'status'" class="text-blue-600 dark:text-blue-400">
+                                        <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
+                                        <ChevronDownIcon v-else class="h-3 w-3" />
+                                    </span>
+                                </div>
+                            </th>
+                            <th @click="sort('invoice_status')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors group">
+                                <div class="flex items-center justify-center gap-1">
+                                    Invoice Status
+                                    <span v-if="sortField === 'invoice_status'" class="text-blue-600 dark:text-blue-400">
                                         <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
                                         <ChevronDownIcon v-else class="h-3 w-3" />
                                     </span>
@@ -598,22 +607,22 @@ const submitImport = () => {
                                 {{ doOrder.items_count }}
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap text-center">
-                                <div class="flex flex-col items-center gap-1">
-                                    <span 
-                                        class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium cursor-help"
-                                        :class="getInvoiceStatusBadge(doOrder.invoice_status)"
-                                        :title="getInvoiceStatusDescription(doOrder.invoice_status)"
-                                    >
-                                        {{ doOrder.invoice_status }}
-                                    </span>
-                                    <span 
-                                        class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium cursor-help"
-                                        :class="getStatusBadge(doOrder.status)"
-                                        :title="getStatusDescription(doOrder.status)"
-                                    >
-                                        {{ doOrder.status }}
-                                    </span>
-                                </div>
+                                <span 
+                                    class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium cursor-help"
+                                    :class="getStatusBadge(doOrder.status)"
+                                    :title="getStatusDescription(doOrder.status)"
+                                >
+                                    {{ doOrder.status }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-2 whitespace-nowrap text-center">
+                                <span 
+                                    class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium cursor-help"
+                                    :class="getInvoiceStatusBadge(doOrder.invoice_status)"
+                                    :title="getInvoiceStatusDescription(doOrder.invoice_status)"
+                                >
+                                    {{ doOrder.invoice_status }}
+                                </span>
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap text-right">
                                 <div class="flex items-center justify-end gap-2">
@@ -646,7 +655,7 @@ const submitImport = () => {
                             </td>
                         </tr>
                         <tr v-if="deliveryOrders.data.length === 0">
-                            <td colspan="7" class="px-4 py-12 text-center">
+                            <td colspan="10" class="px-4 py-12 text-center">
                                 <TruckIcon class="mx-auto h-12 w-12 text-slate-600" />
                                 <h3 class="mt-2 text-sm font-medium text-slate-600 dark:text-slate-300">No delivery orders found</h3>
                                 <p class="mt-1 text-sm text-slate-500">Deliveries are created from Sales Orders.</p>
