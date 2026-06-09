@@ -53,15 +53,15 @@ const props = defineProps({
     salesOrders: Object,
     stats: Object,
     customers: Array,
+    users: Array,
     filters: Object,
     statuses: Array,
 });
 
 const search = ref(props.filters.search || '');
-const soNumberFilter = ref(props.filters.so_number || '');
-const poNumber = ref(props.filters.po_number || '');
 const selectedStatus = ref(props.filters.status || '');
 const selectedCustomer = ref(props.filters.customer || '');
+const selectedCreatedBy = ref(props.filters.created_by || '');
 const sortField = ref(props.filters.sort || 'created_at');
 const sortDirection = ref(props.filters.direction || 'desc');
 const showFilters = ref(false);
@@ -125,10 +125,9 @@ const bulkConfirm = () => {
 const applyFilters = debounce(() => {
     router.get('/sales/orders', {
         search: search.value || undefined,
-        so_number: soNumberFilter.value || undefined,
-        po_number: poNumber.value || undefined,
         status: selectedStatus.value || undefined,
         customer: selectedCustomer.value || undefined,
+        created_by: selectedCreatedBy.value || undefined,
         sort: sortField.value,
         direction: sortDirection.value,
     }, {
@@ -147,14 +146,13 @@ const sort = (field) => {
     applyFilters();
 };
 
-watch([search, soNumberFilter, poNumber, selectedStatus, selectedCustomer], applyFilters);
+watch([search, selectedStatus, selectedCustomer, selectedCreatedBy], applyFilters);
 
 const clearFilters = () => {
     search.value = '';
-    soNumberFilter.value = '';
-    poNumber.value = '';
     selectedStatus.value = '';
     selectedCustomer.value = '';
+    selectedCreatedBy.value = '';
 };
 
 const deleteSO = (so) => {
@@ -316,7 +314,7 @@ const calculateWidth = (value, total) => {
             leave-to-class="opacity-0 -translate-y-2"
         >
             <div v-if="showFilters" class="mb-6 rounded-2xl glass-card p-4">
-                <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Status</label>
                         <select
@@ -342,22 +340,16 @@ const calculateWidth = (value, total) => {
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">SO Number</label>
-                        <input
-                            v-model="soNumberFilter"
-                            type="text"
-                            placeholder="Search SO..."
-                            class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 py-2.5 px-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/50 transition-all shadow-sm"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">PO Number</label>
-                        <input
-                            v-model="poNumber"
-                            type="text"
-                            placeholder="Search PO..."
-                            class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 py-2.5 px-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/50 transition-all shadow-sm"
-                        />
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Input By</label>
+                        <select
+                            v-model="selectedCreatedBy"
+                            class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:bg-white dark:focus:bg-slate-800"
+                        >
+                            <option value="">All Users</option>
+                            <option v-for="user in users" :key="user.id" :value="user.id">
+                                {{ user.name }}
+                            </option>
+                        </select>
                     </div>
                     <div class="flex items-end">
                         <button 

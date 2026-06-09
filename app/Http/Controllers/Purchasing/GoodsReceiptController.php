@@ -446,7 +446,11 @@ class GoodsReceiptController extends Controller
             return back()->with('error', 'Receipt is already completed.');
         }
 
-        $receipt->complete();
+        try {
+            $receipt->complete();
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', 'Goods Receipt completed and stock updated.');
     }

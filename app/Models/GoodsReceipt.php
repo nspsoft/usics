@@ -118,6 +118,49 @@ class GoodsReceipt extends Model
         $this->load(['items.purchaseOrderItem', 'items.product', 'purchaseOrder.items']);
 
         DB::transaction(function () {
+            $cancelledWorkOrders = collect();
+
+            $workOrderIds = $this->items
+                ->map(fn ($i) => (int) ($i->purchaseOrderItem?->work_order_id ?? 0))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if (!empty($workOrderIds)) {
+                $cancelledWorkOrders = WorkOrder::query()
+                    ->whereIn('id', $workOrderIds)
+                    ->where('status', WorkOrder::STATUS_CANCELLED)
+                    ->get(['id', 'wo_number']);
+            }
+
+            if ($cancelledWorkOrders->isNotEmpty()) {
+                $cancelledIds = $cancelledWorkOrders->pluck('id')->all();
+                $hasBlockedQty = $this->items->contains(function ($item) use ($cancelledIds) {
+                    $woId = (int) ($item->purchaseOrderItem?->work_order_id ?? 0);
+                    return $woId > 0 && in_array($woId, $cancelledIds, true) && (float) $item->qty_received > 0;
+                });
+
+                if ($hasBlockedQty) {
+                    $woNumbers = $cancelledWorkOrders->pluck('wo_number')->implode(', ');
+                    throw new \RuntimeException("Tidak bisa complete GR karena ada WO yang sudah cancelled: {$woNumbers}");
+                }
+            }
+
+            if ($this->purchase_order_id) {
+                $subcontractOrder = SubcontractOrder::query()
+                    ->with('workOrder:id,status,wo_number')
+                    ->where('purchase_order_id', $this->purchase_order_id)
+                    ->first();
+
+                if ($subcontractOrder?->workOrder && $subcontractOrder->workOrder->status === WorkOrder::STATUS_CANCELLED) {
+                    $totalReceived = (float) $this->items->sum('qty_received');
+                    if ($totalReceived > 0) {
+                        throw new \RuntimeException("Tidak bisa complete GR karena WO sudah cancelled: {$subcontractOrder->workOrder->wo_number}");
+                    }
+                }
+            }
+
             foreach ($this->items as $item) {
                 $poItem = $item->purchaseOrderItem;
                 if ($poItem) {
@@ -215,6 +258,10 @@ class GoodsReceipt extends Model
                 return;
             }
 
+            if ($workOrder->status === WorkOrder::STATUS_CANCELLED) {
+                return;
+            }
+
             foreach ($workOrder->components as $component) {
                 $usagePerUnit = $workOrder->qty_planned > 0 ? ((float) $component->qty_required / (float) $workOrder->qty_planned) : 0;
                 $qtyToConsume = $usagePerUnit * $qtyReceived;
@@ -245,10 +292,6 @@ class GoodsReceipt extends Model
                     "Auto backflush from GR #{$this->grn_number} for WO: {$workOrder->wo_number} (Ref: {$subcontractOrder->order_number})",
                     "GRN:{$this->grn_number}"
                 );
-            }
-
-            if ($workOrder->status === WorkOrder::STATUS_CANCELLED) {
-                return;
             }
 
             $totalProduced = (float) DB::table('goods_receipt_items as gri')

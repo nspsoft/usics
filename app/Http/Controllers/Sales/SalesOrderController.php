@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\SalesOrder;
 use App\Models\Unit;
+use App\Models\User;
 use App\Models\Warehouse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -51,6 +52,9 @@ class SalesOrderController extends Controller
             })
             ->when($request->customer, function ($q, $customer) {
                 $q->where('customer_id', $customer);
+            })
+            ->when($request->created_by, function ($q, $createdBy) {
+                $q->where('created_by', $createdBy);
             });
 
         $sort = $request->input('sort', 'created_at');
@@ -84,7 +88,11 @@ class SalesOrderController extends Controller
             'salesOrders' => $salesOrders,
             'stats' => $stats,
             'customers' => Customer::active()->orderBy('name')->get(['id', 'name', 'code']),
-            'filters' => $request->only(['search', 'status', 'customer', 'po_number', 'so_number']),
+            'users' => User::query()
+                ->whereIn('id', SalesOrder::query()->whereNotNull('created_by')->distinct()->pluck('created_by'))
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'filters' => $request->only(['search', 'status', 'customer', 'created_by']),
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'waiting_po', 'label' => 'Waiting PO'],

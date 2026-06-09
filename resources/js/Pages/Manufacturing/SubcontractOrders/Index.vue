@@ -11,6 +11,7 @@ import {
     EyeIcon,
     MagnifyingGlassIcon,
     FunnelIcon,
+    ArrowPathIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 
@@ -18,11 +19,13 @@ const props = defineProps({
     orders: Object,
     filters: Object,
     statuses: Array,
+    syncCancelledCount: Number,
 });
 
 const search = ref(props.filters.search || '');
 const selectedStatus = ref(props.filters.status || '');
 const showFilters = ref(false);
+const syncingCancelled = ref(false);
 
 const applyFilters = debounce(() => {
     router.get('/manufacturing/subcontract-orders', {
@@ -35,6 +38,23 @@ const applyFilters = debounce(() => {
 }, 300);
 
 watch([search, selectedStatus], applyFilters);
+
+const syncCancelled = () => {
+    const count = Number(props.syncCancelledCount || 0);
+    if (count <= 0 || syncingCancelled.value) return;
+    if (!confirm(`Sync ${count} Subcontract Order dari WO yang sudah cancelled?`)) return;
+
+    syncingCancelled.value = true;
+    router.post(route('manufacturing.subcontract-orders.sync-cancelled'), {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            syncingCancelled.value = false;
+        },
+        onSuccess: () => {
+            router.reload({ preserveScroll: true });
+        },
+    });
+};
 
 const clearFilters = () => {
     search.value = '';
@@ -81,6 +101,16 @@ const formatDate = (date) => {
                 >
                     <FunnelIcon class="h-5 w-5" />
                     Filters
+                </button>
+
+                <button
+                    type="button"
+                    @click="syncCancelled"
+                    :disabled="syncingCancelled || Number(syncCancelledCount || 0) <= 0"
+                    class="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                >
+                    <ArrowPathIcon class="h-5 w-5" />
+                    Sync Cancelled ({{ syncCancelledCount || 0 }})
                 </button>
             </div>
             

@@ -37,6 +37,7 @@ const props = defineProps({
     purchaseOrders: Object,
     stats: Object,
     suppliers: Array,
+    users: Array,
     filters: Object,
     statuses: Array,
 });
@@ -44,6 +45,7 @@ const props = defineProps({
 const search = ref(props.filters?.search || '');
 const selectedStatus = ref(props.filters?.status || '');
 const selectedSupplier = ref(props.filters?.supplier || '');
+const selectedCreatedBy = ref(props.filters?.created_by || '');
 const sortField = ref(props.filters?.sort || 'created_at');
 const sortDirection = ref(props.filters?.direction || 'desc');
 const showFilters = ref(false);
@@ -112,6 +114,7 @@ const applyFilters = debounce(() => {
         search: search.value || undefined,
         status: selectedStatus.value || undefined,
         supplier: selectedSupplier.value || undefined,
+        created_by: selectedCreatedBy.value || undefined,
         sort: sortField.value,
         direction: sortDirection.value,
     }, {
@@ -120,7 +123,7 @@ const applyFilters = debounce(() => {
     });
 }, 300);
 
-watch([search, selectedStatus, selectedSupplier], () => {
+watch([search, selectedStatus, selectedSupplier, selectedCreatedBy], () => {
     applyFilters();
 });
 
@@ -128,6 +131,7 @@ const clearFilters = () => {
     search.value = '';
     selectedStatus.value = '';
     selectedSupplier.value = '';
+    selectedCreatedBy.value = '';
 };
 
 const deletePO = (po) => {
@@ -299,7 +303,7 @@ const formatDate = (date) => {
                 leave-to-class="opacity-0 -translate-y-2"
             >
                 <div v-if="showFilters" class="mb-6 rounded-2xl glass-card p-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Status</label>
                             <select
@@ -321,6 +325,18 @@ const formatDate = (date) => {
                                 <option value="">All Suppliers</option>
                                 <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.id">
                                     {{ supplier.name }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Input By</label>
+                            <select
+                                v-model="selectedCreatedBy"
+                                class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            >
+                                <option value="">All Users</option>
+                                <option v-for="user in users" :key="user.id" :value="user.id">
+                                    {{ user.name }}
                                 </option>
                             </select>
                         </div>
@@ -393,6 +409,15 @@ const formatDate = (date) => {
                                     <div class="flex items-center gap-1">
                                         Order Date
                                         <span v-if="sortField === 'order_date'" class="text-blue-600 dark:text-blue-400">
+                                            <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
+                                            <ChevronDownIcon v-else class="h-3 w-3" />
+                                        </span>
+                                    </div>
+                                </th>
+                                <th @click="sort('created_by_name')" class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-900 transition-colors">
+                                    <div class="flex items-center gap-1">
+                                        Input By
+                                        <span v-if="sortField === 'created_by_name'" class="text-blue-600 dark:text-blue-400">
                                             <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
                                             <ChevronDownIcon v-else class="h-3 w-3" />
                                         </span>
@@ -497,6 +522,11 @@ const formatDate = (date) => {
                                 <td class="px-4 py-2 whitespace-nowrap">
                                     <span class="text-sm text-slate-600 dark:text-slate-300">{{ formatDate(po.order_date) }}</span>
                                 </td>
+                                <td class="px-4 py-2 whitespace-nowrap">
+                                    <div class="text-sm text-slate-900 dark:text-white font-medium">
+                                        {{ po.created_by?.name || po.createdBy?.name || '-' }}
+                                    </div>
+                                </td>
                                 <td class="px-4 py-2 whitespace-nowrap text-center text-sm text-slate-500 dark:text-slate-400">
                                     {{ po.items_count }}
                                 </td>
@@ -557,7 +587,7 @@ const formatDate = (date) => {
                                 </td>
                             </tr>
                             <tr v-if="purchaseOrders.data && purchaseOrders.data.length === 0">
-                                <td colspan="12" class="px-4 py-12 text-center text-slate-500 italic">No purchase orders found.</td>
+                                <td colspan="13" class="px-4 py-12 text-center text-slate-500 italic">No purchase orders found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -726,6 +756,4 @@ const formatDate = (date) => {
         </Modal>
     </AppLayout>
 </template>
-
-
 

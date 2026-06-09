@@ -19,6 +19,13 @@ class SubcontractOrderController extends Controller
 {
     public function index(Request $request): Response
     {
+        $syncCancelledCount = SubcontractOrder::query()
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->whereHas('workOrder', function ($q) {
+                $q->where('status', WorkOrder::STATUS_CANCELLED);
+            })
+            ->count();
+
         $query = SubcontractOrder::with(['workOrder.product', 'supplier', 'purchaseOrder'])
             ->when($request->search, function ($q, $search) {
                 $q->where('order_number', 'like', "%{$search}%")
@@ -36,6 +43,7 @@ class SubcontractOrderController extends Controller
         return Inertia::render('Manufacturing/SubcontractOrders/Index', [
             'orders' => $orders,
             'filters' => $request->only(['search', 'status']),
+            'syncCancelledCount' => $syncCancelledCount,
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'sent', 'label' => 'Sent'],
@@ -44,6 +52,79 @@ class SubcontractOrderController extends Controller
                 ['value' => 'cancelled', 'label' => 'Cancelled'],
             ]
         ]);
+    }
+
+    public function syncCancelledWorkOrders(Request $request)
+    {
+        $targets = SubcontractOrder::query()
+            ->with(['workOrder:id,status,wo_number,qty_produced', 'purchaseOrder:id'])
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->whereHas('workOrder', function ($q) {
+                $q->where('status', WorkOrder::STATUS_CANCELLED);
+            })
+            ->get();
+
+        if ($targets->isEmpty()) {
+            return back()->with('success', 'Tidak ada Subcontract Order yang perlu disinkronkan.');
+        }
+
+        $workOrderIds = $targets->pluck('work_order_id')->filter()->unique()->values()->all();
+        $purchaseOrderIds = $targets->pluck('purchase_order_id')->filter()->unique()->values()->all();
+
+        $receivedByWorkOrder = DB::table('goods_receipt_items as gri')
+            ->join('goods_receipts as gr', 'gr.id', '=', 'gri.goods_receipt_id')
+            ->leftJoin('purchase_order_items as poi', 'poi.id', '=', 'gri.purchase_order_item_id')
+            ->where('gr.status', GoodsReceipt::STATUS_COMPLETED)
+            ->whereIn('poi.work_order_id', $workOrderIds)
+            ->selectRaw('poi.work_order_id as work_order_id, SUM(gri.qty_received) as qty_received')
+            ->groupBy('poi.work_order_id')
+            ->pluck('qty_received', 'work_order_id');
+
+        $receivedByPurchaseOrder = [];
+        if (!empty($purchaseOrderIds)) {
+            $receivedByPurchaseOrder = DB::table('goods_receipt_items as gri')
+                ->join('goods_receipts as gr', 'gr.id', '=', 'gri.goods_receipt_id')
+                ->where('gr.status', GoodsReceipt::STATUS_COMPLETED)
+                ->whereIn('gr.purchase_order_id', $purchaseOrderIds)
+                ->selectRaw('gr.purchase_order_id as purchase_order_id, SUM(gri.qty_received) as qty_received')
+                ->groupBy('gr.purchase_order_id')
+                ->pluck('qty_received', 'purchase_order_id')
+                ->all();
+        }
+
+        $updated = 0;
+        $skipped = 0;
+
+        DB::transaction(function () use ($targets, $receivedByWorkOrder, $receivedByPurchaseOrder, &$updated, &$skipped) {
+            foreach ($targets as $order) {
+                $wo = $order->workOrder;
+                if (!$wo || $wo->status !== WorkOrder::STATUS_CANCELLED) {
+                    continue;
+                }
+
+                $receivedQty = (float) ($receivedByWorkOrder[$wo->id] ?? 0);
+                $receivedPoQty = (float) ($receivedByPurchaseOrder[$order->purchase_order_id] ?? 0);
+
+                if ($receivedQty > 0 || $receivedPoQty > 0 || (float) ($wo->qty_produced ?? 0) > 0) {
+                    $skipped++;
+                    continue;
+                }
+
+                if ($order->status === 'completed') {
+                    $skipped++;
+                    continue;
+                }
+
+                $order->update(['status' => 'cancelled']);
+                $updated++;
+            }
+        });
+
+        if ($updated === 0) {
+            return back()->with('error', "Sync selesai. Tidak ada yang diubah. Skipped: {$skipped} (sudah ada penerimaan/produksi).");
+        }
+
+        return back()->with('success', "Sync selesai. Updated: {$updated}, Skipped: {$skipped}.");
     }
 
     public function create()

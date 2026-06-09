@@ -9,6 +9,7 @@ use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseRequest;
 use App\Models\Supplier;
 use App\Models\Unit;
+use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\DocumentNumberService;
 use Illuminate\Http\Request;
@@ -46,6 +47,9 @@ class PurchaseOrderController extends Controller
             })
             ->when($request->supplier, function ($q, $supplier) {
                 $q->where('supplier_id', $supplier);
+            })
+            ->when($request->created_by, function ($q, $createdBy) {
+                $q->where('created_by', $createdBy);
             });
 
         $sort = $request->input('sort', 'created_at');
@@ -55,13 +59,17 @@ class PurchaseOrderController extends Controller
             $query->join('suppliers', 'purchase_orders.supplier_id', '=', 'suppliers.id')
                   ->orderBy('suppliers.name', $direction)
                   ->select('purchase_orders.*');
+        } elseif ($sort === 'created_by_name') {
+            $query->leftJoin('users', 'purchase_orders.created_by', '=', 'users.id')
+                  ->orderBy('users.name', $direction)
+                  ->select('purchase_orders.*');
         } elseif ($sort === 'warehouse_name') {
             $query->join('warehouses', 'purchase_orders.warehouse_id', '=', 'warehouses.id')
                   ->orderBy('warehouses.name', $direction)
                   ->select('purchase_orders.*');
         } elseif (in_array($sort, ['total_qty', 'total_received', 'total_returned', 'total'])) {
             $query->orderBy($sort, $direction);
-        } elseif (in_array($sort, ['po_number', 'order_date', 'expected_date', 'status', 'created_at'])) {
+        } elseif (in_array($sort, ['po_number', 'order_date', 'expected_date', 'status', 'created_at', 'items_count'])) {
             $query->orderBy($sort, $direction);
         } else {
             $query->orderBy('created_at', $direction);
@@ -92,6 +100,9 @@ class PurchaseOrderController extends Controller
             })
             ->when($request->supplier, function ($q, $supplier) {
                 $q->where('supplier_id', $supplier);
+            })
+            ->when($request->created_by, function ($q, $createdBy) {
+                $q->where('created_by', $createdBy);
             });
         
         $stats = [
@@ -105,7 +116,11 @@ class PurchaseOrderController extends Controller
             'purchaseOrders' => $purchaseOrders,
             'stats' => $stats,
             'suppliers' => Supplier::active()->orderBy('name')->get(['id', 'name', 'code']),
-            'filters' => $request->only(['search', 'status', 'supplier', 'sort', 'direction']),
+            'users' => User::query()
+                ->whereIn('id', PurchaseOrder::query()->whereNotNull('created_by')->distinct()->pluck('created_by'))
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'filters' => $request->only(['search', 'status', 'supplier', 'created_by', 'sort', 'direction']),
             'statuses' => [
                 ['value' => 'outstanding', 'label' => 'Outstanding (Open)'],
                 ['value' => 'draft', 'label' => 'Draft'],

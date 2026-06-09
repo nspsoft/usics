@@ -545,7 +545,40 @@ class WorkOrderController extends Controller
             return back()->with('error', 'This work order cannot be cancelled.');
         }
 
+        if ($workOrder->production_type === 'subcontract') {
+            $poIds = SubcontractOrder::query()
+                ->where('work_order_id', $workOrder->id)
+                ->pluck('purchase_order_id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            $qtyReceived = (float) DB::table('goods_receipt_items as gri')
+                ->join('goods_receipts as gr', 'gr.id', '=', 'gri.goods_receipt_id')
+                ->leftJoin('purchase_order_items as poi', 'poi.id', '=', 'gri.purchase_order_item_id')
+                ->where('gr.status', GoodsReceipt::STATUS_COMPLETED)
+                ->where(function ($q) use ($workOrder, $poIds) {
+                    $q->where('poi.work_order_id', $workOrder->id);
+                    if (!empty($poIds)) {
+                        $q->orWhereIn('gr.purchase_order_id', $poIds);
+                    }
+                })
+                ->sum('gri.qty_received');
+
+            if ($qtyReceived > 0 || (float) $workOrder->qty_produced > 0) {
+                return back()->with('error', 'WO ini tidak bisa di-cancel karena sudah ada penerimaan/produksi. Jika perlu pembatalan, lakukan reversal/return dulu.');
+            }
+        }
+
         $workOrder->update(['status' => 'cancelled']);
+
+        if ($workOrder->production_type === 'subcontract') {
+            SubcontractOrder::query()
+                ->where('work_order_id', $workOrder->id)
+                ->where('status', '!=', 'completed')
+                ->update(['status' => 'cancelled']);
+        }
 
         return back()->with('success', 'Work Order cancelled.');
     }
