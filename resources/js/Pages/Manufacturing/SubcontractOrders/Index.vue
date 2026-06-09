@@ -189,7 +189,12 @@ const formatDate = (date) => {
                                         <TruckIcon class="h-5 w-5 text-amber-500" />
                                     </div>
                                     <div>
-                                        <div class="text-sm font-bold">{{ order.order_number }}</div>
+                                        <Link
+                                            :href="route('manufacturing.subcontract-orders.show', order.id)"
+                                            class="text-sm font-bold hover:underline"
+                                        >
+                                            {{ order.order_number }}
+                                        </Link>
                                         <div class="text-[10px] text-slate-500 font-mono">ID: {{ order.id }}</div>
                                     </div>
                                 </div>

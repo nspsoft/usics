@@ -40,8 +40,19 @@ const selectedCache = ref(null);
 let fetchTimer = null;
 
 const allOptions = computed(() => {
-    if (props.fetchUrl) return remoteOptions.value;
-    return props.options;
+    const base = Array.isArray(props.options) ? props.options : [];
+    if (!props.fetchUrl) return base;
+
+    const merged = new Map();
+    base.forEach((opt) => {
+        if (opt?.id === undefined || opt?.id === null) return;
+        merged.set(String(opt.id), opt);
+    });
+    (remoteOptions.value || []).forEach((opt) => {
+        if (opt?.id === undefined || opt?.id === null) return;
+        merged.set(String(opt.id), opt);
+    });
+    return Array.from(merged.values());
 });
 
 const filteredOptions = computed(() => {

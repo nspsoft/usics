@@ -40,6 +40,7 @@ class StockMovement extends Model
     const TYPE_PRODUCTION_IN = 'production_in';
     const TYPE_PRODUCTION_OUT = 'production_out';
     const TYPE_TRANSFER = 'transfer';
+    const TYPE_RECLASS = 'reclass';
     const TYPE_OPNAME = 'opname';
     const TYPE_PURCHASE_RETURN = 'purchase_return';
     const TYPE_SALES_RETURN = 'sales_return';

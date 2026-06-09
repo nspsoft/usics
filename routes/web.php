@@ -138,6 +138,14 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::post('/transfers/{transfer}/ship', [App\Http\Controllers\Inventory\StockTransferController::class, 'ship'])->name('transfers.ship');
     Route::post('/transfers/{transfer}/receive', [App\Http\Controllers\Inventory\StockTransferController::class, 'receive'])->name('transfers.receive');
 
+    // Stock Reclassifications
+    Route::resource('reclassifications', App\Http\Controllers\Inventory\StockReclassificationController::class);
+    Route::post('/reclassifications/{reclassification}/post', [App\Http\Controllers\Inventory\StockReclassificationController::class, 'post'])->name('reclassifications.post');
+    Route::get('/reclass-mappings/template', [App\Http\Controllers\Inventory\ProductReclassMappingController::class, 'template'])->name('reclass-mappings.template');
+    Route::post('/reclass-mappings/import', [App\Http\Controllers\Inventory\ProductReclassMappingController::class, 'import'])->name('reclass-mappings.import');
+    Route::resource('reclass-mappings', App\Http\Controllers\Inventory\ProductReclassMappingController::class)
+        ->only(['index', 'store', 'update', 'destroy']);
+
     // Stock Opname
     Route::resource('opname', App\Http\Controllers\Inventory\StockOpnameController::class);
     Route::get('/opname-export', [App\Http\Controllers\Inventory\StockOpnameController::class, 'export'])->name('opname.export');
