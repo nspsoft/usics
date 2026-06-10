@@ -233,9 +233,9 @@ const getStatusClass = (status) => {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
                 <!-- Main Content -->
-                <div class="lg:col-span-3 space-y-6">
+                <div class="lg:col-span-4 space-y-6">
                     <!-- Items Table -->
                     <div class="rounded-2xl glass-card overflow-hidden">
                         <div class="p-6 border-b border-slate-200 dark:border-slate-800">
