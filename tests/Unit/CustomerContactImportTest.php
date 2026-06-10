@@ -28,7 +28,7 @@ class CustomerContactImportTest extends TestCase
             'is_active' => 1,
         ]);
 
-        $import = new CustomerContactImport();
+        $import = new CustomerContactImport(true);
         $import->collection(new Collection([
             new Collection([
                 'customer_code' => 'CUST-1',

@@ -17,6 +17,31 @@ return new class extends Migration
 
         DB::table('inv_product_reclass_mappings')->where('is_default', false)->update(['is_default' => true]);
 
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            Schema::table('inv_product_reclass_mappings', function (Blueprint $table) {
+                try {
+                    $table->dropUnique(['source_product_id']);
+                } catch (\Exception $e) {
+                }
+                
+                try {
+                    $table->unique(['source_product_id', 'target_product_id'], 'inv_prm_source_target_unique');
+                } catch (\Exception $e) {
+                }
+                
+                try {
+                    $table->index(['source_product_id'], 'inv_prm_source_idx');
+                } catch (\Exception $e) {
+                }
+                
+                try {
+                    $table->index(['source_product_id', 'is_default'], 'inv_prm_source_default_idx');
+                } catch (\Exception $e) {
+                }
+            });
+            return;
+        }
+
         $dbName = DB::getDatabaseName();
         $tableName = 'inv_product_reclass_mappings';
 
@@ -44,6 +69,19 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            Schema::table('inv_product_reclass_mappings', function (Blueprint $table) {
+                try {
+                    $table->dropUnique('inv_prm_source_target_unique');
+                } catch (\Exception $e) {}
+                
+                try {
+                    $table->unique(['source_product_id'], 'inv_product_reclass_mappings_source_product_id_unique');
+                } catch (\Exception $e) {}
+            });
+            return;
+        }
+
         $dbName = DB::getDatabaseName();
         $tableName = 'inv_product_reclass_mappings';
 
