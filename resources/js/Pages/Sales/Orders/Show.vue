@@ -245,22 +245,22 @@ const getStatusClass = (status) => {
                             <table class="w-full text-left text-sm text-slate-500 dark:text-slate-400">
                                 <thead class="bg-white dark:bg-slate-950 text-slate-200 font-medium">
                                     <tr>
-                                        <th class="px-6 py-4">Product</th>
-                                        <th class="px-6 py-4 text-right">Price</th>
-                                        <th class="px-6 py-4 text-center">Ordered</th>
-                                        <th class="px-6 py-4 text-center">Delivered</th>
-                                        <th class="px-6 py-4 text-center">Reserved</th>
-                                        <th class="px-6 py-4 text-center">Invoiced</th>
-                                        <th class="px-6 py-4 text-center">Returned</th>
-                                        <th class="px-6 py-4 text-center cursor-help" title="Rumus: Ordered - Delivered - Reserved">Remaining ⓘ</th>
-                                        <th class="px-6 py-4 text-right">Total</th>
+                                        <th class="px-4 py-3 min-w-[300px] lg:min-w-[380px]">Product</th>
+                                        <th class="px-4 py-3 text-right min-w-[110px]">Price</th>
+                                        <th class="px-4 py-3 text-center min-w-[120px]">Ordered</th>
+                                        <th class="px-4 py-3 text-center min-w-[80px]">Delivered</th>
+                                        <th class="px-4 py-3 text-center min-w-[80px]">Reserved</th>
+                                        <th class="px-4 py-3 text-center min-w-[80px]">Invoiced</th>
+                                        <th class="px-4 py-3 text-center min-w-[80px]">Returned</th>
+                                        <th class="px-4 py-3 text-center min-w-[90px] cursor-help" title="Rumus: Ordered - Delivered - Reserved">Remaining ⓘ</th>
+                                        <th class="px-4 py-3 text-right min-w-[110px]">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                                     <tr v-for="item in salesOrder.items" :key="item.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-900 dark:bg-slate-800/50">
 
                                         <!-- ── Product Column ── -->
-                                        <td class="px-6 py-4">
+                                        <td class="px-4 py-3 min-w-[300px] lg:min-w-[380px]">
                                             <!-- Replace Product Mode -->
                                             <div v-if="replacingProductItemId === item.id" class="space-y-2 min-w-[260px]">
                                                 <!-- Search input -->
@@ -334,14 +334,14 @@ const getStatusClass = (status) => {
                                         </td>
 
                                         <!-- ── Price Column ── -->
-                                        <td class="px-6 py-4 text-right min-w-[200px]">
+                                        <td class="px-4 py-3 text-right min-w-[110px]">
                                             <div v-if="editingPriceItemId === item.id" class="flex flex-col gap-2">
                                                 <div class="flex items-center gap-2 justify-end">
                                                     <input
                                                         v-model="priceForm.unit_price"
                                                         type="number"
                                                         step="any"
-                                                        class="w-28 rounded-lg border-0 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 py-1 font-bold text-right"
+                                                        class="w-24 rounded-lg border-0 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 py-1 font-bold text-right"
                                                         @keyup.enter="submitPriceRevision(item.id)"
                                                     />
                                                     <div class="flex items-center gap-1">
@@ -383,14 +383,14 @@ const getStatusClass = (status) => {
                                         </td>
 
                                         <!-- ── Ordered (Qty) Column ── -->
-                                        <td class="px-6 py-4 text-center font-bold text-slate-900 dark:text-white min-w-[200px]">
+                                        <td class="px-4 py-3 text-center font-bold text-slate-900 dark:text-white min-w-[120px]">
                                             <div v-if="editingItemId === item.id" class="flex flex-col gap-2">
                                                 <div class="flex items-center gap-2 justify-center">
                                                     <input
                                                         v-model="adjustmentForm.qty"
                                                         type="number"
                                                         step="any"
-                                                        class="w-20 rounded-lg border-0 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 py-1 font-bold text-center"
+                                                        class="w-16 rounded-lg border-0 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 py-1 font-bold text-center"
                                                         @keyup.enter="submitAdjustment(item.id)"
                                                     />
                                                     <div class="flex items-center gap-1">
@@ -431,53 +431,53 @@ const getStatusClass = (status) => {
                                             </div>
                                         </td>
 
-                                        <td class="px-6 py-4 text-center text-emerald-400 font-medium">
+                                        <td class="px-4 py-3 text-center text-emerald-400 font-medium min-w-[80px]">
                                             {{ formatNumber(item.qty_delivered) }}
                                         </td>
-                                        <td class="px-6 py-4 text-center text-amber-500 font-medium">
+                                        <td class="px-4 py-3 text-center text-amber-500 font-medium min-w-[80px]">
                                             {{ formatNumber(item.reserved_qty || 0) }}
                                         </td>
-                                        <td class="px-6 py-4 text-center text-indigo-400 font-medium">
+                                        <td class="px-4 py-3 text-center text-indigo-400 font-medium min-w-[80px]">
                                             {{ formatNumber(item.qty_invoiced || 0) }}
                                         </td>
-                                        <td class="px-6 py-4 text-center text-red-400 font-medium">
+                                        <td class="px-4 py-3 text-center text-red-400 font-medium min-w-[80px]">
                                             {{ formatNumber(item.qty_returned || 0) }}
                                         </td>
-                                        <td class="px-6 py-4 text-center">
+                                        <td class="px-4 py-3 text-center min-w-[90px]">
                                             <span
-                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                                                 :class="item.remaining_qty > 0 ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-50 dark:bg-slate-800 text-slate-500'"
                                             >
                                                 {{ formatNumber(item.remaining_qty) }}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 text-right font-medium text-slate-900 dark:text-white">
+                                        <td class="px-4 py-3 text-right font-medium text-slate-900 dark:text-white min-w-[110px]">
                                             {{ formatCurrency(item.subtotal) }}
                                         </td>
                                     </tr>
                                 </tbody>
                                 <tfoot class="bg-white dark:bg-slate-950 font-medium">
                                     <tr>
-                                        <td colspan="7" class="px-6 py-4 text-right text-slate-500 dark:text-slate-400">
+                                        <td colspan="8" class="px-4 py-3 text-right text-slate-500 dark:text-slate-400">
                                             Subtotal
                                         </td>
-                                        <td class="px-6 py-4 text-right text-slate-900 dark:text-white">
+                                        <td class="px-4 py-3 text-right text-slate-900 dark:text-white">
                                             {{ formatCurrency(salesOrder.subtotal) }}
                                         </td>
                                     </tr>
                                     <tr v-if="salesOrder.tax_amount > 0">
-                                        <td colspan="7" class="px-6 py-4 text-right text-slate-500 dark:text-slate-400">
+                                        <td colspan="8" class="px-4 py-3 text-right text-slate-500 dark:text-slate-400">
                                             VAT ({{ salesOrder.tax_percent }}%)
                                         </td>
-                                        <td class="px-6 py-4 text-right text-slate-900 dark:text-white">
+                                        <td class="px-4 py-3 text-right text-slate-900 dark:text-white">
                                             {{ formatCurrency(salesOrder.tax_amount) }}
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td colspan="7" class="px-6 py-4 text-right text-slate-900 dark:text-white text-lg font-bold">
+                                        <td colspan="8" class="px-4 py-3 text-right text-slate-900 dark:text-white text-lg font-bold">
                                             Grand Total
                                         </td>
-                                        <td class="px-6 py-4 text-right text-slate-900 dark:text-white text-lg font-bold">
+                                        <td class="px-4 py-3 text-right text-slate-900 dark:text-white text-lg font-bold">
                                             {{ formatCurrency(salesOrder.total) }}
                                         </td>
                                     </tr>
