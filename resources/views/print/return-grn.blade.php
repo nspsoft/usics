@@ -220,7 +220,7 @@
                         <div style="font-size: 8pt; color: #555;">{{ $item->product->sku }}</div>
                     </td>
                     <td class="text-center font-bold">{{ number_format($item->qty, 0, ',', '.') }}</td>
-                    <td class="text-center uppercase">{{ $item->unit->code ?? 'PCS' }}</td>
+                    <td class="text-center">{{ $item->unit->name ?? 'Unit' }}</td>
                     <td style="font-size: 8pt;">{{ $return->reason ?? '-' }}</td>
                 </tr>
                 @endforeach

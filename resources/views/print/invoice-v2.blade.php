@@ -285,7 +285,7 @@
                         @endif
                     </td>
                     <td class="text-center">{{ number_format($totalQty, 0, ',', '.') }}</td>
-                    <td class="text-center uppercase">{{ $firstItem->unit->code ?? 'PCS' }}</td>
+                    <td class="text-center">{{ $firstItem->unit->name ?? 'Unit' }}</td>
                     <td class="text-right">{{ number_format($firstItem->unit_price, 0, ',', '.') }}</td>
                     <td class="text-right">{{ number_format($totalSubtotal, 0, ',', '.') }}</td>
                 </tr>
@@ -459,7 +459,7 @@
                             <div style="font-size: 7.5pt; color: #777;">{{ $it->product->sku }}</div>
                         </td>
                         <td style="padding: 6px 8px; border-bottom: 0.5pt solid #eee; font-size: 8.5pt; text-align: center;">{{ number_format($it->qty, 0, ',', '.') }}</td>
-                        <td style="padding: 6px 8px; border-bottom: 0.5pt solid #eee; font-size: 8.5pt; text-align: center;">{{ $it->unit->code ?? 'PCs' }}</td>
+                        <td style="padding: 6px 8px; border-bottom: 0.5pt solid #eee; font-size: 8.5pt; text-align: center;">{{ $it->unit->name ?? 'Unit' }}</td>
                     </tr>
                     @endforeach
                 </tbody>

@@ -239,7 +239,7 @@ const getStatusBadge = (status) => {
                                             <div class="text-[10px] text-slate-500 uppercase font-mono">{{ item.product?.sku }}</div>
                                         </td>
                                         <td class="px-6 py-4 text-center text-sm text-slate-900 dark:text-white">
-                                            {{ formatNumber(item.qty) }} {{ item.unit?.code || 'PCS' }}
+                                            {{ formatNumber(item.qty) }} {{ item.unit?.name || 'Unit' }}
                                         </td>
                                         <td class="px-6 py-4 text-right text-sm text-slate-500 dark:text-slate-400 font-mono">
                                             {{ formatCurrency(item.unit_price) }}

@@ -372,7 +372,7 @@ const downloadExcel = async () => {
                                         <div class="text-[10px] text-slate-500 font-mono tracking-tight">{{ schedule.product?.sku }}</div>
                                     </td>
                                     <td class="px-4 py-2 text-right font-mono text-sm text-slate-900 dark:text-white">
-                                        {{ formatNumber(schedule.qty_scheduled) }} <span class="text-[10px] text-slate-500">{{ schedule.product?.unit?.code }}</span>
+                                        {{ formatNumber(schedule.qty_scheduled) }} <span class="text-[10px] text-slate-500">{{ schedule.product?.unit?.name || 'Unit' }}</span>
                                     </td>
                                     <td class="px-4 py-2">
                                         <div class="text-sm font-medium text-slate-900 dark:text-white truncate max-w-[120px]" :title="schedule.sales_name">{{ schedule.sales_name || '-' }}</div>

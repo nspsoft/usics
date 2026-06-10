@@ -608,7 +608,7 @@ const formatDateShort = (date) => {
                                                 {{ forecast.created_by_user?.name || 'User' }} • {{ formatDateShort(forecast.created_at) }}
                                             </div>
                                         </td>
-                                        <td class="px-4 py-2 text-sm text-slate-500 font-mono">{{ forecast.product?.unit?.code }}</td>
+                                        <td class="px-4 py-2 text-sm text-slate-500">{{ forecast.product?.unit?.name || 'Unit' }}</td>
                                         <td class="px-4 py-2 text-[11px] italic text-slate-500 dark:text-slate-400 line-clamp-1 truncate max-w-[150px]" :title="forecast.notes">{{ forecast.notes || '-' }}</td>
                                         <td class="px-4 py-2 text-center">
                                             <button @click="deleteForecast(forecast)" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all group">

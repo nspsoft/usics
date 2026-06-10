@@ -948,7 +948,7 @@ const handleSmartAction = () => {
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 text-xs font-bold text-slate-500">
-                                            {{ item.unit?.code || 'PCS' }}
+                                            {{ item.unit?.name || 'Unit' }}
                                         </td>
                                         <td class="px-6 py-4">
                                             <input 
@@ -1063,7 +1063,7 @@ const handleSmartAction = () => {
                         >
                             <option value="">-- pilih --</option>
                             <option v-for="opt in addItemOptions" :key="opt.sales_order_item_id" :value="opt.sales_order_item_id">
-                                {{ opt.sku }} - {{ opt.name }} (Sisa: {{ formatNumber(opt.remaining) }} {{ opt.unit_code || '' }})
+                                {{ opt.sku }} - {{ opt.name }} (Sisa: {{ formatNumber(opt.remaining) }} {{ opt.unit_name || '' }})
                             </option>
                         </select>
 
@@ -1074,7 +1074,7 @@ const handleSmartAction = () => {
                         >
                             <option value="">-- pilih --</option>
                             <option v-for="opt in addItemOptions" :key="opt.product_id" :value="opt.product_id">
-                                {{ opt.sku }} - {{ opt.name }} ({{ opt.unit_code || '' }})
+                                {{ opt.sku }} - {{ opt.name }} ({{ opt.unit_name || '' }})
                             </option>
                         </select>
                         <div v-if="addItemLoading" class="text-xs text-slate-500 mt-2">Memuat...</div>

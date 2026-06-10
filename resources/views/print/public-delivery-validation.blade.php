@@ -61,7 +61,7 @@
                     <div class="flex justify-between items-start text-xs border-l-2 border-blue-500 pl-3">
                         <div>
                             <p class="font-bold text-slate-700 leading-tight">{{ $item->product->name }}</p>
-                            <p class="text-slate-400 mt-0.5">{{ number_format($item->qty_delivered, 0) }} {{ $item->unit->code ?? 'PCS' }}</p>
+                            <p class="text-slate-400 mt-0.5">{{ number_format($item->qty_delivered, 0) }} {{ $item->unit->name ?? 'Unit' }}</p>
                         </div>
                     </div>
                     @endforeach

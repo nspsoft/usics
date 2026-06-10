@@ -221,7 +221,7 @@
                     <span style="font-size: 8.5pt; color: #333;">{{ $item->product->description }}</span>
                 </td>
                 <td class="text-center" style="font-size: 11pt;">{{ number_format($item->qty, 0, ',', '.') }}</td>
-                <td class="text-center">{{ $item->product->unit->code ?? 'PCS' }}</td>
+                <td class="text-center">{{ $item->product->unit->name ?? 'Unit' }}</td>
                 <td class="text-right">IDR {{ number_format($item->unit_price, 0, ',', '.') }}</td>
                 <td class="text-right">IDR {{ number_format($item->total_price, 0, ',', '.') }}</td>
             </tr>

@@ -317,7 +317,7 @@ class DeliveryOrderController extends Controller
                     'qty_ordered' => (float) $item->qty,
                     'remaining' => (float) $remaining,
                     'unit_id' => $item->unit_id,
-                    'unit_code' => $item->unit->code ?? null,
+                    'unit_name' => $item->unit->name ?? null,
                 ];
             })->filter()->values();
 
@@ -348,7 +348,7 @@ class DeliveryOrderController extends Controller
                 'name' => $p->name,
                 'sku' => $p->sku,
                 'unit_id' => $p->unit_id,
-                'unit_code' => $p->unit?->code,
+                'unit_name' => $p->unit?->name,
             ];
         })->values();
 
@@ -1069,7 +1069,7 @@ class DeliveryOrderController extends Controller
                         $groupedItems[$key] = [
                             'product_name' => $item->product->name,
                             'qty' => 0,
-                            'unit_name' => $item->unit->short_name ?? $item->unit->name ?? '',
+                            'unit_name' => $item->unit->name ?? '',
                             'unit_price' => $unitPrice,
                             'discount_percent' => $discountPercent,
                         ];

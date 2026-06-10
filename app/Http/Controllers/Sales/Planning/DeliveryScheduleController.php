@@ -182,7 +182,7 @@ class DeliveryScheduleController extends Controller
                 $matrix[$custId]['products'][$prodId] = [
                     'product_name' => $sch->product->name,
                     'sku' => $sch->product->sku,
-                    'unit' => $sch->product->unit->code ?? 'PCS',
+                    'unit' => $sch->product->unit->name ?? 'Unit',
                     'po_number' => $sch->po_number,
                     'daily' => [],
                     'totals' => ['sch' => 0, 'act' => 0, 'bal' => 0]
@@ -335,7 +335,7 @@ class DeliveryScheduleController extends Controller
                 $matrix[$custId]['products'][$prodId] = [
                     'product_name' => $sch->product->name,
                     'sku' => $sch->product->sku,
-                    'unit' => $sch->product->unit->code ?? 'PCS',
+                    'unit' => $sch->product->unit->name ?? 'Unit',
                     'po_number' => $sch->po_number,
                     'daily' => [],
                     'totals' => ['sch' => 0, 'act' => 0, 'bal' => 0]
@@ -498,7 +498,7 @@ class DeliveryScheduleController extends Controller
                         'id' => $pid,
                         'name' => $sch->product->name,
                         'sku' => $sch->product->sku,
-                        'unit' => $sch->product->unit->code ?? 'PCS',
+                        'unit' => $sch->product->unit->name ?? 'Unit',
                         'schedule' => 0, 'delivery' => 0
                     ];
                 }

@@ -132,7 +132,7 @@ class SalesPlanningController extends Controller
                         'customer' => $s->customer->name ?? '-',
                         'product' => $s->product->name ?? '-',
                         'sku' => $s->product->sku ?? '-',
-                        'unit' => $s->product->unit->code ?? 'PCS',
+                        'unit' => $s->product->unit->name ?? 'Unit',
                         'qty' => (float) $s->qty_scheduled,
                     ])->values(),
                 ];
@@ -235,7 +235,7 @@ class SalesPlanningController extends Controller
                     'product_id' => $rows->first()->product_id,
                     'product_name' => $rows->first()->product->name,
                     'sku' => $rows->first()->product->sku,
-                    'unit' => $rows->first()->product->unit->code ?? 'PCS',
+                    'unit' => $rows->first()->product->unit->name ?? 'Unit',
                     'forecast_qty' => $rows->sum('qty_forecast'),
                 ];
             });
@@ -279,12 +279,12 @@ class SalesPlanningController extends Controller
                  if ($prod) {
                      $productName = $prod->name;
                      $sku = $prod->sku;
-                     $unit = $prod->unit->code ?? 'PCS';
+                     $unit = $prod->unit->name ?? 'Unit';
                  }
             }
 
             $sku = $forecast['sku'] ?? $actual->product->sku ?? ($sku ?? '-');
-            $unit = $forecast['unit'] ?? 'PCS';
+            $unit = $forecast['unit'] ?? 'Unit';
             
             $forecastQty = (float) ($forecast['forecast_qty'] ?? 0);
             $actualQty = (float) ($actual->total_qty ?? 0);

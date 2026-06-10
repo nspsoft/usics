@@ -198,7 +198,7 @@ class SalesForecastController extends Controller
                         'id' => $pid,
                         'name' => $fc->product->name,
                         'sku' => $fc->product->sku,
-                        'unit' => $fc->product->unit->code ?? 'PCS',
+                        'unit' => $fc->product->unit->name ?? 'Unit',
                         'forecast' => 0, 'actual' => 0,
                     ];
                 }

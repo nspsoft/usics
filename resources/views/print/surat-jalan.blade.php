@@ -229,7 +229,7 @@
                     <span style="font-size: 8pt; color: #444;">{{ $item->product->description }}</span>
                 </td>
                 <td style="text-align: center; border-bottom: none;">{{ number_format($item->qty_delivered, 0, ',', '.') }}</td>
-                <td style="text-align: center; border-bottom: none;">{{ $item->unit->code ?? 'PCs' }}</td>
+                <td style="text-align: center; border-bottom: none;">{{ $item->unit->name ?? 'Unit' }}</td>
                 <td style="border-bottom: none; font-size: 8pt; color: #444;">{{ $item->notes }}</td>
             </tr>
             @endif

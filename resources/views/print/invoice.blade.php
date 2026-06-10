@@ -303,7 +303,7 @@
                         <div style="font-size: 8.5pt; color: #444;">{{ $firstItem->product->description }}</div>
                     </td>
                     <td class="text-center">{{ number_format($totalQty, 0, ',', '.') }}</td>
-                    <td class="text-center">{{ $firstItem->unit->code ?? 'PCs' }}</td>
+                    <td class="text-center">{{ $firstItem->unit->name ?? 'Unit' }}</td>
                     <td class="text-right">{{ number_format($firstItem->unit_price, 0, ',', '.') }}</td>
                     <td class="text-right">{{ number_format($totalSubtotal, 0, ',', '.') }}</td>
                 </tr>
@@ -452,7 +452,7 @@
                             {{ number_format($item->qty, 0, ',', '.') }}
                         </td>
                         <td style="padding: 5px; border: 1pt solid #ddd; text-align: center;">
-                            {{ $item->unit->code ?? 'PC' }}
+                            {{ $item->unit->name ?? 'Unit' }}
                         </td>
                     </tr>
                     @endforeach

@@ -289,7 +289,7 @@ const getStatusClass = (status) => {
                                                 <div v-if="adjustmentForm.errors.qty" class="text-[9px] text-red-500 font-bold uppercase">{{ adjustmentForm.errors.qty }}</div>
                                             </div>
                                             <div v-else class="flex items-center justify-center gap-2 group">
-                                                <span>{{ formatNumber(item.qty) }} {{ item.unit?.code }}</span>
+                                                <span>{{ formatNumber(item.qty) }} {{ item.unit?.name || 'Unit' }}</span>
                                                 <button 
                                                     @click="startEditing(item)"
                                                     class="p-1 rounded-md text-blue-500 bg-blue-500/5 hover:bg-blue-500/10 transition-all"

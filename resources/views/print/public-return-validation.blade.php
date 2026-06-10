@@ -63,7 +63,7 @@
                             <p class="font-bold text-slate-700 leading-tight">{{ $item->product->name }}</p>
                             <p class="text-slate-400 mt-0.5">{{ $item->product->sku }}</p>
                         </div>
-                        <p class="font-black text-blue-600">{{ number_format($item->qty, 0) }} {{ $item->unit->code ?? 'PCS' }}</p>
+                        <p class="font-black text-blue-600">{{ number_format($item->qty, 0) }} {{ $item->unit->name ?? 'Unit' }}</p>
                     </div>
                     @endforeach
                 </div>

@@ -265,8 +265,8 @@ const exportUrl = computed(() => {
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-slate-900 dark:text-white">
                                 {{ formatNumber(item.qty_delivered) }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-slate-500 uppercase">
-                                {{ item.unit?.code }}
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-slate-500">
+                                {{ item.unit?.name || 'Unit' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold" :class="(item.qty_delivered - item.qty_ordered) < 0 ? 'text-rose-500' : 'text-slate-500'">
                                 {{ formatNumber(item.qty_delivered - item.qty_ordered) }}
