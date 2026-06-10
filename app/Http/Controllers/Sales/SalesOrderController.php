@@ -221,6 +221,7 @@ class SalesOrderController extends Controller
 
         return Inertia::render('Sales/Orders/Show', [
             'salesOrder' => $order,
+            'products' => Product::active()->where('is_sold', true)->select('id','sku','name','unit_id','selling_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
         ]);
     }
 
@@ -509,6 +510,73 @@ class SalesOrderController extends Controller
         return back()->with('success', 'Harga berhasil direvisi.');
     }
 
+
+    public function replaceItemProduct(Request $request, \App\Models\SalesOrderItem $item)
+    {
+        $validated = $request->validate([
+            'new_product_id' => 'required|exists:products,id',
+            'new_unit_price'  => 'nullable|numeric|min:0',
+            'new_unit_id'     => 'nullable|exists:units,id',
+            'reason'          => 'required|string|max:255',
+        ]);
+
+        // Guard: item tidak boleh sudah pernah dideliver
+        if ($item->qty_delivered > 0) {
+            return back()->with('error', 'Tidak bisa ganti produk: item ini sudah pernah dikirim (qty_delivered > 0).');
+        }
+
+        // Guard: item tidak boleh sudah di-invoice
+        if ($item->qty_invoiced > 0) {
+            return back()->with('error', 'Tidak bisa ganti produk: item ini sudah diinvoice.');
+        }
+
+        // Guard: item tidak boleh ada di Delivery Order yang aktif (non-cancelled)
+        $hasActiveDoItem = $item->deliveryOrderItems()
+            ->whereHas('deliveryOrder', function ($q) {
+                $q->whereNotIn('status', ['cancelled']);
+            })->exists();
+
+        if ($hasActiveDoItem) {
+            return back()->with('error', 'Tidak bisa ganti produk: item ini sudah terdaftar di Delivery Order aktif.');
+        }
+
+        $oldProduct = $item->product;
+        $newProduct = Product::findOrFail($validated['new_product_id']);
+
+        if ($oldProduct->id === $newProduct->id) {
+            return back()->with('error', 'Produk yang dipilih sama dengan produk saat ini.');
+        }
+
+        DB::transaction(function () use ($item, $validated, $oldProduct, $newProduct) {
+            $updateData = ['product_id' => $newProduct->id];
+
+            if (!empty($validated['new_unit_price'])) {
+                $updateData['unit_price'] = $validated['new_unit_price'];
+            }
+            if (!empty($validated['new_unit_id'])) {
+                $updateData['unit_id'] = $validated['new_unit_id'];
+            }
+
+            $item->update($updateData);
+            $item->salesOrder->calculateTotals();
+
+            activity()
+                ->performedOn($item)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'old_product_id'   => $oldProduct->id,
+                    'old_product_name' => $oldProduct->name,
+                    'old_product_sku'  => $oldProduct->sku,
+                    'new_product_id'   => $newProduct->id,
+                    'new_product_name' => $newProduct->name,
+                    'new_product_sku'  => $newProduct->sku,
+                    'reason'           => $validated['reason'],
+                ])
+                ->log("Produk diganti dari [{$oldProduct->sku}] {$oldProduct->name} menjadi [{$newProduct->sku}] {$newProduct->name}. Alasan: {$validated['reason']}");
+        });
+
+        return back()->with('success', "Produk berhasil diganti menjadi {$newProduct->name}.");
+    }
 
     public function createInvoice(SalesOrder $order)
     {

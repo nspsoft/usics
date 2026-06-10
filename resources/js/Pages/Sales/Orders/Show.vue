@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
     ArrowLeftIcon,
@@ -12,13 +12,17 @@ import {
     CheckIcon,
     XMarkIcon,
     CurrencyDollarIcon,
+    ArrowPathIcon,
+    MagnifyingGlassIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 
 const props = defineProps({
     salesOrder: Object,
+    products: Array,
 });
 
+// ─── canEditPrice ───
 const canEditPrice = computed(() => {
     if (!props.salesOrder || props.salesOrder.status === 'cancelled') return false;
 
@@ -29,6 +33,7 @@ const canEditPrice = computed(() => {
     });
 });
 
+// ─── Qty Adjustment ───
 const editingItemId = ref(null);
 const adjustmentForm = useForm({
     qty: 0,
@@ -80,7 +85,59 @@ const submitPriceRevision = (itemId) => {
     });
 };
 
+// ─── Replace Product ───
+// Kondisi: item belum pernah dikirim (qty_delivered=0), belum di-reserve di DO aktif, belum diinvoice
+const canReplaceProduct = (item) => {
+    if (!props.salesOrder || props.salesOrder.status === 'cancelled') return false;
+    return (
+        parseFloat(item.qty_delivered ?? 0) === 0 &&
+        parseFloat(item.qty_invoiced ?? 0) === 0 &&
+        parseFloat(item.reserved_qty ?? 0) === 0
+    );
+};
 
+const replacingProductItemId = ref(null);
+const productSearch = ref('');
+const replaceForm = useForm({
+    new_product_id: null,
+    new_unit_price: null,
+    new_unit_id: null,
+    reason: '',
+});
+
+const filteredProducts = computed(() => {
+    if (!productSearch.value) return props.products ?? [];
+    const q = productSearch.value.toLowerCase();
+    return (props.products ?? []).filter(
+        (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
+    );
+});
+
+const startReplaceProduct = (item) => {
+    replacingProductItemId.value = item.id;
+    productSearch.value = '';
+    replaceForm.reset();
+    replaceForm.new_unit_price = parseFloat(item.unit_price) || null;
+    replaceForm.new_unit_id = item.unit_id || null;
+};
+
+const cancelReplaceProduct = () => {
+    replacingProductItemId.value = null;
+    productSearch.value = '';
+};
+
+const submitReplaceProduct = (itemId) => {
+    if (!replaceForm.new_product_id) return;
+    replaceForm.put(route('sales.orders.replace-item-product', itemId), {
+        preserveScroll: true,
+        onSuccess: () => {
+            replacingProductItemId.value = null;
+            productSearch.value = '';
+        },
+    });
+};
+
+// ─── Status Badge ───
 const getStatusClass = (status) => {
     const classes = {
         draft: 'bg-slate-500/10 text-slate-500 dark:text-slate-400 ring-slate-500/20',
@@ -111,7 +168,7 @@ const getStatusClass = (status) => {
                     <div>
                         <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ salesOrder.so_number }}</h1>
                         <div class="flex items-center gap-3 mt-1 text-sm">
-                            <span 
+                            <span
                                 class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset uppercase tracking-wider"
                                 :class="getStatusClass(salesOrder.status)"
                             >
@@ -201,14 +258,86 @@ const getStatusClass = (status) => {
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                                     <tr v-for="item in salesOrder.items" :key="item.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-900 dark:bg-slate-800/50">
+
+                                        <!-- ── Product Column ── -->
                                         <td class="px-6 py-4">
-                                            <div class="font-medium text-slate-900 dark:text-white">{{ item.product?.name || 'Unknown Item' }}</div>
-                                            <div class="text-xs text-slate-500 font-mono">{{ item.product?.sku || '#' + item.product_id }}</div>
+                                            <!-- Replace Product Mode -->
+                                            <div v-if="replacingProductItemId === item.id" class="space-y-2 min-w-[260px]">
+                                                <!-- Search input -->
+                                                <div class="relative">
+                                                    <MagnifyingGlassIcon class="absolute left-2 top-2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                                    <input
+                                                        v-model="productSearch"
+                                                        type="text"
+                                                        placeholder="Cari produk (nama/SKU)..."
+                                                        class="w-full pl-7 rounded-lg border-0 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500/50 py-1.5"
+                                                        autofocus
+                                                    />
+                                                </div>
+                                                <!-- Dropdown product list -->
+                                                <div class="max-h-40 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                                                    <div
+                                                        v-for="prod in filteredProducts.slice(0, 30)"
+                                                        :key="prod.id"
+                                                        @click="replaceForm.new_product_id = prod.id; replaceForm.new_unit_price = prod.selling_price; replaceForm.new_unit_id = prod.unit_id; productSearch = prod.name"
+                                                        class="px-3 py-2 cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors"
+                                                        :class="replaceForm.new_product_id === prod.id ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-semibold' : 'text-slate-700 dark:text-slate-300'"
+                                                    >
+                                                        <div class="font-medium">{{ prod.name }}</div>
+                                                        <div class="text-slate-400 font-mono">{{ prod.sku }}</div>
+                                                    </div>
+                                                    <div v-if="filteredProducts.length === 0" class="px-3 py-2 text-slate-400 italic">Tidak ada produk ditemukan</div>
+                                                </div>
+                                                <!-- Alasan -->
+                                                <input
+                                                    v-model="replaceForm.reason"
+                                                    type="text"
+                                                    placeholder="Alasan penggantian produk... (wajib)"
+                                                    class="w-full rounded-lg border-0 bg-slate-50 dark:bg-slate-800 text-[10px] text-slate-500 dark:text-slate-400 focus:ring-1 focus:ring-orange-500/50 py-1 italic"
+                                                    required
+                                                />
+                                                <div v-if="replaceForm.errors.reason" class="text-[9px] text-red-500 font-bold uppercase">{{ replaceForm.errors.reason }}</div>
+                                                <div v-if="replaceForm.errors.new_product_id" class="text-[9px] text-red-500 font-bold uppercase">{{ replaceForm.errors.new_product_id }}</div>
+                                                <!-- Action buttons -->
+                                                <div class="flex items-center gap-2">
+                                                    <button
+                                                        @click="submitReplaceProduct(item.id)"
+                                                        :disabled="!replaceForm.new_product_id || !replaceForm.reason || replaceForm.processing"
+                                                        class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-orange-500 text-white text-xs font-medium hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                                    >
+                                                        <CheckIcon class="h-3.5 w-3.5" />
+                                                        Simpan
+                                                    </button>
+                                                    <button
+                                                        @click="cancelReplaceProduct"
+                                                        class="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                                                    >
+                                                        <XMarkIcon class="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <!-- Normal Display Mode -->
+                                            <div v-else class="group">
+                                                <div class="font-medium text-slate-900 dark:text-white">{{ item.product?.name || 'Unknown Item' }}</div>
+                                                <div class="text-xs text-slate-500 font-mono">{{ item.product?.sku || '#' + item.product_id }}</div>
+                                                <!-- Tombol Ganti Produk — hanya muncul jika belum ada delivery untuk item ini -->
+                                                <button
+                                                    v-if="canReplaceProduct(item)"
+                                                    @click="startReplaceProduct(item)"
+                                                    class="mt-1 flex items-center gap-1 text-[10px] font-semibold text-orange-500 bg-orange-500/10 hover:bg-orange-500/20 rounded-md px-2 py-0.5 transition-all opacity-0 group-hover:opacity-100"
+                                                    title="Ganti Produk (item belum ada Delivery)"
+                                                >
+                                                    <ArrowPathIcon class="h-3 w-3" />
+                                                    Ganti Produk
+                                                </button>
+                                            </div>
                                         </td>
+
+                                        <!-- ── Price Column ── -->
                                         <td class="px-6 py-4 text-right min-w-[200px]">
                                             <div v-if="editingPriceItemId === item.id" class="flex flex-col gap-2">
                                                 <div class="flex items-center gap-2 justify-end">
-                                                    <input 
+                                                    <input
                                                         v-model="priceForm.unit_price"
                                                         type="number"
                                                         step="any"
@@ -216,14 +345,14 @@ const getStatusClass = (status) => {
                                                         @keyup.enter="submitPriceRevision(item.id)"
                                                     />
                                                     <div class="flex items-center gap-1">
-                                                        <button 
+                                                        <button
                                                             @click="submitPriceRevision(item.id)"
                                                             class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors"
                                                             title="Save"
                                                         >
                                                             <CheckIcon class="h-4 w-4" />
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             @click="cancelPriceEditing"
                                                             class="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
                                                             title="Cancel"
@@ -232,7 +361,7 @@ const getStatusClass = (status) => {
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <input 
+                                                <input
                                                     v-model="priceForm.reason"
                                                     type="text"
                                                     placeholder="Alasan revisi harga..."
@@ -242,7 +371,7 @@ const getStatusClass = (status) => {
                                             </div>
                                             <div v-else class="flex items-center justify-end gap-2 group">
                                                 <span>{{ formatCurrency(item.unit_price) }}</span>
-                                                <button 
+                                                <button
                                                     v-if="canEditPrice"
                                                     @click="startPriceEditing(item)"
                                                     class="p-1 rounded-md text-blue-500 bg-blue-500/5 hover:bg-blue-500/10 transition-all opacity-0 group-hover:opacity-100"
@@ -252,10 +381,12 @@ const getStatusClass = (status) => {
                                                 </button>
                                             </div>
                                         </td>
+
+                                        <!-- ── Ordered (Qty) Column ── -->
                                         <td class="px-6 py-4 text-center font-bold text-slate-900 dark:text-white min-w-[200px]">
                                             <div v-if="editingItemId === item.id" class="flex flex-col gap-2">
                                                 <div class="flex items-center gap-2 justify-center">
-                                                    <input 
+                                                    <input
                                                         v-model="adjustmentForm.qty"
                                                         type="number"
                                                         step="any"
@@ -263,14 +394,14 @@ const getStatusClass = (status) => {
                                                         @keyup.enter="submitAdjustment(item.id)"
                                                     />
                                                     <div class="flex items-center gap-1">
-                                                        <button 
+                                                        <button
                                                             @click="submitAdjustment(item.id)"
                                                             class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors"
                                                             title="Save"
                                                         >
                                                             <CheckIcon class="h-4 w-4" />
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             @click="cancelEditing"
                                                             class="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
                                                             title="Cancel"
@@ -279,7 +410,7 @@ const getStatusClass = (status) => {
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <input 
+                                                <input
                                                     v-model="adjustmentForm.reason"
                                                     type="text"
                                                     placeholder="Alasan koreksi..."
@@ -290,7 +421,7 @@ const getStatusClass = (status) => {
                                             </div>
                                             <div v-else class="flex items-center justify-center gap-2 group">
                                                 <span>{{ formatNumber(item.qty) }} {{ item.unit?.name || 'Unit' }}</span>
-                                                <button 
+                                                <button
                                                     @click="startEditing(item)"
                                                     class="p-1 rounded-md text-blue-500 bg-blue-500/5 hover:bg-blue-500/10 transition-all"
                                                     title="Koreksi Qty"
@@ -299,6 +430,7 @@ const getStatusClass = (status) => {
                                                 </button>
                                             </div>
                                         </td>
+
                                         <td class="px-6 py-4 text-center text-emerald-400 font-medium">
                                             {{ formatNumber(item.qty_delivered) }}
                                         </td>
@@ -312,7 +444,7 @@ const getStatusClass = (status) => {
                                             {{ formatNumber(item.qty_returned || 0) }}
                                         </td>
                                         <td class="px-6 py-4 text-center">
-                                            <span 
+                                            <span
                                                 class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                                                 :class="item.remaining_qty > 0 ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-50 dark:bg-slate-800 text-slate-500'"
                                             >
@@ -365,7 +497,6 @@ const getStatusClass = (status) => {
                             <div class="space-y-2">
                                 <div class="text-slate-900 dark:text-white font-bold text-base">{{ salesOrder.customer.name }}</div>
                                 <div class="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                    <MapPinIcon class="h-4 w-4 mt-0.5 shrink-0" />
                                     <p class="leading-relaxed">{{ salesOrder.customer.full_address }}</p>
                                 </div>
                                 <div class="flex items-center gap-2 text-sm text-slate-500 pt-1">
@@ -382,7 +513,6 @@ const getStatusClass = (status) => {
                             <div class="space-y-2">
                                 <div class="text-emerald-400 font-bold text-base">{{ salesOrder.shipping_name || salesOrder.customer.name }}</div>
                                 <div class="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
-                                    <MapPinIcon class="h-4 w-4 mt-0.5 shrink-0 text-emerald-500/50" />
                                     <p class="leading-relaxed">{{ salesOrder.shipping_address || salesOrder.customer.full_address }}</p>
                                 </div>
                                 <div v-if="!salesOrder.shipping_name && !salesOrder.shipping_address" class="text-[10px] font-bold text-slate-600 uppercase italic pt-1">
@@ -424,7 +554,7 @@ const getStatusClass = (status) => {
                                     <span class="text-[10px] text-slate-500">{{ new Date(delivery.delivery_date).toLocaleDateString('id-ID') }}</span>
                                 </div>
                                 <div class="text-right">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider" 
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider"
                                           :class="{
                                               'bg-slate-100 text-slate-800': delivery.status === 'draft',
                                               'bg-amber-100 text-amber-800': delivery.status === 'picking',
@@ -453,7 +583,7 @@ const getStatusClass = (status) => {
                                 </div>
                                 <div class="text-right">
                                     <div class="text-sm font-medium text-slate-900 dark:text-white">{{ formatCurrency(invoice.total) }}</div>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium" 
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium"
                                           :class="{
                                               'bg-slate-100 text-slate-800': invoice.status === 'draft',
                                               'bg-blue-100 text-blue-800': invoice.status === 'issued' || invoice.status === 'sent',
@@ -471,6 +601,3 @@ const getStatusClass = (status) => {
         </div>
     </AppLayout>
 </template>
-
-
-
