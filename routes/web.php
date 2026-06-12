@@ -463,6 +463,7 @@ Route::prefix('manufacturing')->name('manufacturing.')->middleware(['auth'])->gr
     Route::get('/production-reports', [\App\Http\Controllers\Manufacturing\ProductionEntryController::class, 'index'])->name('production-reports.index');
     Route::get('/production-reports/{productionEntry}/edit', [\App\Http\Controllers\Manufacturing\ProductionEntryController::class, 'edit'])->name('production-reports.edit');
     Route::put('/production-reports/{productionEntry}', [\App\Http\Controllers\Manufacturing\ProductionEntryController::class, 'update'])->name('production-reports.update');
+    Route::post('/production-reports/{production_entry}/print-labels', [\App\Http\Controllers\Manufacturing\ProductionEntryController::class, 'printLabels'])->name('production-reports.print-labels');
     Route::resource('shifts', ShiftController::class);
     Route::resource('machines', MachineController::class);
     Route::post('/subcontract-orders/sync-cancelled', [SubcontractOrderController::class, 'syncCancelledWorkOrders'])->name('subcontract-orders.sync-cancelled');

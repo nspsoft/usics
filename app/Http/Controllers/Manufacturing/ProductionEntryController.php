@@ -26,6 +26,7 @@ class ProductionEntryController extends Controller
         $query = ProductionEntry::query()
             ->with([
                 'workOrder.product',
+                'workOrder.salesOrder',
                 'operatorEmployee',
                 'entryUser',
             ])
@@ -140,5 +141,40 @@ class ProductionEntryController extends Controller
         ]);
 
         return back()->with('success', 'Laporan produksi berhasil di-update.');
+    }
+
+    public function printLabels(Request $request, ProductionEntry $productionEntry)
+    {
+        $productionEntry->loadMissing(['workOrder.product', 'workOrder.salesOrder.customer', 'operatorEmployee']);
+        $labelData = json_decode($request->input('label_data'), true) ?? [];
+
+        $labels = [];
+        foreach ($labelData as $data) {
+            $qtyPerLabel = $data['qty_per_label'] ?? $productionEntry->qty_produced;
+            $labelCount = $data['label_count'] ?? 1;
+            $lotNumber = $data['lot_number'] ?? '';
+            $spk = $data['spk'] ?? '';
+            $note = $data['note'] ?? '';
+            $size = $data['size'] ?? '';
+            $specification = $data['specification'] ?? '';
+
+            for ($i = 0; $i < $labelCount; $i++) {
+                $labels[] = [
+                    'customer_name' => $productionEntry->workOrder->salesOrder->customer->name ?? 'STOCK',
+                    'product_name' => $productionEntry->workOrder->product->name,
+                    'sku' => $productionEntry->workOrder->product->sku,
+                    'specification' => $specification,
+                    'size' => $size,
+                    'qty' => number_format($qtyPerLabel, 0, ',', '.') . ' Pcs',
+                    'lot_number' => $lotNumber,
+                    'spk' => $spk,
+                    'note' => $note,
+                ];
+            }
+        }
+
+        return view('print.product-labels', [
+            'labels' => $labels,
+        ]);
     }
 }
