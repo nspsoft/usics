@@ -57,6 +57,21 @@ class DeliveryOrderController extends Controller
             })
             ->when($request->invoice_status, function ($q, $status) {
                 $q->invoiceStatus($status);
+            })
+            ->when($request->po_status, function ($q, $poStatus) {
+                if ($poStatus === 'waiting_po') {
+                    $q->whereHas('salesOrder', function ($sq) {
+                        $sq->where(function ($w) {
+                            $w->whereNull('customer_po_number')
+                              ->orWhere('customer_po_number', '');
+                        });
+                    });
+                } elseif ($poStatus === 'has_po') {
+                    $q->whereHas('salesOrder', function ($sq) {
+                        $sq->whereNotNull('customer_po_number')
+                           ->where('customer_po_number', '!=', '');
+                    });
+                }
             });
 
         $sort = $request->input('sort', 'delivery_date');
@@ -94,7 +109,7 @@ class DeliveryOrderController extends Controller
             'deliveryOrders' => $deliveryOrders,
             'pendingSalesOrders' => $pendingSalesOrders,
             'customers' => Customer::active()->orderBy('name')->get(['id', 'name', 'code']),
-            'filters' => $request->only(['search', 'status', 'invoice_status', 'customer', 'delivery_date_from', 'delivery_date_to']),
+            'filters' => $request->only(['search', 'status', 'invoice_status', 'customer', 'delivery_date_from', 'delivery_date_to', 'po_status']),
             'statuses' => [
                 ['value' => 'draft', 'label' => 'Draft'],
                 ['value' => 'picking', 'label' => 'Picking'],
@@ -659,6 +674,44 @@ class DeliveryOrderController extends Controller
         ]);
     }
 
+    public function printLabels(Request $request, DeliveryOrder $deliveryOrder)
+    {
+        $deliveryOrder->load(['customer']);
+        $labelData = json_decode($request->input('label_data'), true) ?? [];
+
+        $labels = [];
+        foreach ($labelData as $data) {
+            $item = $deliveryOrder->items()->with(['product.category', 'unit'])->find($data['item_id']);
+            if (!$item) continue;
+
+            $qtyPerLabel = $data['qty_per_label'] ?? $item->qty_delivered;
+            $labelCount = $data['label_count'] ?? 1;
+            $lotNumber = $data['lot_number'] ?? '';
+            $spk = $data['spk'] ?? '';
+            $note = $data['note'] ?? '';
+            $size = $data['size'] ?? '';
+            $specification = $data['specification'] ?? '';
+
+            for ($i = 0; $i < $labelCount; $i++) {
+                $labels[] = [
+                    'customer_name' => $deliveryOrder->customer->name,
+                    'product_name' => $item->product->name,
+                    'sku' => $item->product->sku,
+                    'specification' => $specification,
+                    'size' => $size,
+                    'qty' => number_format($qtyPerLabel, 0, ',', '.') . ' ' . ($item->unit->name ?? 'Pcs'),
+                    'lot_number' => $lotNumber,
+                    'spk' => $spk,
+                    'note' => $note,
+                ];
+            }
+        }
+
+        return view('print.product-labels', [
+            'labels' => $labels,
+        ]);
+    }
+
     public function publicValidate($uuid)
     {
         if (Str::isUuid($uuid)) {
@@ -955,6 +1008,10 @@ class DeliveryOrderController extends Controller
             return back()->with('error', 'Only verified (delivered/completed) deliveries can be invoiced.');
         }
 
+        if ($deliveryOrder->salesOrder && empty($deliveryOrder->salesOrder->customer_po_number)) {
+            return back()->with('error', 'Gagal membuat Invoice. Sales Order terkait belum memiliki Nomor PO resmi.');
+        }
+
         // Check if already invoiced (simple check for now)
         // You might want to add a relationship or flag in DO to track this properly
 
@@ -1107,7 +1164,11 @@ class DeliveryOrderController extends Controller
         if (!empty($validated['select_all'])) {
             $query = DeliveryOrder::with(['items.salesOrderItem.product', 'items.unit', 'salesOrder.customer'])
                 ->whereIn('status', ['completed', 'delivered', 'shipped'])
-                ->invoiceStatus('pending');
+                ->invoiceStatus('pending')
+                ->whereHas('salesOrder', function ($q) {
+                    $q->whereNotNull('customer_po_number')
+                      ->where('customer_po_number', '!=', '');
+                });
             
             $filters = $validated['filters'] ?? [];
             $query->when($filters['search'] ?? null, function ($q, $search) {
@@ -1136,6 +1197,21 @@ class DeliveryOrderController extends Controller
             })
             ->when($filters['invoice_status'] ?? null, function ($q, $status) {
                 $q->invoiceStatus($status);
+            })
+            ->when($filters['po_status'] ?? null, function ($q, $poStatus) {
+                if ($poStatus === 'waiting_po') {
+                    $q->whereHas('salesOrder', function ($sq) {
+                        $sq->where(function ($w) {
+                            $w->whereNull('customer_po_number')
+                              ->orWhere('customer_po_number', '');
+                        });
+                    });
+                } elseif ($poStatus === 'has_po') {
+                    $q->whereHas('salesOrder', function ($sq) {
+                        $sq->whereNotNull('customer_po_number')
+                           ->where('customer_po_number', '!=', '');
+                    });
+                }
             });
 
             return $query->get();
@@ -1145,6 +1221,10 @@ class DeliveryOrderController extends Controller
             ->whereIn('id', $validated['ids'] ?? [])
             ->whereIn('status', ['completed', 'delivered', 'shipped'])
             ->invoiceStatus('pending')
+            ->whereHas('salesOrder', function ($q) {
+                $q->whereNotNull('customer_po_number')
+                  ->where('customer_po_number', '!=', '');
+            })
             ->get();
     }
 
@@ -1183,6 +1263,9 @@ class DeliveryOrderController extends Controller
                 foreach ($groups as $soId => $dos) {
                     $groupedItems = [];
                     $so = $dos->first()->salesOrder;
+                    if ($so && empty($so->customer_po_number)) {
+                        throw new \RuntimeException("Sales Order {$so->so_number} belum memiliki Nomor PO resmi dan tidak dapat dibuatkan invoice.");
+                    }
                     $customerId = $so->customer_id;
 
                     foreach ($dos as $do) {
@@ -1471,5 +1554,197 @@ class DeliveryOrderController extends Controller
             ->update(['travel_allowance_status' => 'paid']);
 
         return redirect()->back()->with('success', 'Uang jalan untuk Shipment ' . $shipmentNumber . ' berhasil dicairkan! 💸');
+    }
+
+    public function reassignSoForm(DeliveryOrder $deliveryOrder)
+    {
+        if (!in_array($deliveryOrder->status, ['completed', 'delivered', 'shipped'])) {
+            return redirect()->route('sales.deliveries.show', $deliveryOrder->id)
+                ->with('error', 'Hanya Surat Jalan yang berstatus Shipped, Delivered, atau Completed yang dapat dipindahkan.');
+        }
+
+        $deliveryOrder->load(['salesOrder', 'customer', 'warehouse', 'items.product']);
+
+        $requiredProducts = $deliveryOrder->items
+            ->map(fn($item) => (int)$item->product_id)
+            ->unique()
+            ->values()
+            ->all();
+
+        // Ambil SO alternatif yang:
+        // - Customer & Gudang sama
+        // - Bukan SO saat ini
+        // - Status: confirmed atau processing
+        // - Memiliki semua produk yang ada di DO tersebut
+        $salesOrdersQuery = \App\Models\SalesOrder::where('customer_id', $deliveryOrder->customer_id)
+            ->where('warehouse_id', $deliveryOrder->warehouse_id)
+            ->where('id', '!=', $deliveryOrder->sales_order_id)
+            ->whereIn('status', [
+                \App\Models\SalesOrder::STATUS_CONFIRMED,
+                \App\Models\SalesOrder::STATUS_PROCESSING,
+            ])
+            ->with(['items' => function($q) use ($requiredProducts) {
+                $q->whereIn('product_id', $requiredProducts);
+            }])
+            ->orderByDesc('created_at');
+
+        foreach ($requiredProducts as $productId) {
+            $salesOrdersQuery->whereHas('items', function($q) use ($productId) {
+                $q->where('product_id', $productId);
+            });
+        }
+
+        $salesOrders = $salesOrdersQuery->get()
+            ->filter(function($so) use ($deliveryOrder) {
+                $itemsByProduct = $so->items->keyBy('product_id');
+
+                foreach ($deliveryOrder->items as $doItem) {
+                    $soItem = $itemsByProduct->get((int)$doItem->product_id);
+                    if (!$soItem) return false;
+
+                    // Sisa qty yang bisa dikirim di SO target
+                    $remaining = (float)($soItem->qty - ($soItem->qty_delivered - $soItem->qty_returned));
+                    if ((float)$doItem->qty_delivered > $remaining + 0.0001) {
+                        return false;
+                    }
+                }
+                return true;
+            })
+            ->values();
+
+        return Inertia::render('Sales/Deliveries/ReassignSO', [
+            'deliveryOrder' => $deliveryOrder,
+            'salesOrders' => $salesOrders,
+        ]);
+    }
+
+    public function reassignSo(Request $request, DeliveryOrder $deliveryOrder)
+    {
+        if (!in_array($deliveryOrder->status, ['completed', 'delivered', 'shipped'])) {
+            return back()->with('error', 'Hanya Surat Jalan yang berstatus Shipped, Delivered, atau Completed yang dapat dipindahkan.');
+        }
+
+        $validated = $request->validate([
+            'sales_order_id' => 'required|exists:sales_orders,id',
+        ]);
+
+        $hasInvoiced = $deliveryOrder->items()->whereRaw('COALESCE(qty_invoiced, 0) > 0')->exists();
+        if ($hasInvoiced) {
+            return back()->with('error', 'Gagal memindahkan SO: Surat Jalan ini sudah diproses ke Invoice sebagian/seluruhnya.');
+        }
+
+        if ((int)$validated['sales_order_id'] === (int)$deliveryOrder->sales_order_id) {
+            return back()->with('error', 'Target SO tidak boleh sama dengan SO saat ini.');
+        }
+
+        $oldSoId = (int)$deliveryOrder->sales_order_id;
+        $newSoId = (int)$validated['sales_order_id'];
+
+        try {
+            DB::transaction(function () use ($deliveryOrder, $newSoId) {
+                $deliveryOrder->load(['items.salesOrderItem', 'items.product', 'salesOrder.items']);
+
+                $oldSo = $deliveryOrder->salesOrder;
+                $newSo = \App\Models\SalesOrder::with('items.product')->findOrFail($newSoId);
+
+                if ((int)$newSo->customer_id !== (int)$deliveryOrder->customer_id) {
+                    throw new \RuntimeException('Gagal memindahkan SO: Customer tidak cocok.');
+                }
+
+                if ((int)$newSo->warehouse_id !== (int)$deliveryOrder->warehouse_id) {
+                    throw new \RuntimeException('Gagal memindahkan SO: Warehouse pengiriman tidak cocok.');
+                }
+
+                $newSoItemsByProduct = $newSo->items->keyBy('product_id');
+
+                // Validasi kecocokan kuantitas di SO target
+                foreach ($deliveryOrder->items as $doItem) {
+                    $productId = (int)$doItem->product_id;
+                    $newSoItem = $newSoItemsByProduct->get($productId);
+
+                    if (!$newSoItem) {
+                        throw new \RuntimeException('Gagal memindahkan SO: Produk ' . ($doItem->product?->sku ?? $productId) . ' tidak ditemukan di SO target.');
+                    }
+
+                    $remaining = (float)($newSoItem->qty - ($newSoItem->qty_delivered - $newSoItem->qty_returned));
+                    if ((float)$doItem->qty_delivered > $remaining + 0.0001) {
+                        throw new \RuntimeException('Gagal memindahkan SO: Kuantitas tersisa di SO target kurang untuk produk ' . ($doItem->product?->sku ?? $productId));
+                    }
+                }
+
+                // 1. Kurangi qty terkirim dari SO lama
+                if ($oldSo) {
+                    $oldSo->loadMissing('items');
+                    foreach ($deliveryOrder->items as $doItem) {
+                        $oldSoItem = $doItem->salesOrderItem;
+                        if ($oldSoItem) {
+                            $oldSoItem->qty_delivered = max(0, (float)$oldSoItem->qty_delivered - (float)$doItem->qty_delivered);
+                            $oldSoItem->save();
+                        }
+                    }
+                    
+                    // Rekalkulasi status SO lama
+                    $oldSo->refresh();
+                    $allDelivered = $oldSo->items->every(fn($item) => $item->isFullyDelivered());
+                    $someDelivered = $oldSo->items->some(fn($item) => $item->qty_delivered > 0);
+
+                    if ($allDelivered) {
+                        $oldSo->status = \App\Models\SalesOrder::STATUS_DELIVERED;
+                    } elseif ($someDelivered) {
+                        $oldSo->status = \App\Models\SalesOrder::STATUS_PROCESSING;
+                    } else {
+                        if ($oldSo->status === \App\Models\SalesOrder::STATUS_DELIVERED || $oldSo->status === \App\Models\SalesOrder::STATUS_PROCESSING) {
+                            $oldSo->status = $oldSo->customer_po_number ? \App\Models\SalesOrder::STATUS_CONFIRMED : \App\Models\SalesOrder::STATUS_WAITING_PO;
+                        }
+                    }
+                    $oldSo->save();
+                }
+
+                // 2. Alokasikan qty terkirim ke SO baru dan update relasi DO item
+                foreach ($deliveryOrder->items as $doItem) {
+                    $productId = (int)$doItem->product_id;
+                    $newSoItem = $newSoItemsByProduct->get($productId);
+
+                    $newSoItem->qty_delivered += (float)$doItem->qty_delivered;
+                    $newSoItem->save();
+
+                    $doItem->sales_order_item_id = $newSoItem->id;
+                    $doItem->save();
+                }
+
+                // Rekalkulasi status SO baru
+                $newSo->refresh();
+                $allDelivered = $newSo->items->every(fn($item) => $item->isFullyDelivered());
+                $someDelivered = $newSo->items->some(fn($item) => $item->qty_delivered > 0);
+
+                if ($allDelivered) {
+                    $newSo->status = \App\Models\SalesOrder::STATUS_DELIVERED;
+                } elseif ($someDelivered) {
+                    $newSo->status = \App\Models\SalesOrder::STATUS_PROCESSING;
+                }
+                $newSo->save();
+
+                // Hubungkan DO utama ke SO baru
+                $deliveryOrder->sales_order_id = $newSo->id;
+                $deliveryOrder->save();
+            });
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        // Catat Activity Log
+        activity()
+            ->performedOn($deliveryOrder)
+            ->causedBy(auth()->user())
+            ->withProperties([
+                'delivery_order_id' => $deliveryOrder->id,
+                'do_number' => $deliveryOrder->do_number,
+                'old_sales_order_id' => $oldSoId,
+                'new_sales_order_id' => $newSoId,
+            ])
+            ->log('Reassigned Linked Sales Order for Delivery Order');
+
+        return redirect()->route('sales.deliveries.show', $deliveryOrder->id)
+            ->with('success', 'Surat Jalan berhasil dipindahkan ke Sales Order target.');
     }
 }

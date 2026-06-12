@@ -376,7 +376,10 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::post('/deliveries/{delivery_order}/complete', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'complete'])->name('deliveries.complete');
     Route::patch('/deliveries/{delivery_order}/status', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'updateStatus'])->name('deliveries.update-status');
     Route::get('/deliveries/{delivery_order}/print', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'print'])->name('deliveries.print');
+    Route::post('/deliveries/{delivery_order}/print-labels', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'printLabels'])->name('deliveries.print-labels');
     Route::post('/deliveries/{delivery_order}/invoice', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'createInvoice'])->name('deliveries.create-invoice');
+    Route::get('/deliveries/{delivery_order}/reassign-so', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'reassignSoForm'])->name('deliveries.reassign-so');
+    Route::post('/deliveries/{delivery_order}/reassign-so', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'reassignSo'])->name('deliveries.reassign-so.update');
     Route::post('/deliveries/bulk-invoice', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'bulkInvoice'])->name('deliveries.bulk-invoice');
     Route::post('/deliveries/bulk-invoice-preview', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'bulkInvoicePreview'])->name('deliveries.bulk-invoice-preview');
     Route::get('/deliveries-export', [App\Http\Controllers\Sales\DeliveryOrderController::class, 'export'])->name('deliveries.export');

@@ -90,6 +90,154 @@ const forcePrint = () => {
     window.open(route('sales.deliveries.print', props.deliveryOrder.id) + '?format=' + printFormat.value, '_blank');
 };
 
+const showPrintLabelModal = ref(false);
+const printLabelItems = ref([]);
+const globalLotNumber = ref('');
+const globalSpk = ref('');
+const globalNote = ref('');
+
+const openPrintLabelModal = () => {
+    printLabelItems.value = props.deliveryOrder.items.map(item => {
+        const sizeParts = [];
+        if (item.product?.length) sizeParts.push(item.product.length);
+        if (item.product?.width) sizeParts.push(item.product.width);
+        if (item.product?.height) sizeParts.push(item.product.height);
+        const dimensionUnit = item.product?.dimension_unit || 'mm';
+        const sizeStr = sizeParts.length > 0 ? sizeParts.map(p => p + ' ' + dimensionUnit).join(' x ') : '';
+
+        return {
+            key: item.id + '_init',
+            item_id: item.id,
+            product_name: item.product?.name || '',
+            sku: item.product?.sku || '',
+            qty_delivered: item.qty_delivered || 0,
+            unit_name: item.unit?.name || 'Pcs',
+            qty_per_label: item.qty_delivered || 0,
+            label_count: 1,
+            lot_number: '',
+            spk: '',
+            note: '',
+            size: sizeStr,
+            specification: item.product?.description || '',
+            selected: true
+        };
+    });
+    globalLotNumber.value = '';
+    globalSpk.value = '';
+    globalNote.value = '';
+    showPrintLabelModal.value = true;
+};
+
+const duplicateLabelRow = (row) => {
+    const newRow = {
+        ...row,
+        key: row.item_id + '_' + Math.random().toString(36).substr(2, 9),
+        qty_per_label: 0,
+        label_count: 1,
+        selected: true
+    };
+    const index = printLabelItems.value.findIndex(r => r.key === row.key);
+    printLabelItems.value.splice(index + 1, 0, newRow);
+};
+
+const canDeleteRow = (row) => {
+    return printLabelItems.value.filter(r => r.item_id === row.item_id).length > 1;
+};
+
+const deleteLabelRow = (row) => {
+    const index = printLabelItems.value.findIndex(r => r.key === row.key);
+    printLabelItems.value.splice(index, 1);
+};
+
+const autoSplitRow = (row) => {
+    const qtyInput = prompt("Masukkan Qty per label (misal 100):");
+    if (!qtyInput) return;
+    const splitQty = parseInt(qtyInput);
+    if (isNaN(splitQty) || splitQty <= 0) {
+        alert("Qty per label harus berupa angka positif.");
+        return;
+    }
+
+    const totalQty = row.qty_delivered;
+    if (splitQty > totalQty) {
+        alert("Qty per label tidak boleh lebih besar dari total Qty DO.");
+        return;
+    }
+
+    const labelCount = Math.floor(totalQty / splitQty);
+    const remainder = totalQty % splitQty;
+
+    const newRows = [];
+    if (labelCount > 0) {
+        newRows.push({
+            ...row,
+            key: row.item_id + '_1',
+            qty_per_label: splitQty,
+            label_count: labelCount,
+            selected: true
+        });
+    }
+    if (remainder > 0) {
+        newRows.push({
+            ...row,
+            key: row.item_id + '_2',
+            qty_per_label: remainder,
+            label_count: 1,
+            selected: true
+        });
+    }
+
+    const originalIndex = printLabelItems.value.findIndex(r => r.item_id === row.item_id);
+    printLabelItems.value = [
+        ...printLabelItems.value.slice(0, originalIndex),
+        ...newRows,
+        ...printLabelItems.value.slice(originalIndex).filter(r => r.item_id !== row.item_id)
+    ];
+};
+
+const applyGlobalValues = () => {
+    printLabelItems.value.forEach(item => {
+        if (item.selected) {
+            if (globalLotNumber.value) item.lot_number = globalLotNumber.value;
+            if (globalSpk.value) item.spk = globalSpk.value;
+            if (globalNote.value) item.note = globalNote.value;
+        }
+    });
+};
+
+const submitPrintLabels = () => {
+    const selectedItems = printLabelItems.value.filter(item => item.selected);
+    if (selectedItems.length === 0) {
+        alert('Silakan pilih minimal satu produk untuk dicetak.');
+        return;
+    }
+
+    const formEl = document.createElement('form');
+    formEl.method = 'POST';
+    formEl.action = route('sales.deliveries.print-labels', props.deliveryOrder.id);
+    formEl.target = '_blank';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (csrfToken) {
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = '_token';
+        tokenInput.value = csrfToken;
+        formEl.appendChild(tokenInput);
+    }
+
+    const dataInput = document.createElement('input');
+    dataInput.type = 'hidden';
+    dataInput.name = 'label_data';
+    dataInput.value = JSON.stringify(selectedItems);
+    formEl.appendChild(dataInput);
+
+    document.body.appendChild(formEl);
+    formEl.submit();
+    document.body.removeChild(formEl);
+    showPrintLabelModal.value = false;
+};
+
 const props = defineProps({
     deliveryOrder: Object,
     primaryDo: Object,
@@ -545,6 +693,16 @@ const handleSmartAction = () => {
                         </div>
                     </div>
                     
+                    <!-- Print Labels Button -->
+                    <button 
+                        v-if="deliveryOrder.items && deliveryOrder.items.length > 0"
+                        @click="openPrintLabelModal"
+                        type="button"
+                        class="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700 shadow-sm"
+                    >
+                        <PrinterIcon class="h-4 w-4" />
+                        PRINT LABELS
+                    </button>
 
                     <!-- 2. Save Changes (Only in Draft + Authorized Role) -->
                     <button 
@@ -585,9 +743,20 @@ const handleSmartAction = () => {
                         REVISE (RESET)
                     </button>
 
+                    <!-- Reassign SO (Sales & Sales Manager) -->
+                    <Link 
+                        v-if="['delivered', 'completed', 'shipped'].includes(deliveryOrder.status) && deliveryOrder.invoice_status === 'pending' && hasRole('Sales', 'Sales Manager')"
+                        :href="route('sales.deliveries.reassign-so', deliveryOrder.id)"
+                        class="flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 px-4 py-2.5 text-sm font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors border border-amber-200 dark:border-amber-900/50 shadow-sm"
+                        title="Pindahkan Surat Jalan ini ke Sales Order resmi yang lain"
+                    >
+                        <ArrowPathIcon class="h-4 w-4" />
+                        REASSIGN SO
+                    </Link>
+
                     <!-- 4. Create Invoice (Post-Delivery + Role Check) -->
                     <Link 
-                        v-if="deliveryOrder.status === 'completed' && canInvoice"
+                        v-if="deliveryOrder.status === 'completed' && canInvoice && !!deliveryOrder.sales_order?.customer_po_number"
                         :href="route('sales.deliveries.create-invoice', deliveryOrder.id)"
                         method="post"
                         as="button"
@@ -1125,23 +1294,18 @@ const handleSmartAction = () => {
 
     <Teleport to="body">
         <div v-if="showScanModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
                 <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
                     <QrCodeIcon class="h-6 w-6 text-slate-500" />
-                    <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Scan Loading</h3>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Scan Barcode Product</h3>
                     <button @click="showScanModal = false" class="ml-auto text-slate-400 hover:text-slate-600">
                         <XMarkIcon class="h-5 w-5" />
                     </button>
                 </div>
-
                 <div class="p-6 space-y-4">
-                    <div
-                        id="do-qr-reader"
-                        class="rounded-2xl overflow-hidden border-2 border-dashed border-blue-300 dark:border-blue-700 bg-slate-100 dark:bg-slate-800 min-h-[280px]"
-                        :class="scanning ? 'border-solid border-blue-500' : ''"
-                    ></div>
-
-                    <div class="flex items-center gap-3">
+                    <div id="qr-reader" class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950"></div>
+                    
+                    <div class="flex gap-4">
                         <button
                             v-if="!scanning"
                             type="button"
@@ -1178,6 +1342,211 @@ const handleSmartAction = () => {
 
                 <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
                     <button @click="showScanModal = false" class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Print Product Labels Modal -->
+    <Teleport to="body">
+        <div v-if="showPrintLabelModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl mx-auto overflow-hidden my-8">
+                <!-- Modal Header -->
+                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <PrinterIcon class="h-6 w-6 text-blue-500" />
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white uppercase tracking-widest">Print Product Labels</h3>
+                    </div>
+                    <button @click="showPrintLabelModal = false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <XMarkIcon class="h-5 w-5" />
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+                    <!-- Quick Fill Section -->
+                    <div class="bg-slate-50 dark:bg-slate-800/30 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Quick Fill (Set values for all selected items)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Global SPK</label>
+                                <input 
+                                    v-model="globalSpk" 
+                                    type="text" 
+                                    placeholder="Enter SPK Number..." 
+                                    class="w-full text-xs rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Global Lot Number</label>
+                                <input 
+                                    v-model="globalLotNumber" 
+                                    type="text" 
+                                    placeholder="Enter Lot Number..." 
+                                    class="w-full text-xs rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                            <div class="flex items-end gap-2">
+                                <div class="flex-1">
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Global Note</label>
+                                    <input 
+                                        v-model="globalNote" 
+                                        type="text" 
+                                        placeholder="Enter Note..." 
+                                        class="w-full text-xs rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                <button 
+                                    type="button" 
+                                    @click="applyGlobalValues" 
+                                    class="h-[38px] px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors shadow-lg shadow-blue-500/10 whitespace-nowrap"
+                                >
+                                    Apply
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Items List -->
+                    <div class="space-y-4">
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Label Configuration per Item</h4>
+                        <div class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 dark:bg-slate-800/40 text-[10px] font-bold text-slate-500 uppercase border-b border-slate-200 dark:border-slate-800">
+                                    <tr>
+                                        <th class="p-4 text-center w-12 border-r border-slate-200 dark:border-slate-800">Select</th>
+                                        <th class="p-4 w-48 border-r border-slate-200 dark:border-slate-800">Product</th>
+                                        <th class="p-4 w-28 border-r border-slate-200 dark:border-slate-800">Qty / Label</th>
+                                        <th class="p-4 w-24 border-r border-slate-200 dark:border-slate-800">Labels</th>
+                                        <th class="p-4 w-32 border-r border-slate-200 dark:border-slate-800">SPK</th>
+                                        <th class="p-4 w-32 border-r border-slate-200 dark:border-slate-800">Lot Number</th>
+                                        <th class="p-4 w-32 border-r border-slate-200 dark:border-slate-800">Size</th>
+                                        <th class="p-4 w-32 border-r border-slate-200 dark:border-slate-800">Specification</th>
+                                        <th class="p-4 w-32 border-r border-slate-200 dark:border-slate-800">Note</th>
+                                        <th class="p-4 w-28 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                                    <tr v-for="item in printLabelItems" :key="item.key" class="hover:bg-slate-50 dark:hover:bg-slate-800/20" :class="{'opacity-50': !item.selected}">
+                                        <td class="p-4 text-center border-r border-slate-200 dark:border-slate-800">
+                                            <input 
+                                                type="checkbox" 
+                                                v-model="item.selected" 
+                                                class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                            />
+                                        </td>
+                                        <td class="p-4 border-r border-slate-200 dark:border-slate-800">
+                                            <div class="font-bold text-slate-900 dark:text-white">{{ item.product_name }}</div>
+                                            <div class="text-[10px] text-slate-500 font-mono mt-0.5">{{ item.sku }}</div>
+                                            <div class="text-[10px] text-slate-400 mt-1">DO Qty: {{ formatNumber(item.qty_delivered) }} {{ item.unit_name }}</div>
+                                        </td>
+                                        <td class="p-4 border-r border-slate-200 dark:border-slate-800">
+                                            <input 
+                                                v-model.number="item.qty_per_label" 
+                                                type="number" 
+                                                :disabled="!item.selected"
+                                                class="w-full text-xs rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500 font-mono"
+                                            />
+                                        </td>
+                                        <td class="p-4 border-r border-slate-200 dark:border-slate-800">
+                                            <input 
+                                                v-model.number="item.label_count" 
+                                                type="number" 
+                                                min="1"
+                                                :disabled="!item.selected"
+                                                class="w-full text-xs rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500 font-mono"
+                                            />
+                                        </td>
+                                        <td class="p-4 border-r border-slate-200 dark:border-slate-800">
+                                            <input 
+                                                v-model="item.spk" 
+                                                type="text" 
+                                                :disabled="!item.selected"
+                                                class="w-full text-xs rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </td>
+                                        <td class="p-4 border-r border-slate-200 dark:border-slate-800">
+                                            <input 
+                                                v-model="item.lot_number" 
+                                                type="text" 
+                                                :disabled="!item.selected"
+                                                class="w-full text-xs rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </td>
+                                        <td class="p-4 border-r border-slate-200 dark:border-slate-800">
+                                            <input 
+                                                v-model="item.size" 
+                                                type="text" 
+                                                :disabled="!item.selected"
+                                                class="w-full text-xs rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </td>
+                                        <td class="p-4 border-r border-slate-200 dark:border-slate-800">
+                                            <input 
+                                                v-model="item.specification" 
+                                                type="text" 
+                                                :disabled="!item.selected"
+                                                class="w-full text-xs rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </td>
+                                        <td class="p-4 border-r border-slate-200 dark:border-slate-800">
+                                            <input 
+                                                v-model="item.note" 
+                                                type="text" 
+                                                :disabled="!item.selected"
+                                                class="w-full text-xs rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </td>
+                                        <td class="p-4 text-center flex items-center gap-1.5 justify-center">
+                                            <button 
+                                                type="button" 
+                                                @click="autoSplitRow(item)" 
+                                                :disabled="!item.selected"
+                                                class="p-1 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors disabled:opacity-40"
+                                                title="Bagi Kuantitas Otomatis"
+                                            >
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                @click="duplicateLabelRow(item)" 
+                                                :disabled="!item.selected"
+                                                class="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-40"
+                                                title="Tambah Baris Konfigurasi"
+                                            >
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                            </button>
+                                            <button 
+                                                v-if="canDeleteRow(item)"
+                                                type="button" 
+                                                @click="deleteLabelRow(item)" 
+                                                class="p-1 rounded bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors"
+                                                title="Hapus Baris"
+                                            >
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
+                    <button 
+                        @click="showPrintLabelModal = false" 
+                        class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                        Batal
+                    </button>
+                    <button 
+                        @click="submitPrintLabels" 
+                        class="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-all shadow-lg shadow-blue-500/20"
+                    >
+                        Print Labels
+                    </button>
                 </div>
             </div>
         </div>
