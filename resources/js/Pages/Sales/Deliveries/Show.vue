@@ -114,16 +114,16 @@ const openPrintLabelModal = () => {
             unit_name: item.unit?.name || 'Pcs',
             qty_per_label: item.qty_delivered || 0,
             label_count: 1,
-            lot_number: '',
-            spk: '',
+            lot_number: props.deliveryOrder.sales_order?.customer_po_number || '',
+            spk: props.deliveryOrder.sales_order?.so_number || '',
             note: '',
             size: sizeStr,
             specification: item.product?.description || '',
             selected: true
         };
     });
-    globalLotNumber.value = '';
-    globalSpk.value = '';
+    globalLotNumber.value = props.deliveryOrder.sales_order?.customer_po_number || '';
+    globalSpk.value = props.deliveryOrder.sales_order?.so_number || '';
     globalNote.value = '';
     showPrintLabelModal.value = true;
 };
