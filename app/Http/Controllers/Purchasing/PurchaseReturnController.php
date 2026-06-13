@@ -218,17 +218,17 @@ class PurchaseReturnController extends Controller
         ]);
     }
 
-    public function confirm(PurchaseReturn $purchaseReturn)
+    public function confirm(PurchaseReturn $return)
     {
-        if ($purchaseReturn->status !== 'draft') {
+        if ($return->status !== 'draft') {
             return back()->with('error', 'Only draft returns can be confirmed.');
         }
 
-        return DB::transaction(function() use ($purchaseReturn) {
-            foreach ($purchaseReturn->items as $item) {
+        return DB::transaction(function() use ($return) {
+            foreach ($return->items as $item) {
                 $stock = ProductStock::firstOrCreate([
                     'product_id' => $item->product_id,
-                    'warehouse_id' => $purchaseReturn->warehouse_id,
+                    'warehouse_id' => $return->warehouse_id,
                 ], [
                     'qty_on_hand' => 0,
                 ]);
@@ -236,9 +236,9 @@ class PurchaseReturnController extends Controller
                 // Bug 4 fix: Warn if stock will go negative, but allow (soft block)
                 if ($stock->qty_on_hand < $item->qty) {
                     \Illuminate\Support\Facades\Log::warning(
-                        "Negative stock warning: Product #{$item->product_id} in Warehouse #{$purchaseReturn->warehouse_id}. " .
+                        "Negative stock warning: Product #{$item->product_id} in Warehouse #{$return->warehouse_id}. " .
                         "Current: {$stock->qty_on_hand}, Returning: {$item->qty}. " .
-                        "Return: {$purchaseReturn->number}, User: " . auth()->id()
+                        "Return: {$return->number}, User: " . auth()->id()
                     );
                 }
 
@@ -247,12 +247,12 @@ class PurchaseReturnController extends Controller
                     -$item->qty,
                     null,
                     StockMovement::TYPE_PURCHASE_RETURN,
-                    $purchaseReturn,
-                    "Purchase Return: {$purchaseReturn->number}"
+                    $return,
+                    "Purchase Return: {$return->number}"
                 );
 
                 // Update PO Item qty_returned
-                $poItem = \App\Models\PurchaseOrderItem::where('purchase_order_id', $purchaseReturn->purchase_order_id)
+                $poItem = \App\Models\PurchaseOrderItem::where('purchase_order_id', $return->purchase_order_id)
                     ->where('product_id', $item->product_id)
                     ->first();
                 
@@ -262,18 +262,18 @@ class PurchaseReturnController extends Controller
                 }
             }
 
-            $purchaseReturn->update(['status' => 'confirmed']);
+            $return->update(['status' => 'confirmed']);
 
             activity()
-                ->performedOn($purchaseReturn)
+                ->performedOn($return)
                 ->causedBy(auth()->user())
                 ->withProperties([
-                    'number' => $purchaseReturn->number,
-                    'purchase_order_id' => $purchaseReturn->purchase_order_id,
-                    'supplier_id' => $purchaseReturn->supplier_id,
-                    'warehouse_id' => $purchaseReturn->warehouse_id,
-                    'items_count' => $purchaseReturn->items()->count(),
-                    'total_amount' => (float) $purchaseReturn->total_amount,
+                    'number' => $return->number,
+                    'purchase_order_id' => $return->purchase_order_id,
+                    'supplier_id' => $return->supplier_id,
+                    'warehouse_id' => $return->warehouse_id,
+                    'items_count' => $return->items()->count(),
+                    'total_amount' => (float) $return->total_amount,
                 ])
                 ->log('Confirmed Purchase Return');
 

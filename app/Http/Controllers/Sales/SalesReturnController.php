@@ -192,10 +192,10 @@ class SalesReturnController extends Controller
         });
     }
 
-    public function show(SalesReturn $salesReturn): Response
+    public function show(SalesReturn $return): Response
     {
         return Inertia::render('Sales/Returns/Show', [
-            'salesReturn' => $salesReturn->load(['items.product', 'customer', 'warehouse', 'creator', 'salesOrder', 'salesInvoice']),
+            'salesReturn' => $return->load(['items.product', 'customer', 'warehouse', 'creator', 'salesOrder', 'salesInvoice']),
         ]);
     }
 

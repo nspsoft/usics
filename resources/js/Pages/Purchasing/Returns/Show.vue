@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
@@ -14,10 +15,15 @@ const props = defineProps({
     purchaseReturn: Object,
 });
 
+const processing = ref(false);
+
 const confirmReturn = () => {
-    if (!props.purchaseReturn?.id) return;
+    if (!props.purchaseReturn?.id || processing.value) return;
     if (confirm('Are you sure you want to confirm this return? This will update your stock levels.')) {
-        router.post(route('purchasing.purchase-returns.confirm', props.purchaseReturn.id));
+        router.post(route('purchasing.purchase-returns.confirm', props.purchaseReturn.id), {}, {
+            onStart: () => { processing.value = true; },
+            onFinish: () => { processing.value = false; }
+        });
     }
 };
 
@@ -47,10 +53,12 @@ const formatDate = (date) => {
                     </button>
                     <button 
                         v-if="purchaseReturn.status === 'draft'"
+                        :disabled="processing"
                         @click="confirmReturn"
-                        class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-emerald-500 shadow-lg shadow-emerald-900/20"
+                        class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-emerald-500 shadow-lg shadow-emerald-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <CheckCircleIcon class="h-4 w-4" /> Confirm & Update Stock
+                        <CheckCircleIcon v-if="!processing" class="h-4 w-4" />
+                        <span>{{ processing ? 'Processing...' : 'Confirm & Update Stock' }}</span>
                     </button>
                 </div>
             </div>

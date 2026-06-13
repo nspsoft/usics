@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
@@ -13,9 +14,15 @@ const props = defineProps({
     salesReturn: Object,
 });
 
+const processing = ref(false);
+
 const confirmReturn = () => {
+    if (processing.value) return;
     if (confirm('Are you sure you want to confirm this return? This will add the items back to your stock.')) {
-        router.post(route('sales.returns.confirm', props.salesReturn.id));
+        router.post(route('sales.returns.confirm', props.salesReturn.id), {}, {
+            onStart: () => { processing.value = true; },
+            onFinish: () => { processing.value = false; }
+        });
     }
 };
 
@@ -44,10 +51,12 @@ const formatDate = (date) => {
                     </a>
                     <button 
                         v-if="salesReturn.status === 'draft'"
+                        :disabled="processing"
                         @click="confirmReturn"
-                        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-indigo-500 shadow-lg shadow-indigo-900/20"
+                        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-indigo-500 shadow-lg shadow-indigo-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <CheckCircleIcon class="h-4 w-4" /> Confirm & Restock
+                        <CheckCircleIcon v-if="!processing" class="h-4 w-4" />
+                        <span>{{ processing ? 'Processing...' : 'Confirm & Restock' }}</span>
                     </button>
                 </div>
             </div>
