@@ -255,10 +255,22 @@
                     {{-- Balance Row --}}
                     <tr class="balance-row">
                         <td class="label-cell label-bal">BALANCE</td>
+                        @php
+                            $cumSch = 0;
+                            $cumAct = 0;
+                        @endphp
                         @foreach($headers as $header)
                             @php
                                 $key = $mode === 'weekly' ? $header['key'] : $header;
-                                $bal = $product['daily'][$key]['bal'] ?? 0;
+                                $sch = $product['daily'][$key]['sch'] ?? 0;
+                                $act = $product['daily'][$key]['act'] ?? 0;
+                                if ($accumulate) {
+                                    $cumSch += $sch;
+                                    $cumAct += $act;
+                                    $bal = $cumAct - $cumSch;
+                                } else {
+                                    $bal = $product['daily'][$key]['bal'] ?? 0;
+                                }
                             @endphp
                             <td class="text-right {{ $bal < 0 ? 'cell-balance-neg' : ($bal > 0 ? 'cell-balance-pos' : '') }}">
                                 {{ $bal != 0 ? number_format($bal, 1, ',', '.') : '-' }}

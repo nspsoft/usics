@@ -56,7 +56,7 @@ const loadChartData = async () => {
         if (selectedCustomerId.value) params.set('customer_id', selectedCustomerId.value);
         if (selectedProductId.value) params.set('product_id', selectedProductId.value);
 
-        const res = await fetch(route('sales.planning.schedule.chart-data') + '?' + params.toString());
+        const res = await fetch(route('sales.planning.schedule.chart-data', undefined, false) + '?' + params.toString());
         chartData.value = await res.json();
     } catch (e) {
         console.error('Chart fetch error:', e);
@@ -167,7 +167,7 @@ const comboChartOpts = computed(() => ({
 }));
 
 const handleSearch = () => {
-    router.get(route('sales.planning.schedule.comparison'), {
+    router.get(route('sales.planning.schedule.comparison', undefined, false), {
         search: search.value, 
         start_date: startDate.value,
         end_date: endDate.value,
@@ -215,14 +215,36 @@ const isToday = (dateStr) => {
     return dateStr === today;
 };
 
+const accumulateBalance = ref(false);
+
+const getBalanceValue = (product, date) => {
+    if (!accumulateBalance.value) {
+        return product.daily[date]?.bal ?? 0;
+    }
+    
+    let totalSch = 0;
+    let totalAct = 0;
+    
+    for (const d of props.dates) {
+        totalSch += product.daily[d]?.sch ?? 0;
+        totalAct += product.daily[d]?.act ?? 0;
+        if (d === date) {
+            break;
+        }
+    }
+    
+    return totalAct - totalSch;
+};
+
 const printOfficial = () => {
     const params = new URLSearchParams({
         start_date: startDate.value,
         end_date: endDate.value,
         search: search.value || '',
         mode: mode.value,
+        accumulate: accumulateBalance.value ? '1' : '0',
     });
-    window.open(route('sales.planning.schedule.print') + '?' + params.toString(), '_blank');
+    window.open(route('sales.planning.schedule.print', undefined, false) + '?' + params.toString(), '_blank');
 };
 </script>
 
@@ -233,7 +255,7 @@ const printOfficial = () => {
         <template #header>
             <div class="flex items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
-                    <Link :href="route('sales.planning.schedule.index')" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors no-print">
+                    <Link :href="route('sales.planning.schedule.index', undefined, false)" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors no-print">
                         <ArrowLeftIcon class="w-5 h-5" />
                     </Link>
                     <h2 class="font-semibold text-xl text-slate-800 dark:text-slate-200 leading-tight">
@@ -287,6 +309,15 @@ const printOfficial = () => {
                                 Weekly
                             </button>
                         </div>
+                        <!-- Accumulate Balance Checkbox -->
+                        <label class="flex items-center gap-2 cursor-pointer bg-slate-100 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/60 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-350 select-none hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+                            <input 
+                                v-model="accumulateBalance" 
+                                type="checkbox" 
+                                class="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                            >
+                            Akumulasi Balance
+                        </label>
                     </div>
                     
                     <div class="flex items-center gap-4">
@@ -472,9 +503,9 @@ const printOfficial = () => {
                                         </td>
                                         <td v-for="date in dates" :key="date" 
                                             class="p-2 border border-slate-200 dark:border-slate-800 text-right font-mono"
-                                            :class="product.daily[date]?.bal < 0 ? 'text-red-700 dark:text-red-400 font-black bg-red-100/40 dark:bg-red-900/20' : product.daily[date]?.bal > 0 ? 'text-blue-700 dark:text-blue-400 font-black bg-blue-50/30' : 'text-slate-400'"
+                                            :class="getBalanceValue(product, date) < 0 ? 'text-red-700 dark:text-red-400 font-black bg-red-100/40 dark:bg-red-900/20' : getBalanceValue(product, date) > 0 ? 'text-blue-700 dark:text-blue-400 font-black bg-blue-50/30' : 'text-slate-400'"
                                         >
-                                            {{ product.daily[date]?.bal !== 0 ? formatNumber(product.daily[date].bal) : '-' }}
+                                            {{ getBalanceValue(product, date) !== 0 ? formatNumber(getBalanceValue(product, date)) : '-' }}
                                         </td>
                                         <td class="p-2 border border-slate-200 dark:border-slate-800 text-right font-mono font-black sticky right-0 z-10 transition-colors shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]"
                                             :class="product.totals.bal < 0 ? 'bg-red-200 dark:bg-red-800/60 text-red-900 dark:text-red-100' : 'bg-slate-200 dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-base shadow-inner'"

@@ -398,6 +398,7 @@ class DeliveryScheduleController extends Controller
             'printDate' => Carbon::now()->format('d/m/Y H:i'),
             'today' => Carbon::now()->format('Y-m-d'),
             'mode' => $mode,
+            'accumulate' => $request->input('accumulate', 0) == 1,
         ]);
     }
 
