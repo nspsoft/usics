@@ -20,7 +20,7 @@ class PurchaseReturnController extends Controller
 {
     public function index(Request $request): Response
     {
-        $returns = PurchaseReturn::with(['supplier', 'warehouse', 'creator'])
+        $returns = PurchaseReturn::with(['supplier', 'warehouse', 'creator', 'purchaseOrder'])
             ->when($request->search, function($query, $search) {
                 $query->where('number', 'like', "%{$search}%");
             })
