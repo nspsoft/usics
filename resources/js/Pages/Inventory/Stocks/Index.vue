@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
@@ -11,6 +11,7 @@ import {
     ShoppingCartIcon,
     ChevronUpIcon,
     ChevronDownIcon,
+    ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline';
 import Pagination from '@/Components/Pagination.vue';
 import debounce from 'lodash/debounce';
@@ -200,6 +201,17 @@ const bulkReorder = () => {
     router.get(`/purchasing/requests/create?${params.toString()}`);
 };
 
+const exportUrl = computed(() => {
+    return route('inventory.stocks.export', {
+        search: search.value || undefined,
+        warehouse_id: selectedWarehouse.value || undefined,
+        category: selectedCategory.value || undefined,
+        action: selectedAction.value || undefined,
+        sort: sortField.value,
+        direction: sortDirection.value,
+    });
+});
+
 </script>
 
 <template>
@@ -229,6 +241,17 @@ const bulkReorder = () => {
                         <FunnelIcon class="h-5 w-5" />
                         Filters
                     </button>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <a
+                        :href="exportUrl"
+                        target="_blank"
+                        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 shadow-lg shadow-blue-900/25 transition-all"
+                    >
+                        <ArrowDownTrayIcon class="h-5 w-5" />
+                        Export Stock
+                    </a>
                 </div>
             </div>
 

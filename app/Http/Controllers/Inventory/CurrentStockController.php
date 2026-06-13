@@ -19,8 +19,8 @@ class CurrentStockController extends Controller
     public function index(Request $request): Response
     {
         $availableExpr = '(SUM(qty_on_hand) - SUM(qty_reserved))';
-        $hasMinStock = DB::selectOne("SHOW COLUMNS FROM products LIKE 'min_stock'") !== null;
-        $hasReorderPoint = DB::selectOne("SHOW COLUMNS FROM products LIKE 'reorder_point'") !== null;
+        $hasMinStock = \Illuminate\Support\Facades\Schema::hasColumn('products', 'min_stock');
+        $hasReorderPoint = \Illuminate\Support\Facades\Schema::hasColumn('products', 'reorder_point');
 
         $minStockCol = 'MAX(products.min_stock)';
         $reorderPointCol = 'MAX(products.reorder_point)';
@@ -102,5 +102,13 @@ class CurrentStockController extends Controller
             'categories' => Category::where('type', 'product')->orderBy('name')->get(),
             'filters' => $request->only(['search', 'warehouse_id', 'category', 'action', 'sort', 'direction']),
         ]);
+    }
+
+    public function export(Request $request)
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\Inventory\CurrentStockExport($request->only(['search', 'warehouse_id', 'category', 'action', 'sort', 'direction'])),
+            'current_stock_' . date('Ymd_His') . '.xlsx'
+        );
     }
 }

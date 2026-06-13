@@ -96,6 +96,7 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::get('/dashboard', [App\Http\Controllers\Inventory\InventoryDashboardController::class, 'index'])->name('dashboard');
     Route::get('/information', [App\Http\Controllers\Inventory\InventoryInformationController::class, 'index'])->name('information');
     Route::resource('categories', App\Http\Controllers\Inventory\CategoryController::class);
+    Route::get('/stocks/export', [App\Http\Controllers\Inventory\CurrentStockController::class, 'export'])->name('stocks.export');
     Route::get('/stocks', [App\Http\Controllers\Inventory\CurrentStockController::class, 'index'])->name('stocks.index');
     Route::get('/products/lookup', [ProductController::class, 'lookup'])->name('products.lookup');
     Route::resource('products', ProductController::class);
