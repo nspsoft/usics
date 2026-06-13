@@ -135,7 +135,7 @@ const analyzeFile = async () => {
     formData.append('file', file.value);
 
     try {
-        const response = await axios.post(route('purchasing.dn-extractor.extract'), formData, {
+        const response = await axios.post(route('purchasing.dn-extractor.extract', undefined, false), formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
         
@@ -247,7 +247,7 @@ const createGR = async () => {
                 }))
         };
 
-        const response = await axios.post(route('purchasing.dn-extractor.store-gr'), payload);
+        const response = await axios.post(route('purchasing.dn-extractor.store-gr', undefined, false), payload);
         
         if (response.data.redirect_url) {
             currentStep.value = 4; // Complete

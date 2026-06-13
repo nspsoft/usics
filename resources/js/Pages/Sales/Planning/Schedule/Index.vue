@@ -68,7 +68,7 @@ const sort = (field) => {
 };
 
 const handleSearch = () => {
-    router.get(route('sales.planning.schedule.index'), {
+    router.get(route('sales.planning.schedule.index', undefined, false), {
         search: search.value, 
         date: date.value,
         sort: sortField.value,
@@ -91,7 +91,7 @@ const closeImportModal = () => {
 
 const submitImport = () => {
     if (form.file) {
-        form.post(route('sales.planning.schedule.import'), {
+        form.post(route('sales.planning.schedule.import', undefined, false), {
             onSuccess: () => {
                 closeImportModal();
             },
@@ -168,7 +168,7 @@ const extractMatrix = async () => {
     const formData = new FormData();
     formData.append('file', aiFile.value);
     try {
-        const response = await axios.post(route('sales.planning.schedule.extract-matrix'), formData, {
+        const response = await axios.post(route('sales.planning.schedule.extract-matrix', undefined, false), formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             maxRedirects: 0,
         });
@@ -196,7 +196,7 @@ const removeItem = (index) => extractedData.value.items.splice(index, 1);
 const downloadExcel = async () => {
     isSaving.value = true;
     try {
-        const response = await axios.post(route('sales.planning.schedule.export-extraction'), {
+        const response = await axios.post(route('sales.planning.schedule.export-extraction', undefined, false), {
             items: extractedData.value.items,
             month_year: extractedData.value.month_year || '',
         }, { responseType: 'blob' });
@@ -265,7 +265,7 @@ const downloadExcel = async () => {
                     
                     <div class="flex gap-2">
                         <a 
-                            :href="route('sales.planning.schedule.export', { search, date })"
+                            :href="route('sales.planning.schedule.export', { search, date }, false)"
                             class="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -288,7 +288,7 @@ const downloadExcel = async () => {
                             Import Excel
                         </button>
                         <Link 
-                            :href="route('sales.planning.schedule.comparison')"
+                            :href="route('sales.planning.schedule.comparison', undefined, false)"
                             class="flex items-center gap-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors border border-slate-700 dark:border-slate-600"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -674,7 +674,7 @@ const downloadExcel = async () => {
                             
                             <div class="mt-4 z-30 relative py-1 px-3 rounded-lg bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-800/50">
                                 <a 
-                                    :href="route('sales.planning.schedule.template')"
+                                    :href="route('sales.planning.schedule.template', undefined, false)"
                                     class="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">

@@ -69,7 +69,7 @@ const processWithAi = async () => {
     aiError.value = '';
     
     try {
-        const response = await axios.post(route('meeting-command.ai-process'), {
+        const response = await axios.post(route('meeting-command.ai-process', undefined, false), {
             raw_notes: rawNotes.value
         });
         
@@ -189,7 +189,7 @@ const processAudioWithAi = async () => {
     formData.append('audio_file', audioFile.value);
 
     try {
-        const response = await axios.post(route('meeting-command.ai-process-audio'), formData, {
+        const response = await axios.post(route('meeting-command.ai-process-audio', undefined, false), formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }
