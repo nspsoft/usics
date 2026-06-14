@@ -142,13 +142,35 @@ const pulsingTodayPlugin = {
     afterDraw(chart) {
         const todayIdx = chart.options.plugins?.pulsingToday?.todayIndex ?? -1;
         if (todayIdx < 0) return;
-        // Cum. Target is dataset index 2
-        const meta = chart.getDatasetMeta(2);
+        // Cum. Actual is dataset index 3 (pulsing moves to actual line)
+        const meta = chart.getDatasetMeta(3);
         if (!meta?.data?.[todayIdx]) return;
         const pt = meta.data[todayIdx];
         if (!pt || pt.x === undefined || pt.y === undefined) return;
         const { x, y } = pt;
         const ctx = chart.ctx;
+
+        // Determine color based on balance (actual vs target)
+        const targetVal = chart.data.datasets[2]?.data?.[todayIdx] ?? 0;
+        const actualVal = chart.data.datasets[3]?.data?.[todayIdx] ?? 0;
+        const balance = actualVal - targetVal;
+
+        // Color scheme: minus=red, equal=green, over=blue
+        let dotColor, ring1Color, ring2Color;
+        if (balance < 0) {
+            dotColor = '#ef4444';       // red
+            ring1Color = [239, 68, 68];
+            ring2Color = [252, 165, 165];
+        } else if (balance === 0) {
+            dotColor = '#10b981';       // green
+            ring1Color = [16, 185, 129];
+            ring2Color = [110, 231, 183];
+        } else {
+            dotColor = '#3b82f6';       // blue
+            ring1Color = [59, 130, 246];
+            ring2Color = [147, 197, 253];
+        }
+
         const now = performance.now();
         const cycle = 2000;
         const t1 = (now % cycle) / cycle;
@@ -157,28 +179,25 @@ const pulsingTodayPlugin = {
         // Outer pulsing ring 1
         ctx.beginPath();
         ctx.arc(x, y, 10 + t1 * 22, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(59, 130, 246, ${Math.max(0, 0.85 * (1 - t1))})`;
+        ctx.strokeStyle = `rgba(${ring1Color.join(',')}, ${Math.max(0, 0.85 * (1 - t1))})`;
         ctx.lineWidth = 2.5;
         ctx.stroke();
         // Outer pulsing ring 2 (half-cycle offset)
         ctx.beginPath();
         ctx.arc(x, y, 10 + t2 * 22, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(147, 197, 253, ${Math.max(0, 0.6 * (1 - t2))})`;
+        ctx.strokeStyle = `rgba(${ring2Color.join(',')}, ${Math.max(0, 0.6 * (1 - t2))})`;
         ctx.lineWidth = 1.5;
         ctx.stroke();
         // Central enlarged dot with white border
         ctx.beginPath();
         ctx.arc(x, y, 9, 0, Math.PI * 2);
-        ctx.fillStyle = '#3b82f6';
+        ctx.fillStyle = dotColor;
         ctx.fill();
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 2.5;
         ctx.stroke();
 
         // ─── Info Card ───
-        const targetVal = chart.data.datasets[2]?.data?.[todayIdx] ?? 0;
-        const actualVal = chart.data.datasets[3]?.data?.[todayIdx] ?? 0;
-        const balance = actualVal - targetVal;
         const fmt = (n) => Number(n ?? 0).toLocaleString('id-ID');
         const dateLabel = chart.data.labels?.[todayIdx] ?? 'Today';
 
@@ -410,13 +429,21 @@ const itemChartData = computed(() => {
                 type: 'line', label: 'Cum. Target',
                 data: d.map(t => t.cum_schedule),
                 borderColor: '#3b82f6', borderDash: [6, 3], borderWidth: 2,
-                // Hide native point at today — plugin draws pulsing dot instead
-                pointRadius: d.map((_, i) => (todayIdx >= 0 && i === todayIdx) ? 0 : 3),
-                pointHoverRadius: d.map((_, i) => (todayIdx >= 0 && i === todayIdx) ? 12 : 5),
+                pointRadius: 3,
+                pointHoverRadius: 5,
                 pointBackgroundColor: '#3b82f6',
                 fill: false, tension: 0.3, order: 1
             },
-            { type: 'line', label: 'Cum. Actual', data: d.map(t => t.cum_delivery), borderColor: '#10b981', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#10b981', fill: false, tension: 0.3, order: 1 },
+            {
+                type: 'line', label: 'Cum. Actual',
+                data: d.map(t => t.cum_delivery),
+                borderColor: '#10b981', borderWidth: 2.5,
+                // Hide native point at today — plugin draws pulsing dot instead
+                pointRadius: d.map((_, i) => (todayIdx >= 0 && i === todayIdx) ? 0 : 4),
+                pointHoverRadius: d.map((_, i) => (todayIdx >= 0 && i === todayIdx) ? 12 : 6),
+                pointBackgroundColor: '#10b981',
+                fill: false, tension: 0.3, order: 1
+            },
         ],
     };
 });
