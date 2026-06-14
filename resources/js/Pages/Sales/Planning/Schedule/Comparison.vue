@@ -265,7 +265,7 @@ const pulsingTodayPlugin = {
         drawRow('Cum. Target', fmt(targetVal), '#93c5fd', '#bfdbfe', row1Y);
         drawRow('Cum. Actual', fmt(actualVal), '#6ee7b7', '#a7f3d0', row2Y);
 
-        const balLabel = balance >= 0 ? 'Over ▲' : 'Minus ▼';
+        const balLabel = balance >= 0 ? 'Over ▲' : 'Delay ▼';
         const balColor = balance >= 0 ? '#4ade80' : '#f87171';
         const balStr = (balance >= 0 ? '+' : '') + fmt(balance);
         drawRow(balLabel, balStr, balance >= 0 ? '#86efac' : '#fca5a5', balColor, row3Y);
