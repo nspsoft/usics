@@ -340,6 +340,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
         Route::post('/schedule/extract-matrix', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'extractFromImageMatrix'])->name('schedule.extract-matrix');
         Route::post('/schedule/export-extraction', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'exportExtraction'])->name('schedule.export-extraction');
         Route::post('/schedule/store-bulk', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'storeBulk'])->name('schedule.store-bulk');
+        Route::post('/schedule/reset', [App\Http\Controllers\Sales\Planning\DeliveryScheduleController::class, 'resetData'])->name('schedule.reset-data');
     });
 
     // AI PO Extractor Page

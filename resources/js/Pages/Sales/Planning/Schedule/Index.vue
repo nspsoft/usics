@@ -22,6 +22,7 @@ import {
 } from '@heroicons/vue/24/outline';
 import { formatNumber } from '@/helpers';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const props = defineProps({
     schedules: Object,
@@ -233,6 +234,36 @@ const downloadExcel = async () => {
         isSaving.value = false;
     }
 };
+
+const handleResetData = () => {
+    Swal.fire({
+        title: 'Apakah Anda yakin?',
+        text: 'Tindakan ini akan menghapus semua data Delivery Schedule secara permanen!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Hapus Semua!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.post(route('sales.planning.schedule.reset-data', undefined, false), {}, {
+                onSuccess: () => {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: 'Semua data Delivery Schedule telah di-reset.',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                },
+                onError: (err) => {
+                    Swal.fire('Error!', err.message || 'Gagal mereset data.', 'error');
+                }
+            });
+        }
+    });
+};
 </script>
 
 <template>
@@ -303,6 +334,13 @@ const downloadExcel = async () => {
                         >
                             <ArrowUpTrayIcon class="w-5 h-5" />
                             Import Excel
+                        </button>
+                        <button 
+                            @click="handleResetData"
+                            class="hidden md:flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors shadow-md hover:shadow-lg"
+                        >
+                            <TrashIcon class="w-5 h-5" />
+                            Reset Data
                         </button>
                         <Link 
                             :href="route('sales.planning.schedule.comparison', undefined, false)"

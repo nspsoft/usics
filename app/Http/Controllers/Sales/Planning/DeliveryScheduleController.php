@@ -791,4 +791,14 @@ class DeliveryScheduleController extends Controller
 
         return \Maatwebsite\Excel\Facades\Excel::download($export, $filename);
     }
+
+    public function resetData(Request $request)
+    {
+        try {
+            DeliverySchedule::query()->delete();
+            return back()->with('success', 'Semua data Delivery Schedule berhasil di-reset.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mereset data: ' . $e->getMessage());
+        }
+    }
 }
