@@ -173,16 +173,16 @@ class DeliveryScheduleController extends Controller
             
             if (!isset($matrix[$custId])) {
                 $matrix[$custId] = [
-                    'customer_name' => $sch->customer->name,
-                    'customer_code' => $sch->customer->code,
+                    'customer_name' => $sch->customer->name ?? 'Unknown Customer',
+                    'customer_code' => $sch->customer->code ?? 'N/A',
                     'products' => []
                 ];
             }
 
             if (!isset($matrix[$custId]['products'][$prodId])) {
                 $matrix[$custId]['products'][$prodId] = [
-                    'product_name' => $sch->product->name,
-                    'sku' => $sch->product->sku,
+                    'product_name' => $sch->product->name ?? 'Unknown Product',
+                    'sku' => $sch->product->sku ?? 'N/A',
                     'unit' => $sch->product->unit->name ?? 'Unit',
                     'po_number' => $sch->po_number,
                     'daily' => [],
@@ -453,14 +453,24 @@ class DeliveryScheduleController extends Controller
             foreach ($schedules as $sch) {
                 $cid = $sch->customer_id;
                 if (!isset($customers[$cid])) {
-                    $customers[$cid] = ['id' => $cid, 'name' => $sch->customer->name, 'schedule' => 0, 'delivery' => 0];
+                    $customers[$cid] = ['id' => $cid, 'name' => $sch->customer->name ?? 'Unknown Customer', 'schedule' => 0, 'delivery' => 0];
                 }
                 $customers[$cid]['schedule'] += (float) $sch->qty_scheduled;
             }
             foreach ($actuals as $act) {
                 $cid = $act->customer_id;
                 if (!isset($customers[$cid])) {
-                    $customers[$cid] = ['id' => $cid, 'name' => 'Unknown', 'schedule' => 0, 'delivery' => 0];
+                    $customerName = 'Unknown';
+                    if ($cid) {
+                        $cust = \App\Models\Customer::withTrashed()->find($cid);
+                        if ($cust) {
+                            $customerName = $cust->name;
+                        } else {
+                            $do = \App\Models\DeliveryOrder::where('customer_id', $cid)->whereNotNull('shipping_name')->orderBy('id', 'desc')->first();
+                            $customerName = $do && $do->shipping_name ? $do->shipping_name : 'Unknown Customer (#' . $cid . ')';
+                        }
+                    }
+                    $customers[$cid] = ['id' => $cid, 'name' => $customerName, 'schedule' => 0, 'delivery' => 0];
                 }
                 $customers[$cid]['delivery'] += (float) $act->total_delivered;
             }
@@ -494,17 +504,26 @@ class DeliveryScheduleController extends Controller
             $customerName = '';
             foreach ($schedules as $sch) {
                 $pid = $sch->product_id;
-                $customerName = $sch->customer->name;
+                $customerName = $sch->customer->name ?? 'Unknown Customer';
                 if (!isset($products[$pid])) {
                     $products[$pid] = [
                         'id' => $pid,
-                        'name' => $sch->product->name,
-                        'sku' => $sch->product->sku,
+                        'name' => $sch->product->name ?? 'Unknown Product',
+                        'sku' => $sch->product->sku ?? 'N/A',
                         'unit' => $sch->product->unit->name ?? 'Unit',
                         'schedule' => 0, 'delivery' => 0
                     ];
                 }
                 $products[$pid]['schedule'] += (float) $sch->qty_scheduled;
+            }
+            if (!$customerName && $customerId) {
+                $cust = \App\Models\Customer::withTrashed()->find($customerId);
+                if ($cust) {
+                    $customerName = $cust->name;
+                } else {
+                    $do = \App\Models\DeliveryOrder::where('customer_id', $customerId)->whereNotNull('shipping_name')->orderBy('id', 'desc')->first();
+                    $customerName = $do && $do->shipping_name ? $do->shipping_name : 'Unknown Customer (#' . $customerId . ')';
+                }
             }
             foreach ($actuals as $act) {
                 $pid = $act->product_id;
@@ -553,12 +572,27 @@ class DeliveryScheduleController extends Controller
             $customerName = '';
             foreach ($schedules as $sch) {
                 $d = Carbon::parse($sch->delivery_date)->format('Y-m-d');
-                $productName = $sch->product->name;
-                $customerName = $sch->customer->name;
+                $productName = $sch->product->name ?? 'Unknown Product';
+                $customerName = $sch->customer->name ?? 'Unknown Customer';
                 if (isset($daily[$d])) {
                     $daily[$d]['sch'] += (float) $sch->qty_scheduled;
                 }
             }
+
+            if (!$customerName && $customerId) {
+                $cust = \App\Models\Customer::withTrashed()->find($customerId);
+                if ($cust) {
+                    $customerName = $cust->name;
+                } else {
+                    $do = \App\Models\DeliveryOrder::where('customer_id', $customerId)->whereNotNull('shipping_name')->orderBy('id', 'desc')->first();
+                    $customerName = $do && $do->shipping_name ? $do->shipping_name : 'Unknown Customer (#' . $customerId . ')';
+                }
+            }
+            if (!$productName && $productId) {
+                $prod = \App\Models\Product::withTrashed()->find($productId);
+                $productName = $prod ? $prod->name : 'Unknown Product (#' . $productId . ')';
+            }
+
             foreach ($actuals as $act) {
                 $d = Carbon::parse($act->delivery_date)->format('Y-m-d');
                 if (isset($daily[$d])) {

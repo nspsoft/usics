@@ -289,4 +289,79 @@ class PriceCleanerTest extends TestCase
 
         $this->assertEquals(0, \App\Models\DeliverySchedule::count());
     }
+
+    public function test_delivery_schedule_comparison_chart_unknown_customer()
+    {
+        // 1. Create a user, customer, product, and warehouse
+        $user = \App\Models\User::create([
+            'name' => 'Test User',
+            'email' => 'testuser@comp.com',
+            'password' => bcrypt('password'),
+        ]);
+        $customer = Customer::create([
+            'company_id' => $this->company->id,
+            'name' => 'PT. Indotama Sukses',
+            'code' => 'CUST-IND-01',
+        ]);
+        $product = Product::create([
+            'company_id' => $this->company->id,
+            'name' => 'Cardboard pad FG',
+            'sku' => 'DPD32A',
+            'unit_id' => $this->unit->id,
+            'type' => 'product',
+            'product_type' => 'finished_good',
+            'is_active' => true,
+        ]);
+        $warehouse = \App\Models\Warehouse::create([
+            'company_id' => $this->company->id,
+            'code' => 'WH-TEST',
+            'name' => 'Test Warehouse',
+        ]);
+
+        // 2. Create actual Delivery Order (Without planned Delivery Schedule)
+        $so = \App\Models\SalesOrder::create([
+            'company_id' => $this->company->id,
+            'customer_id' => $customer->id,
+            'warehouse_id' => $warehouse->id,
+            'so_number' => 'SO-0001',
+            'order_date' => '2026-06-14',
+            'status' => 'approved',
+            'created_by' => $user->id,
+        ]);
+        $soItem = $so->items()->create([
+            'product_id' => $product->id,
+            'qty' => 50,
+            'unit_price' => 1000,
+        ]);
+        $do = \App\Models\DeliveryOrder::create([
+            'company_id' => $this->company->id,
+            'customer_id' => $customer->id,
+            'sales_order_id' => $so->id,
+            'warehouse_id' => $warehouse->id,
+            'do_number' => 'DO-0001',
+            'delivery_date' => '2026-06-14',
+            'status' => \App\Models\DeliveryOrder::STATUS_SHIPPED,
+            'created_by' => $user->id,
+        ]);
+        \App\Models\DeliveryOrderItem::create([
+            'delivery_order_id' => $do->id,
+            'sales_order_item_id' => $soItem->id,
+            'product_id' => $product->id,
+            'qty_ordered' => 50,
+            'qty_shipped' => 50,
+            'qty_delivered' => 50,
+        ]);
+
+        $controller = new \App\Http\Controllers\Sales\Planning\DeliveryScheduleController($this->service);
+        $request = new \Illuminate\Http\Request([
+            'start_date' => '2026-06-01',
+            'end_date' => '2026-06-30',
+            'level' => 'summary',
+        ]);
+        $response = $controller->comparisonChart($request);
+        $data = $response->getData(true);
+
+        // Should return customer name instead of "Unknown"
+        $this->assertEquals('PT. Indotama Sukses', $data['data'][0]['name']);
+    }
 }
