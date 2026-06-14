@@ -50,6 +50,7 @@ class DeliveryScheduleController extends Controller
         return Inertia::render('Sales/Planning/Schedule/Index', [
             'schedules' => $schedules,
             'filters' => $request->only(['search', 'date', 'sort', 'direction']),
+            'customers' => \App\Models\Customer::orderBy('name')->get(['id', 'name', 'code']),
         ]);
     }
 
@@ -686,7 +687,9 @@ class DeliveryScheduleController extends Controller
 
     private function autoMatchProducts(array $items)
     {
-        $products = \App\Models\Product::where('is_active', true)->get(['id', 'name', 'sku']);
+        $products = \App\Models\Product::where('is_active', true)
+            ->where('product_type', 'finished_good')
+            ->get(['id', 'name', 'sku']);
         $customers = \App\Models\Customer::all(['id', 'name', 'code']);
 
         foreach ($items as &$item) {
@@ -695,12 +698,7 @@ class DeliveryScheduleController extends Controller
             // 1. Cocokkan 100% dengan SKU
             $matchedProduct = $products->first(fn($p) => strtoupper($p->sku ?? '') === $code);
 
-            // 2. Cocokkan dengan SKU (partial/contains)
-            if (!$matchedProduct) {
-                $matchedProduct = $products->first(fn($p) => $p->sku && str_contains(strtoupper($p->sku), $code));
-            }
-
-            // 3. Cocokkan dengan Nama Produk (fallback jika nama mengandung kode/SKU)
+            // 2. Cocokkan dengan Nama Produk (fallback jika nama mengandung kode/SKU)
             if (!$matchedProduct) {
                 $matchedProduct = $products->first(fn($p) => $p->name && str_contains(strtoupper($p->name), $code));
             }
@@ -780,11 +778,13 @@ class DeliveryScheduleController extends Controller
         $request->validate([
             'items' => 'required|array',
             'month_year' => 'nullable|string',
+            'customer_id' => 'nullable|integer|exists:customers,id',
         ]);
 
         $export = new \App\Exports\AiMatrixExtractionExport(
             $request->items,
-            $request->month_year ?? ''
+            $request->month_year ?? '',
+            $request->customer_id
         );
 
         $filename = 'ai_extraction_schedule_' . now()->format('YmdHis') . '.xlsx';

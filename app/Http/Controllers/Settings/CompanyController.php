@@ -63,6 +63,7 @@ class CompanyController extends Controller
         } catch (\Throwable $e) {
         }
 
+
         return redirect()->back()->with('success', 'Company profile updated successfully.');
     }
 
@@ -72,9 +73,11 @@ class CompanyController extends Controller
         $defaultSettings = [
             'ai_driver' => 'gemini',
             'gemini_api_key' => '',
-            'gemini_model' => 'gemini-2.5-flash', // Updated default
+            'gemini_model' => 'gemini-1.5-flash',
             'ollama_url' => 'http://localhost:11434',
             'ollama_model' => 'llama3',
+            'openrouter_api_key' => '',
+            'openrouter_model' => 'google/gemini-2.5-flash',
         ];
 
         $defaultInstruction = "Anda adalah Customer Service Jidoka AI yang ramah. Tugas Anda adalah melayani Customer dan Staff PT JIDOKA dengan sopan, ceria, dan membantu.";
@@ -116,11 +119,13 @@ class CompanyController extends Controller
     public function updateAiSettings(Request $request)
     {
         $request->validate([
-            'ai_driver' => 'required|in:gemini,ollama',
+            'ai_driver' => 'required|in:gemini,ollama,openrouter',
             'gemini_api_key' => 'nullable|required_if:ai_driver,gemini|string',
             'gemini_model' => 'nullable|required_if:ai_driver,gemini|string',
             'ollama_url' => 'nullable|required_if:ai_driver,ollama|url',
             'ollama_model' => 'nullable|required_if:ai_driver,ollama|string',
+            'openrouter_api_key' => 'nullable|required_if:ai_driver,openrouter|string',
+            'openrouter_model' => 'nullable|required_if:ai_driver,openrouter|string',
             'whatsapp_bot_instruction' => 'nullable|string',
             'email_settings' => 'nullable|array',
             'emeterai_settings' => 'nullable|array',
@@ -138,6 +143,8 @@ class CompanyController extends Controller
             'gemini_model' => $request->gemini_model,
             'ollama_url' => $request->ollama_url,
             'ollama_model' => $request->ollama_model,
+            'openrouter_api_key' => $request->openrouter_api_key,
+            'openrouter_model' => $request->openrouter_model,
         ];
 
         // Handle Email Settings if present in request (Fix for persistence)

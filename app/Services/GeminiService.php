@@ -10,6 +10,15 @@ use App\Models\AppSetting;
 class GeminiService
 {
     protected bool $isConfigured = false;
+    protected ?string $driver = null;
+    protected ?string $apiKey = null;
+    protected ?string $model = null;
+    protected ?string $baseUrl = null;
+    protected ?string $ollamaUrl = null;
+    protected ?string $ollamaModel = null;
+    protected ?string $openrouterApiKey = null;
+    protected ?string $openrouterModel = null;
+    protected ?string $customBotInstruction = null;
 
     public function __construct()
     {
@@ -35,11 +44,111 @@ class GeminiService
             $this->ollamaUrl = $aiSettings['ollama_url'] ?? 'http://localhost:11434';
             $this->ollamaModel = $aiSettings['ollama_model'] ?? 'llama3';
 
+            // OpenRouter Config
+            $this->openrouterApiKey = $aiSettings['openrouter_api_key'] ?? null;
+            $this->openrouterModel = $aiSettings['openrouter_model'] ?? 'google/gemini-2.5-flash';
+
             $this->customBotInstruction = (string) AppSetting::get('whatsapp_bot_instruction', '');
             $this->isConfigured = true;
         } catch (\Exception $e) {
             Log::error('GeminiService configuration failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Call OpenRouter API
+     */
+    protected function callOpenRouter(string $prompt, ?string $filePath = null, ?string $mimeType = null, bool $jsonMode = false): ?array
+    {
+        $this->ensureConfigured();
+        if (!$this->openrouterApiKey) {
+            Log::error('OpenRouter API Key is not configured.');
+            return null;
+        }
+
+        if ($filePath) {
+            try {
+                $base64Data = base64_encode(file_get_contents($filePath));
+                $messageContent = [
+                    [
+                        'type' => 'text',
+                        'text' => $prompt
+                    ]
+                ];
+
+                if ($mimeType === 'application/pdf') {
+                    $messageContent[] = [
+                        'type' => 'file',
+                        'file' => [
+                            'filename' => basename($filePath) ?: 'document.pdf',
+                            'file_data' => "data:application/pdf;base64,{$base64Data}"
+                        ]
+                    ];
+                } elseif (str_starts_with($mimeType, 'image/')) {
+                    $messageContent[] = [
+                        'type' => 'image_url',
+                        'image_url' => [
+                            'url' => "data:{$mimeType};base64,{$base64Data}"
+                        ]
+                    ];
+                } else {
+                    $messageContent = $prompt;
+                }
+            } catch (\Exception $e) {
+                Log::error('OpenRouter file base64 encoding failed: ' . $e->getMessage());
+                $messageContent = $prompt;
+            }
+        } else {
+            $messageContent = $prompt;
+        }
+
+        $payload = [
+            'model' => $this->openrouterModel,
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => $messageContent
+                ]
+            ],
+        ];
+
+        if ($jsonMode) {
+            $payload['response_format'] = ['type' => 'json_object'];
+        }
+
+        try {
+            $response = Http::timeout(120)
+                ->withHeaders([
+                    'Authorization' => "Bearer {$this->openrouterApiKey}",
+                    'HTTP-Referer' => url('/'),
+                    'X-Title' => 'JICOS ERP',
+                ])
+                ->post('https://openrouter.ai/api/v1/chat/completions', $payload);
+
+            if ($response->successful()) {
+                $result = $response->json();
+                $text = $result['choices'][0]['message']['content'] ?? null;
+
+                Log::info('OpenRouter Raw Response: ' . substr($text ?? 'NULL', 0, 500));
+
+                if ($text) {
+                    if ($jsonMode) {
+                        // Extract JSON if there is leading/trailing text
+                        if (preg_match('/\{.*\}/s', $text, $matches)) {
+                            return json_decode($matches[0], true);
+                        }
+                        return json_decode(trim($text), true);
+                    }
+                    return ['text' => $text];
+                }
+            } else {
+                Log::error('OpenRouter API Error: ' . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception in GeminiService (OpenRouter): ' . $e->getMessage());
+        }
+
+        return null;
     }
 
     /**
@@ -52,11 +161,134 @@ class GeminiService
     public function extractPOData(string $filePath, string $mimeType): ?array
     {
         $this->ensureConfigured();
+        $data = null;
         if ($this->driver === 'ollama') {
-            return $this->extractPODataOllama($filePath, $mimeType);
+            $data = $this->extractPODataOllama($filePath, $mimeType);
+        } elseif ($this->driver === 'openrouter') {
+            $data = $this->callOpenRouter($this->getPOExtractionPrompt(), $filePath, $mimeType, true);
+        } else {
+            $data = $this->extractPODataGemini($filePath, $mimeType);
         }
 
-        return $this->extractPODataGemini($filePath, $mimeType);
+        if ($data) {
+            // Handle array response (if Gemini returns a list of POs, take the first one)
+            if (array_key_exists(0, $data) && is_array($data[0])) {
+                $data = $data[0];
+            }
+
+            // Determine currency
+            $companyCurrency = \App\Models\Company::first()?->currency ?? 'IDR';
+            $currency = $data['currency'] ?? $companyCurrency;
+
+            if (isset($data['items']) && is_array($data['items'])) {
+                foreach ($data['items'] as &$item) {
+                    if (isset($item['unit_price'])) {
+                        $item['unit_price'] = $this->cleanAndParsePrice($item['unit_price'], $currency);
+                    }
+                    if (isset($item['total_price'])) {
+                        $item['total_price'] = $this->cleanAndParsePrice($item['total_price'], $currency);
+                    }
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Clean and parse extracted price to a proper float based on currency rules.
+     */
+    public function cleanAndParsePrice(mixed $price, string $currency = 'IDR'): float
+    {
+        if (is_null($price)) {
+            return 0.0;
+        }
+
+        $isIdr = strtoupper(trim($currency)) === 'IDR';
+
+        // If it's a string, clean and parse based on separators
+        if (is_string($price)) {
+            $price = trim($price);
+            
+            // Remove non-numeric/separator characters
+            $price = preg_replace('/[^\d.,]/', '', $price);
+            
+            if ($price === '') {
+                return 0.0;
+            }
+
+            // If it contains both dot and comma
+            if (strpos($price, '.') !== false && strpos($price, ',') !== false) {
+                $lastDot = strrpos($price, '.');
+                $lastComma = strrpos($price, ',');
+                if ($lastDot > $lastComma) {
+                    // Dot is decimal, comma is thousands (e.g. 1,234,567.89)
+                    $price = str_replace(',', '', $price);
+                } else {
+                    // Comma is decimal, dot is thousands (e.g. 1.234.567,89)
+                    $price = str_replace('.', '', $price);
+                    $price = str_replace(',', '.', $price);
+                }
+                
+                $val = floatval($price);
+                if ($isIdr) {
+                    // In IDR, decimals are not used for transactions, so if it has decimal cents, round it
+                    return round($val);
+                }
+                return $val;
+            }
+
+            // If it contains only a dot
+            if (strpos($price, '.') !== false) {
+                $parts = explode('.', $price);
+                $lastPart = end($parts);
+                if (strlen($lastPart) === 3) {
+                    // Dot followed by 3 digits is thousands separator (e.g. 137.170 -> 137170)
+                    return floatval(str_replace('.', '', $price));
+                }
+                
+                $val = floatval($price);
+                if ($isIdr && $val > 0 && $val < 1000) {
+                    // Float value like 137.17 (truncated from 137.170) or 1.5 (truncated from 1.500)
+                    if (floor($val) != $val || $val < 90) {
+                        return $val * 1000;
+                    }
+                }
+                return $val;
+            }
+
+            // If it contains only a comma
+            if (strpos($price, ',') !== false) {
+                $parts = explode(',', $price);
+                $lastPart = end($parts);
+                if (strlen($lastPart) === 3) {
+                    // Comma followed by 3 digits is thousands separator (e.g. 137,170 -> 137170)
+                    return floatval(str_replace(',', '', $price));
+                }
+                
+                // Comma as decimal separator in Indonesian (e.g. 137,17 -> 137.17)
+                $val = floatval(str_replace(',', '.', $price));
+                if ($isIdr && $val > 0 && $val < 1000) {
+                    if (floor($val) != $val || $val < 90) {
+                        return $val * 1000;
+                    }
+                }
+                return $val;
+            }
+
+            return floatval($price);
+        }
+
+        // If it's already float/int
+        $val = floatval($price);
+        if ($isIdr && $val > 0 && $val < 1000) {
+            // Correct decimal values or values below 90 IDR (e.g., 1.5 -> 1500, 1.0 -> 1000, 137.17 -> 137170)
+            if (floor($val) != $val || $val < 90) {
+                return $val * 1000;
+            }
+        }
+
+        return $val;
     }
 
     /**
@@ -221,6 +453,10 @@ class GeminiService
         - Do NOT merge or concatenate material_number into description. Keep them strictly separated.
         - If the document has no separate material number column, set material_number to null.
         
+        CRITICAL - INDONESIAN NUMBER FORMATTING (Thousands vs Decimals):
+        - Indonesian documents often use dot (.) as a thousands separator and comma (,) as a decimal separator (e.g., 137.170 means 137170, and 548.680 means 548680).
+        - To prevent losing trailing zeros or separator formatting, you MUST extract both \"unit_price\" and \"total_price\" as STRINGS containing the exact characters, dots, and commas as they appear in the original document (e.g., \"137.170\", \"1.500.000\", \"548.680\", \"12,50\", or \"90\").
+        
         Extract and return ONLY a valid JSON object with this exact structure:
         {
             \"po_number\": \"the PO number or null\",
@@ -228,14 +464,15 @@ class GeminiService
             \"delivery_date\": \"YYYY-MM-DD format or null\",
             \"customer_name\": \"name of the BUYER company\",
             \"customer_address\": \"address if visible or null\",
+            \"currency\": \"currency detected (e.g. 'IDR', 'USD'), default to 'IDR'\",
             \"items\": [
                 {
                     \"material_number\": \"part/material code or null\",
                     \"description\": \"product name ONLY, not the material number\",
                     \"qty\": 100,
                     \"unit\": \"Pcs\",
-                    \"unit_price\": 15000,
-                    \"total_price\": 1500000
+                    \"unit_price\": \"15.000\",
+                    \"total_price\": \"1.500.000\"
                 }
             ]
         }
@@ -262,6 +499,9 @@ class GeminiService
                 }
              }
              return null;
+        }
+        if ($this->driver === 'openrouter') {
+            return $this->callOpenRouter($this->getDNExtractionPrompt(), $filePath, $mimeType, true);
         }
 
         return $this->extractDeliveryNoteDataGemini($filePath, $mimeType);
@@ -369,6 +609,10 @@ Return JSON strictly: { \"intent\": \"...\", \"parameters\": { \"order_number\":
             $result = $this->callOllama($prompt, true);
             return $result ?? ['intent' => 'unknown', 'parameters' => []];
         }
+        if ($this->driver === 'openrouter') {
+            $result = $this->callOpenRouter($prompt, null, null, true);
+            return $result ?? ['intent' => 'unknown', 'parameters' => []];
+        }
 
         // Gemini Logic
         try {
@@ -418,6 +662,10 @@ Question: \"{$question}\"";
                 if ($res->successful()) return $res->json()['response'] ?? "Maaf, error.";
             } catch (\Exception $e) {}
             return "Maaf, layanan sedang sibuk.";
+        }
+        if ($this->driver === 'openrouter') {
+            $res = $this->callOpenRouter($prompt, null, null, false);
+            return $res['text'] ?? "Maaf, asisten virtual sedang sibuk.";
         }
 
         // Gemini
@@ -478,6 +726,10 @@ Question: \"{$question}\"";
 
         if ($this->driver === 'ollama') {
             $result = $this->callOllama($prompt, true);
+            return $result ?? ['intent' => 'unknown', 'sentiment' => 'neutral', 'urgency' => 0];
+        }
+        if ($this->driver === 'openrouter') {
+            $result = $this->callOpenRouter($prompt, null, null, true);
             return $result ?? ['intent' => 'unknown', 'sentiment' => 'neutral', 'urgency' => 0];
         }
 
@@ -581,6 +833,10 @@ Keep the analysis practical, data-driven, and focused on actionable insights. Us
             }
             return 'Maaf, layanan AI sedang tidak tersedia. Silakan coba lagi nanti.';
         }
+        if ($this->driver === 'openrouter') {
+            $res = $this->callOpenRouter($prompt, null, null, false);
+            return $res['text'] ?? 'Maaf, gagal menganalisis data.';
+        }
 
         // Gemini
         try {
@@ -607,6 +863,9 @@ Keep the analysis practical, data-driven, and focused on actionable insights. Us
     {
         $this->ensureConfigured();
         if ($this->driver === 'ollama') return null;
+        if ($this->driver === 'openrouter') {
+            return $this->callOpenRouter($this->getDeliveryScheduleMatrixPrompt(), $filePath, $mimeType, true);
+        }
         if (!$this->apiKey) {
             Log::error('Gemini API Key is not configured for Matrix Extraction.');
             return null;
@@ -738,6 +997,9 @@ Return pure JSON without any markdown formatting or backticks.";
         if ($this->driver === 'ollama') {
             return $this->callOllama($prompt, true);
         }
+        if ($this->driver === 'openrouter') {
+            return $this->callOpenRouter($prompt, null, null, true);
+        }
 
         try {
             $response = \Illuminate\Support\Facades\Http::timeout(120)->post("{$this->baseUrl}?key={$this->apiKey}", [
@@ -762,6 +1024,10 @@ Return pure JSON without any markdown formatting or backticks.";
         // so we restrict direct audio parsing to the Gemini API.
         if ($this->driver === 'ollama') {
             Log::warning('Ollama does not natively support direct audio multimodal parsing in this context.');
+            return null;
+        }
+        if ($this->driver === 'openrouter') {
+            Log::warning('OpenRouter does not natively support direct audio multimodal parsing in this context.');
             return null;
         }
 
@@ -885,6 +1151,10 @@ Return JSON strictly: { \"intent\": \"...\", \"parameters\": { \"po_number\": \"
             $result = $this->callOllama($prompt, true);
             return $result ?? ['intent' => 'unknown', 'parameters' => []];
         }
+        if ($this->driver === 'openrouter') {
+            $result = $this->callOpenRouter($prompt, null, null, true);
+            return $result ?? ['intent' => 'unknown', 'parameters' => []];
+        }
 
         try {
             $response = Http::timeout(30)->post("{$this->baseUrl}?key={$this->apiKey}", [
@@ -931,6 +1201,10 @@ Question: \"{$question}\"";
                 if ($res->successful()) return $res->json()['response'] ?? "Maaf, error.";
             } catch (\Exception $e) {}
             return "Maaf, layanan sedang sibuk.";
+        }
+        if ($this->driver === 'openrouter') {
+            $res = $this->callOpenRouter($prompt, null, null, false);
+            return $res['text'] ?? "Maaf, asisten virtual sedang sibuk.";
         }
 
         try {

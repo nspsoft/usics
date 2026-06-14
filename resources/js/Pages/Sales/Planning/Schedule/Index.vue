@@ -26,6 +26,7 @@ import axios from 'axios';
 const props = defineProps({
     schedules: Object,
     filters: Object,
+    customers: Array,
 });
 
 const search = ref(props.filters.search || '');
@@ -135,6 +136,20 @@ const isExtracting = ref(false);
 const isSaving = ref(false);
 const aiError = ref(null);
 const extractedData = ref({ month_year: '', items: [] });
+const selectedCustomerId = ref('');
+
+watch(selectedCustomerId, (newId) => {
+    if (newId && props.customers) {
+        const customer = props.customers.find(c => c.id === Number(newId));
+        if (customer) {
+            extractedData.value.items.forEach(item => {
+                item.customer_id = customer.id;
+                item.customer_name = customer.name;
+                item.supplier_name = customer.name;
+            });
+        }
+    }
+});
 
 const openAiModal = () => {
     aiModalOpen.value = true;
@@ -143,6 +158,7 @@ const openAiModal = () => {
     aiFilePreview.value = null;
     aiError.value = null;
     extractedData.value = { month_year: '', items: [] };
+    selectedCustomerId.value = '';
 };
 
 const closeAiModal = () => {
@@ -199,6 +215,7 @@ const downloadExcel = async () => {
         const response = await axios.post(route('sales.planning.schedule.export-extraction', undefined, false), {
             items: extractedData.value.items,
             month_year: extractedData.value.month_year || '',
+            customer_id: selectedCustomerId.value ? Number(selectedCustomerId.value) : null,
         }, { responseType: 'blob' });
 
         // Trigger file download
@@ -534,6 +551,15 @@ const downloadExcel = async () => {
                             <ExclamationTriangleIcon class="h-5 w-5 shrink-0" />
                             <span class="text-sm font-medium">{{ aiError }}</span>
                         </div>
+                        <div class="mt-6">
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Pilih Customer (Otomatis mengisi Kode & Nama Customer)</label>
+                            <select v-model="selectedCustomerId" class="w-full rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-amber-500 focus:border-amber-500 text-sm">
+                                <option value="">-- Pilih Customer (Opsional) --</option>
+                                <option v-for="c in customers" :key="c.id" :value="c.id">
+                                    {{ c.code }} - {{ c.name }}
+                                </option>
+                            </select>
+                        </div>
                         <button @click="extractMatrix" :disabled="!aiFile || isExtracting" class="mt-8 w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-bold shadow-lg shadow-amber-500/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-lg">
                             <template v-if="isExtracting"><ArrowPathIcon class="h-6 w-6 animate-spin" /> AI sedang menganalisis...</template>
                             <template v-else><SparklesIcon class="h-6 w-6" /> Ekstrak Jadwal</template>
@@ -566,12 +592,23 @@ const downloadExcel = async () => {
                         </div>
                         <!-- Right: Table -->
                         <div class="flex-1 flex flex-col bg-white dark:bg-slate-900 overflow-hidden">
-                            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
-                                <div class="flex items-center gap-4">
+                            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+                                <div class="flex flex-wrap items-center gap-4">
                                     <div class="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-xs font-bold ring-1 ring-emerald-500/20">{{ extractedData.items.length }} Items</div>
                                     <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Periode: <span class="text-blue-600">{{ extractedData.month_year }}</span></span>
+                                    
+                                    <!-- Dropdown Pilihan Customer -->
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase whitespace-nowrap">Customer:</span>
+                                        <select v-model="selectedCustomerId" class="rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white text-xs py-1 px-2.5 focus:ring-amber-500 focus:border-amber-500 max-w-[200px]">
+                                            <option value="">-- Pilih Customer --</option>
+                                            <option v-for="c in customers" :key="c.id" :value="c.id">
+                                                {{ c.code }} - {{ c.name }}
+                                            </option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 shrink-0">
                                     <button @click="aiStep = 1" class="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm">Ganti Gambar</button>
                                     <button @click="downloadExcel" :disabled="isSaving || extractedData.items.length === 0" class="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 disabled:opacity-50 flex items-center gap-2">
                                         <template v-if="isSaving"><ArrowPathIcon class="h-4 w-4 animate-spin" /> Mengunduh...</template>

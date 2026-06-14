@@ -70,25 +70,27 @@ class POImportController extends Controller
         $data['matched_customer_id'] = $customer?->id;
         $data['matched_customer_name'] = $customer?->name;
 
-        // Pre-fetch all active products with SKUs to avoid N+1 queries
-        // This is efficient enough for < 10k products. For larger DBs, full-text search is better.
-        $products = Product::whereNotNull('sku')
-            ->where('sku', '!=', '')
-            ->where('is_active', true)
-            ->get(['id', 'name', 'sku', 'selling_price']);
-
         // Match Products
         if (isset($data['items']) && is_array($data['items'])) {
             foreach ($data['items'] as &$item) {
                 $description = $item['description'] ?? '';
-                $normalizedDesc = strtoupper(trim($description));
+                $materialNumber = $item['material_number'] ?? '';
                 
                 $matchedProduct = null;
 
-                // Exact Name Match (ignore case & spaces) - product name must match exactly
-                if (!empty($description)) {
+                // 1. Prioritize matching by SKU/Material Number (Only for finished_good)
+                if (!empty($materialNumber)) {
+                    $matchedProduct = Product::where('sku', trim($materialNumber))
+                        ->where('product_type', 'finished_good')
+                        ->active()
+                        ->first();
+                }
+
+                // 2. Fallback to exact Name Match (ignore case & spaces) (Only for finished_good)
+                if (!$matchedProduct && !empty($description)) {
                     $normalizedInput = strtolower(preg_replace('/\s+/', '', trim($description)));
                     $matchedProduct = Product::whereRaw("LOWER(REPLACE(REPLACE(REPLACE(name, ' ', ''), '\t', ''), '\r', '')) = ?", [$normalizedInput])
+                        ->where('product_type', 'finished_good')
                         ->active()
                         ->first();
                 }
@@ -103,10 +105,18 @@ class POImportController extends Controller
                     $item['current_stock'] = $matchedProduct->total_stock ?? 0;
                     
                     $aiPrice = isset($item['unit_price']) ? floatval($item['unit_price']) : 0;
-                    $dbPrice = $matchedProduct->selling_price ?? $matchedProduct->price ?? 0;
+                    $dbPrice = floatval($matchedProduct->selling_price ?? $matchedProduct->price ?? 0);
+
+                    // Heuristic fallback: if the AI price is exactly 1000 times smaller than the DB price
+                    // (e.g. 137.17 vs 137170) due to decimal/thousand dot format differences, auto-correct it.
+                    if ($aiPrice > 0 && $dbPrice > 1000) {
+                        if (abs(($aiPrice * 1000) - $dbPrice) < 0.05 * $dbPrice) {
+                            $aiPrice = $aiPrice * 1000;
+                        }
+                    }
                     
                     $item['po_price'] = $aiPrice;
-                    $item['db_price'] = floatval($dbPrice);
+                    $item['db_price'] = $dbPrice;
                     $item['unit_price'] = $aiPrice; 
                     $item['price_mismatch'] = $aiPrice > 0 && $dbPrice > 0 && abs($aiPrice - $dbPrice) > 0.01;
                     $item['match_status'] = 'MATCHED';
@@ -115,8 +125,8 @@ class POImportController extends Controller
                      $item['match_status'] = 'NO_MATCH';
                      
                      // Use material_number from AI extraction as proposed SKU, fallback to auto-generated
-                     $item['proposed_sku'] = !empty($item['material_number']) 
-                         ? $item['material_number'] 
+                     $item['proposed_sku'] = !empty($materialNumber) 
+                         ? $materialNumber 
                          : $this->generateSmartSku($description);
                 }
             }

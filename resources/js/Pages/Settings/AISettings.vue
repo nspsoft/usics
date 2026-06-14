@@ -33,6 +33,8 @@ const form = useForm({
     gemini_model: props.settings?.gemini_model || 'gemini-1.5-flash',
     ollama_url: props.settings?.ollama_url || 'http://localhost:11434',
     ollama_model: props.settings?.ollama_model || 'llama3',
+    openrouter_api_key: props.settings?.openrouter_api_key || '',
+    openrouter_model: props.settings?.openrouter_model || 'google/gemini-2.5-flash',
     whatsapp_bot_instruction: props.whatsapp_bot_instruction || '',
     email_settings: {
         imap_host: props.email_settings?.imap_host || '',
@@ -79,9 +81,18 @@ const ollamaModels = [
     { label: 'Gemma 3 (4B)', value: 'gemma3:4b' },
 ];
 
+const openrouterModels = [
+    { label: 'Gemini 2.5 Flash (Google)', value: 'google/gemini-2.5-flash' },
+    { label: 'Gemini 2.5 Pro (Google)', value: 'google/gemini-2.5-pro' },
+    { label: 'DeepSeek Chat (DeepSeek)', value: 'deepseek/deepseek-chat' },
+    { label: 'Claude 3.5 Sonnet (Anthropic)', value: 'anthropic/claude-3.5-sonnet' },
+    { label: 'Llama 3.3 70B Instruct (Meta)', value: 'meta-llama/llama-3.3-70b-instruct' },
+];
+
 const aiDrivers = [
     { label: 'Google Gemini (Cloud)', value: 'gemini' },
     { label: 'Ollama (Local)', value: 'ollama' },
+    { label: 'OpenRouter (Multi-Provider)', value: 'openrouter' },
 ];
 </script>
 
@@ -218,6 +229,63 @@ const aiDrivers = [
                                 </div>
                                 <p class="text-[10px] text-slate-500 mt-2 px-1">
                                     Select a recommended model or type your own (must be pulled locally via <code>ollama pull</code>).
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- OPENROUTER SETTINGS -->
+                        <div v-if="form.ai_driver === 'openrouter'" class="space-y-8 animate-fade-in-up">
+                            <!-- API KEY -->
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <KeyIcon class="h-3 w-3" />
+                                    OpenRouter API Key
+                                </label>
+                                <div class="relative group">
+                                    <input 
+                                        v-model="form.openrouter_api_key" 
+                                        :type="showKey ? 'text' : 'password'" 
+                                        class="form-input pr-12" 
+                                        placeholder="sk-or-v1-..." 
+                                        required 
+                                    />
+                                    <button 
+                                        type="button"
+                                        @click="showKey = !showKey"
+                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-blue-400 transition-colors"
+                                    >
+                                        <EyeIcon v-if="!showKey" class="h-5 w-5" />
+                                        <EyeSlashIcon v-else class="h-5 w-5" />
+                                    </button>
+                                </div>
+                                <p class="text-[10px] text-slate-500 mt-2 px-1">
+                                    Get your API key from <a href="https://openrouter.ai/keys" target="_blank" class="text-blue-400 hover:underline">OpenRouter Keys</a>.
+                                </p>
+                            </div>
+
+                            <!-- MODEL NAME -->
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <CpuChipIcon class="h-3 w-3" />
+                                    OpenRouter Model Name
+                                </label>
+                                <div class="relative">
+                                    <input 
+                                        v-model="form.openrouter_model" 
+                                        type="text" 
+                                        list="openrouter-models"
+                                        class="form-input" 
+                                        placeholder="e.g. google/gemini-2.5-flash" 
+                                        required 
+                                    />
+                                    <datalist id="openrouter-models">
+                                        <option v-for="model in openrouterModels" :key="model.value" :value="model.value">
+                                            {{ model.label }}
+                                        </option>
+                                    </datalist>
+                                </div>
+                                <p class="text-[10px] text-slate-500 mt-2 px-1">
+                                    Select a recommended model or type your own from <a href="https://openrouter.ai/models" target="_blank" class="text-blue-400 hover:underline">OpenRouter Models</a>.
                                 </p>
                             </div>
                         </div>
