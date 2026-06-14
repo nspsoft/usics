@@ -252,4 +252,41 @@ class PriceCleanerTest extends TestCase
         $this->assertEquals('CUST-IND-01', $rowsWith[0][0]); // Customer Code should be mapped
         $this->assertEquals('PT. Indotama Sukses', $rowsWith[0][1]); // Customer Name should be mapped
     }
+
+    /**
+     * Test Delivery Schedule resetData endpoint.
+     */
+    public function test_delivery_schedule_reset_data()
+    {
+        // Create a schedule
+        $customer = Customer::create([
+            'company_id' => $this->company->id,
+            'name' => 'PT. Indotama Sukses',
+            'code' => 'CUST-IND-01',
+        ]);
+        $product = Product::create([
+            'company_id' => $this->company->id,
+            'name' => 'Cardboard pad FG',
+            'sku' => 'DPD32A',
+            'unit_id' => $this->unit->id,
+            'type' => 'product',
+            'product_type' => 'finished_good',
+            'is_active' => true,
+        ]);
+        
+        $schedule = \App\Models\DeliverySchedule::create([
+            'customer_id' => $customer->id,
+            'product_id' => $product->id,
+            'delivery_date' => '2026-06-14',
+            'qty_scheduled' => 100,
+        ]);
+
+        $this->assertEquals(1, \App\Models\DeliverySchedule::count());
+
+        $controller = new \App\Http\Controllers\Sales\Planning\DeliveryScheduleController($this->service);
+        $request = new \Illuminate\Http\Request();
+        $response = $controller->resetData($request);
+
+        $this->assertEquals(0, \App\Models\DeliverySchedule::count());
+    }
 }
