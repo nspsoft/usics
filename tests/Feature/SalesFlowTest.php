@@ -125,6 +125,9 @@ class SalesFlowTest extends TestCase
         $this->assertEquals('draft', $so->status, 'Sales Order status should be draft');
 
         // 5. Confirm SO
+        $so->customer_po_number = 'PO-TEST-12345';
+        $so->save();
+
         $this->post(route('sales.orders.confirm', $so->id));
         $so->refresh();
         $this->assertEquals('confirmed', $so->status, 'Sales Order status should be confirmed');

@@ -691,10 +691,18 @@ class DeliveryScheduleController extends Controller
 
         foreach ($items as &$item) {
             $code = strtoupper(trim($item['product_code'] ?? ''));
-            $matchedProduct = $products->first(fn($p) => strtoupper($p->sku) === $code);
+            
+            // 1. Cocokkan 100% dengan SKU
+            $matchedProduct = $products->first(fn($p) => strtoupper($p->sku ?? '') === $code);
 
+            // 2. Cocokkan dengan SKU (partial/contains)
             if (!$matchedProduct) {
-                $matchedProduct = $products->first(fn($p) => str_contains(strtoupper($p->sku), $code));
+                $matchedProduct = $products->first(fn($p) => $p->sku && str_contains(strtoupper($p->sku), $code));
+            }
+
+            // 3. Cocokkan dengan Nama Produk (fallback jika nama mengandung kode/SKU)
+            if (!$matchedProduct) {
+                $matchedProduct = $products->first(fn($p) => $p->name && str_contains(strtoupper($p->name), $code));
             }
 
             if ($matchedProduct) {
