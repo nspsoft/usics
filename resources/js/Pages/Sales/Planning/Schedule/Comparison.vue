@@ -103,12 +103,38 @@ onMounted(() => { loadChartData(); });
 
 // ─── Today Pulse Animation (item daily chart) ───
 const todayItemIndex = computed(() => {
-    if (!chartData.value || chartData.value.level !== 'item' || chartPeriod.value !== 'daily') return -1;
-    const today = new Date();
-    const d = today.getDate().toString().padStart(2, '0');
+    if (!chartData.value || chartData.value.level !== 'item') return -1;
+    const now = new Date();
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const todayLabel = `${d}-${months[today.getMonth()]}`;
-    return (chartData.value.data || []).findIndex(t => t.label === todayLabel);
+    const data = chartData.value.data || [];
+
+    if (chartPeriod.value === 'daily') {
+        const day = now.getDate().toString().padStart(2, '0');
+        const todayLabel = `${day}-${months[now.getMonth()]}`;
+        return data.findIndex(t => t.label === todayLabel);
+    }
+
+    if (chartPeriod.value === 'weekly') {
+        // Parse label format: "W2 (08-14 Jun)"
+        const nowMs = now.getTime();
+        const year = now.getFullYear();
+        return data.findIndex(t => {
+            const match = t.label.match(/\((\d{2})-(\d{2})\s+(\w{3})\)/);
+            if (!match) return false;
+            const monthIdx = months.indexOf(match[3]);
+            if (monthIdx < 0) return false;
+            const startMs = new Date(year, monthIdx, parseInt(match[1])).getTime();
+            const endMs = new Date(year, monthIdx, parseInt(match[2]), 23, 59, 59).getTime();
+            return nowMs >= startMs && nowMs <= endMs;
+        });
+    }
+
+    if (chartPeriod.value === 'monthly') {
+        const todayMonth = months[now.getMonth()];
+        return data.findIndex(t => t.label.startsWith(todayMonth));
+    }
+
+    return -1;
 });
 
 const pulsingTodayPlugin = {
