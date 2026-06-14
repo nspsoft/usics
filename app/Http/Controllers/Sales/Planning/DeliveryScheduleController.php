@@ -453,7 +453,13 @@ class DeliveryScheduleController extends Controller
             foreach ($schedules as $sch) {
                 $cid = $sch->customer_id;
                 if (!isset($customers[$cid])) {
-                    $customers[$cid] = ['id' => $cid, 'name' => $sch->customer->name ?? 'Unknown Customer', 'schedule' => 0, 'delivery' => 0];
+                    $customers[$cid] = [
+                        'id' => $cid,
+                        'name' => $sch->customer->name ?? 'Unknown Customer',
+                        'code' => $sch->customer->code ?? 'N/A',
+                        'schedule' => 0,
+                        'delivery' => 0
+                    ];
                 }
                 $customers[$cid]['schedule'] += (float) $sch->qty_scheduled;
             }
@@ -461,16 +467,24 @@ class DeliveryScheduleController extends Controller
                 $cid = $act->customer_id;
                 if (!isset($customers[$cid])) {
                     $customerName = 'Unknown';
+                    $customerCode = 'N/A';
                     if ($cid) {
                         $cust = \App\Models\Customer::withTrashed()->find($cid);
                         if ($cust) {
                             $customerName = $cust->name;
+                            $customerCode = $cust->code ?? 'N/A';
                         } else {
                             $do = \App\Models\DeliveryOrder::where('customer_id', $cid)->whereNotNull('shipping_name')->orderBy('id', 'desc')->first();
                             $customerName = $do && $do->shipping_name ? $do->shipping_name : 'Unknown Customer (#' . $cid . ')';
                         }
                     }
-                    $customers[$cid] = ['id' => $cid, 'name' => $customerName, 'schedule' => 0, 'delivery' => 0];
+                    $customers[$cid] = [
+                        'id' => $cid,
+                        'name' => $customerName,
+                        'code' => $customerCode,
+                        'schedule' => 0,
+                        'delivery' => 0
+                    ];
                 }
                 $customers[$cid]['delivery'] += (float) $act->total_delivered;
             }

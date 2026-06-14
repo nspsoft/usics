@@ -102,21 +102,61 @@ onMounted(() => { loadChartData(); });
 const summaryChartData = computed(() => {
     if (!chartData.value || chartData.value.level !== 'summary') return null;
     const d = chartData.value.data;
+    
+    // Hitung pencapaian (line) dengan batas maks 100%
+    const achievements = d.map(c => {
+        const sch = parseFloat(c.schedule) || 0;
+        const del = parseFloat(c.delivery) || 0;
+        if (sch > 0) {
+            return Math.min(100, (del / sch) * 100);
+        } else if (del > 0) {
+            return 100;
+        }
+        return 0;
+    });
+
     return {
-        labels: d.map(c => c.name),
+        labels: d.map(c => c.code || 'N/A'),
         datasets: [
-            { label: 'Schedule', data: d.map(c => c.schedule), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.85, maxBarThickness: 16 },
-            { label: 'Delivery', data: d.map(c => c.delivery), backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.85, maxBarThickness: 16 },
+            { 
+                type: 'bar',
+                label: 'Schedule', 
+                data: d.map(c => c.schedule), 
+                backgroundColor: 'rgba(59,130,246,0.7)', 
+                borderRadius: 4, 
+                yAxisID: 'y',
+                barPercentage: 0.8, 
+                categoryPercentage: 0.85, 
+                maxBarThickness: 20 
+            },
+            { 
+                type: 'bar',
+                label: 'Delivery', 
+                data: d.map(c => c.delivery), 
+                backgroundColor: 'rgba(16,185,129,0.8)', 
+                borderRadius: 4, 
+                yAxisID: 'y',
+                barPercentage: 0.8, 
+                categoryPercentage: 0.85, 
+                maxBarThickness: 20 
+            },
+            {
+                type: 'line',
+                label: 'Achievement',
+                data: achievements,
+                borderColor: '#10b981',
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#10b981',
+                yAxisID: 'y1',
+                fill: false,
+                tension: 0.3
+            }
         ],
     };
 });
 
 const chartHeight = computed(() => {
-    if (chartLevel.value === 'summary' && chartData.value && chartData.value.data) {
-        const count = chartData.value.data.length;
-        // 55px per customer + 60px padding/legend
-        return Math.max(380, count * 55 + 60) + 'px';
-    }
     return '380px';
 });
 
@@ -145,6 +185,70 @@ const itemChartData = computed(() => {
         ],
     };
 });
+
+const summaryChartOpts = computed(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    onClick: (evt, elements) => {
+        if (elements.length && chartData.value) {
+            drillDown(chartData.value.data[elements[0].index]);
+        }
+    },
+    plugins: {
+        legend: {
+            position: 'top',
+            labels: { color: '#64748b', font: { size: 11, weight: 'bold' } }
+        },
+        tooltip: {
+            padding: 10,
+            callbacks: {
+                title: (context) => {
+                    const idx = context[0].dataIndex;
+                    const item = chartData.value.data[idx];
+                    return item ? `${item.name} [${item.code}]` : '';
+                },
+                label: (context) => {
+                    let label = context.dataset.label || '';
+                    if (label) {
+                        label += ': ';
+                    }
+                    if (context.datasetIndex === 2) {
+                        label += context.raw.toFixed(1) + '%';
+                    } else {
+                        label += formatNumber(context.raw);
+                    }
+                    return label;
+                }
+            }
+        }
+    },
+    scales: {
+        x: {
+            grid: { display: false },
+            ticks: { color: '#334155', font: { size: 10, weight: '600' } }
+        },
+        y: {
+            type: 'linear',
+            position: 'left',
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            ticks: { color: '#64748b', font: { size: 10 } },
+            title: { display: true, text: 'Qty (Schedule / Delivery)', color: '#64748b', font: { size: 10, weight: 'bold' } }
+        },
+        y1: {
+            type: 'linear',
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            min: 0,
+            max: 100,
+            ticks: {
+                color: '#10b981',
+                font: { size: 10 },
+                callback: (val) => val + '%'
+            },
+            title: { display: true, text: 'Achievement (%)', color: '#10b981', font: { size: 10, weight: 'bold' } }
+        }
+    }
+}));
 
 const horizontalBarOpts = computed(() => ({
     responsive: true, maintainAspectRatio: false, indexAxis: 'y',
@@ -416,8 +520,8 @@ const printOfficial = () => {
                         </div>
                     </div>
 
-                    <!-- Level 1: Summary (horizontal bar) -->
-                    <Bar v-if="chartLevel === 'summary' && summaryChartData" :key="'summary'" :data="summaryChartData" :options="horizontalBarOpts" />
+                    <!-- Level 1: Summary (vertical combo chart) -->
+                    <Bar v-if="chartLevel === 'summary' && summaryChartData" :key="'summary'" :data="summaryChartData" :options="summaryChartOpts" />
 
                     <!-- Level 2: Customer Detail (vertical bar) -->
                     <Bar v-else-if="chartLevel === 'customer' && customerChartData" :key="'customer-' + selectedCustomerId" :data="customerChartData" :options="verticalBarOpts" />
