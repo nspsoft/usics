@@ -174,9 +174,88 @@ const pulsingTodayPlugin = {
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 2.5;
         ctx.stroke();
+
+        // ─── Info Card ───
+        const targetVal = chart.data.datasets[2]?.data?.[todayIdx] ?? 0;
+        const actualVal = chart.data.datasets[3]?.data?.[todayIdx] ?? 0;
+        const balance = actualVal - targetVal;
+        const fmt = (n) => Number(n ?? 0).toLocaleString('id-ID');
+        const dateLabel = chart.data.labels?.[todayIdx] ?? 'Today';
+
+        const padX = 12, padY = 9, lineH = 17;
+        const cardW = 168, cardH = padY * 2 + lineH * 4 + 4;
+        const r = 7;
+
+        // Auto-position: right of dot unless too close to edge
+        const area = chart.chartArea;
+        let cx = x + 20;
+        if (cx + cardW > area.right - 4) cx = x - cardW - 20;
+        let cy = y - cardH / 2;
+        if (cy < area.top + 4) cy = area.top + 4;
+        if (cy + cardH > area.bottom - 4) cy = area.bottom - cardH - 4;
+
+        // Card background with rounded corners
+        ctx.beginPath();
+        ctx.moveTo(cx + r, cy);
+        ctx.lineTo(cx + cardW - r, cy);
+        ctx.quadraticCurveTo(cx + cardW, cy, cx + cardW, cy + r);
+        ctx.lineTo(cx + cardW, cy + cardH - r);
+        ctx.quadraticCurveTo(cx + cardW, cy + cardH, cx + cardW - r, cy + cardH);
+        ctx.lineTo(cx + r, cy + cardH);
+        ctx.quadraticCurveTo(cx, cy + cardH, cx, cy + cardH - r);
+        ctx.lineTo(cx, cy + r);
+        ctx.quadraticCurveTo(cx, cy, cx + r, cy);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(10, 20, 40, 0.90)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Title: date label
+        ctx.font = 'bold 10px system-ui,sans-serif';
+        ctx.textBaseline = 'top';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#60a5fa';
+        ctx.fillText(`📍 ${dateLabel}`, cx + padX, cy + padY);
+
+        // Separator line
+        ctx.strokeStyle = 'rgba(59,130,246,0.25)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(cx + padX, cy + padY + lineH + 2);
+        ctx.lineTo(cx + cardW - padX, cy + padY + lineH + 2);
+        ctx.stroke();
+
+        // Helper to draw row
+        const drawRow = (label, value, labelColor, valueColor, rowY) => {
+            ctx.font = '10px system-ui,sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = labelColor;
+            ctx.fillText(label, cx + padX, rowY);
+            ctx.font = 'bold 10px system-ui,sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillStyle = valueColor;
+            ctx.fillText(value, cx + cardW - padX, rowY);
+        };
+
+        const row1Y = cy + padY + lineH + 8;
+        const row2Y = row1Y + lineH;
+        const row3Y = row2Y + lineH;
+
+        drawRow('Cum. Target', fmt(targetVal), '#93c5fd', '#bfdbfe', row1Y);
+        drawRow('Cum. Actual', fmt(actualVal), '#6ee7b7', '#a7f3d0', row2Y);
+
+        const balLabel = balance >= 0 ? 'Over ▲' : 'Minus ▼';
+        const balColor = balance >= 0 ? '#4ade80' : '#f87171';
+        const balStr = (balance >= 0 ? '+' : '') + fmt(balance);
+        drawRow(balLabel, balStr, balance >= 0 ? '#86efac' : '#fca5a5', balColor, row3Y);
+
+        ctx.textAlign = 'left'; // reset
         ctx.restore();
     },
 };
+
 ChartJS.register(pulsingTodayPlugin);
 
 const startPulseAnim = () => {
