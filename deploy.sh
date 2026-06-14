@@ -28,32 +28,41 @@ composer install --no-dev --optimize-autoloader
 $PHP_BIN artisan migrate --force
 # $PHP_BIN artisan purchase-order:fix-creator
 
-if [ -f package-lock.json ]; then
-  npm ci
+# --- OPTIMIZATION: SKIP NPM & VITE BUILD ON SERVER SINCE WE PUSH COMPILED ASSETS ---
+# If you ever need to force build on server, you can set FORCE_BUILD=true
+FORCE_BUILD=${FORCE_BUILD:-false}
+
+if [ "$FORCE_BUILD" = "true" ]; then
+  echo "--- 📦 RUNNING NPM INSTALL & VITE BUILD (FORCED) ---"
+  if [ -f package-lock.json ]; then
+    npm ci
+  else
+    npm install
+  fi
+
+  rm -rf "$BUILD_TEMP_DIR" "$BUILD_BACKUP_DIR"
+
+  if [ -d "$BUILD_DIR" ]; then
+    cp -a "$BUILD_DIR" "$BUILD_BACKUP_DIR"
+  fi
+
+  trap restore_previous_build ERR
+
+  node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build --outDir public/build-next --emptyOutDir
+
+  if [ ! -f "$BUILD_TEMP_DIR/manifest.json" ]; then
+    echo "Vite manifest tidak ditemukan setelah build."
+    exit 1
+  fi
+
+  rm -rf "$BUILD_DIR"
+  mv "$BUILD_TEMP_DIR" "$BUILD_DIR"
+  rm -rf "$BUILD_BACKUP_DIR"
+
+  trap - ERR
 else
-  npm install
+  echo "--- ⏩ SKIPPING NPM INSTALL & VITE BUILD (Using pre-compiled assets from Git) ---"
 fi
-
-rm -rf "$BUILD_TEMP_DIR" "$BUILD_BACKUP_DIR"
-
-if [ -d "$BUILD_DIR" ]; then
-  cp -a "$BUILD_DIR" "$BUILD_BACKUP_DIR"
-fi
-
-trap restore_previous_build ERR
-
-node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build --outDir public/build-next --emptyOutDir
-
-if [ ! -f "$BUILD_TEMP_DIR/manifest.json" ]; then
-  echo "Vite manifest tidak ditemukan setelah build."
-  exit 1
-fi
-
-rm -rf "$BUILD_DIR"
-mv "$BUILD_TEMP_DIR" "$BUILD_DIR"
-rm -rf "$BUILD_BACKUP_DIR"
-
-trap - ERR
 
 $PHP_BIN artisan optimize:clear
 $PHP_BIN artisan config:cache
