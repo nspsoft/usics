@@ -103,14 +103,14 @@ const summaryChartData = computed(() => {
     if (!chartData.value || chartData.value.level !== 'summary') return null;
     const d = chartData.value.data;
     
-    // Hitung pencapaian (line) dengan batas maks 100%
+    // Hitung pencapaian (line) dengan batas maks 110%
     const achievements = d.map(c => {
         const sch = parseFloat(c.schedule) || 0;
         const del = parseFloat(c.delivery) || 0;
         if (sch > 0) {
-            return Math.min(100, (del / sch) * 100);
+            return Math.min(110, (del / sch) * 100);
         } else if (del > 0) {
-            return 100;
+            return 110;
         }
         return 0;
     });
@@ -163,11 +163,56 @@ const chartHeight = computed(() => {
 const customerChartData = computed(() => {
     if (!chartData.value || chartData.value.level !== 'customer') return null;
     const d = chartData.value.data;
+
+    // Hitung pencapaian per product, maks 110%
+    const achievements = d.map(p => {
+        const sch = parseFloat(p.schedule) || 0;
+        const del = parseFloat(p.delivery) || 0;
+        if (sch > 0) {
+            return Math.min(110, (del / sch) * 100);
+        } else if (del > 0) {
+            return 110;
+        }
+        return 0;
+    });
+
     return {
         labels: d.map(p => p.name),
         datasets: [
-            { label: 'Schedule', data: d.map(p => p.schedule), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4 },
-            { label: 'Delivery', data: d.map(p => p.delivery), backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 4 },
+            {
+                type: 'bar',
+                label: 'Schedule',
+                data: d.map(p => p.schedule),
+                backgroundColor: 'rgba(59,130,246,0.7)',
+                borderRadius: 4,
+                yAxisID: 'y',
+                barPercentage: 0.8,
+                categoryPercentage: 0.85,
+                maxBarThickness: 20
+            },
+            {
+                type: 'bar',
+                label: 'Delivery',
+                data: d.map(p => p.delivery),
+                backgroundColor: 'rgba(16,185,129,0.8)',
+                borderRadius: 4,
+                yAxisID: 'y',
+                barPercentage: 0.8,
+                categoryPercentage: 0.85,
+                maxBarThickness: 20
+            },
+            {
+                type: 'line',
+                label: 'Achievement',
+                data: achievements,
+                borderColor: '#f59e0b',
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#f59e0b',
+                yAxisID: 'y1',
+                fill: false,
+                tension: 0.3,
+            }
         ],
     };
 });
@@ -239,7 +284,7 @@ const summaryChartOpts = computed(() => ({
             position: 'right',
             grid: { drawOnChartArea: false },
             min: 0,
-            max: 100,
+            max: 110,
             ticks: {
                 color: '#10b981',
                 font: { size: 10 },
@@ -263,10 +308,46 @@ const horizontalBarOpts = computed(() => ({
 const verticalBarOpts = computed(() => ({
     responsive: true, maintainAspectRatio: false,
     onClick: (evt, elements) => { if (elements.length && chartData.value) drillDown(chartData.value.data[elements[0].index]); },
-    plugins: { legend: { position: 'top', labels: { color: '#64748b', font: { size: 11, weight: 'bold' } } }, tooltip: { padding: 10 } },
+    plugins: {
+        legend: { position: 'top', labels: { color: '#64748b', font: { size: 11, weight: 'bold' } } },
+        tooltip: {
+            padding: 10,
+            callbacks: {
+                label: (context) => {
+                    let label = context.dataset.label || '';
+                    if (label) label += ': ';
+                    if (context.dataset.yAxisID === 'y1') {
+                        label += context.raw.toFixed(1) + '%';
+                    } else {
+                        label += formatNumber(context.raw);
+                    }
+                    return label;
+                }
+            }
+        }
+    },
     scales: {
         x: { grid: { display: false }, ticks: { color: '#334155', font: { size: 10, weight: '600' }, maxRotation: 45 } },
-        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+        y: {
+            type: 'linear',
+            position: 'left',
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            ticks: { color: '#64748b', font: { size: 10 } },
+            title: { display: true, text: 'Qty (Schedule / Delivery)', color: '#64748b', font: { size: 10, weight: 'bold' } }
+        },
+        y1: {
+            type: 'linear',
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            min: 0,
+            max: 110,
+            ticks: {
+                color: '#f59e0b',
+                font: { size: 10 },
+                callback: (val) => val + '%'
+            },
+            title: { display: true, text: 'Achievement (%)', color: '#f59e0b', font: { size: 10, weight: 'bold' } }
+        }
     },
 }));
 
