@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch, computed, onMounted } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { 
     MagnifyingGlassIcon, 
     ArrowLeftIcon,
@@ -42,6 +42,9 @@ const chartBreadcrumb = ref([{ label: 'All Customers', level: 'summary' }]);
 const chartPeriod = ref('weekly');
 const selectedCustomerId = ref(null);
 const selectedProductId = ref(null);
+const itemChartRef = ref(null);
+let pulseAnimId = null;
+let lastPulseTick = 0;
 
 const loadChartData = async () => {
     chartLoading.value = true;
@@ -97,6 +100,78 @@ watch(chartPeriod, () => {
 });
 
 onMounted(() => { loadChartData(); });
+
+// ─── Today Pulse Animation (item daily chart) ───
+const todayItemIndex = computed(() => {
+    if (!chartData.value || chartData.value.level !== 'item' || chartPeriod.value !== 'daily') return -1;
+    const today = new Date();
+    const d = today.getDate().toString().padStart(2, '0');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const todayLabel = `${d}-${months[today.getMonth()]}`;
+    return (chartData.value.data || []).findIndex(t => t.label === todayLabel);
+});
+
+const pulsingTodayPlugin = {
+    id: 'pulsingToday',
+    afterDraw(chart) {
+        const todayIdx = chart.options.plugins?.pulsingToday?.todayIndex ?? -1;
+        if (todayIdx < 0) return;
+        // Cum. Target is dataset index 2
+        const meta = chart.getDatasetMeta(2);
+        if (!meta?.data?.[todayIdx]) return;
+        const pt = meta.data[todayIdx];
+        if (!pt || pt.x === undefined || pt.y === undefined) return;
+        const { x, y } = pt;
+        const ctx = chart.ctx;
+        const now = performance.now();
+        const cycle = 2000;
+        const t1 = (now % cycle) / cycle;
+        const t2 = ((now + cycle * 0.5) % cycle) / cycle;
+        ctx.save();
+        // Outer pulsing ring 1
+        ctx.beginPath();
+        ctx.arc(x, y, 10 + t1 * 22, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(59, 130, 246, ${Math.max(0, 0.85 * (1 - t1))})`;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        // Outer pulsing ring 2 (half-cycle offset)
+        ctx.beginPath();
+        ctx.arc(x, y, 10 + t2 * 22, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(147, 197, 253, ${Math.max(0, 0.6 * (1 - t2))})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        // Central enlarged dot with white border
+        ctx.beginPath();
+        ctx.arc(x, y, 9, 0, Math.PI * 2);
+        ctx.fillStyle = '#3b82f6';
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.restore();
+    },
+};
+ChartJS.register(pulsingTodayPlugin);
+
+const startPulseAnim = () => {
+    stopPulseAnim();
+    const tick = (ts) => {
+        pulseAnimId = requestAnimationFrame(tick);
+        if (ts - lastPulseTick < 50) return; // ~20fps
+        lastPulseTick = ts;
+        const chart = itemChartRef.value?.chart;
+        if (chart && !chart._destroyed) chart.update('none');
+    };
+    pulseAnimId = requestAnimationFrame(tick);
+};
+const stopPulseAnim = () => {
+    if (pulseAnimId !== null) { cancelAnimationFrame(pulseAnimId); pulseAnimId = null; }
+};
+watch(chartLevel, (level) => {
+    if (level === 'item') startPulseAnim();
+    else stopPulseAnim();
+});
+onUnmounted(() => stopPulseAnim());
 
 // ─── Chart.js Configs ───
 const summaryChartData = computed(() => {
@@ -220,12 +295,22 @@ const customerChartData = computed(() => {
 const itemChartData = computed(() => {
     if (!chartData.value || chartData.value.level !== 'item') return null;
     const d = chartData.value.data;
+    const todayIdx = todayItemIndex.value;
     return {
         labels: d.map(t => t.label),
         datasets: [
             { type: 'bar', label: 'Schedule', data: d.map(t => t.schedule), backgroundColor: 'rgba(148,163,184,0.4)', borderRadius: 3, order: 2 },
             { type: 'bar', label: 'Delivery', data: d.map(t => t.delivery), backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 3, order: 2 },
-            { type: 'line', label: 'Cum. Target', data: d.map(t => t.cum_schedule), borderColor: '#3b82f6', borderDash: [6,3], borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#3b82f6', fill: false, tension: 0.3, order: 1 },
+            {
+                type: 'line', label: 'Cum. Target',
+                data: d.map(t => t.cum_schedule),
+                borderColor: '#3b82f6', borderDash: [6, 3], borderWidth: 2,
+                // Hide native point at today — plugin draws pulsing dot instead
+                pointRadius: d.map((_, i) => (todayIdx >= 0 && i === todayIdx) ? 0 : 3),
+                pointHoverRadius: d.map((_, i) => (todayIdx >= 0 && i === todayIdx) ? 12 : 5),
+                pointBackgroundColor: '#3b82f6',
+                fill: false, tension: 0.3, order: 1
+            },
             { type: 'line', label: 'Cum. Actual', data: d.map(t => t.cum_delivery), borderColor: '#10b981', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#10b981', fill: false, tension: 0.3, order: 1 },
         ],
     };
@@ -353,7 +438,11 @@ const verticalBarOpts = computed(() => ({
 
 const comboChartOpts = computed(() => ({
     responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { position: 'top', labels: { color: '#64748b', font: { size: 11, weight: 'bold' } } }, tooltip: { padding: 10 } },
+    plugins: {
+        legend: { position: 'top', labels: { color: '#64748b', font: { size: 11, weight: 'bold' } } },
+        tooltip: { padding: 10 },
+        pulsingToday: { todayIndex: todayItemIndex.value },
+    },
     scales: {
         x: { grid: { display: false }, ticks: { color: '#334155', font: { size: 10 }, maxRotation: 45 } },
         y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#64748b', font: { size: 10 } } },
@@ -608,7 +697,7 @@ const printOfficial = () => {
                     <Bar v-else-if="chartLevel === 'customer' && customerChartData" :key="'customer-' + selectedCustomerId" :data="customerChartData" :options="verticalBarOpts" />
 
                     <!-- Level 3: Item Timeline (combo) -->
-                    <Bar v-else-if="chartLevel === 'item' && itemChartData" :key="'item-' + selectedProductId + '-' + chartPeriod" :data="itemChartData" :options="comboChartOpts" />
+                    <Bar v-else-if="chartLevel === 'item' && itemChartData" ref="itemChartRef" :key="'item-' + selectedProductId + '-' + chartPeriod" :data="itemChartData" :options="comboChartOpts" />
 
                     <div v-else-if="!chartLoading" class="flex items-center justify-center h-full text-slate-400">
                         <p class="text-sm">No chart data available for the selected filters.</p>
