@@ -236,10 +236,10 @@
                         @foreach($headers as $header)
                             @php   $key = $mode === 'weekly' ? $header['key'] : $header;   @endphp
                             <td class="text-right">
-                                {{ ($product['daily'][$key]['sch'] ?? 0) > 0 ? number_format($product['daily'][$key]['sch'], 1, ',', '.') : '-' }}
+                                {{ ($product['daily'][$key]['sch'] ?? 0) > 0 ? number_format($product['daily'][$key]['sch'], 0, ',', '.') : '-' }}
                             </td>
                         @endforeach
-                        <td class="text-right total-cell">{{ number_format($product['totals']['sch'], 1, ',', '.') }}</td>
+                        <td class="text-right total-cell">{{ number_format($product['totals']['sch'], 0, ',', '.') }}</td>
                     </tr>
                     {{-- Delivery Row --}}
                     <tr>
@@ -247,10 +247,10 @@
                         @foreach($headers as $header)
                             @php   $key = $mode === 'weekly' ? $header['key'] : $header;   @endphp
                             <td class="text-right cell-delivery">
-                                {{ ($product['daily'][$key]['act'] ?? 0) > 0 ? number_format($product['daily'][$key]['act'], 1, ',', '.') : '-' }}
+                                {{ ($product['daily'][$key]['act'] ?? 0) > 0 ? number_format($product['daily'][$key]['act'], 0, ',', '.') : '-' }}
                             </td>
                         @endforeach
-                        <td class="text-right total-cell cell-delivery">{{ number_format($product['totals']['act'], 1, ',', '.') }}</td>
+                        <td class="text-right total-cell cell-delivery">{{ number_format($product['totals']['act'], 0, ',', '.') }}</td>
                     </tr>
                     {{-- Balance Row --}}
                     <tr class="balance-row">
@@ -273,11 +273,11 @@
                                 }
                             @endphp
                             <td class="text-right {{ $bal < 0 ? 'cell-balance-neg' : ($bal > 0 ? 'cell-balance-pos' : '') }}">
-                                {{ $bal != 0 ? number_format($bal, 1, ',', '.') : '-' }}
+                                {{ $bal != 0 ? number_format($bal, 0, ',', '.') : '-' }}
                             </td>
                         @endforeach
                         <td class="text-right {{ $product['totals']['bal'] < 0 ? 'total-neg' : 'total-cell' }}">
-                            {{ number_format($product['totals']['bal'], 1, ',', '.') }}
+                            {{ number_format($product['totals']['bal'], 0, ',', '.') }}
                         </td>
                     </tr>
                 @endforeach
