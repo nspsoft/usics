@@ -105,10 +105,19 @@ const summaryChartData = computed(() => {
     return {
         labels: d.map(c => c.name),
         datasets: [
-            { label: 'Schedule', data: d.map(c => c.schedule), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4, barThickness: 22 },
-            { label: 'Delivery', data: d.map(c => c.delivery), backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 4, barThickness: 22 },
+            { label: 'Schedule', data: d.map(c => c.schedule), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.85, maxBarThickness: 16 },
+            { label: 'Delivery', data: d.map(c => c.delivery), backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.85, maxBarThickness: 16 },
         ],
     };
+});
+
+const chartHeight = computed(() => {
+    if (chartLevel.value === 'summary' && chartData.value && chartData.value.data) {
+        const count = chartData.value.data.length;
+        // 55px per customer + 60px padding/legend
+        return Math.max(380, count * 55 + 60) + 'px';
+    }
+    return '380px';
 });
 
 const customerChartData = computed(() => {
@@ -399,7 +408,7 @@ const printOfficial = () => {
                 </div>
 
                 <!-- Chart Area -->
-                <div class="relative" style="height: 380px;">
+                <div class="relative" :style="{ height: chartHeight }">
                     <div v-if="chartLoading" class="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-slate-900/60 z-10 rounded-xl">
                         <div class="flex items-center gap-3 text-slate-500">
                             <svg class="animate-spin h-6 w-6" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
