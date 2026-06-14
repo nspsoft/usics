@@ -123,8 +123,19 @@ const todayItemIndex = computed(() => {
             if (!match) return false;
             const monthIdx = months.indexOf(match[3]);
             if (monthIdx < 0) return false;
-            const startMs = new Date(year, monthIdx, parseInt(match[1])).getTime();
-            const endMs = new Date(year, monthIdx, parseInt(match[2]), 23, 59, 59).getTime();
+            const startDay = parseInt(match[1]);
+            const endDay = parseInt(match[2]);
+            let startMonthIdx = monthIdx;
+            let startYear = year;
+            if (startDay > endDay) {
+                startMonthIdx = monthIdx - 1;
+                if (startMonthIdx < 0) {
+                    startMonthIdx = 11;
+                    startYear = year - 1;
+                }
+            }
+            const startMs = new Date(startYear, startMonthIdx, startDay).getTime();
+            const endMs = new Date(year, monthIdx, endDay, 23, 59, 59).getTime();
             return nowMs >= startMs && nowMs <= endMs;
         });
     }
