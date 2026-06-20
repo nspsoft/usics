@@ -199,16 +199,7 @@ class GoodsReceipt extends Model
 
             $po = $this->purchaseOrder;
             if ($po) {
-                $po->refresh();
-                $allReceived = $po->items->every(fn($item) => $item->qty_received >= $item->qty - 0.0001);
-                $someReceived = $po->items->some(fn($item) => $item->qty_received > 0);
-
-                if ($allReceived) {
-                    $po->status = PurchaseOrder::STATUS_RECEIVED;
-                } elseif ($someReceived) {
-                    $po->status = PurchaseOrder::STATUS_PARTIAL;
-                }
-                $po->save();
+                $po->updateStatusBasedOnItems();
             }
         });
     }

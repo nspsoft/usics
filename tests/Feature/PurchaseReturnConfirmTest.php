@@ -85,4 +85,53 @@ class PurchaseReturnConfirmTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertEquals('confirmed', $purchaseReturn->fresh()->status);
     }
+
+    public function test_purchase_return_confirm_updates_po_status()
+    {
+        // Create a Purchase Order
+        $po = PurchaseOrder::create([
+            'po_number' => 'PO/2026/0001',
+            'supplier_id' => $this->supplier->id,
+            'warehouse_id' => $this->warehouse->id,
+            'order_date' => now(),
+            'status' => PurchaseOrder::STATUS_RECEIVED, // start as received
+            'company_id' => $this->company->id,
+            'created_by' => $this->user->id,
+        ]);
+
+        $poItem = $po->items()->create([
+            'product_id' => $this->product->id,
+            'qty' => 500,
+            'qty_received' => 500,
+            'qty_returned' => 0,
+            'unit_price' => 100,
+        ]);
+
+        // Create a purchase return
+        $purchaseReturn = PurchaseReturn::create([
+            'number' => 'PRT/20260613/0002',
+            'purchase_order_id' => $po->id,
+            'supplier_id' => $this->supplier->id,
+            'warehouse_id' => $this->warehouse->id,
+            'return_date' => now(),
+            'status' => 'draft',
+            'created_by' => $this->user->id
+        ]);
+
+        // Add a return item
+        $purchaseReturn->items()->create([
+            'product_id' => $this->product->id,
+            'qty' => 300,
+            'unit_price' => 100,
+            'total_price' => 30000
+        ]);
+
+        // Confirm return
+        $response = $this->post(route('purchasing.purchase-returns.confirm', $purchaseReturn->id));
+
+        $response->assertSessionHas('success');
+        $this->assertEquals('confirmed', $purchaseReturn->fresh()->status);
+        $this->assertEquals(300, $poItem->fresh()->qty_returned);
+        $this->assertEquals(PurchaseOrder::STATUS_PARTIAL, $po->fresh()->status);
+    }
 }

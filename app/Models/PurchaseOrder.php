@@ -240,6 +240,47 @@ class PurchaseOrder extends Model
     }
 
     /**
+     * Update the purchase order status based on item quantities.
+     */
+    public function updateStatusBasedOnItems(): void
+    {
+        $this->refresh()->loadMissing('items');
+        
+        if (!in_array($this->status, [
+            self::STATUS_APPROVED,
+            self::STATUS_ORDERED,
+            self::STATUS_ACKNOWLEDGED,
+            self::STATUS_PARTIAL,
+            self::STATUS_RECEIVED
+        ])) {
+            return;
+        }
+
+        $allReceived = $this->items->every(function ($item) {
+            $netReceived = (float) ($item->qty_received ?? 0) - (float) ($item->qty_returned ?? 0);
+            return $netReceived >= (float) $item->qty - 0.0001;
+        });
+
+        $someReceived = $this->items->some(function ($item) {
+            $netReceived = (float) ($item->qty_received ?? 0) - (float) ($item->qty_returned ?? 0);
+            return $netReceived > 0.0001;
+        });
+
+        if ($allReceived) {
+            $newStatus = self::STATUS_RECEIVED;
+        } elseif ($someReceived) {
+            $newStatus = self::STATUS_PARTIAL;
+        } else {
+            $newStatus = self::STATUS_ORDERED;
+        }
+
+        if ($this->status !== $newStatus) {
+            $this->status = $newStatus;
+            $this->save();
+        }
+    }
+
+    /**
      * Scope by status
      */
     public function scopeStatus($query, string $status)

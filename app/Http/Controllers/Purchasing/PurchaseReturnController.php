@@ -264,6 +264,13 @@ class PurchaseReturnController extends Controller
 
             $return->update(['status' => 'confirmed']);
 
+            if ($return->purchase_order_id) {
+                $po = PurchaseOrder::find($return->purchase_order_id);
+                if ($po) {
+                    $po->updateStatusBasedOnItems();
+                }
+            }
+
             activity()
                 ->performedOn($return)
                 ->causedBy(auth()->user())

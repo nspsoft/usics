@@ -375,20 +375,7 @@ class GoodsReceiptController extends Controller
                     }
                 }
 
-                $oldPo->refresh();
-                $allReceived = $oldPo->items->every(fn ($item) => $item->qty_received >= $item->qty - 0.0001);
-                $someReceived = $oldPo->items->some(fn ($item) => $item->qty_received > 0);
-
-                if ($allReceived) {
-                    $oldPo->status = PurchaseOrder::STATUS_RECEIVED;
-                } elseif ($someReceived) {
-                    $oldPo->status = PurchaseOrder::STATUS_PARTIAL;
-                } else {
-                    if (!in_array($oldPo->status, [PurchaseOrder::STATUS_DRAFT, PurchaseOrder::STATUS_SUBMITTED, PurchaseOrder::STATUS_APPROVED, PurchaseOrder::STATUS_ORDERED, PurchaseOrder::STATUS_ACKNOWLEDGED], true)) {
-                        $oldPo->status = PurchaseOrder::STATUS_APPROVED;
-                    }
-                }
-                $oldPo->save();
+                $oldPo->updateStatusBasedOnItems();
             }
 
             foreach ($receipt->items as $grItem) {
@@ -402,16 +389,7 @@ class GoodsReceiptController extends Controller
                 $grItem->save();
             }
 
-            $newPo->refresh();
-            $allReceived = $newPo->items->every(fn ($item) => $item->qty_received >= $item->qty - 0.0001);
-            $someReceived = $newPo->items->some(fn ($item) => $item->qty_received > 0);
-
-            if ($allReceived) {
-                $newPo->status = PurchaseOrder::STATUS_RECEIVED;
-            } elseif ($someReceived) {
-                $newPo->status = PurchaseOrder::STATUS_PARTIAL;
-            }
-            $newPo->save();
+            $newPo->updateStatusBasedOnItems();
 
             $receipt->purchase_order_id = $newPo->id;
             $receipt->save();

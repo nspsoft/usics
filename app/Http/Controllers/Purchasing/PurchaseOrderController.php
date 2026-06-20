@@ -596,6 +596,7 @@ class PurchaseOrderController extends Controller
             
             // Recalculate totals for the parent PO
             $item->purchaseOrder->calculateTotals();
+            $item->purchaseOrder->updateStatusBasedOnItems();
 
             // Explicitly log the reason if provided
             if (!empty($validated['reason'])) {

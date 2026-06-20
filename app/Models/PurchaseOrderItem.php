@@ -74,7 +74,7 @@ class PurchaseOrderItem extends Model
      */
     public function isFullyReceived(): bool
     {
-        return $this->qty_received >= $this->qty;
+        return ($this->qty_received - $this->qty_returned) >= $this->qty;
     }
 
     /**
