@@ -283,7 +283,13 @@ const handleImport = () => {
                                         :href="route('inventory.reclass-mappings.template')"
                                         class="text-xs text-blue-400 hover:text-blue-300 underline"
                                     >
-                                        Download Template
+                                        Download Empty Template
+                                    </a>
+                                    <a 
+                                        :href="route('inventory.reclass-mappings.template', { with_data: 1 })"
+                                        class="text-xs text-emerald-400 hover:text-emerald-300 underline font-medium"
+                                    >
+                                        Download Template with Existing Data
                                     </a>
                                 </div>
                             </div>

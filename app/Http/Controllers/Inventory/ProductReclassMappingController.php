@@ -255,8 +255,11 @@ class ProductReclassMappingController extends Controller
         return back()->with('success', 'Mapping berhasil dihapus.');
     }
 
-    public function template()
+    public function template(Request $request)
     {
+        if ($request->boolean('with_data')) {
+            return Excel::download(new \App\Exports\ProductReclassMappingDataExport, 'reclass_mappings_data_' . now()->format('Y-m-d') . '.xlsx');
+        }
         return Excel::download(new ProductReclassMappingTemplateExport, 'reclass_mappings_template.xlsx');
     }
 
