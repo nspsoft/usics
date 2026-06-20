@@ -41,6 +41,7 @@ class DeliveryOrderExport implements FromCollection, WithHeadings, WithMapping, 
         return [
             'DO Number',
             'SO Number',
+            'PO Customer',
             'Customer Code',
             'Customer Name',
             'Warehouse',
@@ -66,6 +67,7 @@ class DeliveryOrderExport implements FromCollection, WithHeadings, WithMapping, 
         return [
             $do->do_number,
             $do->salesOrder?->so_number,
+            $do->salesOrder?->customer_po_number,
             $do->customer?->code ?? $do->salesOrder?->customer?->code,
             $do->customer?->name ?? $do->salesOrder?->customer?->name,
             $do->warehouse?->name,
@@ -104,7 +106,7 @@ class DeliveryOrderExport implements FromCollection, WithHeadings, WithMapping, 
                 $sheet = $event->sheet->getDelegate();
 
                 // Title
-                $sheet->mergeCells('A1:P1');
+                $sheet->mergeCells('A1:Q1');
                 $sheet->setCellValue('A1', 'DELIVERY ORDER DATA');
                 $sheet->getStyle('A1')->applyFromArray([
                     'font' => ['bold' => true, 'size' => 16],
@@ -112,7 +114,7 @@ class DeliveryOrderExport implements FromCollection, WithHeadings, WithMapping, 
                 ]);
 
                 // Export Date
-                $sheet->mergeCells('A2:P2');
+                $sheet->mergeCells('A2:Q2');
                 $sheet->setCellValue('A2', 'Export Date: ' . now()->format('d F Y H:i'));
                 $sheet->getStyle('A2')->applyFromArray([
                     'font' => ['italic' => true],
@@ -134,10 +136,10 @@ class DeliveryOrderExport implements FromCollection, WithHeadings, WithMapping, 
                     ],
                 ]);
 
-                // Number format for qty columns
+                // Number format for qty columns (shifted from K/L to L/M due to PO Customer insertion)
                 $lastRow = $sheet->getHighestRow();
-                $sheet->getStyle("K5:K{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
                 $sheet->getStyle("L5:L{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
+                $sheet->getStyle("M5:M{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
             },
         ];
     }
