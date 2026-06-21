@@ -16,6 +16,11 @@ class ReconciliationDummySeeder extends Seeder
      */
     public function run(): void
     {
+        if (app()->environment('production')) {
+            echo "Error: Seeder ini tidak boleh dijalankan di environment Production!" . PHP_EOL;
+            return;
+        }
+
         // 1. Get valid customer, supplier, sales order, purchase order, company
         $customer = Customer::first();
         $supplier = Supplier::first();
