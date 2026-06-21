@@ -80,7 +80,7 @@ class SalesInvoiceController extends Controller
 
     public function show(SalesInvoice $salesInvoice): Response
     {
-        $salesInvoice->load(['salesOrder.customer', 'items.product', 'items.unit']);
+        $salesInvoice->load(['salesOrder.customer', 'items.product', 'items.unit', 'payments.createdBy']);
 
         $emeteraiService = new EmeteraiService();
 
@@ -88,6 +88,7 @@ class SalesInvoiceController extends Controller
             'invoice' => $salesInvoice,
             'emeteraiConfigured' => $emeteraiService->isConfigured(),
             'emeteraiEnabled' => $emeteraiService->isEnabled(),
+            'paymentMethods' => \App\Models\SalesPayment::getPaymentMethods(),
         ]);
     }
 
@@ -207,22 +208,69 @@ class SalesInvoiceController extends Controller
     public function recordPayment(Request $request, SalesInvoice $salesInvoice)
     {
         $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01|max:'.$salesInvoice->balance,
+            'amount' => 'required|numeric|min:1|max:'.ceil($salesInvoice->balance),
             'payment_date' => 'required|date',
-            'payment_method' => 'nullable|string',
-            'reference' => 'nullable|string',
+            'payment_method' => 'required|string',
+            'reference' => 'nullable|string|max:100',
+            'bank_name' => 'nullable|string|max:100',
+            'account_number' => 'nullable|string|max:50',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // max 5MB
+            'notes' => 'nullable|string|max:500',
         ]);
 
         try {
-            \DB::transaction(function () use ($salesInvoice, $validated) {
-                $salesInvoice->addPayment($validated['amount']);
+            \DB::transaction(function () use ($validated, $salesInvoice, $request) {
+                // Handle file upload
+                $attachmentPath = null;
+                if ($request->hasFile('attachment')) {
+                    $attachmentPath = $request->file('attachment')->store('payment-attachments', 'public');
+                }
 
-                // You could also create a Payment model here if needed in the future
+                // Create payment record
+                $salesInvoice->payments()->create([
+                    'payment_number' => \App\Models\SalesPayment::generatePaymentNumber(),
+                    'amount' => $validated['amount'],
+                    'payment_date' => $validated['payment_date'],
+                    'payment_method' => $validated['payment_method'],
+                    'reference' => $validated['reference'] ?? null,
+                    'bank_name' => $validated['bank_name'] ?? null,
+                    'account_number' => $validated['account_number'] ?? null,
+                    'attachment' => $attachmentPath,
+                    'notes' => $validated['notes'] ?? null,
+                    'created_by' => auth()->id(),
+                ]);
+
+                // Update invoice paid amount and status
+                $salesInvoice->recalculatePaidAmount();
             });
 
             return back()->with('success', 'Payment recorded successfully.');
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Sales Payment Recording Error: ' . $e->getMessage());
             return back()->with('error', 'Error recording payment: '.$e->getMessage());
+        }
+    }
+
+    public function deletePayment(SalesInvoice $salesInvoice, \App\Models\SalesPayment $payment)
+    {
+        try {
+            \DB::transaction(function () use ($salesInvoice, $payment) {
+                // Delete attachment if exists
+                if ($payment->attachment) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($payment->attachment);
+                }
+
+                // Delete payment
+                $payment->delete();
+
+                // Recalculate invoice
+                $salesInvoice->recalculatePaidAmount();
+            });
+
+            return back()->with('success', 'Payment deleted successfully.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Sales Payment Deletion Error: ' . $e->getMessage());
+            return back()->with('error', 'Error deleting payment: ' . $e->getMessage());
         }
     }
 

@@ -14,6 +14,9 @@ import {
     ArrowPathIcon,
     PencilSquareIcon,
     ShieldCheckIcon,
+    TrashIcon,
+    XMarkIcon,
+    ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 
@@ -21,6 +24,7 @@ const props = defineProps({
     invoice: Object,
     emeteraiConfigured: Boolean,
     emeteraiEnabled: Boolean,
+    paymentMethods: Object,
 });
 
 const showPaymentModal = ref(false);
@@ -31,11 +35,41 @@ const taxForm = useForm({
 });
 
 const paymentForm = useForm({
-    amount: props.invoice.balance,
+    amount: Math.max(1, Math.round(props.invoice.balance)),
     payment_date: new Date().toISOString().split('T')[0],
     payment_method: 'Transfer',
     reference: '',
+    bank_name: '',
+    account_number: '',
+    attachment: null,
+    notes: '',
 });
+
+const formattedAmount = ref('');
+
+const openPaymentModal = () => {
+    paymentForm.amount = Math.max(1, Math.round(props.invoice.balance));
+    formattedAmount.value = paymentForm.amount.toLocaleString('id-ID');
+    paymentForm.payment_date = new Date().toISOString().split('T')[0];
+    paymentForm.payment_method = 'Transfer';
+    paymentForm.reference = '';
+    paymentForm.bank_name = '';
+    paymentForm.account_number = '';
+    paymentForm.attachment = null;
+    paymentForm.notes = '';
+    showPaymentModal.value = true;
+};
+
+const onAmountInput = (e) => {
+    const raw = e.target.value;
+    const clean = raw.replace(/\D/g, '');
+    formattedAmount.value = clean ? parseInt(clean, 10).toLocaleString('id-ID') : '';
+    paymentForm.amount = clean ? parseInt(clean, 10) : 0;
+};
+
+const handleFileChange = (e) => {
+    paymentForm.attachment = e.target.files[0];
+};
 
 const confirmInvoice = () => {
     if (confirm('Are you sure you want to confirm and issue this invoice?')) {
@@ -64,6 +98,7 @@ const submitTaxUpdate = () => {
 
 const submitPayment = () => {
     paymentForm.post(route('sales.invoices.pay', props.invoice.id), {
+        preserveScroll: true,
         onSuccess: () => {
             showPaymentModal.value = false;
             paymentForm.reset();
@@ -71,6 +106,13 @@ const submitPayment = () => {
     });
 };
 
+const deletePayment = (paymentId) => {
+    if (confirm('Apakah Anda yakin ingin menghapus pembayaran ini?')) {
+        router.delete(route('sales.invoices.payment.delete', [props.invoice.id, paymentId]), {
+            preserveScroll: true,
+        });
+    }
+};
 
 const confirmRevise = () => {
     if (confirm('Are you sure you want to revise this invoice? This will revert the status to Draft and increment the revision number (REV-X).')) {
@@ -94,7 +136,6 @@ const formatDate = (date) => {
         year: 'numeric' 
     });
 };
-
 
 const getStatusBadge = (status) => {
     const badges = {
@@ -156,7 +197,7 @@ const getStatusBadge = (status) => {
 
                     <button 
                         v-if="invoice.status !== 'draft' && invoice.balance > 0"
-                        @click="showPaymentModal = true"
+                        @click="openPaymentModal"
                         class="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-slate-900 dark:text-white hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-500/20"
                     >
                         <BanknotesIcon class="h-4 w-4" />
@@ -278,6 +319,68 @@ const getStatusBadge = (status) => {
                             </table>
                         </div>
                     </div>
+
+                    <!-- Payment History -->
+                    <div v-if="invoice.payments && invoice.payments.length > 0" class="glass-card rounded-2xl shadow-sm overflow-hidden mt-6">
+                        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20">
+                             <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Payment History</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 dark:bg-slate-800/30 text-xs font-bold text-slate-500 uppercase">
+                                        <th class="px-6 py-4">Payment #</th>
+                                        <th class="px-6 py-4">Date</th>
+                                        <th class="px-6 py-4">Method</th>
+                                        <th class="px-6 py-4">Reference</th>
+                                        <th class="px-6 py-4 text-right">Amount</th>
+                                        <th class="px-6 py-4 text-center">Receipt</th>
+                                        <th class="px-6 py-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tr v-for="payment in invoice.payments" :key="payment.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/10 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="text-slate-900 dark:text-white font-medium font-mono">{{ payment.payment_number }}</div>
+                                            <div class="text-[10px] text-slate-500 mt-0.5">by {{ payment.created_by?.name || 'System' }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ formatDate(payment.payment_date) }}</td>
+                                        <td class="px-6 py-4">
+                                            <span class="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                                                {{ payment.method_label || payment.payment_method }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-mono text-xs">
+                                            {{ payment.reference || '-' }}
+                                            <div v-if="payment.bank_name" class="text-[10px] text-slate-500">{{ payment.bank_name }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-right text-emerald-400 font-bold font-mono">{{ formatCurrency(payment.amount) }}</td>
+                                        <td class="px-6 py-4 text-center">
+                                            <a 
+                                                v-if="payment.attachment" 
+                                                :href="payment.attachment_url" 
+                                                target="_blank"
+                                                class="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+                                            >
+                                                <ArrowDownTrayIcon class="h-4 w-4" />
+                                                <span class="text-xs">Download</span>
+                                            </a>
+                                            <span v-else class="text-slate-600 text-xs">-</span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button 
+                                                @click="deletePayment(payment.id)"
+                                                class="p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
+                                                title="Delete Payment"
+                                            >
+                                                <TrashIcon class="h-4 w-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Right Column: Details -->
@@ -377,74 +480,144 @@ const getStatusBadge = (status) => {
         </div>
 
         <!-- Payment Modal -->
-        <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-slate-950/80 backdrop-blur-sm">
-            <div class="w-full max-w-md rounded-2xl glass-card shadow-2xl overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/20">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Record Payment</h3>
-                    <button @click="showPaymentModal = false" class="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor font-bold"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" @click="showPaymentModal = false"></div>
+                    
+                    <div class="relative w-full max-w-lg bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+                        <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Record Payment</h3>
+                            </div>
+                            <button @click="showPaymentModal = false" class="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-all">
+                                <XMarkIcon class="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <form @submit.prevent="submitPayment" class="p-6 space-y-5">
+                            <div class="bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Amount Due</span>
+                                    <span class="text-lg font-bold text-amber-400 font-mono">{{ formatCurrency(invoice.balance) }}</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Payment Amount (IDR) *</label>
+                                    <input 
+                                        v-model="formattedAmount" 
+                                        @input="onAmountInput"
+                                        type="text" 
+                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-3 px-4 text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/50 font-mono text-lg"
+                                        required
+                                    />
+                                    <div v-if="paymentForm.errors.amount" class="text-red-400 text-xs mt-1">{{ paymentForm.errors.amount }}</div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Payment Date *</label>
+                                    <input 
+                                        v-model="paymentForm.payment_date" 
+                                        type="date" 
+                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Payment Method *</label>
+                                <select 
+                                    v-model="paymentForm.payment_method" 
+                                    class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-3 px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                                    required
+                                >
+                                    <option v-for="(label, value) in paymentMethods" :key="value" :value="value">{{ label }}</option>
+                                </select>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Reference / No. Giro</label>
+                                    <input 
+                                        v-model="paymentForm.reference" 
+                                        type="text" 
+                                        placeholder="e.g. TRF-123456"
+                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-3 px-4 text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/50"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Bank Name</label>
+                                    <input 
+                                        v-model="paymentForm.bank_name" 
+                                        type="text" 
+                                        placeholder="e.g. BCA, Mandiri"
+                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-3 px-4 text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/50"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Account Number</label>
+                                    <input 
+                                        v-model="paymentForm.account_number" 
+                                        type="text" 
+                                        placeholder="e.g. 1234567890"
+                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-3 px-4 text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/50"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Bukti Pembayaran (Attachment)</label>
+                                    <input 
+                                        type="file" 
+                                        @change="handleFileChange"
+                                        accept=".jpg,.jpeg,.png,.pdf"
+                                        class="w-full rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 py-3 px-4 text-slate-900 dark:text-white file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer"
+                                    />
+                                    <p class="text-[10px] text-slate-500 mt-1">Max 5MB. Formats: JPG, PNG, PDF</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Notes</label>
+                                <textarea 
+                                    v-model="paymentForm.notes" 
+                                    rows="2"
+                                    placeholder="Optional notes..."
+                                    class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-3 px-4 text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/50 resize-none"
+                                ></textarea>
+                            </div>
+
+                            <div class="flex gap-3 pt-4">
+                                <button 
+                                    type="button"
+                                    @click="showPaymentModal = false" 
+                                    class="flex-1 rounded-xl border border-slate-200 dark:border-slate-800 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit"
+                                    :disabled="paymentForm.processing"
+                                    class="flex-1 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white dark:text-white hover:bg-blue-500 shadow-lg shadow-blue-500/25 transition-all disabled:opacity-50"
+                                >
+                                    {{ paymentForm.processing ? 'Processing...' : 'Record Payment' }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <form @submit.prevent="submitPayment" class="p-6 space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Payment Amount (IDR)</label>
-                        <input 
-                            v-model="paymentForm.amount" 
-                            type="number" 
-                            step="0.01"
-                            :max="invoice.balance"
-                            class="w-full rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-600 focus:ring-blue-500 focus:border-blue-500"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Payment Date</label>
-                        <input 
-                            v-model="paymentForm.payment_date" 
-                            type="date" 
-                            class="w-full rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-600 focus:ring-blue-500 focus:border-blue-500"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Payment Method</label>
-                        <select 
-                            v-model="paymentForm.payment_method" 
-                            class="w-full rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="Transfer">Transfer</option>
-                            <option value="Cash">Cash</option>
-                            <option value="Cheque">Cheque</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Reference / Notes</label>
-                        <textarea 
-                            v-model="paymentForm.reference" 
-                            rows="2"
-                            class="w-full rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-600 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Bank reference, cheque number, etc."
-                        ></textarea>
-                    </div>
-                    <div class="pt-4 flex gap-3">
-                        <button 
-                            type="button" 
-                            @click="showPaymentModal = false"
-                            class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors"
-                        >
-                            CANCEL
-                        </button>
-                        <button 
-                            type="submit" 
-                            :disabled="paymentForm.processing"
-                            class="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-sm font-bold text-white dark:text-white hover:bg-blue-500 transition-colors disabled:opacity-50"
-                        >
-                            {{ paymentForm.processing ? 'SAVING...' : 'RECORD PAYMENT' }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+            </Transition>
+        </Teleport>
     </AppLayout>
 </template>
 

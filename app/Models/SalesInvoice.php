@@ -187,6 +187,27 @@ class SalesInvoice extends Model
         return $this->hasMany(SalesInvoiceItem::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(SalesPayment::class);
+    }
+
+    public function recalculatePaidAmount(): void
+    {
+        $this->paid_amount = $this->payments()->sum('amount');
+        $this->balance = $this->total - $this->paid_amount;
+        
+        if ($this->balance <= 0) {
+            $this->status = self::STATUS_PAID;
+        } elseif ($this->paid_amount > 0) {
+            $this->status = self::STATUS_PARTIAL;
+        } else {
+            $this->status = $this->status === self::STATUS_DRAFT ? self::STATUS_DRAFT : self::STATUS_SENT;
+        }
+        
+        $this->save();
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
