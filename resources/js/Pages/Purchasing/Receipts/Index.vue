@@ -145,7 +145,7 @@ const deleteReceipt = (id) => {
                         <input
                             v-model="search"
                             type="search"
-                            placeholder="Search GRN number..."
+                            placeholder="Search GRN or PO number..."
                             class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500/50 transition-all"
                         />
                     </div>

@@ -65,6 +65,9 @@ class GoodsReceiptController extends Controller
                     $q->where('grn_number', 'like', "%{$search}%")
                       ->orWhereHas('supplier', function ($sq) use ($search) {
                           $sq->where('name', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('purchaseOrder', function ($poq) use ($search) {
+                          $poq->where('po_number', 'like', "%{$search}%");
                       });
                 });
             })
