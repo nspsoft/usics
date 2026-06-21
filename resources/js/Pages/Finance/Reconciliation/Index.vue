@@ -136,6 +136,19 @@ const isRecommendedInvoice = (inv) => {
     
     return isAmountMatch || isDescMatch;
 };
+
+// Helper to get match reason label
+const getMatchReason = (inv) => {
+    if (!selectedTransaction.value) return '';
+    const isAmountMatch = Math.round(inv.balance) === Math.round(selectedTransaction.value.amount);
+    const invNumOnly = inv.invoice_number.split('/')[0];
+    const isDescMatch = invNumOnly && selectedTransaction.value.description.toLowerCase().includes(invNumOnly.toLowerCase());
+    
+    if (isAmountMatch && isDescMatch) return 'Nominal & Invoice Cocok';
+    if (isAmountMatch) return 'Nominal Cocok';
+    if (isDescMatch) return 'Invoice Cocok';
+    return 'Rekomendasi';
+};
 </script>
 
 <template>
@@ -198,55 +211,82 @@ const isRecommendedInvoice = (inv) => {
                     </div>
                 </form>
 
-                <details class="mt-4 border-t border-slate-200 dark:border-slate-800 pt-4 group">
+                <details class="mt-4 border-t border-slate-200 dark:border-slate-800 pt-4 group" open>
                     <summary class="text-xs font-bold text-slate-500 hover:text-slate-850 dark:hover:text-slate-350 uppercase tracking-wider flex items-center gap-1.5 cursor-pointer select-none">
                         <SparklesIcon class="h-4 w-4 text-blue-400 group-open:rotate-90 transition-transform" />
-                        <span>Lihat Panduan Format File Rekening Koran</span>
+                        <span>Panduan Format & Template File Rekening Koran (Klik untuk Sembunyikan)</span>
                     </summary>
                     <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                        <div class="p-4 rounded-2xl bg-white/40 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50">
-                            <h4 class="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
-                                <span class="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
-                                BCA (KlikBCA Bisnis)
-                            </h4>
-                            <p class="mb-2">Gunakan berkas ekspor mutasi rekening (.csv / .xlsx) bawaan BCA secara langsung tanpa perubahan.</p>
-                            <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
-                                <li>Kolom A: Tanggal (DD/MM)</li>
-                                <li>Kolom B: Keterangan Mutasi</li>
-                                <li>Kolom C: Kode Cabang</li>
-                                <li>Kolom D: Nominal Transfer</li>
-                                <li>Kolom E: DB/CR (CR = Uang Masuk)</li>
-                            </ul>
+                        <div class="p-4 rounded-2xl bg-white/40 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50 flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
+                                    <span class="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                    BCA (KlikBCA Bisnis)
+                                </h4>
+                                <p class="mb-2">Gunakan berkas ekspor mutasi rekening (.csv / .xlsx) bawaan BCA secara langsung tanpa perubahan.</p>
+                                <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-500 dark:text-slate-400 mb-4">
+                                    <li>Kolom A: Tanggal (DD/MM)</li>
+                                    <li>Kolom B: Keterangan Mutasi</li>
+                                    <li>Kolom C: Kode Cabang</li>
+                                    <li>Kolom D: Nominal Transfer</li>
+                                    <li>Kolom E: DB/CR (CR = Uang Masuk)</li>
+                                </ul>
+                            </div>
+                            <a 
+                                :href="route('finance.reconciliation.template', 'BCA')"
+                                class="w-full text-center flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-blue-500/10 text-blue-500 hover:bg-blue-600 hover:text-white border border-blue-500/20 hover:border-transparent transition-all shadow-md cursor-pointer"
+                            >
+                                <ArrowDownTrayIcon class="h-4 w-4" />
+                                <span>Unduh Template BCA</span>
+                            </a>
                         </div>
 
-                        <div class="p-4 rounded-2xl bg-white/40 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50">
-                            <h4 class="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
-                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                Mandiri MCM
-                            </h4>
-                            <p class="mb-2">Gunakan langsung hasil ekspor dari Mandiri Cash Management MCM (.xlsx / .xls).</p>
-                            <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
-                                <li>Kolom A: Posting Date</li>
-                                <li>Kolom C: Description</li>
-                                <li>Kolom D: Reference No</li>
-                                <li>Kolom E: Debit (Uang Keluar)</li>
-                                <li>Kolom F: Credit (Uang Masuk)</li>
-                            </ul>
+                        <div class="p-4 rounded-2xl bg-white/40 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50 flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
+                                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Mandiri MCM
+                                </h4>
+                                <p class="mb-2">Gunakan langsung hasil ekspor dari Mandiri Cash Management MCM (.xlsx / .xls).</p>
+                                <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-500 dark:text-slate-400 mb-4">
+                                    <li>Kolom A: Posting Date</li>
+                                    <li>Kolom C: Description</li>
+                                    <li>Kolom D: Reference No</li>
+                                    <li>Kolom E: Debit (Uang Keluar)</li>
+                                    <li>Kolom F: Credit (Uang Masuk)</li>
+                                </ul>
+                            </div>
+                            <a 
+                                :href="route('finance.reconciliation.template', 'Mandiri')"
+                                class="w-full text-center flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-500 hover:bg-emerald-600 hover:text-white border border-emerald-500/20 hover:border-transparent transition-all shadow-md cursor-pointer"
+                            >
+                                <ArrowDownTrayIcon class="h-4 w-4" />
+                                <span>Unduh Template Mandiri</span>
+                            </a>
                         </div>
 
-                        <div class="p-4 rounded-2xl bg-white/40 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50">
-                            <h4 class="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
-                                <span class="h-2 w-2 rounded-full bg-purple-500 animate-pulse"></span>
-                                Generic Format (Kustom)
-                            </h4>
-                            <p class="mb-2">Jika bank lain, buat file Excel/CSV dengan baris pertama berisi header <strong>"Date"</strong> atau <strong>"Tanggal"</strong>.</p>
-                            <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
-                                <li>Kolom A: Tanggal (YYYY-MM-DD)</li>
-                                <li>Kolom B: Deskripsi Transaksi</li>
-                                <li>Kolom C: Nominal Uang Masuk</li>
-                                <li>Kolom D: Nomor Referensi (Opsional)</li>
-                                <li>Kolom E: DB / CR (Opsional, Default CR)</li>
-                            </ul>
+                        <div class="p-4 rounded-2xl bg-white/40 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50 flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
+                                    <span class="h-2 w-2 rounded-full bg-purple-500 animate-pulse"></span>
+                                    Generic Format (Kustom)
+                                </h4>
+                                <p class="mb-2">Jika bank lain, buat file Excel/CSV dengan baris pertama berisi header <strong>"Date"</strong> atau <strong>"Tanggal"</strong>.</p>
+                                <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-500 dark:text-slate-400 mb-4">
+                                    <li>Kolom A: Tanggal (YYYY-MM-DD)</li>
+                                    <li>Kolom B: Deskripsi Transaksi</li>
+                                    <li>Kolom C: Nominal Uang Masuk</li>
+                                    <li>Kolom D: Nomor Referensi (Opsional)</li>
+                                    <li>Kolom E: DB / CR (Opsional, Default CR)</li>
+                                </ul>
+                            </div>
+                            <a 
+                                :href="route('finance.reconciliation.template', 'Generic')"
+                                class="w-full text-center flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-purple-500/10 text-purple-500 hover:bg-purple-600 hover:text-white border border-purple-500/20 hover:border-transparent transition-all shadow-md cursor-pointer"
+                            >
+                                <ArrowDownTrayIcon class="h-4 w-4" />
+                                <span>Unduh Template Generic</span>
+                            </a>
                         </div>
                     </div>
                 </details>
@@ -366,10 +406,10 @@ const isRecommendedInvoice = (inv) => {
                                                         <span class="font-mono text-slate-900 dark:text-white">{{ inv.invoice_number }}</span>
                                                         <span 
                                                             v-if="isRecommendedInvoice(inv)"
-                                                            class="flex items-center gap-0.5 px-1 py-0.1 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase"
+                                                            class="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase"
                                                         >
-                                                            <SparklesIcon class="h-3 w-3 animate-pulse" />
-                                                            Rekomendasi
+                                                            <SparklesIcon class="h-3 w-3 animate-pulse text-emerald-400" />
+                                                            {{ getMatchReason(inv) }}
                                                         </span>
                                                     </div>
                                                     <span class="text-[9px] text-slate-500 font-mono block mt-0.5">PO: {{ inv.sales_order?.customer_po_number || '-' }}</span>

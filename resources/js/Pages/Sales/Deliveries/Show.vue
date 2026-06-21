@@ -252,7 +252,12 @@ const form = useForm({
     items: props.deliveryOrder.items.map(item => ({
         id: item.id,
         qty_delivered: parseFloat(item.qty_delivered),
-        notes: item.notes || ''
+        notes: item.notes || '',
+        inchi: item.inchi || '',
+        od: item.od ? parseFloat(item.od) : '',
+        tebal: item.tebal ? parseFloat(item.tebal) : '',
+        panjang: item.panjang ? parseFloat(item.panjang) : '',
+        kg_delivered: item.kg_delivered ? parseFloat(item.kg_delivered) : ''
     }))
 });
 
@@ -315,7 +320,12 @@ const addItemForm = useForm({
     sales_order_item_id: '',
     product_id: '',
     qty_delivered: '',
-    notes: ''
+    notes: '',
+    inchi: '',
+    od: '',
+    tebal: '',
+    panjang: '',
+    kg_delivered: ''
 });
 
 const openAddItemModal = async () => {
@@ -1069,6 +1079,11 @@ const handleSmartAction = () => {
                                         <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-center tracking-tighter">Sisa SO</th>
                                         <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-center tracking-tighter">Qty Stock</th>
                                         <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-center tracking-tighter">Send Qty</th>
+                                        <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-center tracking-tighter">Inchi</th>
+                                        <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-center tracking-tighter">OD (mm)</th>
+                                        <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-center tracking-tighter">Tebal (mm)</th>
+                                        <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-center tracking-tighter">Panjang (mm)</th>
+                                        <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-center tracking-tighter">Kg DO</th>
                                         <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">UOM</th>
                                         <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Remarks</th>
                                         <th class="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-right tracking-tighter"></th>
@@ -1115,6 +1130,69 @@ const handleSmartAction = () => {
                                             <span v-else class="text-sm font-bold text-blue-400 bg-blue-400/10 px-3 py-1.5 rounded-xl border border-blue-400/20">
                                                 {{ formatNumber(item.qty_delivered) }}
                                             </span>
+                                        </td>
+                                        <!-- Inchi -->
+                                        <td class="px-6 py-4 text-center">
+                                            <input 
+                                                v-if="deliveryOrder.status === 'draft'"
+                                                v-model="form.items[index].inchi"
+                                                type="text"
+                                                class="w-16 rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-xs font-medium text-center focus:ring-2 focus:ring-blue-500/50 py-1.5"
+                                                placeholder='1"'
+                                            />
+                                            <span v-else class="text-xs text-slate-900 dark:text-white">{{ item.inchi || '-' }}</span>
+                                        </td>
+                                        <!-- OD -->
+                                        <td class="px-6 py-4 text-center">
+                                            <input 
+                                                v-if="deliveryOrder.status === 'draft'"
+                                                v-model="form.items[index].od"
+                                                type="number"
+                                                step="any"
+                                                min="0"
+                                                class="w-20 rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-xs font-medium text-center focus:ring-2 focus:ring-blue-500/50 py-1.5"
+                                                placeholder="0.0"
+                                            />
+                                            <span v-else class="text-xs text-slate-900 dark:text-white">{{ item.od ? formatNumber(item.od) : '-' }}</span>
+                                        </td>
+                                        <!-- Tebal -->
+                                        <td class="px-6 py-4 text-center">
+                                            <input 
+                                                v-if="deliveryOrder.status === 'draft'"
+                                                v-model="form.items[index].tebal"
+                                                type="number"
+                                                step="any"
+                                                min="0"
+                                                class="w-20 rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-xs font-medium text-center focus:ring-2 focus:ring-blue-500/50 py-1.5"
+                                                placeholder="0.0"
+                                            />
+                                            <span v-else class="text-xs text-slate-900 dark:text-white">{{ item.tebal ? formatNumber(item.tebal) : '-' }}</span>
+                                        </td>
+                                        <!-- Panjang -->
+                                        <td class="px-6 py-4 text-center">
+                                            <input 
+                                                v-if="deliveryOrder.status === 'draft'"
+                                                v-model="form.items[index].panjang"
+                                                type="number"
+                                                step="any"
+                                                min="0"
+                                                class="w-20 rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-xs font-medium text-center focus:ring-2 focus:ring-blue-500/50 py-1.5"
+                                                placeholder="0.0"
+                                            />
+                                            <span v-else class="text-xs text-slate-900 dark:text-white">{{ item.panjang ? formatNumber(item.panjang) : '-' }}</span>
+                                        </td>
+                                        <!-- Kg DO -->
+                                        <td class="px-6 py-4 text-center">
+                                            <input 
+                                                v-if="deliveryOrder.status === 'draft'"
+                                                v-model="form.items[index].kg_delivered"
+                                                type="number"
+                                                step="any"
+                                                min="0"
+                                                class="w-24 rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-center focus:ring-2 focus:ring-blue-500/50 py-1.5"
+                                                placeholder="0.0"
+                                            />
+                                            <span v-else class="text-xs font-bold text-slate-900 dark:text-white">{{ item.kg_delivered ? formatNumber(item.kg_delivered) : '-' }}</span>
                                         </td>
                                         <td class="px-6 py-4 text-xs font-bold text-slate-500">
                                             {{ item.unit?.name || 'Unit' }}
@@ -1250,6 +1328,63 @@ const handleSmartAction = () => {
                         <div v-else-if="addItemOptions.length === 0" class="text-xs text-slate-500 mt-2">Tidak ada data.</div>
                         <div v-if="addItemForm.errors.sales_order_item_id" class="text-xs text-red-500 mt-2">{{ addItemForm.errors.sales_order_item_id }}</div>
                         <div v-if="addItemForm.errors.product_id" class="text-xs text-red-500 mt-2">{{ addItemForm.errors.product_id }}</div>
+                    </div>
+
+                    <!-- Spesifikasi Pipa Baja -->
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-4 pt-2 border-t border-dashed border-slate-200 dark:border-slate-800">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1.5">Inchi</label>
+                            <input
+                                v-model="addItemForm.inchi"
+                                type="text"
+                                placeholder='1"'
+                                class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-xs text-center focus:ring-2 focus:ring-blue-500/50"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1.5">OD (mm)</label>
+                            <input
+                                v-model="addItemForm.od"
+                                type="number"
+                                step="any"
+                                min="0"
+                                placeholder="0.0"
+                                class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-xs text-center focus:ring-2 focus:ring-blue-500/50"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1.5">Tebal (mm)</label>
+                            <input
+                                v-model="addItemForm.tebal"
+                                type="number"
+                                step="any"
+                                min="0"
+                                placeholder="0.0"
+                                class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-xs text-center focus:ring-2 focus:ring-blue-500/50"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1.5">Panjang (mm)</label>
+                            <input
+                                v-model="addItemForm.panjang"
+                                type="number"
+                                step="any"
+                                min="0"
+                                placeholder="0.0"
+                                class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-xs text-center focus:ring-2 focus:ring-blue-500/50"
+                            />
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1.5">Kg DO</label>
+                            <input
+                                v-model="addItemForm.kg_delivered"
+                                type="number"
+                                step="any"
+                                min="0"
+                                placeholder="0.0"
+                                class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-center focus:ring-2 focus:ring-blue-500/50"
+                            />
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -321,4 +321,52 @@ class BankReconciliationController extends Controller
         
         return $transactions;
     }
+
+    /**
+     * Download Excel template for bank statement upload
+     */
+    public function downloadTemplate(string $format)
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        if ($format === 'BCA') {
+            // BCA format template headers
+            $headers = ['Tanggal', 'Keterangan Mutasi', 'Kode Cabang', 'Nominal Transfer', 'DB/CR'];
+            $sampleRow = ['21/06', 'KREDIT TRANSFER DARI JOHN DOE INV/0015', '0015', '5000000', 'CR'];
+            $sheet->fromArray([$headers, $sampleRow]);
+            $filename = 'template_mutasi_bca.xlsx';
+        } elseif ($format === 'Mandiri') {
+            // Mandiri MCM format headers
+            $headers = ['Posting Date', 'Value Date', 'Description', 'Reference No', 'Debit', 'Credit', 'Balance'];
+            $sampleRow = ['2026-06-21', '2026-06-21', 'TRANSFER DARI PT ABC REKONSIL INV/0016', 'REF-987654', '0', '10000000', '10000000'];
+            $sheet->fromArray([$headers, $sampleRow]);
+            $filename = 'template_mutasi_mandiri.xlsx';
+        } else {
+            // Generic format template headers
+            $headers = ['Date', 'Description', 'Amount', 'Reference', 'Type'];
+            $sampleRow = ['2026-06-21', 'PEMBAYARAN INV/0017', '7500000', 'TRF-112233', 'CR'];
+            $sheet->fromArray([$headers, $sampleRow]);
+            $filename = 'template_mutasi_generic.xlsx';
+        }
+
+        // Auto-size columns
+        foreach (range('A', $sheet->getHighestColumn()) as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        
+        return response()->stream(
+            function () use ($writer) {
+                $writer->save('php://output');
+            },
+            200,
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'max-age=0',
+            ]
+        );
+    }
 }

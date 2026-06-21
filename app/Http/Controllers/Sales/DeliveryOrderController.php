@@ -388,6 +388,11 @@ class DeliveryOrderController extends Controller
                 'sales_order_item_id' => 'required|exists:sales_order_items,id',
                 'qty_delivered' => 'required|numeric|gt:0',
                 'notes' => 'nullable|string|max:255',
+                'inchi' => 'nullable|string|max:50',
+                'od' => 'nullable|numeric|min:0',
+                'tebal' => 'nullable|numeric|min:0',
+                'panjang' => 'nullable|numeric|min:0',
+                'kg_delivered' => 'nullable|numeric|min:0',
             ]);
 
             $soItem = SalesOrderItem::with(['product', 'unit'])->findOrFail($validated['sales_order_item_id']);
@@ -423,6 +428,11 @@ class DeliveryOrderController extends Controller
                 'qty_delivered' => (float) $validated['qty_delivered'],
                 'unit_id' => $soItem->unit_id,
                 'notes' => $validated['notes'] ?? null,
+                'inchi' => $validated['inchi'] ?? null,
+                'od' => isset($validated['od']) ? floatval($validated['od']) : null,
+                'tebal' => isset($validated['tebal']) ? floatval($validated['tebal']) : null,
+                'panjang' => isset($validated['panjang']) ? floatval($validated['panjang']) : null,
+                'kg_delivered' => isset($validated['kg_delivered']) ? floatval($validated['kg_delivered']) : null,
             ]);
 
             return back()->with('success', 'Item berhasil ditambahkan ke Delivery Order.');
@@ -432,6 +442,11 @@ class DeliveryOrderController extends Controller
             'product_id' => 'required|exists:products,id',
             'qty_delivered' => 'required|numeric|gt:0',
             'notes' => 'nullable|string|max:255',
+            'inchi' => 'nullable|string|max:50',
+            'od' => 'nullable|numeric|min:0',
+            'tebal' => 'nullable|numeric|min:0',
+            'panjang' => 'nullable|numeric|min:0',
+            'kg_delivered' => 'nullable|numeric|min:0',
         ]);
 
         if (!$salesOrder) {
@@ -446,6 +461,7 @@ class DeliveryOrderController extends Controller
             ->where('product_id', $validated['product_id'])
             ->exists();
         if ($exists) {
+            // ...
             return back()->with('error', 'Produk ini sudah ada di Delivery Order.');
         }
 
@@ -475,6 +491,11 @@ class DeliveryOrderController extends Controller
             'qty_delivered' => (float) $validated['qty_delivered'],
             'unit_id' => $product->unit_id,
             'notes' => $validated['notes'] ?? null,
+            'inchi' => $validated['inchi'] ?? null,
+            'od' => isset($validated['od']) ? floatval($validated['od']) : null,
+            'tebal' => isset($validated['tebal']) ? floatval($validated['tebal']) : null,
+            'panjang' => isset($validated['panjang']) ? floatval($validated['panjang']) : null,
+            'kg_delivered' => isset($validated['kg_delivered']) ? floatval($validated['kg_delivered']) : null,
         ]);
 
         return back()->with('success', 'Item berhasil ditambahkan ke Delivery Order.');

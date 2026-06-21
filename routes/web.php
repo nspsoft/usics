@@ -563,6 +563,7 @@ Route::middleware(['auth'])->prefix('finance')->name('finance.')->group(function
     Route::get('/reconciliation', [App\Http\Controllers\Finance\BankReconciliationController::class, 'index'])->name('reconciliation.index');
     Route::post('/reconciliation/import', [App\Http\Controllers\Finance\BankReconciliationController::class, 'import'])->name('reconciliation.import');
     Route::post('/reconciliation/match', [App\Http\Controllers\Finance\BankReconciliationController::class, 'match'])->name('reconciliation.match');
+    Route::get('/reconciliation/template/{format}', [App\Http\Controllers\Finance\BankReconciliationController::class, 'downloadTemplate'])->name('reconciliation.template');
 });
 
 // HR

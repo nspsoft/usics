@@ -227,6 +227,16 @@
                 <td style="border-bottom: none;">
                     <strong>{{ $item->product->name }}</strong><br>
                     <span style="font-size: 8pt; color: #444;">{{ $item->product->description }}</span>
+                    @if($item->inchi || $item->od || $item->tebal || $item->panjang || $item->kg_delivered)
+                        <div style="font-size: 7.5pt; color: #000; margin-top: 3px; font-family: monospace;">
+                            Spesifikasi: 
+                            @if($item->inchi) [{{ $item->inchi }}] @endif
+                            @if($item->od) OD: {{ number_format($item->od, 1, ',', '.') }} mm; @endif
+                            @if($item->tebal) T: {{ number_format($item->tebal, 1, ',', '.') }} mm; @endif
+                            @if($item->panjang) P: {{ number_format($item->panjang, 0, ',', '.') }} mm; @endif
+                            @if($item->kg_delivered) W: {{ number_format($item->kg_delivered, 2, ',', '.') }} Kg; @endif
+                        </div>
+                    @endif
                 </td>
                 <td style="text-align: center; border-bottom: none;">{{ number_format($item->qty_delivered, 0, ',', '.') }}</td>
                 <td style="text-align: center; border-bottom: none;">{{ $item->unit->name ?? 'Unit' }}</td>
