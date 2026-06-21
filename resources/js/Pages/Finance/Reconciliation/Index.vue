@@ -197,6 +197,59 @@ const isRecommendedInvoice = (inv) => {
                         </button>
                     </div>
                 </form>
+
+                <details class="mt-4 border-t border-slate-200 dark:border-slate-800 pt-4 group">
+                    <summary class="text-xs font-bold text-slate-500 hover:text-slate-850 dark:hover:text-slate-350 uppercase tracking-wider flex items-center gap-1.5 cursor-pointer select-none">
+                        <SparklesIcon class="h-4 w-4 text-blue-400 group-open:rotate-90 transition-transform" />
+                        <span>Lihat Panduan Format File Rekening Koran</span>
+                    </summary>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                        <div class="p-4 rounded-2xl bg-white/40 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
+                                <span class="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                BCA (KlikBCA Bisnis)
+                            </h4>
+                            <p class="mb-2">Gunakan berkas ekspor mutasi rekening (.csv / .xlsx) bawaan BCA secara langsung tanpa perubahan.</p>
+                            <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                <li>Kolom A: Tanggal (DD/MM)</li>
+                                <li>Kolom B: Keterangan Mutasi</li>
+                                <li>Kolom C: Kode Cabang</li>
+                                <li>Kolom D: Nominal Transfer</li>
+                                <li>Kolom E: DB/CR (CR = Uang Masuk)</li>
+                            </ul>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-white/40 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
+                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Mandiri MCM
+                            </h4>
+                            <p class="mb-2">Gunakan langsung hasil ekspor dari Mandiri Cash Management MCM (.xlsx / .xls).</p>
+                            <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                <li>Kolom A: Posting Date</li>
+                                <li>Kolom C: Description</li>
+                                <li>Kolom D: Reference No</li>
+                                <li>Kolom E: Debit (Uang Keluar)</li>
+                                <li>Kolom F: Credit (Uang Masuk)</li>
+                            </ul>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-white/40 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
+                                <span class="h-2 w-2 rounded-full bg-purple-500 animate-pulse"></span>
+                                Generic Format (Kustom)
+                            </h4>
+                            <p class="mb-2">Jika bank lain, buat file Excel/CSV dengan baris pertama berisi header <strong>"Date"</strong> atau <strong>"Tanggal"</strong>.</p>
+                            <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                <li>Kolom A: Tanggal (YYYY-MM-DD)</li>
+                                <li>Kolom B: Deskripsi Transaksi</li>
+                                <li>Kolom C: Nominal Uang Masuk</li>
+                                <li>Kolom D: Nomor Referensi (Opsional)</li>
+                                <li>Kolom E: DB / CR (Opsional, Default CR)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </details>
             </div>
 
             <!-- Workspace Layout -->

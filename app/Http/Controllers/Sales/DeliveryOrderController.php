@@ -882,6 +882,11 @@ class DeliveryOrderController extends Controller
             'items.*.id' => 'required|exists:delivery_order_items,id',
             'items.*.qty_delivered' => 'required|numeric|min:0',
             'items.*.notes' => 'nullable|string|max:255',
+            'items.*.inchi' => 'nullable|string|max:50',
+            'items.*.od' => 'nullable|numeric|min:0',
+            'items.*.tebal' => 'nullable|numeric|min:0',
+            'items.*.panjang' => 'nullable|numeric|min:0',
+            'items.*.kg_delivered' => 'nullable|numeric|min:0',
         ]);
 
         $deliveryOrder->update([
@@ -956,6 +961,11 @@ class DeliveryOrderController extends Controller
             $item->update([
                 'qty_delivered' => $newQty,
                 'notes' => $itemData['notes'] ?? null,
+                'inchi' => $itemData['inchi'] ?? null,
+                'od' => isset($itemData['od']) ? floatval($itemData['od']) : null,
+                'tebal' => isset($itemData['tebal']) ? floatval($itemData['tebal']) : null,
+                'panjang' => isset($itemData['panjang']) ? floatval($itemData['panjang']) : null,
+                'kg_delivered' => isset($itemData['kg_delivered']) ? floatval($itemData['kg_delivered']) : null,
             ]);
 
             // Adjust stock and sales order item if revising a completed/delivered order
