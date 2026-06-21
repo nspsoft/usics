@@ -1012,8 +1012,22 @@ class DeliveryOrderController extends Controller
             return back()->with('error', 'Gagal membuat Invoice. Sales Order terkait belum memiliki Nomor PO resmi.');
         }
 
-        // Check if already invoiced (simple check for now)
-        // You might want to add a relationship or flag in DO to track this properly
+        if ($deliveryOrder->invoice_status === 'invoiced') {
+            return back()->with('error', 'Gagal membuat Invoice. Surat Jalan ini sudah di-invoice sepenuhnya.');
+        }
+
+        // Check if there is any remaining quantity to invoice
+        $hasRemaining = false;
+        foreach ($deliveryOrder->items as $item) {
+            if ($item->qty_delivered - $item->qty_invoiced > 0.001) {
+                $hasRemaining = true;
+                break;
+            }
+        }
+
+        if (!$hasRemaining) {
+            return back()->with('error', 'Gagal membuat Invoice. Tidak ada sisa barang yang perlu di-invoice pada Surat Jalan ini.');
+        }
 
         try {
             return \DB::transaction(function () use ($deliveryOrder) {
@@ -1038,9 +1052,19 @@ class DeliveryOrderController extends Controller
                 ]);
 
                 $subtotal = 0;
+                $itemsAdded = 0;
                 foreach ($deliveryOrder->items as $item) {
+                    $qtyToInvoice = $item->qty_delivered - $item->qty_invoiced;
+                    if ($qtyToInvoice <= 0.001) {
+                        continue;
+                    }
+
                     $soItem = $item->salesOrderItem;
-                    $itemAmount = $item->qty_delivered * $soItem->unit_price;
+                    if (!$soItem) {
+                        continue;
+                    }
+
+                    $itemAmount = $qtyToInvoice * $soItem->unit_price;
                     $discountAmt = $itemAmount * ($soItem->discount_percent / 100);
                     $lineTotal = $itemAmount - $discountAmt;
 
@@ -1048,7 +1072,7 @@ class DeliveryOrderController extends Controller
                         'sales_order_item_id' => $soItem->id,
                         'product_id' => $item->product_id,
                         'description' => $soItem->product->name ?? $soItem->description,
-                        'qty' => $item->qty_delivered,
+                        'qty' => $qtyToInvoice,
                         'unit_id' => $item->unit_id,
                         'unit_price' => $soItem->unit_price,
                         'discount_percent' => $soItem->discount_percent,
@@ -1058,14 +1082,17 @@ class DeliveryOrderController extends Controller
                     ]);
 
                     $subtotal += $lineTotal;
+                    $itemsAdded++;
 
                     // Update DO item invoiced qty
                     $item->recalculateInvoiced();
 
                     // Update SO item invoiced qty
-                    if ($soItem) { 
-                        $soItem->recalculateInvoiced();
-                    }
+                    $soItem->recalculateInvoiced();
+                }
+
+                if ($itemsAdded === 0) {
+                    throw new \Exception('Tidak ada item yang dapat di-invoice.');
                 }
 
                 $deliveryOrder->refreshInvoiceStatus();
