@@ -201,6 +201,11 @@ class DeliveryOrder extends Model
             return 'pending';
         }
 
+        // Safeguard: If nothing is delivered, status must be pending
+        if ($this->items->sum('qty_delivered') <= 0) {
+            return 'pending';
+        }
+
         $allInvoiced = $this->items->every(function ($item) {
             return $item->qty_invoiced >= $item->qty_delivered;
         });
@@ -225,7 +230,7 @@ class DeliveryOrder extends Model
         $status = 'pending';
         
         $items = $this->items()->get();
-        if ($items->isEmpty()) {
+        if ($items->isEmpty() || $items->sum('qty_delivered') <= 0) {
             $status = 'pending';
         } else {
             $allInvoiced = $items->every(function ($item) {

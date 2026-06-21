@@ -1292,15 +1292,8 @@ class DeliveryOrderController extends Controller
                             if (!in_array($do->do_number, $groupedItems[$key]['do_numbers'])) {
                                 $groupedItems[$key]['do_numbers'][] = $do->do_number;
                             }
-
-                            $item->recalculateInvoiced();
-
-                            if ($item->salesOrderItem) {
-                                $item->salesOrderItem->recalculateInvoiced();
-                            }
                         }
                         $processedDOs++;
-                        $do->refreshInvoiceStatus();
                     }
 
                     if (empty($groupedItems)) continue;
@@ -1335,6 +1328,17 @@ class DeliveryOrderController extends Controller
                             'discount_percent' => $itemData['discount_percent'],
                             'delivery_order_id' => $deliveryOrders->where('do_number', $itemData['do_numbers'][0])->first()->id ?? null,
                         ]);
+                    }
+
+                    // Recalculate invoiced quantities and refresh DO status AFTER invoice items are created
+                    foreach ($dos as $do) {
+                        foreach ($do->items as $item) {
+                            $item->recalculateInvoiced();
+                            if ($item->salesOrderItem) {
+                                $item->salesOrderItem->recalculateInvoiced();
+                            }
+                        }
+                        $do->refreshInvoiceStatus();
                     }
 
                     $invoice->refresh();

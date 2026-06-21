@@ -165,11 +165,8 @@ class SalesOrderItem extends Model
         // Calculate Real Invoiced Qty from Active Invoices
         $realInvoiced = $this->invoiceItems()
             ->whereHas('salesInvoice', function ($q) {
-                // Ensure invoice is not deleted (if soft deletes used) and not cancelled?
-                // Assuming standard SoftDeletes or status check if needed.
-                // SalesInvoice model usually has SoftDeletes? Let's assume standard relationship integrity.
-                // If the relationship is properly defined, it should respect global scopes.
-                // But explicit check for 'cancelled' status might be needed if you have it.
+                // Filter out cancelled invoices
+                $q->where('status', '!=', 'cancelled');
             })
             ->sum('qty');
 

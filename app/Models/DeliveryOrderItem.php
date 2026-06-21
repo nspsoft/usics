@@ -164,7 +164,8 @@ class DeliveryOrderItem extends Model
         $realInvoiced = SalesInvoiceItem::where('delivery_order_id', $this->delivery_order_id)
             ->where('sales_order_item_id', $this->sales_order_item_id)
             ->whereHas('salesInvoice', function($q) {
-                // Filter out cancelled/deleted invoices if applicable
+                // Filter out cancelled invoices
+                $q->where('status', '!=', 'cancelled');
             })
             ->sum('qty');
 
