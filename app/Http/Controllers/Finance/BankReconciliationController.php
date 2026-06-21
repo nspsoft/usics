@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\BankStatementTransaction;
 use App\Models\SalesInvoice;
 use App\Models\SalesPayment;
+use App\Models\PurchaseInvoice;
+use App\Models\PurchasePayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,16 +19,23 @@ class BankReconciliationController extends Controller
 {
     public function index(Request $request): Response
     {
-        // Fetch only incoming Credit transactions (CR) that are unreconciled
-        $unreconciledTransactions = BankStatementTransaction::unreconciled()
+        // Fetch incoming Credit transactions (CR) - Sales
+        $unreconciledSalesTransactions = BankStatementTransaction::unreconciled()
             ->where('type', 'CR')
+            ->orderBy('transaction_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        // Fetch outgoing Debit transactions (DB) - Purchase
+        $unreconciledPurchaseTransactions = BankStatementTransaction::unreconciled()
+            ->where('type', 'DB')
             ->orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc')
             ->get();
 
         // Fetch paginated reconciled transactions
         $reconciledTransactions = BankStatementTransaction::reconciled()
-            ->with(['salesPayment.salesInvoice.customer', 'createdBy'])
+            ->with(['salesPayment.salesInvoice.customer', 'purchasePayment.invoice.supplier', 'createdBy'])
             ->orderBy('reconciled_at', 'desc')
             ->paginate(15)
             ->withQueryString();
@@ -38,11 +47,21 @@ class BankReconciliationController extends Controller
             ->orderBy('due_date', 'asc')
             ->get();
 
+        // Fetch unpaid or partially paid Purchase Invoices (supplier)
+        $pendingPurchaseInvoices = PurchaseInvoice::with(['supplier', 'purchaseOrder'])
+            ->whereNotIn('status', [PurchaseInvoice::STATUS_PAID, PurchaseInvoice::STATUS_CANCELLED])
+            ->whereColumn('paid_amount', '<', 'total_amount')
+            ->orderBy('due_date', 'asc')
+            ->get();
+
         return Inertia::render('Finance/Reconciliation/Index', [
-            'unreconciledTransactions' => $unreconciledTransactions,
+            'unreconciledSalesTransactions' => $unreconciledSalesTransactions,
+            'unreconciledPurchaseTransactions' => $unreconciledPurchaseTransactions,
             'reconciledTransactions' => $reconciledTransactions,
             'pendingInvoices' => $pendingInvoices,
+            'pendingPurchaseInvoices' => $pendingPurchaseInvoices,
             'paymentMethods' => SalesPayment::getPaymentMethods(),
+            'purchasePaymentMethods' => PurchasePayment::getPaymentMethods(),
         ]);
     }
 
@@ -157,6 +176,64 @@ class BankReconciliationController extends Controller
         } catch (\Exception $e) {
             Log::error('Bank Statement Match Error: ' . $e->getMessage());
             return back()->with('error', 'Gagal melakukan rekonsiliasi: ' . $e->getMessage());
+        }
+    }
+
+    public function matchPurchase(Request $request)
+    {
+        $validated = $request->validate([
+            'bank_transaction_id' => 'required|exists:bank_statement_transactions,id',
+            'purchase_invoice_id' => 'required|exists:purchase_invoices,id',
+            'payment_date' => 'required|date',
+            'payment_method' => 'required|string',
+            'reference' => 'nullable|string|max:100',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            DB::transaction(function () use ($validated) {
+                $transaction = BankStatementTransaction::findOrFail($validated['bank_transaction_id']);
+                
+                if ($transaction->reconciled_at) {
+                    throw new \Exception('Transaksi bank ini sudah direkonsiliasi.');
+                }
+                
+                $invoice = PurchaseInvoice::findOrFail($validated['purchase_invoice_id']);
+                
+                $amountDue = max(0, $invoice->total_amount - $invoice->paid_amount);
+                if ($amountDue <= 0) {
+                    throw new \Exception('Invoice supplier ini sudah lunas.');
+                }
+
+                // Payment amount is the minimum of transaction amount or invoice amount due
+                $paymentAmount = min($transaction->amount, $amountDue);
+
+                // Create the payment record
+                $payment = $invoice->payments()->create([
+                    'payment_number' => PurchasePayment::generatePaymentNumber(),
+                    'amount' => $paymentAmount,
+                    'payment_date' => $validated['payment_date'],
+                    'payment_method' => $validated['payment_method'],
+                    'reference' => $validated['reference'] ?? $transaction->reference_number ?? 'Bank Reconciled',
+                    'bank_name' => $transaction->bank_name,
+                    'notes' => $validated['notes'] ?? 'Dibuat otomatis via Rekonsiliasi Bank (Mutasi Keluar) dari transaksi mutasi tanggal: ' . $transaction->transaction_date->format('Y-m-d'),
+                    'created_by' => auth()->id(),
+                ]);
+
+                // Update invoice paid amount and status
+                $invoice->recalculatePaidAmount();
+
+                // Link statement transaction to purchase payment and mark reconciled
+                $transaction->update([
+                    'reconciled_at' => now(),
+                    'purchase_payment_id' => $payment->id,
+                ]);
+            });
+
+            return back()->with('success', 'Rekonsiliasi bank untuk supplier berhasil diselesaikan.');
+        } catch (\Exception $e) {
+            Log::error('Bank Statement Purchase Match Error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal melakukan rekonsiliasi supplier: ' . $e->getMessage());
         }
     }
 

@@ -210,10 +210,21 @@ class DeliveryOrderController extends Controller
                     $discountAmt = ($qtyToInvoice * $price) * ($discountPct / 100);
                     $subtotal = ($qtyToInvoice * $price) - $discountAmt;
 
+                    $description = $doItem->product->name ?? $soItem->product_name;
+                    if ($doItem->inchi || $doItem->od || $doItem->tebal || $doItem->panjang || $doItem->kg_delivered) {
+                        $specs = [];
+                        if ($doItem->inchi) $specs[] = $doItem->inchi;
+                        if ($doItem->od) $specs[] = "OD: " . number_format($doItem->od, 1, ',', '.') . " mm";
+                        if ($doItem->tebal) $specs[] = "T: " . number_format($doItem->tebal, 1, ',', '.') . " mm";
+                        if ($doItem->panjang) $specs[] = "P: " . number_format($doItem->panjang, 0, ',', '.') . " mm";
+                        if ($doItem->kg_delivered) $specs[] = "W: " . number_format($doItem->kg_delivered, 2, ',', '.') . " Kg";
+                        $description .= " (" . implode(', ', $specs) . ")";
+                    }
+
                     $invoice->items()->create([
                         'sales_order_item_id' => $soItem->id,
                         'product_id' => $doItem->product_id,
-                        'description' => $doItem->product->name ?? $soItem->product_name, // Ensure description is filled
+                        'description' => $description, // Include pipe specs in description
                         'qty' => $qtyToInvoice,
                         'unit_id' => $doItem->unit_id,
                         'unit_price' => $price,
@@ -1099,10 +1110,21 @@ class DeliveryOrderController extends Controller
                     $discountAmt = $itemAmount * ($soItem->discount_percent / 100);
                     $lineTotal = $itemAmount - $discountAmt;
 
+                    $description = $soItem->product->name ?? $soItem->description;
+                    if ($item->inchi || $item->od || $item->tebal || $item->panjang || $item->kg_delivered) {
+                        $specs = [];
+                        if ($item->inchi) $specs[] = $item->inchi;
+                        if ($item->od) $specs[] = "OD: " . number_format($item->od, 1, ',', '.') . " mm";
+                        if ($item->tebal) $specs[] = "T: " . number_format($item->tebal, 1, ',', '.') . " mm";
+                        if ($item->panjang) $specs[] = "P: " . number_format($item->panjang, 0, ',', '.') . " mm";
+                        if ($item->kg_delivered) $specs[] = "W: " . number_format($item->kg_delivered, 2, ',', '.') . " Kg";
+                        $description .= " (" . implode(', ', $specs) . ")";
+                    }
+
                     $invoice->items()->create([
                         'sales_order_item_id' => $soItem->id,
                         'product_id' => $item->product_id,
-                        'description' => $soItem->product->name ?? $soItem->description,
+                        'description' => $description, // Include pipe specs in description
                         'qty' => $qtyToInvoice,
                         'unit_id' => $item->unit_id,
                         'unit_price' => $soItem->unit_price,

@@ -19,6 +19,7 @@ class BankStatementTransaction extends Model
         'bank_name',
         'reconciled_at',
         'sales_payment_id',
+        'purchase_payment_id',
         'created_by',
         'hash',
     ];
@@ -32,6 +33,11 @@ class BankStatementTransaction extends Model
     public function salesPayment(): BelongsTo
     {
         return $this->belongsTo(SalesPayment::class, 'sales_payment_id');
+    }
+
+    public function purchasePayment(): BelongsTo
+    {
+        return $this->belongsTo(PurchasePayment::class, 'purchase_payment_id');
     }
 
     public function createdBy(): BelongsTo

@@ -17,12 +17,16 @@ import {
 import { formatCurrency, formatDate } from '@/helpers';
 
 const props = defineProps({
-    unreconciledTransactions: Array,
+    unreconciledSalesTransactions: Array,
+    unreconciledPurchaseTransactions: Array,
     reconciledTransactions: Object, // Paginated
     pendingInvoices: Array,
+    pendingPurchaseInvoices: Array,
     paymentMethods: Object,
+    purchasePaymentMethods: Object,
 });
 
+const activeTab = ref('sales'); // 'sales' or 'purchase'
 const selectedTransaction = ref(null);
 const selectedInvoice = ref(null);
 const invoiceSearch = ref('');
@@ -36,10 +40,19 @@ const importForm = useForm({
 const matchForm = useForm({
     bank_transaction_id: null,
     sales_invoice_id: null,
+    purchase_invoice_id: null,
     payment_date: '',
     payment_method: 'Transfer',
     reference: '',
     notes: '',
+});
+
+// Reset selection on tab switch
+watch(activeTab, (newTab) => {
+    selectedTransaction.value = null;
+    selectedInvoice.value = null;
+    invoiceSearch.value = '';
+    matchForm.payment_method = newTab === 'sales' ? 'Transfer' : 'transfer';
 });
 
 // Auto-match when transaction is selected
@@ -52,19 +65,22 @@ const selectTransaction = (tr) => {
     matchForm.reference = tr.reference_number || '';
     matchForm.notes = `Rekonsiliasi otomatis mutasi bank ${tr.bank_name} tanggal ${formatDate(tr.transaction_date)}: ${tr.description}`;
 
-    // 2. Try to find an exact amount match in pending invoices
-    const amountMatch = props.pendingInvoices.find(
-        (inv) => Math.round(inv.balance) === Math.round(tr.amount)
-    );
+    const isSales = activeTab.value === 'sales';
+    const pendingList = isSales ? props.pendingInvoices : props.pendingPurchaseInvoices;
+
+    // 2. Try to find an exact amount match
+    const amountMatch = pendingList.find((inv) => {
+        const balance = isSales ? inv.balance : (inv.total_amount - inv.paid_amount);
+        return Math.round(balance) === Math.round(tr.amount);
+    });
     
     if (amountMatch) {
         selectedInvoice.value = amountMatch;
         return;
     }
 
-    // 3. Try to scan description for invoice number matches (e.g., matching '0015' or similar sequence)
-    for (const inv of props.pendingInvoices) {
-        // Extract sequence numbers from invoice number (e.g., "0015" from "0015/INV/JRI...")
+    // 3. Try to scan description for invoice number matches
+    for (const inv of pendingList) {
         const invNumOnly = inv.invoice_number.split('/')[0];
         if (invNumOnly && tr.description.toLowerCase().includes(invNumOnly.toLowerCase())) {
             selectedInvoice.value = inv;
@@ -96,29 +112,54 @@ const submitMatch = () => {
     if (!selectedTransaction.value || !selectedInvoice.value) return;
     
     matchForm.bank_transaction_id = selectedTransaction.value.id;
-    matchForm.sales_invoice_id = selectedInvoice.value.id;
+    const isSales = activeTab.value === 'sales';
     
-    matchForm.post(route('finance.reconciliation.match'), {
-        preserveScroll: true,
-        onSuccess: () => {
-            selectedTransaction.value = null;
-            selectedInvoice.value = null;
-            matchForm.reset();
-        },
-    });
+    if (isSales) {
+        matchForm.sales_invoice_id = selectedInvoice.value.id;
+        matchForm.purchase_invoice_id = null;
+        matchForm.post(route('finance.reconciliation.match'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                selectedTransaction.value = null;
+                selectedInvoice.value = null;
+                matchForm.reset();
+            },
+        });
+    } else {
+        matchForm.purchase_invoice_id = selectedInvoice.value.id;
+        matchForm.sales_invoice_id = null;
+        matchForm.post(route('finance.reconciliation.match-purchase'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                selectedTransaction.value = null;
+                selectedInvoice.value = null;
+                matchForm.reset();
+            },
+        });
+    }
 };
 
 // Filter pending invoices based on search query
 const filteredInvoices = computed(() => {
     const query = invoiceSearch.value.toLowerCase().trim();
-    if (!query) return props.pendingInvoices;
+    const isSales = activeTab.value === 'sales';
+    const pendingList = isSales ? props.pendingInvoices : props.pendingPurchaseInvoices;
     
-    return props.pendingInvoices.filter((inv) => {
+    if (!query) return pendingList;
+    
+    return pendingList.filter((inv) => {
+        const invoiceNum = inv.invoice_number.toLowerCase();
+        const partnerName = isSales 
+            ? (inv.customer?.name || '').toLowerCase() 
+            : (inv.supplier?.name || '').toLowerCase();
+        const totalStr = (isSales ? inv.total : inv.total_amount).toString();
+        const balanceStr = (isSales ? inv.balance : (inv.total_amount - inv.paid_amount)).toString();
+        
         return (
-            inv.invoice_number.toLowerCase().includes(query) ||
-            inv.customer?.name.toLowerCase().includes(query) ||
-            inv.total.toString().includes(query) ||
-            inv.balance.toString().includes(query)
+            invoiceNum.includes(query) ||
+            partnerName.includes(query) ||
+            totalStr.includes(query) ||
+            balanceStr.includes(query)
         );
     });
 });
@@ -127,8 +168,11 @@ const filteredInvoices = computed(() => {
 const isRecommendedInvoice = (inv) => {
     if (!selectedTransaction.value) return false;
     
+    const isSales = activeTab.value === 'sales';
+    const balance = isSales ? inv.balance : (inv.total_amount - inv.paid_amount);
+    
     // Check if balance matches amount
-    const isAmountMatch = Math.round(inv.balance) === Math.round(selectedTransaction.value.amount);
+    const isAmountMatch = Math.round(balance) === Math.round(selectedTransaction.value.amount);
     
     // Check if description includes part of the invoice number
     const invNumOnly = inv.invoice_number.split('/')[0];
@@ -140,7 +184,11 @@ const isRecommendedInvoice = (inv) => {
 // Helper to get match reason label
 const getMatchReason = (inv) => {
     if (!selectedTransaction.value) return '';
-    const isAmountMatch = Math.round(inv.balance) === Math.round(selectedTransaction.value.amount);
+    
+    const isSales = activeTab.value === 'sales';
+    const balance = isSales ? inv.balance : (inv.total_amount - inv.paid_amount);
+    
+    const isAmountMatch = Math.round(balance) === Math.round(selectedTransaction.value.amount);
     const invNumOnly = inv.invoice_number.split('/')[0];
     const isDescMatch = invNumOnly && selectedTransaction.value.description.toLowerCase().includes(invNumOnly.toLowerCase());
     
@@ -159,7 +207,7 @@ const getMatchReason = (inv) => {
             <!-- Header -->
             <div class="mb-6">
                 <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Rekonsiliasi Rekening Koran</h1>
-                <p class="text-slate-500 text-sm mt-1">Import file mutasi bank (Excel/CSV) dan cocokkan langsung dengan Piutang / Invoice Pelanggan.</p>
+                <p class="text-slate-500 text-sm mt-1">Import file mutasi bank (Excel/CSV) dan cocokkan langsung dengan Piutang Pelanggan atau Hutang Supplier.</p>
             </div>
 
             <!-- Import Panel -->
@@ -292,29 +340,63 @@ const getMatchReason = (inv) => {
                 </details>
             </div>
 
+            <!-- Tabs Navigation -->
+            <div class="flex gap-2 mb-6 border-b border-slate-200 dark:border-slate-800">
+                <button 
+                    @click="activeTab = 'sales'"
+                    type="button"
+                    class="pb-3 px-4 font-bold text-sm tracking-wide border-b-2 transition-all flex items-center gap-2"
+                    :class="activeTab === 'sales' 
+                        ? 'border-blue-500 text-blue-600 dark:text-blue-400' 
+                        : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+                >
+                    <BanknotesIcon class="h-4 w-4" />
+                    <span>Piutang Pelanggan (Mutasi Masuk)</span>
+                    <span class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                        {{ unreconciledSalesTransactions.length }}
+                    </span>
+                </button>
+                <button 
+                    @click="activeTab = 'purchase'"
+                    type="button"
+                    class="pb-3 px-4 font-bold text-sm tracking-wide border-b-2 transition-all flex items-center gap-2"
+                    :class="activeTab === 'purchase' 
+                        ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400' 
+                        : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+                >
+                    <DocumentTextIcon class="h-4 w-4" />
+                    <span>Hutang Supplier (Mutasi Keluar)</span>
+                    <span class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        {{ unreconciledPurchaseTransactions.length }}
+                    </span>
+                </button>
+            </div>
+
             <!-- Workspace Layout -->
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
                 
                 <!-- Left: Unreconciled Bank Transactions -->
                 <div class="xl:col-span-5 rounded-2xl glass-card shadow-lg overflow-hidden border border-slate-200 dark:border-slate-800">
                     <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/10 flex justify-between items-center">
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Mutasi Masuk (Kredit)</h3>
-                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                            {{ unreconciledTransactions.length }} Transaksi
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                            {{ activeTab === 'sales' ? 'Mutasi Masuk (Kredit)' : 'Mutasi Keluar (Debit)' }}
+                        </h3>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold" :class="activeTab === 'sales' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'">
+                            {{ (activeTab === 'sales' ? unreconciledSalesTransactions.length : unreconciledPurchaseTransactions.length) }} Transaksi
                         </span>
                     </div>
 
                     <div class="divide-y divide-slate-100 dark:divide-slate-800 max-h-[600px] overflow-y-auto">
-                        <div v-if="unreconciledTransactions.length === 0" class="p-8 text-center text-slate-500 italic">
-                            Tidak ada data mutasi masuk. Silakan import mutasi bank terlebih dahulu.
+                        <div v-if="(activeTab === 'sales' ? unreconciledSalesTransactions.length : unreconciledPurchaseTransactions.length) === 0" class="p-8 text-center text-slate-500 italic">
+                            {{ activeTab === 'sales' ? 'Tidak ada data mutasi masuk. Silakan import mutasi bank terlebih dahulu.' : 'Tidak ada data mutasi keluar. Silakan import mutasi bank terlebih dahulu.' }}
                         </div>
 
                         <div 
-                            v-for="tr in unreconciledTransactions" 
+                            v-for="tr in (activeTab === 'sales' ? unreconciledSalesTransactions : unreconciledPurchaseTransactions)" 
                             :key="tr.id"
                             @click="selectTransaction(tr)"
                             class="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all cursor-pointer flex justify-between gap-4"
-                            :class="{ 'bg-blue-500/10 dark:bg-blue-500/10 border-l-4 border-blue-500': selectedTransaction?.id === tr.id }"
+                            :class="selectedTransaction?.id === tr.id ? (activeTab === 'sales' ? 'bg-blue-500/10 dark:bg-blue-500/10 border-l-4 border-blue-500' : 'bg-purple-500/10 dark:bg-purple-500/10 border-l-4 border-purple-500') : ''"
                         >
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2">
@@ -327,7 +409,9 @@ const getMatchReason = (inv) => {
                                 <span v-if="tr.reference_number" class="text-[9px] font-mono text-slate-500 block mt-1">Ref: {{ tr.reference_number }}</span>
                             </div>
                             <div class="text-right flex flex-col justify-between items-end">
-                                <span class="text-sm font-bold text-emerald-400 font-mono">+{{ formatCurrency(tr.amount) }}</span>
+                                <span class="text-sm font-bold font-mono" :class="activeTab === 'sales' ? 'text-emerald-400' : 'text-red-400'">
+                                    {{ activeTab === 'sales' ? '+' : '-' }}{{ formatCurrency(tr.amount) }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -343,16 +427,16 @@ const getMatchReason = (inv) => {
                         <!-- Not Selected State -->
                         <div v-if="!selectedTransaction" class="p-8 text-center text-slate-500 flex flex-col items-center justify-center min-h-[300px]">
                             <ExclamationCircleIcon class="h-10 w-10 text-slate-400 mb-2" />
-                            <p class="text-sm font-medium">Pilih salah satu mutasi masuk di kolom kiri untuk memulai pencocokan.</p>
+                            <p class="text-sm font-medium">Pilih salah satu mutasi {{ activeTab === 'sales' ? 'masuk' : 'keluar' }} di kolom kiri untuk memulai pencocokan.</p>
                         </div>
 
                         <!-- Selected State Console -->
                         <div v-else class="p-6 space-y-6">
                             
                             <!-- Chosen Mutasi Summary -->
-                            <div class="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 flex justify-between gap-4">
+                            <div class="rounded-xl border p-4 flex justify-between gap-4" :class="activeTab === 'sales' ? 'border-blue-500/30 bg-blue-500/5' : 'border-purple-500/30 bg-purple-500/5'">
                                 <div>
-                                    <span class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Mutasi Terpilih</span>
+                                    <span class="text-[10px] font-bold uppercase tracking-widest" :class="activeTab === 'sales' ? 'text-blue-400' : 'text-purple-400'">Mutasi Terpilih</span>
                                     <p class="text-xs text-slate-900 dark:text-white font-medium mt-1 leading-relaxed">{{ selectedTransaction.description }}</p>
                                     <div class="flex items-center gap-3 mt-2 text-[10px] text-slate-500">
                                         <span>Tanggal: <strong class="font-bold">{{ formatDate(selectedTransaction.transaction_date) }}</strong></span>
@@ -361,18 +445,22 @@ const getMatchReason = (inv) => {
                                 </div>
                                 <div class="text-right flex flex-col justify-center">
                                     <span class="text-xs text-slate-400 font-bold uppercase">Jumlah Mutasi</span>
-                                    <span class="text-lg font-black text-emerald-400 font-mono">{{ formatCurrency(selectedTransaction.amount) }}</span>
+                                    <span class="text-lg font-black font-mono" :class="activeTab === 'sales' ? 'text-emerald-400' : 'text-red-400'">
+                                        {{ activeTab === 'sales' ? '+' : '-' }}{{ formatCurrency(selectedTransaction.amount) }}
+                                    </span>
                                 </div>
                             </div>
 
                             <!-- Invoice Search and Selector -->
                             <div class="space-y-3">
                                 <div class="flex justify-between items-center">
-                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Sales Invoice Pembayar *</label>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                        Pilih {{ activeTab === 'sales' ? 'Sales' : 'Purchase' }} Invoice {{ activeTab === 'sales' ? 'Pembayar' : 'Terbayar' }} *
+                                    </label>
                                     <input 
                                         v-model="invoiceSearch" 
                                         type="text" 
-                                        placeholder="Cari No Invoice / Pelanggan..." 
+                                        :placeholder="`Cari No Invoice / ${activeTab === 'sales' ? 'Pelanggan' : 'Supplier'}...`" 
                                         class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-1.5 px-3 text-xs w-64 text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-1 focus:ring-blue-500"
                                     />
                                 </div>
@@ -382,8 +470,8 @@ const getMatchReason = (inv) => {
                                         <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800">
                                             <tr class="bg-slate-50 dark:bg-slate-800/40 text-slate-500 font-bold uppercase">
                                                 <th class="px-4 py-2.5">Invoice #</th>
-                                                <th class="px-4 py-2.5">Pelanggan</th>
-                                                <th class="px-4 py-2.5 text-right">Balance</th>
+                                                <th class="px-4 py-2.5">{{ activeTab === 'sales' ? 'Pelanggan' : 'Supplier' }}</th>
+                                                <th class="px-4 py-2.5 text-right">{{ activeTab === 'sales' ? 'Balance' : 'Amount Due' }}</th>
                                                 <th class="px-4 py-2.5 text-center">Status</th>
                                             </tr>
                                         </thead>
@@ -397,7 +485,8 @@ const getMatchReason = (inv) => {
                                                 @click="selectedInvoice = inv"
                                                 class="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all"
                                                 :class="{ 
-                                                    'bg-blue-500/10 dark:bg-blue-500/10': selectedInvoice?.id === inv.id,
+                                                    'bg-blue-500/10 dark:bg-blue-500/10': selectedInvoice?.id === inv.id && activeTab === 'sales',
+                                                    'bg-emerald-500/10 dark:bg-emerald-500/10': selectedInvoice?.id === inv.id && activeTab === 'purchase',
                                                     'bg-emerald-500/5 dark:bg-emerald-500/5': isRecommendedInvoice(inv) && selectedInvoice?.id !== inv.id 
                                                 }"
                                             >
@@ -412,12 +501,20 @@ const getMatchReason = (inv) => {
                                                             {{ getMatchReason(inv) }}
                                                         </span>
                                                     </div>
-                                                    <span class="text-[9px] text-slate-500 font-mono block mt-0.5">PO: {{ inv.sales_order?.customer_po_number || '-' }}</span>
+                                                    <span class="text-[9px] text-slate-500 font-mono block mt-0.5">
+                                                        PO: {{ activeTab === 'sales' ? (inv.sales_order?.customer_po_number || '-') : (inv.purchase_order?.po_number || '-') }}
+                                                    </span>
                                                 </td>
-                                                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ inv.customer?.name }}</td>
-                                                <td class="px-4 py-3 text-right font-bold font-mono text-slate-900 dark:text-white">{{ formatCurrency(inv.balance) }}</td>
+                                                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
+                                                    {{ activeTab === 'sales' ? (inv.customer?.name || '-') : (inv.supplier?.name || '-') }}
+                                                </td>
+                                                <td class="px-4 py-3 text-right font-bold font-mono text-slate-900 dark:text-white">
+                                                    {{ formatCurrency(activeTab === 'sales' ? inv.balance : (inv.total_amount - inv.paid_amount)) }}
+                                                </td>
                                                 <td class="px-4 py-3 text-center uppercase text-[10px] font-bold">
-                                                    <span :class="inv.status === 'partial' ? 'text-amber-400' : 'text-blue-400'">{{ inv.status }}</span>
+                                                    <span :class="inv.status === 'partial' ? 'text-amber-400' : (activeTab === 'sales' ? 'text-blue-400' : 'text-emerald-400')">
+                                                        {{ inv.status }}
+                                                    </span>
                                                 </td>
                                             </tr>
                                         </tbody>
@@ -443,7 +540,7 @@ const getMatchReason = (inv) => {
                                         class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 cursor-pointer"
                                         required
                                     >
-                                        <option v-for="(label, value) in paymentMethods" :key="value" :value="value">{{ label }}</option>
+                                        <option v-for="(label, value) in (activeTab === 'sales' ? paymentMethods : purchasePaymentMethods)" :key="value" :value="value">{{ label }}</option>
                                     </select>
                                 </div>
                                 <div>
@@ -497,7 +594,7 @@ const getMatchReason = (inv) => {
                                 <th class="px-6 py-4">Deskripsi Mutasi</th>
                                 <th class="px-6 py-4 text-right">Nominal</th>
                                 <th class="px-6 py-4">Matched Invoice</th>
-                                <th class="px-6 py-4">Pelanggan</th>
+                                <th class="px-6 py-4">Pelanggan / Supplier</th>
                                 <th class="px-6 py-4">Reconciled At</th>
                             </tr>
                         </thead>
@@ -513,15 +610,30 @@ const getMatchReason = (inv) => {
                                         {{ tr.bank_name }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-right font-bold font-mono text-emerald-400">{{ formatCurrency(tr.amount) }}</td>
-                                <td class="px-6 py-4 font-mono text-xs">
-                                    <span class="text-blue-400">{{ tr.sales_payment?.sales_invoice?.invoice_number || 'INV-Deleted' }}</span>
-                                    <div v-if="tr.sales_payment" class="text-[10px] text-slate-500 mt-0.5">Payment Ref: {{ tr.sales_payment.payment_number }}</div>
+                                <td class="px-6 py-4 text-right font-bold font-mono" :class="tr.type === 'DB' ? 'text-red-400' : 'text-emerald-400'">
+                                    {{ tr.type === 'DB' ? '-' : '+' }}{{ formatCurrency(tr.amount) }}
                                 </td>
-                                <td class="px-6 py-4 text-slate-600 dark:text-slate-300 text-xs">{{ tr.sales_payment?.sales_invoice?.customer?.name || '-' }}</td>
+                                <td class="px-6 py-4 font-mono text-xs">
+                                    <template v-if="tr.sales_payment">
+                                        <span class="text-blue-400 font-semibold">Sales: {{ tr.sales_payment?.sales_invoice?.invoice_number || 'INV-Deleted' }}</span>
+                                        <div class="text-[10px] text-slate-500 mt-0.5">Payment Ref: {{ tr.sales_payment.payment_number }}</div>
+                                    </template>
+                                    <template v-else-if="tr.purchase_payment">
+                                        <span class="text-emerald-400 font-semibold">Purchase: {{ tr.purchase_payment?.invoice?.invoice_number || 'PINV-Deleted' }}</span>
+                                        <div class="text-[10px] text-slate-500 mt-0.5">Payment Ref: {{ tr.purchase_payment.payment_number }}</div>
+                                    </template>
+                                    <template v-else>
+                                        <span class="text-slate-450">-</span>
+                                    </template>
+                                </td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-300 text-xs">
+                                    <span v-if="tr.sales_payment">{{ tr.sales_payment?.sales_invoice?.customer?.name || '-' }}</span>
+                                    <span v-else-if="tr.purchase_payment">{{ tr.purchase_payment?.invoice?.supplier?.name || '-' }}</span>
+                                    <span v-else>-</span>
+                                </td>
                                 <td class="px-6 py-4 text-xs text-slate-500">
                                     {{ tr.reconciled_at ? formatDate(tr.reconciled_at) : '-' }}
-                                    <div class="text-[10px] text-slate-500 mt-0.5">by {{ tr.created_by?.name || 'System' }}</div>
+                                    <div class="text-[10px] text-slate-500 mt-0.5">by {{ tr.createdBy?.name || tr.created_by?.name || 'System' }}</div>
                                 </td>
                             </tr>
                         </tbody>
