@@ -56,15 +56,18 @@ const allOptions = computed(() => {
 });
 
 const filteredOptions = computed(() => {
-    if (props.fetchUrl) return allOptions.value;
-    if (!query.value) return props.options;
+    const baseOptions = props.fetchUrl ? allOptions.value : props.options;
+    if (!query.value) return baseOptions;
     
-    return props.options.filter((option) => {
+    const cleanQuery = query.value.toLowerCase().replace(/\s+/g, '');
+    return baseOptions.filter((option) => {
         const label = option?.label ? String(option.label) : '';
-        return label
-            .toLowerCase()
-            .replace(/\s+/g, '')
-            .includes(query.value.toLowerCase().replace(/\s+/g, ''));
+        const sku = option?.sku ? String(option.sku) : '';
+        const name = option?.name ? String(option.name) : '';
+        
+        return label.toLowerCase().replace(/\s+/g, '').includes(cleanQuery) ||
+               sku.toLowerCase().replace(/\s+/g, '').includes(cleanQuery) ||
+               name.toLowerCase().replace(/\s+/g, '').includes(cleanQuery);
     });
 });
 
