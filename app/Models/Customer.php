@@ -40,6 +40,8 @@ class Customer extends Model
         'email',
         'website',
         'tax_id',
+        'bank_name',
+        'account_number',
         'payment_terms',
         'payment_days',
         'credit_limit',

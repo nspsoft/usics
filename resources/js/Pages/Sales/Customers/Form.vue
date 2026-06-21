@@ -40,6 +40,8 @@ const form = useForm({
     postal_code: props.customer?.postal_code ?? '',
     country: props.customer?.country ?? 'ID',
     tax_id: props.customer?.tax_id ?? '',
+    bank_name: props.customer?.bank_name ?? '',
+    account_number: props.customer?.account_number ?? '',
     customer_type: props.customer?.customer_type ?? 'regular',
     payment_terms: props.customer?.payment_terms ?? 'net_30',
     payment_days: props.customer?.payment_days ?? 30,
@@ -398,6 +400,26 @@ const submit = () => {
                                 <input v-model="form.tax_id" type="text" placeholder="00.000..." 
                                     class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500/50 transition-all shadow-inner" />
                             </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 ml-1">Bank Name</label>
+                            <div class="relative group">
+                                <BanknotesIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+                                <input v-model="form.bank_name" type="text" placeholder="e.g. BCA, Mandiri" 
+                                    class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500/50 transition-all shadow-inner" />
+                            </div>
+                            <p v-if="form.errors.bank_name" class="text-xs text-red-400 mt-1 ml-1">{{ form.errors.bank_name }}</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 ml-1">Account Number</label>
+                            <div class="relative group">
+                                <CreditCardIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+                                <input v-model="form.account_number" type="text" placeholder="e.g. 1234567890" 
+                                    class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500/50 transition-all shadow-inner" />
+                            </div>
+                            <p v-if="form.errors.account_number" class="text-xs text-red-400 mt-1 ml-1">{{ form.errors.account_number }}</p>
                         </div>
 
                         <div class="space-y-2">

@@ -53,8 +53,8 @@ const openPaymentModal = () => {
     paymentForm.payment_date = new Date().toISOString().split('T')[0];
     paymentForm.payment_method = 'Transfer';
     paymentForm.reference = '';
-    paymentForm.bank_name = '';
-    paymentForm.account_number = '';
+    paymentForm.bank_name = props.invoice.customer?.bank_name || props.invoice.sales_order?.customer?.bank_name || '';
+    paymentForm.account_number = props.invoice.customer?.account_number || props.invoice.sales_order?.customer?.account_number || '';
     paymentForm.attachment = null;
     paymentForm.notes = '';
     showPaymentModal.value = true;

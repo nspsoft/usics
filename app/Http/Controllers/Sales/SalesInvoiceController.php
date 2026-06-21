@@ -80,7 +80,7 @@ class SalesInvoiceController extends Controller
 
     public function show(SalesInvoice $salesInvoice): Response
     {
-        $salesInvoice->load(['salesOrder.customer', 'items.product', 'items.unit', 'payments.createdBy']);
+        $salesInvoice->load(['salesOrder.customer', 'customer', 'items.product', 'items.unit', 'payments.createdBy']);
 
         $emeteraiService = new EmeteraiService();
 
