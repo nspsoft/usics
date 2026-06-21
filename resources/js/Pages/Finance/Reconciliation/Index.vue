@@ -1,5 +1,5 @@
 <script setup>
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm, router, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ref, computed, watch } from 'vue';
 import {
@@ -13,6 +13,8 @@ import {
     ArrowDownTrayIcon,
     UserIcon,
     SparklesIcon,
+    TrashIcon,
+    XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { formatCurrency, formatDate } from '@/helpers';
 
@@ -32,6 +34,9 @@ const selectedInvoice = ref(null);
 const invoiceSearch = ref('');
 const fileInput = ref(null);
 
+const isBulkMode = ref(false);
+const draftMatches = ref([]);
+
 const importForm = useForm({
     file: null,
     bank_name: 'BCA',
@@ -47,12 +52,20 @@ const matchForm = useForm({
     notes: '',
 });
 
+const bulkMatchForm = useForm({
+    matches: [],
+    payment_date: new Date().toISOString().split('T')[0],
+    payment_method: 'Transfer',
+});
+
 // Reset selection on tab switch
 watch(activeTab, (newTab) => {
     selectedTransaction.value = null;
     selectedInvoice.value = null;
     invoiceSearch.value = '';
     matchForm.payment_method = newTab === 'sales' ? 'Transfer' : 'transfer';
+    isBulkMode.value = false;
+    draftMatches.value = [];
 });
 
 // Auto-match when transaction is selected
@@ -137,6 +150,109 @@ const submitMatch = () => {
             },
         });
     }
+};
+
+const startBulkAutoMatch = () => {
+    draftMatches.value = [];
+    isBulkMode.value = true;
+    selectedTransaction.value = null;
+    selectedInvoice.value = null;
+
+    const isSales = activeTab.value === 'sales';
+    const transactions = isSales ? props.unreconciledSalesTransactions : props.unreconciledPurchaseTransactions;
+    const pendingList = isSales ? props.pendingInvoices : props.pendingPurchaseInvoices;
+
+    transactions.forEach((tr) => {
+        let matchedInv = null;
+        let matchReason = '';
+
+        // 1. Try amount + description matches (best match)
+        matchedInv = pendingList.find((inv) => {
+            const balance = isSales ? inv.balance : (inv.total_amount - inv.paid_amount);
+            const invNumOnly = inv.invoice_number.split('/')[0];
+            const isAmountMatch = Math.round(balance) === Math.round(tr.amount);
+            const isDescMatch = invNumOnly && tr.description.toLowerCase().includes(invNumOnly.toLowerCase());
+            return isAmountMatch && isDescMatch;
+        });
+        if (matchedInv) {
+            matchReason = 'Nominal & Invoice Cocok';
+        }
+
+        // 2. Try amount only
+        if (!matchedInv) {
+            matchedInv = pendingList.find((inv) => {
+                const balance = isSales ? inv.balance : (inv.total_amount - inv.paid_amount);
+                return Math.round(balance) === Math.round(tr.amount);
+            });
+            if (matchedInv) {
+                matchReason = 'Nominal Cocok';
+            }
+        }
+
+        // 3. Try description only
+        if (!matchedInv) {
+            matchedInv = pendingList.find((inv) => {
+                const invNumOnly = inv.invoice_number.split('/')[0];
+                return invNumOnly && tr.description.toLowerCase().includes(invNumOnly.toLowerCase());
+            });
+            if (matchedInv) {
+                matchReason = 'Invoice Cocok';
+            }
+        }
+
+        // Add to drafts if any match is found
+        if (matchedInv) {
+            draftMatches.value.push({
+                transaction: tr,
+                invoice: matchedInv,
+                reason: matchReason,
+                selected: true
+            });
+        }
+    });
+};
+
+const cancelBulkMode = () => {
+    isBulkMode.value = false;
+    draftMatches.value = [];
+};
+
+const removeDraftMatch = (index) => {
+    draftMatches.value.splice(index, 1);
+};
+
+const submitBulkMatch = () => {
+    const selectedMatches = draftMatches.value.filter(d => d.selected);
+    if (selectedMatches.length === 0) return;
+
+    const isSales = activeTab.value === 'sales';
+    
+    const matchesArray = selectedMatches.map(m => {
+        const item = {
+            bank_transaction_id: m.transaction.id
+        };
+        if (isSales) {
+            item.sales_invoice_id = m.invoice.id;
+        } else {
+            item.purchase_invoice_id = m.invoice.id;
+        }
+        return item;
+    });
+
+    bulkMatchForm.matches = matchesArray;
+    // Set payment method based on current tab config
+    bulkMatchForm.payment_method = activeTab.value === 'sales' ? 'Transfer' : 'transfer';
+
+    const routeName = isSales ? 'finance.reconciliation.bulk-match' : 'finance.reconciliation.bulk-match-purchase';
+
+    bulkMatchForm.post(route(routeName), {
+        preserveScroll: true,
+        onSuccess: () => {
+            isBulkMode.value = false;
+            draftMatches.value = [];
+            bulkMatchForm.reset();
+        }
+    });
 };
 
 // Filter pending invoices based on search query
@@ -381,9 +497,20 @@ const getMatchReason = (inv) => {
                         <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                             {{ activeTab === 'sales' ? 'Mutasi Masuk (Kredit)' : 'Mutasi Keluar (Debit)' }}
                         </h3>
-                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold" :class="activeTab === 'sales' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'">
-                            {{ (activeTab === 'sales' ? unreconciledSalesTransactions.length : unreconciledPurchaseTransactions.length) }} Transaksi
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <button 
+                                v-if="(activeTab === 'sales' ? unreconciledSalesTransactions.length : unreconciledPurchaseTransactions.length) > 0 && !isBulkMode"
+                                @click="startBulkAutoMatch"
+                                type="button"
+                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-505 text-white transition-all shadow-md cursor-pointer border-none"
+                            >
+                                <SparklesIcon class="h-3.5 w-3.5" />
+                                <span>Auto-Match Massal</span>
+                            </button>
+                            <span class="px-2 py-0.5 rounded-full text-xs font-semibold" :class="activeTab === 'sales' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'">
+                                {{ (activeTab === 'sales' ? unreconciledSalesTransactions.length : unreconciledPurchaseTransactions.length) }} Transaksi
+                            </span>
+                        </div>
                     </div>
 
                     <div class="divide-y divide-slate-100 dark:divide-slate-800 max-h-[600px] overflow-y-auto">
@@ -394,9 +521,12 @@ const getMatchReason = (inv) => {
                         <div 
                             v-for="tr in (activeTab === 'sales' ? unreconciledSalesTransactions : unreconciledPurchaseTransactions)" 
                             :key="tr.id"
-                            @click="selectTransaction(tr)"
+                            @click="!isBulkMode && selectTransaction(tr)"
                             class="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all cursor-pointer flex justify-between gap-4"
-                            :class="selectedTransaction?.id === tr.id ? (activeTab === 'sales' ? 'bg-blue-500/10 dark:bg-blue-500/10 border-l-4 border-blue-500' : 'bg-purple-500/10 dark:bg-purple-500/10 border-l-4 border-purple-500') : ''"
+                            :class="[
+                                isBulkMode ? 'opacity-50 cursor-not-allowed' : '',
+                                selectedTransaction?.id === tr.id ? (activeTab === 'sales' ? 'bg-blue-500/10 dark:bg-blue-500/10 border-l-4 border-blue-500' : 'bg-purple-500/10 dark:bg-purple-500/10 border-l-4 border-purple-500') : ''
+                            ]"
                         >
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2">
@@ -420,18 +550,167 @@ const getMatchReason = (inv) => {
                 <!-- Right: Selection & Matching Console -->
                 <div class="xl:col-span-7 space-y-6">
                     <div class="rounded-2xl glass-card shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/10">
-                            <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Rekonsiliasi Console</h3>
+                        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/10 flex justify-between items-center">
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                {{ isBulkMode ? 'Tinjauan Rekonsiliasi Massal' : 'Rekonsiliasi Console' }}
+                            </h3>
+                            <button 
+                                v-if="isBulkMode" 
+                                @click="cancelBulkMode"
+                                type="button"
+                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 cursor-pointer border-none"
+                            >
+                                <XMarkIcon class="h-3 w-3" />
+                                <span>Batal Massal</span>
+                            </button>
+                        </div>
+
+                        <!-- Bulk Mode Console -->
+                        <div v-if="isBulkMode" class="p-6 space-y-6">
+                            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                                <div class="text-xs text-slate-500">
+                                    Sistem mendeteksi <strong class="text-slate-800 dark:text-white font-bold">{{ draftMatches.length }}</strong> kecocokan potensial. Silakan tinjau dan hapus baris yang tidak sesuai sebelum memproses.
+                                </div>
+                            </div>
+
+                            <!-- Bulk Matches Draft Table -->
+                            <div v-if="draftMatches.length === 0" class="p-8 text-center text-slate-500 italic flex flex-col items-center justify-center min-h-[200px]">
+                                <ExclamationCircleIcon class="h-10 w-10 text-slate-400 mb-2" />
+                                <p class="text-sm">Tidak ada transaksi yang cocok secara otomatis. Silakan rekonsiliasi secara manual.</p>
+                            </div>
+
+                            <div v-else class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800">
+                                        <tr class="bg-slate-50 dark:bg-slate-800/40 text-slate-500 font-bold uppercase">
+                                            <th class="px-4 py-2.5 w-10 text-center">
+                                                <input 
+                                                    type="checkbox"
+                                                    :checked="draftMatches.length > 0 && draftMatches.every(d => d.selected)"
+                                                    @change="(e) => draftMatches.forEach(d => d.selected = e.target.checked)"
+                                                    class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                />
+                                            </th>
+                                            <th class="px-4 py-2.5">Mutasi</th>
+                                            <th class="px-4 py-2.5">Invoice</th>
+                                            <th class="px-4 py-2.5 text-right">Nominal</th>
+                                            <th class="px-4 py-2.5 text-center">Status Pengecekan</th>
+                                            <th class="px-4 py-2.5 w-12"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                        <tr 
+                                            v-for="(match, idx) in draftMatches" 
+                                            :key="idx"
+                                            class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors"
+                                            :class="!match.selected ? 'opacity-40' : ''"
+                                        >
+                                            <td class="px-4 py-3 text-center">
+                                                <input 
+                                                    type="checkbox"
+                                                    v-model="match.selected"
+                                                    class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                />
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <div class="font-bold text-slate-900 dark:text-white line-clamp-1" :title="match.transaction.description">
+                                                    {{ match.transaction.description }}
+                                                </div>
+                                                <span class="text-[10px] text-slate-500 font-mono">
+                                                    Tanggal: {{ formatDate(match.transaction.transaction_date) }}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <div class="font-mono font-bold text-blue-500">
+                                                    {{ match.invoice.invoice_number }}
+                                                </div>
+                                                <span class="text-[10px] text-slate-500 block">
+                                                    {{ activeTab === 'sales' ? (match.invoice.customer?.name || '-') : (match.invoice.supplier?.name || '-') }}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-3 text-right font-mono font-bold text-slate-900 dark:text-white">
+                                                {{ formatCurrency(match.transaction.amount) }}
+                                            </td>
+                                            <td class="px-4 py-3 text-center">
+                                                <span 
+                                                    class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+                                                    :class="{
+                                                        'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': match.reason === 'Nominal & Invoice Cocok',
+                                                        'bg-blue-500/20 text-blue-400 border border-blue-500/30': match.reason === 'Nominal Cocok',
+                                                        'bg-amber-500/20 text-amber-400 border border-amber-500/30': match.reason === 'Invoice Cocok'
+                                                    }"
+                                                >
+                                                    {{ match.reason }}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-3 text-center">
+                                                <button 
+                                                    type="button" 
+                                                    @click="removeDraftMatch(idx)"
+                                                    class="p-1 rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-500 cursor-pointer border-none bg-transparent"
+                                                    title="Hapus dari antrean"
+                                                >
+                                                    <TrashIcon class="h-4 w-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Bulk Match Details Form -->
+                            <div v-if="draftMatches.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-200 dark:border-slate-800 pt-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tanggal Pembayaran (Global) *</label>
+                                    <input 
+                                        v-model="bulkMatchForm.payment_date"
+                                        type="date"
+                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Metode Pembayaran (Global) *</label>
+                                    <select 
+                                        v-model="bulkMatchForm.payment_method"
+                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                                        required
+                                    >
+                                        <option v-for="(label, value) in (activeTab === 'sales' ? paymentMethods : purchasePaymentMethods)" :key="value" :value="value">{{ label }}</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Bulk Actions Buttons -->
+                            <div v-if="draftMatches.length > 0" class="flex gap-4 border-t border-slate-200 dark:border-slate-800 pt-4">
+                                <button 
+                                    type="button" 
+                                    @click="cancelBulkMode"
+                                    class="flex-1 py-3 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-none"
+                                >
+                                    Batal Massal
+                                </button>
+                                <button 
+                                    type="button" 
+                                    @click="submitBulkMatch"
+                                    :disabled="bulkMatchForm.processing || draftMatches.filter(d => d.selected).length === 0"
+                                    class="flex-1 py-3 text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-50 border-none"
+                                >
+                                    <CheckCircleIcon v-if="!bulkMatchForm.processing" class="h-5 w-5" />
+                                    <ArrowPathIcon v-else class="h-4 w-4 animate-spin" />
+                                    <span>{{ bulkMatchForm.processing ? 'MEMPROSES...' : `COCOKKAN & BAYAR (${draftMatches.filter(d => d.selected).length} TRANSAKSI)` }}</span>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Not Selected State -->
-                        <div v-if="!selectedTransaction" class="p-8 text-center text-slate-500 flex flex-col items-center justify-center min-h-[300px]">
+                        <div v-else-if="!selectedTransaction && !isBulkMode" class="p-8 text-center text-slate-500 flex flex-col items-center justify-center min-h-[300px]">
                             <ExclamationCircleIcon class="h-10 w-10 text-slate-400 mb-2" />
                             <p class="text-sm font-medium">Pilih salah satu mutasi {{ activeTab === 'sales' ? 'masuk' : 'keluar' }} di kolom kiri untuk memulai pencocokan.</p>
                         </div>
 
                         <!-- Selected State Console -->
-                        <div v-else class="p-6 space-y-6">
+                        <div v-else-if="selectedTransaction && !isBulkMode" class="p-6 space-y-6">
                             
                             <!-- Chosen Mutasi Summary -->
                             <div class="rounded-xl border p-4 flex justify-between gap-4" :class="activeTab === 'sales' ? 'border-blue-500/30 bg-blue-500/5' : 'border-purple-500/30 bg-purple-500/5'">

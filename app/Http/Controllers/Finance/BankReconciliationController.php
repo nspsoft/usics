@@ -237,6 +237,124 @@ class BankReconciliationController extends Controller
         }
     }
 
+    public function bulkMatch(Request $request)
+    {
+        $validated = $request->validate([
+            'matches' => 'required|array',
+            'matches.*.bank_transaction_id' => 'required|exists:bank_statement_transactions,id',
+            'matches.*.sales_invoice_id' => 'required|exists:sales_invoices,id',
+            'payment_date' => 'required|date',
+            'payment_method' => 'required|string',
+        ]);
+
+        $successCount = 0;
+
+        try {
+            DB::transaction(function () use ($validated, &$successCount) {
+                foreach ($validated['matches'] as $match) {
+                    $transaction = BankStatementTransaction::findOrFail($match['bank_transaction_id']);
+                    
+                    if ($transaction->reconciled_at) {
+                        continue; // Skip already reconciled
+                    }
+                    
+                    $invoice = SalesInvoice::findOrFail($match['sales_invoice_id']);
+                    
+                    if ($invoice->balance <= 0) {
+                        continue; // Skip already paid
+                    }
+
+                    $paymentAmount = min($transaction->amount, $invoice->balance);
+
+                    $payment = $invoice->payments()->create([
+                        'payment_number' => SalesPayment::generatePaymentNumber(),
+                        'amount' => $paymentAmount,
+                        'payment_date' => $validated['payment_date'],
+                        'payment_method' => $validated['payment_method'],
+                        'reference' => $transaction->reference_number ?? 'Bulk Bank Reconciled',
+                        'bank_name' => $transaction->bank_name,
+                        'notes' => 'Dibuat otomatis via Rekonsiliasi Bank Massal dari transaksi mutasi tanggal: ' . $transaction->transaction_date->format('Y-m-d'),
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    $invoice->recalculatePaidAmount();
+
+                    $transaction->update([
+                        'reconciled_at' => now(),
+                        'sales_payment_id' => $payment->id,
+                    ]);
+
+                    $successCount++;
+                }
+            });
+
+            return back()->with('success', "Berhasil merekonsiliasi {$successCount} invoice customer secara massal.");
+        } catch (\Exception $e) {
+            Log::error('Bank Statement Bulk Match Error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal melakukan rekonsiliasi massal: ' . $e->getMessage());
+        }
+    }
+
+    public function bulkMatchPurchase(Request $request)
+    {
+        $validated = $request->validate([
+            'matches' => 'required|array',
+            'matches.*.bank_transaction_id' => 'required|exists:bank_statement_transactions,id',
+            'matches.*.purchase_invoice_id' => 'required|exists:purchase_invoices,id',
+            'payment_date' => 'required|date',
+            'payment_method' => 'required|string',
+        ]);
+
+        $successCount = 0;
+
+        try {
+            DB::transaction(function () use ($validated, &$successCount) {
+                foreach ($validated['matches'] as $match) {
+                    $transaction = BankStatementTransaction::findOrFail($match['bank_transaction_id']);
+                    
+                    if ($transaction->reconciled_at) {
+                        continue; // Skip already reconciled
+                    }
+                    
+                    $invoice = PurchaseInvoice::findOrFail($match['purchase_invoice_id']);
+                    
+                    $amountDue = max(0, $invoice->total_amount - $invoice->paid_amount);
+                    if ($amountDue <= 0) {
+                        continue; // Skip already paid
+                    }
+
+                    $paymentAmount = min($transaction->amount, $amountDue);
+
+                    $payment = $invoice->payments()->create([
+                        'payment_number' => PurchasePayment::generatePaymentNumber(),
+                        'amount' => $paymentAmount,
+                        'payment_date' => $validated['payment_date'],
+                        'payment_method' => $validated['payment_method'],
+                        'reference' => $transaction->reference_number ?? 'Bulk Bank Reconciled',
+                        'bank_name' => $transaction->bank_name,
+                        'notes' => 'Dibuat otomatis via Rekonsiliasi Bank Massal (Mutasi Keluar) dari transaksi mutasi tanggal: ' . $transaction->transaction_date->format('Y-m-d'),
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    $invoice->recalculatePaidAmount();
+
+                    $transaction->update([
+                        'reconciled_at' => now(),
+                        'purchase_payment_id' => $payment->id,
+                    ]);
+
+                    $successCount++;
+                }
+            });
+
+            return back()->with('success', "Berhasil merekonsiliasi {$successCount} invoice supplier secara massal.");
+        } catch (\Exception $e) {
+            Log::error('Bank Statement Bulk Purchase Match Error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal melakukan rekonsiliasi supplier massal: ' . $e->getMessage());
+        }
+    }
+
+
     /**
      * Parse Excel/CSV bank statement files using PhpSpreadsheet
      */
