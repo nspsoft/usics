@@ -19,14 +19,22 @@ class StockReclassificationItem extends Model
         'unit_id',
         'qty',
         'cost_per_unit',
+        'selling_price_per_unit',
         'total_cost',
+        'total_sell',
+        'profit_nominal',
+        'profit_percentage',
         'notes',
     ];
 
     protected $casts = [
         'qty' => 'float',
         'cost_per_unit' => 'double',
+        'selling_price_per_unit' => 'double',
         'total_cost' => 'double',
+        'total_sell' => 'double',
+        'profit_nominal' => 'double',
+        'profit_percentage' => 'double',
     ];
 
     public function reclassification(): BelongsTo

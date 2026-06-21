@@ -21,12 +21,16 @@ class StockReclassification extends Model
     protected $fillable = [
         'reclass_number',
         'warehouse_id',
+        'target_warehouse_id',
         'reclass_date',
         'status',
         'reason',
         'notes',
         'total_qty',
         'total_value',
+        'total_sell_value',
+        'total_profit_nominal',
+        'total_profit_percentage',
         'reference_type',
         'reference_id',
         'created_by',
@@ -38,6 +42,9 @@ class StockReclassification extends Model
         'reclass_date' => 'date',
         'total_qty' => 'float',
         'total_value' => 'double',
+        'total_sell_value' => 'double',
+        'total_profit_nominal' => 'double',
+        'total_profit_percentage' => 'double',
         'posted_at' => 'datetime',
     ];
 
@@ -56,6 +63,11 @@ class StockReclassification extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function targetWarehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class, 'target_warehouse_id');
     }
 
     public function items(): HasMany

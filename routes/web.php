@@ -140,8 +140,11 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::post('/transfers/{transfer}/receive', [App\Http\Controllers\Inventory\StockTransferController::class, 'receive'])->name('transfers.receive');
 
     // Stock Reclassifications
+    Route::get('/reclassifications/auto-fill', [App\Http\Controllers\Inventory\StockReclassificationController::class, 'autoFill'])->name('reclassifications.auto-fill');
+    Route::post('/reclassifications/auto-generate', [App\Http\Controllers\Inventory\StockReclassificationController::class, 'autoGenerate'])->name('reclassifications.auto-generate');
     Route::resource('reclassifications', App\Http\Controllers\Inventory\StockReclassificationController::class);
     Route::post('/reclassifications/{reclassification}/post', [App\Http\Controllers\Inventory\StockReclassificationController::class, 'post'])->name('reclassifications.post');
+    Route::delete('/reclassifications/items/{item}', [App\Http\Controllers\Inventory\StockReclassificationController::class, 'destroyItem'])->name('reclassifications.items.destroy');
     Route::get('/reclass-mappings/template', [App\Http\Controllers\Inventory\ProductReclassMappingController::class, 'template'])->name('reclass-mappings.template');
     Route::post('/reclass-mappings/import', [App\Http\Controllers\Inventory\ProductReclassMappingController::class, 'import'])->name('reclass-mappings.import');
     Route::resource('reclass-mappings', App\Http\Controllers\Inventory\ProductReclassMappingController::class)

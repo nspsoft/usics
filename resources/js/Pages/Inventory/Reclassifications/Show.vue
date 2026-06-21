@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
     ArrowLeftIcon,
@@ -13,6 +14,33 @@ const props = defineProps({
     reclassification: Object,
 });
 
+const totalCost = computed(() => {
+    if (props.reclassification.total_value !== undefined && parseFloat(props.reclassification.total_value) > 0) {
+        return parseFloat(props.reclassification.total_value);
+    }
+    return props.reclassification.items?.reduce((sum, item) => {
+        const cost = parseFloat(item.cost_per_unit || 0);
+        return sum + (parseFloat(item.qty) * cost);
+    }, 0) || 0;
+});
+
+const totalSell = computed(() => {
+    if (props.reclassification.total_sell_value !== undefined && parseFloat(props.reclassification.total_sell_value) > 0) {
+        return parseFloat(props.reclassification.total_sell_value);
+    }
+    return props.reclassification.items?.reduce((sum, item) => {
+        const sell = parseFloat(item.selling_price_per_unit || item.target_product?.selling_price || item.targetProduct?.selling_price || 0);
+        return sum + (parseFloat(item.qty) * sell);
+    }, 0) || 0;
+});
+
+const totalProfit = computed(() => totalSell.value - totalCost.value);
+
+const totalProfitPct = computed(() => {
+    if (totalCost.value <= 0) return 0;
+    return (totalProfit.value / totalCost.value) * 100;
+});
+
 const getStatusBadge = (status) => {
     const badges = {
         draft: 'bg-slate-500/20 text-slate-500 dark:text-slate-400 border-slate-500/30',
@@ -20,6 +48,32 @@ const getStatusBadge = (status) => {
         cancelled: 'bg-red-500/20 text-red-400 border-red-500/30',
     };
     return badges[status] || badges.draft;
+};
+
+const getProfitPercentage = (item) => {
+    if (item.profit_percentage !== undefined && parseFloat(item.profit_percentage) !== 0) {
+        return parseFloat(item.profit_percentage);
+    }
+    const cost = parseFloat(item.cost_per_unit || 0);
+    if (cost <= 0) return 0;
+    const sell = parseFloat(item.selling_price_per_unit || item.target_product?.selling_price || item.targetProduct?.selling_price || 0);
+    return ((sell - cost) / cost) * 100;
+};
+
+const getProfitBadgeClass = (pct) => {
+    if (pct < 10) {
+        return 'inline-flex items-center gap-1 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold px-1.5 py-0.5 mt-1';
+    }
+    if (pct > 50) {
+        return 'inline-flex items-center gap-1 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px] font-bold px-1.5 py-0.5 mt-1';
+    }
+    return '';
+};
+
+const getProfitBadgeLabel = (pct) => {
+    if (pct < 10) return 'Margin Rendah (<10%)';
+    if (pct > 50) return 'Margin Tinggi (>50%)';
+    return '';
 };
 
 const postDocument = () => {
@@ -30,6 +84,11 @@ const postDocument = () => {
 const deleteDraft = () => {
     if (!confirm('Hapus draft reclass stock ini?')) return;
     router.delete(route('inventory.reclassifications.destroy', props.reclassification.id));
+};
+
+const deleteItem = (itemId) => {
+    if (!confirm('Hapus item ini dari reclass?')) return;
+    router.delete(route('inventory.reclassifications.items.destroy', itemId));
 };
 </script>
 
@@ -80,7 +139,7 @@ const deleteDraft = () => {
                         </span>
                     </div>
 
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-6">
                         <div>
                             <p class="text-xs text-slate-500 mb-1">Reclass Number</p>
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ reclassification.reclass_number }}</p>
@@ -106,12 +165,26 @@ const deleteDraft = () => {
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ reclassification.posted_by?.name || reclassification.postedBy?.name || '-' }}</p>
                         </div>
                         <div>
+                            <p class="text-xs text-slate-500 mb-1">Jumlah Item</p>
+                            <p class="text-sm font-medium text-slate-900 dark:text-white">{{ reclassification.items?.length || 0 }} item</p>
+                        </div>
+                        <div>
                             <p class="text-xs text-slate-500 mb-1">Total Qty</p>
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ formatNumber(reclassification.total_qty || 0) }}</p>
                         </div>
                         <div>
-                            <p class="text-xs text-slate-500 mb-1">Total Value</p>
-                            <p class="text-sm font-medium text-slate-900 dark:text-white">{{ formatCurrency(reclassification.total_value || 0) }}</p>
+                            <p class="text-xs text-slate-500 mb-1">Total Cost Value</p>
+                            <p class="text-sm font-medium text-slate-900 dark:text-white">{{ formatCurrency(totalCost) }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 mb-1">Total Sell Value</p>
+                            <p class="text-sm font-medium text-slate-900 dark:text-white">{{ formatCurrency(totalSell) }}</p>
+                        </div>
+                        <div class="col-span-2 lg:col-span-1">
+                            <p class="text-xs text-slate-500 mb-1">Estimated Profit</p>
+                            <p class="text-sm font-bold" :class="totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'">
+                                {{ formatCurrency(totalProfit) }} ({{ formatNumber(totalProfitPct) }}%)
+                            </p>
                         </div>
                     </div>
 
@@ -130,7 +203,10 @@ const deleteDraft = () => {
                                 <th class="px-4 py-4 text-right text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Qty</th>
                                 <th class="px-4 py-4 text-left text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Unit</th>
                                 <th class="px-4 py-4 text-right text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Cost/Unit</th>
+                                <th class="px-4 py-4 text-right text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Sell/Unit</th>
+                                <th class="px-4 py-4 text-right text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Profit</th>
                                 <th class="px-4 py-4 text-right text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Total Cost</th>
+                                <th v-if="reclassification.status === 'draft'" class="px-4 py-4 text-center text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 w-16">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -144,9 +220,31 @@ const deleteDraft = () => {
                                     <div class="text-xs text-slate-500">{{ item.target_product?.sku || item.targetProduct?.sku }}</div>
                                 </td>
                                 <td class="px-4 py-4 text-right text-sm font-medium text-slate-900 dark:text-white">{{ formatNumber(item.qty) }}</td>
-                                <td class="px-4 py-4 text-sm text-slate-600 dark:text-slate-300">{{ item.unit?.symbol || item.unit?.name || item.source_product?.unit?.symbol || item.sourceProduct?.unit?.symbol || '-' }}</td>
+                                <td class="px-4 py-4 text-sm text-slate-600 dark:text-slate-300">{{ item.unit?.symbol || item.unit?.name || item.target_product?.unit?.symbol || item.targetProduct?.unit?.symbol || item.source_product?.unit?.symbol || item.sourceProduct?.unit?.symbol || '-' }}</td>
                                 <td class="px-4 py-4 text-right text-sm text-slate-600 dark:text-slate-300">{{ formatCurrency(item.cost_per_unit || 0) }}</td>
+                                <td class="px-4 py-4 text-right text-sm text-slate-600 dark:text-slate-300">
+                                    {{ formatCurrency(item.selling_price_per_unit || item.target_product?.selling_price || item.targetProduct?.selling_price || 0) }}
+                                </td>
+                                <td class="px-4 py-4 text-right text-sm font-semibold" :class="(parseFloat(item.selling_price_per_unit || item.target_product?.selling_price || item.targetProduct?.selling_price || 0) - parseFloat(item.cost_per_unit || 0)) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'">
+                                    <div class="text-sm font-bold">
+                                        {{ formatCurrency(item.profit_nominal !== undefined && parseFloat(item.profit_nominal) !== 0 ? item.profit_nominal : (parseFloat(item.selling_price_per_unit || item.target_product?.selling_price || item.targetProduct?.selling_price || 0) - parseFloat(item.cost_per_unit || 0)) * item.qty) }}
+                                    </div>
+                                    <div class="text-xs font-normal text-slate-500 dark:text-slate-400">
+                                        {{ formatNumber(getProfitPercentage(item)) }}%
+                                    </div>
+                                    <div v-if="getProfitBadgeLabel(getProfitPercentage(item))" :class="getProfitBadgeClass(getProfitPercentage(item))">
+                                        {{ getProfitBadgeLabel(getProfitPercentage(item)) }}
+                                    </div>
+                                </td>
                                 <td class="px-4 py-4 text-right text-sm font-medium text-slate-900 dark:text-white">{{ formatCurrency(item.total_cost || 0) }}</td>
+                                <td v-if="reclassification.status === 'draft'" class="px-4 py-4 text-center">
+                                    <button
+                                        @click="deleteItem(item.id)"
+                                        class="inline-flex rounded-lg p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                                    >
+                                        <TrashIcon class="h-4 w-4" />
+                                    </button>
+                                </td>
                             </tr>
                         </tbody>
                     </table>

@@ -20,7 +20,7 @@ class StockReclassificationController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = StockReclassification::with(['warehouse', 'createdBy', 'postedBy'])
+        $query = StockReclassification::with(['warehouse', 'targetWarehouse', 'createdBy', 'postedBy'])
             ->withCount('items')
             ->when($request->search, function ($q, $search) {
                 $q->where('reclass_number', 'like', "%{$search}%")
@@ -60,7 +60,7 @@ class StockReclassificationController extends Controller
 
         $mappingTargetProducts = Product::query()
             ->whereIn('id', $mappingTargetIds)
-            ->select('id', 'sku', 'name', 'unit_id')
+            ->select('id', 'sku', 'name', 'unit_id', 'cost_price', 'selling_price')
             ->with(['unit:id,name,symbol'])
             ->orderBy('name')
             ->get()
@@ -72,6 +72,8 @@ class StockReclassificationController extends Controller
                     'sku' => $p->sku,
                     'name' => $p->name,
                     'unit_id' => $p->unit_id,
+                    'cost_price' => (float) $p->cost_price,
+                    'selling_price' => (float) $p->selling_price,
                 ];
             })
             ->values();
@@ -96,6 +98,7 @@ class StockReclassificationController extends Controller
             $reclassification = StockReclassification::create([
                 'reclass_number' => $reclassNumber,
                 'warehouse_id' => $validated['warehouse_id'],
+                'target_warehouse_id' => $validated['target_warehouse_id'] ?? null,
                 'reclass_date' => $validated['reclass_date'],
                 'status' => StockReclassification::STATUS_DRAFT,
                 'reason' => $validated['reason'],
@@ -124,6 +127,7 @@ class StockReclassificationController extends Controller
     {
         $reclassification->load([
             'warehouse',
+            'targetWarehouse',
             'items.sourceProduct.unit',
             'items.targetProduct.unit',
             'items.unit',
@@ -157,7 +161,7 @@ class StockReclassificationController extends Controller
 
         $mappingTargetProducts = Product::query()
             ->whereIn('id', $mappingTargetIds)
-            ->select('id', 'sku', 'name', 'unit_id')
+            ->select('id', 'sku', 'name', 'unit_id', 'cost_price', 'selling_price')
             ->with(['unit:id,name,symbol'])
             ->orderBy('name')
             ->get()
@@ -169,6 +173,8 @@ class StockReclassificationController extends Controller
                     'sku' => $p->sku,
                     'name' => $p->name,
                     'unit_id' => $p->unit_id,
+                    'cost_price' => (float) $p->cost_price,
+                    'selling_price' => (float) $p->selling_price,
                 ];
             })
             ->values();
@@ -199,6 +205,7 @@ class StockReclassificationController extends Controller
             $reclassification->update([
                 'reclass_number' => $validated['reclass_number'],
                 'warehouse_id' => $validated['warehouse_id'],
+                'target_warehouse_id' => $validated['target_warehouse_id'] ?? null,
                 'reclass_date' => $validated['reclass_date'],
                 'reason' => $validated['reason'],
                 'notes' => $validated['notes'] ?? null,
@@ -246,11 +253,175 @@ class StockReclassificationController extends Controller
             ->with('success', 'Draft reclass stock berhasil dihapus.');
     }
 
+    public function autoFill(Request $request)
+    {
+        $request->validate([
+            'warehouse_id' => 'required|exists:warehouses,id',
+        ]);
+
+        $warehouseId = $request->warehouse_id;
+
+        $mappings = ProductReclassMapping::active()
+            ->get()
+            ->groupBy('source_product_id');
+
+        $stocks = \App\Models\ProductStock::where('warehouse_id', $warehouseId)
+            ->where('qty_on_hand', '>', 0)
+            ->with(['product.unit'])
+            ->get();
+
+        $items = [];
+
+        foreach ($stocks as $stock) {
+            $productId = $stock->product_id;
+            if ($mappings->has($productId)) {
+                $productMappings = $mappings->get($productId);
+                $mapping = $productMappings->firstWhere('is_default', true) ?? $productMappings->first();
+                if ($mapping) {
+                    $availableQty = (float) max(0, $stock->qty_on_hand - $stock->qty_reserved);
+                    if ($availableQty > 0) {
+                        $targetProduct = Product::with('unit')->find($mapping->target_product_id);
+                        if ($targetProduct) {
+                            $items[] = [
+                                'source_product_id' => $productId,
+                                'target_product_id' => $targetProduct->id,
+                                'unit_id' => $targetProduct->unit_id,
+                                'qty' => $availableQty,
+                                'source_stock' => $availableQty,
+                                'notes' => 'Otomatis reclass dari stok yang ada',
+                                'source_product' => [
+                                    'id' => $stock->product->id,
+                                    'name' => $stock->product->name,
+                                    'sku' => $stock->product->sku,
+                                    'cost_price' => (float) $stock->product->cost_price,
+                                    'selling_price' => (float) $stock->product->selling_price,
+                                    'unit' => $stock->product->unit ? [
+                                        'id' => $stock->product->unit->id,
+                                        'name' => $stock->product->unit->name,
+                                        'symbol' => $stock->product->unit->symbol,
+                                    ] : null,
+                                ],
+                                'target_product' => [
+                                    'id' => $targetProduct->id,
+                                    'name' => $targetProduct->name,
+                                    'sku' => $targetProduct->sku,
+                                    'cost_price' => (float) $targetProduct->cost_price,
+                                    'selling_price' => (float) $targetProduct->selling_price,
+                                    'unit' => $targetProduct->unit ? [
+                                        'id' => $targetProduct->unit->id,
+                                        'name' => $targetProduct->unit->name,
+                                        'symbol' => $targetProduct->unit->symbol,
+                                    ] : null,
+                                ],
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
+        return response()->json([
+            'items' => $items,
+        ]);
+    }
+
+    public function autoGenerate(Request $request, StockReclassificationService $service)
+    {
+        $validated = $request->validate([
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'target_warehouse_id' => 'nullable|exists:warehouses,id',
+            'reclass_date' => 'required|date',
+            'reason' => 'required|string|max:255',
+            'notes' => 'nullable|string',
+        ]);
+
+        $warehouseId = $validated['warehouse_id'];
+
+        $mappings = ProductReclassMapping::active()
+            ->with(['targetProduct'])
+            ->get()
+            ->groupBy('source_product_id');
+
+        $stocks = \App\Models\ProductStock::where('warehouse_id', $warehouseId)
+            ->where('qty_on_hand', '>', 0)
+            ->with(['product'])
+            ->get();
+
+        $itemsToCreate = [];
+
+        foreach ($stocks as $stock) {
+            $productId = $stock->product_id;
+            if ($mappings->has($productId)) {
+                $productMappings = $mappings->get($productId);
+                $mapping = $productMappings->firstWhere('is_default', true) ?? $productMappings->first();
+                if ($mapping) {
+                    $availableQty = (float) max(0, $stock->qty_on_hand - $stock->qty_reserved);
+                    if ($availableQty > 0) {
+                        $itemsToCreate[] = [
+                            'source_product_id' => $productId,
+                            'target_product_id' => $mapping->target_product_id,
+                            'unit_id' => $mapping->targetProduct?->unit_id ?? $stock->product->unit_id,
+                            'qty' => $availableQty,
+                            'notes' => 'Otomatis reclass dari stok yang ada',
+                        ];
+                    }
+                }
+            }
+        }
+
+        if (empty($itemsToCreate)) {
+            return back()->with('error', 'Tidak ada stok produk yang memiliki mapping aktif di gudang terpilih.');
+        }
+
+        $reclassification = DB::transaction(function () use ($validated, $itemsToCreate, $service) {
+            $reclassNumber = app(DocumentNumberService::class)->generate('stock_reclassification', [], $validated['reclass_date']);
+
+            $reclass = StockReclassification::create([
+                'reclass_number' => $reclassNumber,
+                'warehouse_id' => $validated['warehouse_id'],
+                'target_warehouse_id' => $validated['target_warehouse_id'] ?? null,
+                'reclass_date' => $validated['reclass_date'],
+                'status' => StockReclassification::STATUS_DRAFT,
+                'reason' => $validated['reason'],
+                'notes' => $validated['notes'] ?? null,
+                'created_by' => auth()->id(),
+            ]);
+
+            foreach ($itemsToCreate as $item) {
+                $reclass->items()->create($item);
+            }
+
+            $service->syncDraftTotals($reclass);
+
+            return $reclass;
+        });
+
+        return redirect()->route('inventory.reclassifications.edit', $reclassification->id)
+            ->with('success', 'Draft reclass otomatis berhasil dibuat berdasarkan mapping dan stock yang tersedia.');
+    }
+
+    public function destroyItem(\App\Models\StockReclassificationItem $item, StockReclassificationService $service)
+    {
+        $reclassification = $item->reclassification;
+
+        if ($reclassification->status !== StockReclassification::STATUS_DRAFT) {
+            return back()->with('error', 'Hanya item pada draft yang bisa dihapus.');
+        }
+
+        $item->delete();
+
+        // Recalculate totals
+        $service->syncDraftTotals($reclassification);
+
+        return back()->with('success', 'Item berhasil dihapus dari reclass.');
+    }
+
     protected function validatePayload(Request $request, ?int $id = null): array
     {
         $validator = Validator::make($request->all(), [
             'reclass_number' => 'required|string|max:30|unique:inv_stock_reclassifications,reclass_number,' . $id,
             'warehouse_id' => 'required|exists:warehouses,id',
+            'target_warehouse_id' => 'nullable|exists:warehouses,id',
             'reclass_date' => 'required|date',
             'reason' => 'required|string|max:255',
             'notes' => 'nullable|string',

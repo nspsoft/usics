@@ -87,7 +87,7 @@ class ProductController extends Controller
             return response()->json(['data' => []]);
         }
 
-        $columns = ['id', 'name', 'sku', 'unit_id'];
+        $columns = ['id', 'name', 'sku', 'unit_id', 'cost_price', 'selling_price'];
         if (Schema::hasColumn('products', 'code')) {
             $columns[] = 'code';
         }
@@ -115,6 +115,8 @@ class ProductController extends Controller
                     'sku' => $p->sku,
                     'name' => $p->name,
                     'unit_id' => $p->unit_id,
+                    'cost_price' => (float) $p->cost_price,
+                    'selling_price' => (float) $p->selling_price,
                 ];
             })
             ->values();
