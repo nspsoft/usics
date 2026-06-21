@@ -8,6 +8,7 @@ use App\Models\SalesInvoice;
 use App\Models\SalesPayment;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchasePayment;
+use App\Services\GeminiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -353,6 +354,36 @@ class BankReconciliationController extends Controller
             return back()->with('error', 'Gagal melakukan rekonsiliasi supplier massal: ' . $e->getMessage());
         }
     }
+
+    public function aiAnalyze(Request $request)
+    {
+        $request->validate([
+            'transactions' => 'required|array',
+            'invoices' => 'required|array',
+            'type' => 'required|string|in:sales,purchase',
+        ]);
+
+        try {
+            $geminiService = new GeminiService();
+            $result = $geminiService->analyzeBankReconciliation(
+                $request->input('transactions'),
+                $request->input('invoices'),
+                $request->input('type')
+            );
+
+            return response()->json([
+                'success' => true,
+                'matches' => $result['matches'] ?? []
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AI Reconciliation Analysis Controller Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menganalisis rekonsiliasi dengan AI: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 
     /**

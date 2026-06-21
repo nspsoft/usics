@@ -1220,6 +1220,103 @@ Question: \"{$question}\"";
 
         return "Maaf, saat ini asisten virtual purchasing sedang sibuk. Silakan hubungi bagian pengadaan kami secara langsung.";
     }
+
+    /**
+     * Analyze bank statement transactions and match them semantically against pending invoices.
+     *
+     * @param array $transactions List of bank statement transactions
+     * @param array $invoices List of pending invoices
+     * @param string $type Either 'sales' or 'purchase'
+     * @return array|null JSON decoded response from LLM containing the matches
+     */
+    public function analyzeBankReconciliation(array $transactions, array $invoices, string $type): ?array
+    {
+        $this->ensureConfigured();
+
+        // Simplify payload data sent to the AI to save tokens and prevent context limit issues
+        $cleanTransactions = array_map(function($t) {
+            return [
+                'id' => $t['id'],
+                'date' => is_string($t['transaction_date']) ? $t['transaction_date'] : (\Carbon\Carbon::parse($t['transaction_date'])->format('Y-m-d')),
+                'description' => $t['description'],
+                'amount' => $t['amount'],
+                'reference_number' => $t['reference_number'] ?? null,
+            ];
+        }, $transactions);
+
+        $cleanInvoices = array_map(function($i) use ($type) {
+            $isSales = $type === 'sales';
+            return [
+                'id' => $i['id'],
+                'invoice_number' => $i['invoice_number'],
+                'partner_name' => $isSales ? ($i['customer']['name'] ?? '') : ($i['supplier']['name'] ?? ''),
+                'total_amount' => $isSales ? ($i['total'] ?? 0) : ($i['total_amount'] ?? 0),
+                'balance_due' => $isSales ? ($i['balance'] ?? 0) : (($i['total_amount'] ?? 0) - ($i['paid_amount'] ?? 0)),
+                'due_date' => $i['due_date'] ?? null,
+            ];
+        }, $invoices);
+
+        $prompt = "You are a smart bank reconciliation assistant. Match the following bank statement transactions (unreconciled) against the pending invoices.
+        
+        Type of reconciliation: " . ($type === 'sales' ? 'Customer Payments (Credit/Uang Masuk)' : 'Supplier Payments (Debit/Uang Keluar)') . "
+        
+        UNRECONCILED TRANSACTIONS:
+        " . json_encode($cleanTransactions, JSON_PRETTY_PRINT) . "
+        
+        PENDING INVOICES:
+        " . json_encode($cleanInvoices, JSON_PRETTY_PRINT) . "
+        
+        INSTRUCTIONS:
+        1. For each transaction, try to find the best matching invoice from the pending invoices list.
+        2. Perform semantic analysis on the transaction description (news/remarks, sender name, etc.) and match it with invoice numbers, partner/company names, or amounts.
+        3. Even if names or numbers do not match exactly, use context (e.g. abbreviations, initials, common Indonesian typos/variations, or exact amounts) to propose matches.
+        4. Suggest an allocated_amount. It should be the minimum of transaction amount and the invoice balance_due.
+        5. For each match, provide a confidence score from 0.0 to 1.0 (1.0 being 100% sure) and a brief reason in Bahasa Indonesia explaining the match.
+        
+        Return strictly a JSON object with this format:
+        {
+            \"matches\": [
+                {
+                    \"bank_transaction_id\": 12,
+                    \"invoice_id\": 45,
+                    \"allocated_amount\": 15000000,
+                    \"confidence\": 0.95,
+                    \"reason\": \"Nama pengirim 'Budi' cocok dengan customer 'PT Budi Abadi' dan nominal transfer pas.\"
+                }
+            ]
+        }
+        
+        Return pure JSON without any markdown formatting or backticks. If no matches are found, return {\"matches\": []}.";
+
+        if ($this->driver === 'ollama') {
+            return $this->callOllama($prompt, true);
+        }
+        if ($this->driver === 'openrouter') {
+            return $this->callOpenRouter($prompt, null, null, true);
+        }
+
+        // Gemini Logic
+        try {
+            $response = Http::timeout(120)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'response_mime_type' => 'application/json',
+                ]
+            ]);
+
+            return $this->parseResponse($response);
+        } catch (\Exception $e) {
+            Log::error('AI Reconciliation Analysis Error: ' . $e->getMessage());
+        }
+
+        return null;
+    }
 }
 
 

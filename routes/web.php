@@ -569,6 +569,7 @@ Route::middleware(['auth'])->prefix('finance')->name('finance.')->group(function
     Route::post('/reconciliation/bulk-match', [App\Http\Controllers\Finance\BankReconciliationController::class, 'bulkMatch'])->name('reconciliation.bulk-match');
     Route::post('/reconciliation/match-purchase', [App\Http\Controllers\Finance\BankReconciliationController::class, 'matchPurchase'])->name('reconciliation.match-purchase');
     Route::post('/reconciliation/bulk-match-purchase', [App\Http\Controllers\Finance\BankReconciliationController::class, 'bulkMatchPurchase'])->name('reconciliation.bulk-match-purchase');
+    Route::post('/reconciliation/ai-analyze', [App\Http\Controllers\Finance\BankReconciliationController::class, 'aiAnalyze'])->name('reconciliation.ai-analyze');
     Route::get('/reconciliation/template/{format}', [App\Http\Controllers\Finance\BankReconciliationController::class, 'downloadTemplate'])->name('reconciliation.template');
 });
 

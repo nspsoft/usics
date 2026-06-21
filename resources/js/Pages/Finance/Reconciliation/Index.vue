@@ -17,6 +17,7 @@ import {
     XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { formatCurrency, formatDate } from '@/helpers';
+import axios from 'axios';
 
 const props = defineProps({
     unreconciledSalesTransactions: Array,
@@ -36,6 +37,7 @@ const fileInput = ref(null);
 
 const isBulkMode = ref(false);
 const draftMatches = ref([]);
+const isAiAnalyzing = ref(false);
 
 const importForm = useForm({
     file: null,
@@ -66,6 +68,7 @@ watch(activeTab, (newTab) => {
     matchForm.payment_method = newTab === 'sales' ? 'Transfer' : 'transfer';
     isBulkMode.value = false;
     draftMatches.value = [];
+    isAiAnalyzing.value = false;
 });
 
 // Auto-match when transaction is selected
@@ -210,6 +213,94 @@ const startBulkAutoMatch = () => {
             });
         }
     });
+};
+
+const runAiAnalysis = async () => {
+    isAiAnalyzing.value = true;
+    isBulkMode.value = true;
+    selectedTransaction.value = null;
+    selectedInvoice.value = null;
+
+    const isSales = activeTab.value === 'sales';
+    const transactions = isSales ? props.unreconciledSalesTransactions : props.unreconciledPurchaseTransactions;
+    const pendingList = isSales ? props.pendingInvoices : props.pendingPurchaseInvoices;
+
+    try {
+        const response = await axios.post(route('finance.reconciliation.ai-analyze'), {
+            transactions: transactions,
+            invoices: pendingList,
+            type: activeTab.value
+        });
+
+        if (response.data.success) {
+            draftMatches.value = [];
+            const aiMatches = response.data.matches;
+
+            aiMatches.forEach((match) => {
+                const tr = transactions.find(t => t.id === match.bank_transaction_id);
+                const inv = pendingList.find(i => i.id === match.invoice_id);
+
+                if (tr && inv) {
+                    const reason = (match.confidence * 100) >= 80 ? `AI: ${match.confidence * 100}% Cocok` : `AI (Tinjau Ulang)`;
+                    
+                    draftMatches.value.push({
+                        transaction: tr,
+                        invoice: inv,
+                        reason: reason,
+                        selected: match.confidence >= 0.8, // Only auto-select matches with >= 80% confidence
+                        confidence: match.confidence,
+                        aiExplanation: match.reason
+                    });
+                }
+            });
+
+            // For transactions that were not matched by AI, run standard local matching
+            transactions.forEach((tr) => {
+                const alreadyMatched = draftMatches.value.some(d => d.transaction.id === tr.id);
+                if (!alreadyMatched) {
+                    let matchedInv = null;
+                    let matchReason = '';
+
+                    matchedInv = pendingList.find((inv) => {
+                        const balance = isSales ? inv.balance : (inv.total_amount - inv.paid_amount);
+                        const invNumOnly = inv.invoice_number.split('/')[0];
+                        const isAmountMatch = Math.round(balance) === Math.round(tr.amount);
+                        const isDescMatch = invNumOnly && tr.description.toLowerCase().includes(invNumOnly.toLowerCase());
+                        return isAmountMatch && isDescMatch;
+                    });
+                    if (matchedInv) {
+                        matchReason = 'Nominal & Invoice Cocok';
+                    }
+
+                    if (!matchedInv) {
+                        matchedInv = pendingList.find((inv) => {
+                            const balance = isSales ? inv.balance : (inv.total_amount - inv.paid_amount);
+                            return Math.round(balance) === Math.round(tr.amount);
+                        });
+                        if (matchedInv) {
+                            matchReason = 'Nominal Cocok';
+                        }
+                    }
+
+                    if (matchedInv) {
+                        draftMatches.value.push({
+                            transaction: tr,
+                            invoice: matchedInv,
+                            reason: matchReason,
+                            selected: false
+                        });
+                    }
+                }
+            });
+        } else {
+            alert('Gagal menganalisis data dengan AI: ' + response.data.message);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Terjadi kesalahan saat memanggil asisten AI: ' + (err.response?.data?.message || err.message));
+    } finally {
+        isAiAnalyzing.value = false;
+    }
 };
 
 const cancelBulkMode = () => {
@@ -507,6 +598,15 @@ const getMatchReason = (inv) => {
                                 <SparklesIcon class="h-3.5 w-3.5" />
                                 <span>Auto-Match Massal</span>
                             </button>
+                            <button 
+                                v-if="(activeTab === 'sales' ? unreconciledSalesTransactions.length : unreconciledPurchaseTransactions.length) > 0 && !isBulkMode"
+                                @click="runAiAnalysis"
+                                type="button"
+                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-md cursor-pointer border-none"
+                            >
+                                <SparklesIcon class="h-3.5 w-3.5 animate-pulse text-purple-200" />
+                                <span>Analisis AI</span>
+                            </button>
                             <span class="px-2 py-0.5 rounded-full text-xs font-semibold" :class="activeTab === 'sales' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'">
                                 {{ (activeTab === 'sales' ? unreconciledSalesTransactions.length : unreconciledPurchaseTransactions.length) }} Transaksi
                             </span>
@@ -567,140 +667,153 @@ const getMatchReason = (inv) => {
 
                         <!-- Bulk Mode Console -->
                         <div v-if="isBulkMode" class="p-6 space-y-6">
-                            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-                                <div class="text-xs text-slate-500">
-                                    Sistem mendeteksi <strong class="text-slate-800 dark:text-white font-bold">{{ draftMatches.length }}</strong> kecocokan potensial. Silakan tinjau dan hapus baris yang tidak sesuai sebelum memproses.
+                            <!-- Loading State -->
+                            <div v-if="isAiAnalyzing" class="p-12 text-center text-slate-500 flex flex-col items-center justify-center min-h-[300px]">
+                                <ArrowPathIcon class="h-10 w-10 text-purple-500 animate-spin mb-4" />
+                                <h4 class="font-bold text-slate-900 dark:text-white mb-2">Asisten AI Sedang Menganalisis...</h4>
+                                <p class="text-xs text-slate-500 max-w-sm">Membaca berita transfer mutasi bank secara semantik dan mencocokkannya dengan invoice pending. Mohon tunggu sebentar.</p>
+                            </div>
+
+                            <template v-else>
+                                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                                    <div class="text-xs text-slate-500">
+                                        Sistem mendeteksi <strong class="text-slate-800 dark:text-white font-bold">{{ draftMatches.length }}</strong> kecocokan potensial. Silakan tinjau dan hapus baris yang tidak sesuai sebelum memproses.
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Bulk Matches Draft Table -->
-                            <div v-if="draftMatches.length === 0" class="p-8 text-center text-slate-500 italic flex flex-col items-center justify-center min-h-[200px]">
-                                <ExclamationCircleIcon class="h-10 w-10 text-slate-400 mb-2" />
-                                <p class="text-sm">Tidak ada transaksi yang cocok secara otomatis. Silakan rekonsiliasi secara manual.</p>
-                            </div>
+                                <!-- Bulk Matches Draft Table -->
+                                <div v-if="draftMatches.length === 0" class="p-8 text-center text-slate-500 italic flex flex-col items-center justify-center min-h-[200px]">
+                                    <ExclamationCircleIcon class="h-10 w-10 text-slate-400 mb-2" />
+                                    <p class="text-sm">Tidak ada transaksi yang cocok secara otomatis. Silakan rekonsiliasi secara manual.</p>
+                                </div>
 
-                            <div v-else class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto">
-                                <table class="w-full text-left text-xs">
-                                    <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800">
-                                        <tr class="bg-slate-50 dark:bg-slate-800/40 text-slate-500 font-bold uppercase">
-                                            <th class="px-4 py-2.5 w-10 text-center">
-                                                <input 
-                                                    type="checkbox"
-                                                    :checked="draftMatches.length > 0 && draftMatches.every(d => d.selected)"
-                                                    @change="(e) => draftMatches.forEach(d => d.selected = e.target.checked)"
-                                                    class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                                />
-                                            </th>
-                                            <th class="px-4 py-2.5">Mutasi</th>
-                                            <th class="px-4 py-2.5">Invoice</th>
-                                            <th class="px-4 py-2.5 text-right">Nominal</th>
-                                            <th class="px-4 py-2.5 text-center">Status Pengecekan</th>
-                                            <th class="px-4 py-2.5 w-12"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                                        <tr 
-                                            v-for="(match, idx) in draftMatches" 
-                                            :key="idx"
-                                            class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors"
-                                            :class="!match.selected ? 'opacity-40' : ''"
+                                <div v-else class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto">
+                                    <table class="w-full text-left text-xs">
+                                        <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800">
+                                            <tr class="bg-slate-50 dark:bg-slate-800/40 text-slate-500 font-bold uppercase">
+                                                <th class="px-4 py-2.5 w-10 text-center">
+                                                    <input 
+                                                        type="checkbox"
+                                                        :checked="draftMatches.length > 0 && draftMatches.every(d => d.selected)"
+                                                        @change="(e) => draftMatches.forEach(d => d.selected = e.target.checked)"
+                                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                    />
+                                                </th>
+                                                <th class="px-4 py-2.5">Mutasi</th>
+                                                <th class="px-4 py-2.5">Invoice</th>
+                                                <th class="px-4 py-2.5 text-right">Nominal</th>
+                                                <th class="px-4 py-2.5 text-center">Status Pengecekan</th>
+                                                <th class="px-4 py-2.5 w-12"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                            <tr 
+                                                v-for="(match, idx) in draftMatches" 
+                                                :key="idx"
+                                                class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors"
+                                                :class="!match.selected ? 'opacity-40' : ''"
+                                            >
+                                                <td class="px-4 py-3 text-center">
+                                                    <input 
+                                                        type="checkbox"
+                                                        v-model="match.selected"
+                                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                    />
+                                                </td>
+                                                <td class="px-4 py-3">
+                                                    <div class="font-bold text-slate-900 dark:text-white line-clamp-1" :title="match.transaction.description">
+                                                        {{ match.transaction.description }}
+                                                    </div>
+                                                    <span class="text-[10px] text-slate-500 font-mono block">
+                                                        Tanggal: {{ formatDate(match.transaction.transaction_date) }}
+                                                    </span>
+                                                    <span v-if="match.aiExplanation" class="text-[10px] text-purple-650 dark:text-purple-400 font-medium block mt-1 leading-relaxed">
+                                                        💡 AI: {{ match.aiExplanation }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-4 py-3">
+                                                    <div class="font-mono font-bold text-blue-500">
+                                                        {{ match.invoice.invoice_number }}
+                                                    </div>
+                                                    <span class="text-[10px] text-slate-500 block">
+                                                        {{ activeTab === 'sales' ? (match.invoice.customer?.name || '-') : (match.invoice.supplier?.name || '-') }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-4 py-3 text-right font-mono font-bold text-slate-900 dark:text-white">
+                                                    {{ formatCurrency(match.transaction.amount) }}
+                                                </td>
+                                                <td class="px-4 py-3 text-center">
+                                                    <span 
+                                                        class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+                                                        :class="{
+                                                            'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': match.reason.startsWith('Nominal & Invoice Cocok') || match.reason.startsWith('Nominal & Invoice'),
+                                                            'bg-blue-500/20 text-blue-400 border border-blue-500/30': match.reason.startsWith('Nominal Cocok') || match.reason.startsWith('Nominal'),
+                                                            'bg-amber-500/20 text-amber-400 border border-amber-500/30': match.reason.startsWith('Invoice Cocok') || match.reason.startsWith('Invoice'),
+                                                            'bg-purple-500/20 text-purple-400 border border-purple-500/30': match.reason.startsWith('AI')
+                                                        }"
+                                                    >
+                                                        {{ match.reason }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-4 py-3 text-center">
+                                                    <button 
+                                                        type="button" 
+                                                        @click="removeDraftMatch(idx)"
+                                                        class="p-1 rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-500 cursor-pointer border-none bg-transparent"
+                                                        title="Hapus dari antrean"
+                                                    >
+                                                        <TrashIcon class="h-4 w-4" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Bulk Match Details Form -->
+                                <div v-if="draftMatches.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-200 dark:border-slate-800 pt-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tanggal Pembayaran (Global) *</label>
+                                        <input 
+                                            v-model="bulkMatchForm.payment_date"
+                                            type="date"
+                                            class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Metode Pembayaran (Global) *</label>
+                                        <select 
+                                            v-model="bulkMatchForm.payment_method"
+                                            class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                                            required
                                         >
-                                            <td class="px-4 py-3 text-center">
-                                                <input 
-                                                    type="checkbox"
-                                                    v-model="match.selected"
-                                                    class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                                />
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <div class="font-bold text-slate-900 dark:text-white line-clamp-1" :title="match.transaction.description">
-                                                    {{ match.transaction.description }}
-                                                </div>
-                                                <span class="text-[10px] text-slate-500 font-mono">
-                                                    Tanggal: {{ formatDate(match.transaction.transaction_date) }}
-                                                </span>
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <div class="font-mono font-bold text-blue-500">
-                                                    {{ match.invoice.invoice_number }}
-                                                </div>
-                                                <span class="text-[10px] text-slate-500 block">
-                                                    {{ activeTab === 'sales' ? (match.invoice.customer?.name || '-') : (match.invoice.supplier?.name || '-') }}
-                                                </span>
-                                            </td>
-                                            <td class="px-4 py-3 text-right font-mono font-bold text-slate-900 dark:text-white">
-                                                {{ formatCurrency(match.transaction.amount) }}
-                                            </td>
-                                            <td class="px-4 py-3 text-center">
-                                                <span 
-                                                    class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase"
-                                                    :class="{
-                                                        'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': match.reason === 'Nominal & Invoice Cocok',
-                                                        'bg-blue-500/20 text-blue-400 border border-blue-500/30': match.reason === 'Nominal Cocok',
-                                                        'bg-amber-500/20 text-amber-400 border border-amber-500/30': match.reason === 'Invoice Cocok'
-                                                    }"
-                                                >
-                                                    {{ match.reason }}
-                                                </span>
-                                            </td>
-                                            <td class="px-4 py-3 text-center">
-                                                <button 
-                                                    type="button" 
-                                                    @click="removeDraftMatch(idx)"
-                                                    class="p-1 rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-500 cursor-pointer border-none bg-transparent"
-                                                    title="Hapus dari antrean"
-                                                >
-                                                    <TrashIcon class="h-4 w-4" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Bulk Match Details Form -->
-                            <div v-if="draftMatches.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-200 dark:border-slate-800 pt-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tanggal Pembayaran (Global) *</label>
-                                    <input 
-                                        v-model="bulkMatchForm.payment_date"
-                                        type="date"
-                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500"
-                                        required
-                                    />
+                                            <option v-for="(label, value) in (activeTab === 'sales' ? paymentMethods : purchasePaymentMethods)" :key="value" :value="value">{{ label }}</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Metode Pembayaran (Global) *</label>
-                                    <select 
-                                        v-model="bulkMatchForm.payment_method"
-                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                        required
+
+                                <!-- Bulk Actions Buttons -->
+                                <div v-if="draftMatches.length > 0" class="flex gap-4 border-t border-slate-200 dark:border-slate-800 pt-4">
+                                    <button 
+                                        type="button" 
+                                        @click="cancelBulkMode"
+                                        class="flex-1 py-3 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-none"
                                     >
-                                        <option v-for="(label, value) in (activeTab === 'sales' ? paymentMethods : purchasePaymentMethods)" :key="value" :value="value">{{ label }}</option>
-                                    </select>
+                                        Batal Massal
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        @click="submitBulkMatch"
+                                        :disabled="bulkMatchForm.processing || draftMatches.filter(d => d.selected).length === 0"
+                                        class="flex-1 py-3 text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-50 border-none"
+                                    >
+                                        <CheckCircleIcon v-if="!bulkMatchForm.processing" class="h-5 w-5" />
+                                        <ArrowPathIcon v-else class="h-4 w-4 animate-spin" />
+                                        <span>{{ bulkMatchForm.processing ? 'MEMPROSES...' : `COCOKKAN & BAYAR (${draftMatches.filter(d => d.selected).length} TRANSAKSI)` }}</span>
+                                    </button>
                                 </div>
-                            </div>
-
-                            <!-- Bulk Actions Buttons -->
-                            <div v-if="draftMatches.length > 0" class="flex gap-4 border-t border-slate-200 dark:border-slate-800 pt-4">
-                                <button 
-                                    type="button" 
-                                    @click="cancelBulkMode"
-                                    class="flex-1 py-3 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-none"
-                                >
-                                    Batal Massal
-                                </button>
-                                <button 
-                                    type="button" 
-                                    @click="submitBulkMatch"
-                                    :disabled="bulkMatchForm.processing || draftMatches.filter(d => d.selected).length === 0"
-                                    class="flex-1 py-3 text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-50 border-none"
-                                >
-                                    <CheckCircleIcon v-if="!bulkMatchForm.processing" class="h-5 w-5" />
-                                    <ArrowPathIcon v-else class="h-4 w-4 animate-spin" />
-                                    <span>{{ bulkMatchForm.processing ? 'MEMPROSES...' : `COCOKKAN & BAYAR (${draftMatches.filter(d => d.selected).length} TRANSAKSI)` }}</span>
-                                </button>
-                            </div>
+                            </template>
                         </div>
 
                         <!-- Not Selected State -->
