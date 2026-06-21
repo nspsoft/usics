@@ -77,9 +77,9 @@ class DatabaseBackupService
             'hr_payroll_items',
         ],
         'finance' => [
-            'accounts',
+            'coas',
             'journals',
-            'journal_entries',
+            'journal_items',
         ],
         'settings' => [
             'users',
@@ -149,7 +149,7 @@ class DatabaseBackupService
             'hr_attendances', 'hr_payroll_items', 'hr_payrolls',
         ],
         'finance' => [
-            'journal_entries', 'journals',
+            'journal_items', 'journals',
         ],
         'logistics' => [
             'delivery_schedules',
@@ -345,7 +345,7 @@ class DatabaseBackupService
                 'stock_movements',
                 'stock_opname_items', 'stock_opnames',
                 // Finance transactions
-                'journal_entries', 'journals',
+                'journal_items', 'journals',
                 // HR transactions
                 'hr_attendances', 'hr_payroll_items', 'hr_payrolls',
                 // Notifications & logs

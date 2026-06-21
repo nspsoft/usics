@@ -726,9 +726,10 @@ Route::post('/meeting-command/{meeting}/check-in', [App\Http\Controllers\Meeting
 
 // Costing
 Route::middleware(['auth'])->prefix('costing')->name('costing.')->group(function () {
-    Route::get('/production', fn () => Inertia::render('Costing/Production'))->name('production');
-    Route::get('/overhead', fn () => Inertia::render('Costing/Overhead'))->name('overhead');
-    Route::get('/profitability', fn () => Inertia::render('Costing/Profitability'))->name('profitability');
+    Route::get('/production', [App\Http\Controllers\Finance\CostingController::class, 'production'])->name('production');
+    Route::get('/overhead', [App\Http\Controllers\Finance\CostingController::class, 'overhead'])->name('overhead');
+    Route::get('/profitability', [App\Http\Controllers\Finance\CostingController::class, 'profitability'])->name('profitability');
+    Route::post('/ai-analyze', [App\Http\Controllers\Finance\CostingController::class, 'aiAnalyze'])->name('ai-analyze');
 });
 
 // Portal

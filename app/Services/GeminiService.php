@@ -1317,6 +1317,70 @@ Question: \"{$question}\"";
 
         return null;
     }
+
+    /**
+     * Analyze costing module elements using LLM
+     */
+    public function analyzeCosting(string $mode, array $costElements, string $totalValue): ?array
+    {
+        $this->ensureConfigured();
+
+        $prompt = "You are an expert Manufacturing Cost Accountant and Financial AI Auditor.
+        
+        Analyze the following costing data for the module: " . strtoupper($mode) . "
+        
+        COST ELEMENTS:
+        " . json_encode($costElements, JSON_PRETTY_PRINT) . "
+        
+        TOTAL VALUE: {$totalValue}
+        
+        INSTRUCTIONS:
+        1. Perform a thorough costing audit or margin/overhead analysis based on the mode:
+           - For 'production': Audit the variance of raw materials, direct labor, factory overhead. Suggest where the efficiency leaks might be (e.g. material price fluctuations, labor overtime, idle machines).
+           - For 'overhead': Analyze the overhead allocation drivers. Suggest optimization of cost drivers (machine hours vs labor hours) and evaluate the absorption rate.
+           - For 'profitability': Analyze the gross margin, COGS vs OPEX, and identify pricing anomalies, margin leaks, or sensitivity to raw material price changes.
+        2. Provide your findings, recommendations, and a brief action plan.
+        3. Write the response in professional Bahasa Indonesia. Keep it structured, formatting with bullet points and bold highlights.
+        4. Return the response as a JSON object in this format:
+        {
+            \"analysis\": \"<write the complete HTML-formatted or Markdown-formatted analysis text here. Use bold text, line breaks, bullet points to make it visually beautiful and premium.>\",
+            \"score\": 0.85,
+            \"leaks_detected\": 2,
+            \"recommendation\": \"Ringkasan rekomendasi utama dalam 1 kalimat.\"
+        }
+        
+        Return pure JSON without any markdown formatting or backticks.
+        ";
+
+        if ($this->driver === 'ollama') {
+            return $this->callOllama($prompt, true);
+        }
+        if ($this->driver === 'openrouter') {
+            return $this->callOpenRouter($prompt, null, null, true);
+        }
+
+        // Gemini Logic
+        try {
+            $response = Http::timeout(120)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'response_mime_type' => 'application/json',
+                ]
+            ]);
+
+            return $this->parseResponse($response);
+        } catch (\Exception $e) {
+            Log::error('AI Costing Analysis Error: ' . $e->getMessage());
+        }
+
+        return null;
+    }
 }
 
 
