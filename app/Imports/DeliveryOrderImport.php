@@ -45,33 +45,68 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
         try {
             return Carbon::parse($value)->format('Y-m-d');
         } catch (\Exception $e) {
+            // Handle Indonesian date dot format: DD.MM.YYYY
+            $valueStr = strval($value);
+            if (preg_match('/^(\d{2})\.(\d{2})\.(\d{4})$/', $valueStr, $matches)) {
+                return "{$matches[3]}-{$matches[2]}-{$matches[1]}";
+            }
             return null;
         }
+    }
+
+    /**
+     * Parse float from string, handling both Indonesian (comma) and English format.
+     */
+    protected function parseFloat($value): ?float
+    {
+        if ($value === null || $value === '') return null;
+        if (is_numeric($value)) return floatval($value);
+
+        $str = trim(strval($value));
+        if ($str === '') return null;
+
+        // Check for decimal comma vs decimal dot
+        if (strpos($str, '.') !== false && strpos($str, ',') !== false) {
+            if (strpos($str, '.') < strpos($str, ',')) {
+                // ID format: 3.040,80 -> remove dot, replace comma with dot
+                $str = str_replace('.', '', $str);
+                $str = str_replace(',', '.', $str);
+            } else {
+                // EN format: 3,040.80 -> remove comma
+                $str = str_replace(',', '', $str);
+            }
+        } elseif (strpos($str, ',') !== false) {
+            // Only comma: 48,6 -> replace with dot
+            $str = str_replace(',', '.', $str);
+        }
+
+        $str = preg_replace('/[^\d\.\-]/', '', $str);
+
+        return is_numeric($str) ? floatval($str) : null;
     }
 
     public function collection(Collection $rows)
     {
         // Group by DO Number if it exists, otherwise use SO Number.
-        // We use a custom grouping closure so new DOs and existing DOs are grouped correctly.
         $grouped = $rows->groupBy(function ($item) {
-            $do = trim($item['do_number'] ?? '');
+            $do = trim($item['no_do'] ?? $item['do_number'] ?? '');
             if ($do !== '') {
                 return 'DO__' . $do; // Prefix to distinguish
             }
-            return 'SO__' . trim($item['so_number'] ?? '');
+            $so = trim($item['no_so'] ?? $item['so_number'] ?? '');
+            return 'SO__' . $so;
         });
 
         foreach ($grouped as $groupKey => $items) {
             try {
                 if ($items->isEmpty()) continue;
                 $firstRow = $items->first();
-                $soNumber = trim($firstRow['so_number'] ?? '');
+                $soNumber = trim($firstRow['no_so'] ?? $firstRow['so_number'] ?? '');
                 
                 $isUpdate = str_starts_with($groupKey, 'DO__');
                 $doNumberFromExcel = $isUpdate ? substr($groupKey, 4) : null;
 
                 $so = null;
-                // Kita perlu mendapatkan SO dari database jika SO Number ada di Excel
                 if ($soNumber) {
                     $so = SalesOrder::where('so_number', $soNumber)
                         ->whereIn('status', ['confirmed', 'processing', 'partial'])
@@ -89,9 +124,10 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                     $deliveryDate = now()->toDateString();
                     $doNumber = $doNumberFromExcel;
                     $currentSo = $so; 
+                    $shipmentNumber = trim($firstRow['no_shipment'] ?? $firstRow['shipment_number'] ?? '');
 
                     try {
-                        $rawDate = $firstRow['delivery_date'] ?? null;
+                        $rawDate = $firstRow['gi_date'] ?? $firstRow['delivery_date'] ?? null;
                         $parsedDate = $this->parseDate($rawDate);
                         if ($parsedDate) {
                             $deliveryDate = $parsedDate;
@@ -118,9 +154,13 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                                 return; // skip
                             }
                             // Overwrite: Update headers, delete old items
-                            $existingDO->update([
+                            $updateData = [
                                 'delivery_date' => $deliveryDate,
-                            ]);
+                            ];
+                            if ($shipmentNumber !== '') {
+                                $updateData['shipment_number'] = $shipmentNumber;
+                            }
+                            $existingDO->update($updateData);
                             $existingDO->items()->delete();
                             $existingDO = $existingDO->fresh(); // Reload relations
                             $currentSo = $existingDO->salesOrder; // Use SO from existing DO
@@ -154,6 +194,7 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                             'customer_id' => $currentSo->customer_id,
                             'warehouse_id' => $currentSo->warehouse_id,
                             'delivery_date' => $deliveryDate,
+                            'shipment_number' => $shipmentNumber !== '' ? $shipmentNumber : null,
                             'driver_name' => 'Imported',
                             'vehicle_number' => '-',
                             'shipping_address' => $currentSo->shipping_address,
@@ -162,11 +203,12 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                     }
 
                     foreach ($items as $row) {
-                        if (empty($row['product_code'])) continue;
+                        $sku = trim($row['material'] ?? $row['product_code'] ?? '');
+                        if (empty($sku)) continue;
 
-                        $product = Product::where('sku', trim($row['product_code']))->first();
+                        $product = Product::where('sku', $sku)->first();
                         if (!$product) {
-                            $this->errors[] = "Product [{$row['product_code']}] not found. Skipping item.";
+                            $this->errors[] = "Product [{$sku}] not found. Skipping item.";
                             $this->skippedCount++;
                             continue;
                         }
@@ -177,19 +219,33 @@ class DeliveryOrderImport implements ToCollection, WithHeadingRow
                             ->first();
 
                         if (!$soItem) {
-                            $this->errors[] = "Product [{$row['product_code']}] not found in SO [{$currentSo->so_number}]. Skipping item.";
+                            $this->errors[] = "Product [{$sku}] not found in SO [{$currentSo->so_number}]. Skipping item.";
                             $this->skippedCount++;
                             continue;
                         }
+
+                        // Parse spec columns
+                        $inchi = isset($row['inchi']) ? trim(strval($row['inchi'])) : null;
+                        $od = $this->parseFloat($row['od'] ?? $row['tr'] ?? null);
+                        $tebal = $this->parseFloat($row['tebal'] ?? null);
+                        $panjang = $this->parseFloat($row['panjang'] ?? null);
+                        
+                        $qtyDelivered = $this->parseFloat($row['qty_do'] ?? $row['qty_delivered'] ?? 0);
+                        $kgDelivered = $this->parseFloat($row['kg_do'] ?? $row['kg_delivered'] ?? null);
 
                         $existingDO->items()->create([
                             'sales_order_item_id' => $soItem->id,
                             'product_id' => $product->id,
                             'qty_ordered' => $soItem->qty,
-                            'qty_delivered' => floatval($row['qty_delivered'] ?? 0),
+                            'qty_delivered' => $qtyDelivered,
                             'unit_id' => $soItem->unit_id,
                             'batch_number' => $row['batch_number'] ?? null,
                             'notes' => $row['notes'] ?? null,
+                            'inchi' => $inchi,
+                            'od' => $od,
+                            'tebal' => $tebal,
+                            'panjang' => $panjang,
+                            'kg_delivered' => $kgDelivered,
                         ]);
                     }
                     

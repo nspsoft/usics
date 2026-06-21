@@ -558,6 +558,11 @@ Route::middleware(['auth'])->prefix('finance')->name('finance.')->group(function
     Route::get('/ledger', [App\Http\Controllers\Finance\FinanceLedgerController::class, 'index'])->name('ledger');
     Route::get('/reports', [App\Http\Controllers\Finance\FinanceReportController::class, 'profitAndLoss'])->name('reports');
     Route::get('/payment-monitoring', [App\Http\Controllers\Finance\FinanceMonitoringController::class, 'index'])->name('payment-monitoring');
+    
+    // Bank Reconciliation
+    Route::get('/reconciliation', [App\Http\Controllers\Finance\BankReconciliationController::class, 'index'])->name('reconciliation.index');
+    Route::post('/reconciliation/import', [App\Http\Controllers\Finance\BankReconciliationController::class, 'import'])->name('reconciliation.import');
+    Route::post('/reconciliation/match', [App\Http\Controllers\Finance\BankReconciliationController::class, 'match'])->name('reconciliation.match');
 });
 
 // HR

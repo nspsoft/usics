@@ -462,6 +462,7 @@ const navigation = [
             { name: 'General Ledger', href: '/finance/ledger', icon: BookOpenIcon, permission: 'finance.general_ledger.view' },
             { name: 'Profit & Loss', href: '/finance/reports', icon: ChartBarSquareIcon, permission: 'finance.profit_&_loss.view' },
             { name: 'AP & AR Monitoring', href: '/finance/payment-monitoring', icon: ArrowsRightLeftIcon, permission: 'finance.ap_&_ar_monitoring.view' },
+            { name: 'Bank Reconciliation', href: '/finance/reconciliation', icon: ArrowPathIcon, permission: 'finance.general_ledger.view' },
             // Costing Modules merged here
             { name: 'Production Costing', href: '/costing/production', icon: CalculatorIcon, permission: 'finance.production_costing.view' },
             { name: 'Overhead Allocation', href: '/costing/overhead', icon: TableCellsIcon, permission: 'finance.overhead_allocation.view' },

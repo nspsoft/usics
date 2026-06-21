@@ -1,0 +1,466 @@
+<script setup>
+import { Head, useForm, router } from '@inertiajs/vue3';
+import AppLayout from '@/Layouts/AppLayout.vue';
+import { ref, computed, watch } from 'vue';
+import {
+    ArrowUpOnSquareIcon,
+    CheckCircleIcon,
+    ArrowPathIcon,
+    ExclamationCircleIcon,
+    DocumentTextIcon,
+    BanknotesIcon,
+    CalendarIcon,
+    ArrowDownTrayIcon,
+    UserIcon,
+    SparklesIcon,
+} from '@heroicons/vue/24/outline';
+import { formatCurrency, formatDate } from '@/helpers';
+
+const props = defineProps({
+    unreconciledTransactions: Array,
+    reconciledTransactions: Object, // Paginated
+    pendingInvoices: Array,
+    paymentMethods: Object,
+});
+
+const selectedTransaction = ref(null);
+const selectedInvoice = ref(null);
+const invoiceSearch = ref('');
+const fileInput = ref(null);
+
+const importForm = useForm({
+    file: null,
+    bank_name: 'BCA',
+});
+
+const matchForm = useForm({
+    bank_transaction_id: null,
+    sales_invoice_id: null,
+    payment_date: '',
+    payment_method: 'Transfer',
+    reference: '',
+    notes: '',
+});
+
+// Auto-match when transaction is selected
+const selectTransaction = (tr) => {
+    selectedTransaction.value = tr;
+    selectedInvoice.value = null;
+    
+    // 1. Auto-fill match form defaults
+    matchForm.payment_date = tr.transaction_date.split('T')[0];
+    matchForm.reference = tr.reference_number || '';
+    matchForm.notes = `Rekonsiliasi otomatis mutasi bank ${tr.bank_name} tanggal ${formatDate(tr.transaction_date)}: ${tr.description}`;
+
+    // 2. Try to find an exact amount match in pending invoices
+    const amountMatch = props.pendingInvoices.find(
+        (inv) => Math.round(inv.balance) === Math.round(tr.amount)
+    );
+    
+    if (amountMatch) {
+        selectedInvoice.value = amountMatch;
+        return;
+    }
+
+    // 3. Try to scan description for invoice number matches (e.g., matching '0015' or similar sequence)
+    for (const inv of props.pendingInvoices) {
+        // Extract sequence numbers from invoice number (e.g., "0015" from "0015/INV/JRI...")
+        const invNumOnly = inv.invoice_number.split('/')[0];
+        if (invNumOnly && tr.description.toLowerCase().includes(invNumOnly.toLowerCase())) {
+            selectedInvoice.value = inv;
+            return;
+        }
+    }
+};
+
+const handleFileChange = (e) => {
+    importForm.file = e.target.files[0];
+};
+
+const triggerFileInput = () => {
+    fileInput.value.click();
+};
+
+const submitImport = () => {
+    if (!importForm.file) return;
+    importForm.post(route('finance.reconciliation.import'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            importForm.reset('file');
+            if (fileInput.value) fileInput.value.value = '';
+        },
+    });
+};
+
+const submitMatch = () => {
+    if (!selectedTransaction.value || !selectedInvoice.value) return;
+    
+    matchForm.bank_transaction_id = selectedTransaction.value.id;
+    matchForm.sales_invoice_id = selectedInvoice.value.id;
+    
+    matchForm.post(route('finance.reconciliation.match'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            selectedTransaction.value = null;
+            selectedInvoice.value = null;
+            matchForm.reset();
+        },
+    });
+};
+
+// Filter pending invoices based on search query
+const filteredInvoices = computed(() => {
+    const query = invoiceSearch.value.toLowerCase().trim();
+    if (!query) return props.pendingInvoices;
+    
+    return props.pendingInvoices.filter((inv) => {
+        return (
+            inv.invoice_number.toLowerCase().includes(query) ||
+            inv.customer?.name.toLowerCase().includes(query) ||
+            inv.total.toString().includes(query) ||
+            inv.balance.toString().includes(query)
+        );
+    });
+});
+
+// Helper to determine if an invoice is a recommended match for the selected transaction
+const isRecommendedInvoice = (inv) => {
+    if (!selectedTransaction.value) return false;
+    
+    // Check if balance matches amount
+    const isAmountMatch = Math.round(inv.balance) === Math.round(selectedTransaction.value.amount);
+    
+    // Check if description includes part of the invoice number
+    const invNumOnly = inv.invoice_number.split('/')[0];
+    const isDescMatch = invNumOnly && selectedTransaction.value.description.toLowerCase().includes(invNumOnly.toLowerCase());
+    
+    return isAmountMatch || isDescMatch;
+};
+</script>
+
+<template>
+    <Head title="Rekonsiliasi Bank" />
+
+    <AppLayout title="Bank Statement Reconciliation">
+        <div class="max-w-full px-4 sm:px-6 lg:px-8 mx-auto">
+            <!-- Header -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Rekonsiliasi Rekening Koran</h1>
+                <p class="text-slate-500 text-sm mt-1">Import file mutasi bank (Excel/CSV) dan cocokkan langsung dengan Piutang / Invoice Pelanggan.</p>
+            </div>
+
+            <!-- Import Panel -->
+            <div class="rounded-3xl glass-card p-6 shadow-xl border border-slate-200 dark:border-slate-800 mb-8 bg-slate-50 dark:bg-slate-900/40">
+                <h2 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4">Upload Mutasi Bank</h2>
+                <form @submit.prevent="submitImport" class="flex flex-col md:flex-row items-end gap-4">
+                    <div class="w-full md:w-1/4">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Format Bank</label>
+                        <select 
+                            v-model="importForm.bank_name"
+                            class="w-full rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white py-2.5 px-4 focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                        >
+                            <option value="BCA">BCA (KlikBCA Bisnis)</option>
+                            <option value="Mandiri">Mandiri MCM (Excel)</option>
+                            <option value="Generic">Generic (Date, Desc, Kredit, Ref)</option>
+                        </select>
+                    </div>
+
+                    <div class="w-full md:flex-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Pilih File (Excel / CSV)</label>
+                        <div class="relative flex items-center">
+                            <input 
+                                type="file" 
+                                ref="fileInput" 
+                                @change="handleFileChange" 
+                                accept=".xlsx,.xls,.csv" 
+                                class="hidden" 
+                            />
+                            <button 
+                                type="button" 
+                                @click="triggerFileInput"
+                                class="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-300 font-medium transition-colors"
+                            >
+                                <ArrowUpOnSquareIcon class="h-5 w-5 text-blue-400" />
+                                <span>{{ importForm.file ? importForm.file.name : 'Pilih Berkas Mutasi...' }}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="w-full md:w-auto">
+                        <button 
+                            type="submit" 
+                            :disabled="!importForm.file || importForm.processing"
+                            class="w-full md:w-auto flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 px-8 py-2.5 text-sm font-bold text-white transition-all shadow-lg shadow-blue-500/25 disabled:opacity-50"
+                        >
+                            <ArrowPathIcon v-if="importForm.processing" class="h-4 w-4 animate-spin" />
+                            <span>{{ importForm.processing ? 'MEMPROSES...' : 'IMPORT MUTASI' }}</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Workspace Layout -->
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                
+                <!-- Left: Unreconciled Bank Transactions -->
+                <div class="xl:col-span-5 rounded-2xl glass-card shadow-lg overflow-hidden border border-slate-200 dark:border-slate-800">
+                    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/10 flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Mutasi Masuk (Kredit)</h3>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            {{ unreconciledTransactions.length }} Transaksi
+                        </span>
+                    </div>
+
+                    <div class="divide-y divide-slate-100 dark:divide-slate-800 max-h-[600px] overflow-y-auto">
+                        <div v-if="unreconciledTransactions.length === 0" class="p-8 text-center text-slate-500 italic">
+                            Tidak ada data mutasi masuk. Silakan import mutasi bank terlebih dahulu.
+                        </div>
+
+                        <div 
+                            v-for="tr in unreconciledTransactions" 
+                            :key="tr.id"
+                            @click="selectTransaction(tr)"
+                            class="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all cursor-pointer flex justify-between gap-4"
+                            :class="{ 'bg-blue-500/10 dark:bg-blue-500/10 border-l-4 border-blue-500': selectedTransaction?.id === tr.id }"
+                        >
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-slate-400 font-mono">{{ formatDate(tr.transaction_date) }}</span>
+                                    <span class="px-1.5 py-0.2 rounded text-[10px] font-bold uppercase border bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700">
+                                        {{ tr.bank_name }}
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-2 leading-relaxed">{{ tr.description }}</p>
+                                <span v-if="tr.reference_number" class="text-[9px] font-mono text-slate-500 block mt-1">Ref: {{ tr.reference_number }}</span>
+                            </div>
+                            <div class="text-right flex flex-col justify-between items-end">
+                                <span class="text-sm font-bold text-emerald-400 font-mono">+{{ formatCurrency(tr.amount) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Selection & Matching Console -->
+                <div class="xl:col-span-7 space-y-6">
+                    <div class="rounded-2xl glass-card shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/10">
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Rekonsiliasi Console</h3>
+                        </div>
+
+                        <!-- Not Selected State -->
+                        <div v-if="!selectedTransaction" class="p-8 text-center text-slate-500 flex flex-col items-center justify-center min-h-[300px]">
+                            <ExclamationCircleIcon class="h-10 w-10 text-slate-400 mb-2" />
+                            <p class="text-sm font-medium">Pilih salah satu mutasi masuk di kolom kiri untuk memulai pencocokan.</p>
+                        </div>
+
+                        <!-- Selected State Console -->
+                        <div v-else class="p-6 space-y-6">
+                            
+                            <!-- Chosen Mutasi Summary -->
+                            <div class="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 flex justify-between gap-4">
+                                <div>
+                                    <span class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Mutasi Terpilih</span>
+                                    <p class="text-xs text-slate-900 dark:text-white font-medium mt-1 leading-relaxed">{{ selectedTransaction.description }}</p>
+                                    <div class="flex items-center gap-3 mt-2 text-[10px] text-slate-500">
+                                        <span>Tanggal: <strong class="font-bold">{{ formatDate(selectedTransaction.transaction_date) }}</strong></span>
+                                        <span>Bank: <strong class="font-bold">{{ selectedTransaction.bank_name }}</strong></span>
+                                    </div>
+                                </div>
+                                <div class="text-right flex flex-col justify-center">
+                                    <span class="text-xs text-slate-400 font-bold uppercase">Jumlah Mutasi</span>
+                                    <span class="text-lg font-black text-emerald-400 font-mono">{{ formatCurrency(selectedTransaction.amount) }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Invoice Search and Selector -->
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Sales Invoice Pembayar *</label>
+                                    <input 
+                                        v-model="invoiceSearch" 
+                                        type="text" 
+                                        placeholder="Cari No Invoice / Pelanggan..." 
+                                        class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-1.5 px-3 text-xs w-64 text-slate-900 dark:text-white placeholder:text-slate-500 focus:ring-1 focus:ring-blue-500"
+                                    />
+                                </div>
+
+                                <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-[220px] overflow-y-auto">
+                                    <table class="w-full text-left text-xs">
+                                        <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800">
+                                            <tr class="bg-slate-50 dark:bg-slate-800/40 text-slate-500 font-bold uppercase">
+                                                <th class="px-4 py-2.5">Invoice #</th>
+                                                <th class="px-4 py-2.5">Pelanggan</th>
+                                                <th class="px-4 py-2.5 text-right">Balance</th>
+                                                <th class="px-4 py-2.5 text-center">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                            <tr v-if="filteredInvoices.length === 0" class="text-center text-slate-500 italic">
+                                                <td colspan="4" class="py-6">Tidak ada invoice pending yang cocok.</td>
+                                            </tr>
+                                            <tr 
+                                                v-for="inv in filteredInvoices" 
+                                                :key="inv.id"
+                                                @click="selectedInvoice = inv"
+                                                class="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all"
+                                                :class="{ 
+                                                    'bg-blue-500/10 dark:bg-blue-500/10': selectedInvoice?.id === inv.id,
+                                                    'bg-emerald-500/5 dark:bg-emerald-500/5': isRecommendedInvoice(inv) && selectedInvoice?.id !== inv.id 
+                                                }"
+                                            >
+                                                <td class="px-4 py-3 font-medium">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="font-mono text-slate-900 dark:text-white">{{ inv.invoice_number }}</span>
+                                                        <span 
+                                                            v-if="isRecommendedInvoice(inv)"
+                                                            class="flex items-center gap-0.5 px-1 py-0.1 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase"
+                                                        >
+                                                            <SparklesIcon class="h-3 w-3 animate-pulse" />
+                                                            Rekomendasi
+                                                        </span>
+                                                    </div>
+                                                    <span class="text-[9px] text-slate-500 font-mono block mt-0.5">PO: {{ inv.sales_order?.customer_po_number || '-' }}</span>
+                                                </td>
+                                                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ inv.customer?.name }}</td>
+                                                <td class="px-4 py-3 text-right font-bold font-mono text-slate-900 dark:text-white">{{ formatCurrency(inv.balance) }}</td>
+                                                <td class="px-4 py-3 text-center uppercase text-[10px] font-bold">
+                                                    <span :class="inv.status === 'partial' ? 'text-amber-400' : 'text-blue-400'">{{ inv.status }}</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Match Details Form -->
+                            <div v-if="selectedInvoice" class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-200 dark:border-slate-800 pt-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tanggal Pembayaran *</label>
+                                    <input 
+                                        v-model="matchForm.payment_date"
+                                        type="date"
+                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Metode Pembayaran *</label>
+                                    <select 
+                                        v-model="matchForm.payment_method"
+                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                                        required
+                                    >
+                                        <option v-for="(label, value) in paymentMethods" :key="value" :value="value">{{ label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">No. Referensi / Ref *</label>
+                                    <input 
+                                        v-model="matchForm.reference"
+                                        type="text"
+                                        placeholder="TRF-..."
+                                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- Match Form Submissions -->
+                            <div v-if="selectedInvoice" class="flex gap-4 border-t border-slate-200 dark:border-slate-800 pt-4">
+                                <button 
+                                    type="button" 
+                                    @click="selectedInvoice = null"
+                                    class="flex-1 py-3 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                >
+                                    Batal Cocokkan
+                                </button>
+                                <button 
+                                    type="button" 
+                                    @click="submitMatch"
+                                    :disabled="matchForm.processing"
+                                    class="flex-1 py-3 text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2"
+                                >
+                                    <CheckCircleIcon v-if="!matchForm.processing" class="h-5 w-5" />
+                                    <ArrowPathIcon v-else class="h-4 w-4 animate-spin" />
+                                    <span>{{ matchForm.processing ? 'MEMPROSES...' : 'COCOKKAN & BAYAR' }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History of Reconciled Transactions -->
+            <div class="rounded-2xl glass-card shadow-lg overflow-hidden border border-slate-200 dark:border-slate-800 mt-8">
+                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/10 flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Riwayat Rekonsiliasi</h3>
+                </div>
+
+                <div class="overflow-x-auto relative">
+                    <table class="w-full text-left text-sm">
+                        <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800">
+                            <tr class="bg-slate-50 dark:bg-slate-800/30 text-slate-500 font-bold uppercase text-xs">
+                                <th class="px-6 py-4">Tanggal Mutasi</th>
+                                <th class="px-6 py-4">Deskripsi Mutasi</th>
+                                <th class="px-6 py-4 text-right">Nominal</th>
+                                <th class="px-6 py-4">Matched Invoice</th>
+                                <th class="px-6 py-4">Pelanggan</th>
+                                <th class="px-6 py-4">Reconciled At</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tr v-if="reconciledTransactions.data.length === 0" class="text-center text-slate-500 italic">
+                                <td colspan="6" class="py-8">Belum ada mutasi yang direkonsiliasi.</td>
+                            </tr>
+                            <tr v-for="tr in reconciledTransactions.data" :key="tr.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-slate-500">{{ formatDate(tr.transaction_date) }}</td>
+                                <td class="px-6 py-4 text-xs">
+                                    <div class="text-slate-900 dark:text-white font-medium max-w-md truncate" :title="tr.description">{{ tr.description }}</div>
+                                    <span class="inline-flex items-center rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-400 mt-1">
+                                        {{ tr.bank_name }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right font-bold font-mono text-emerald-400">{{ formatCurrency(tr.amount) }}</td>
+                                <td class="px-6 py-4 font-mono text-xs">
+                                    <span class="text-blue-400">{{ tr.sales_payment?.sales_invoice?.invoice_number || 'INV-Deleted' }}</span>
+                                    <div v-if="tr.sales_payment" class="text-[10px] text-slate-500 mt-0.5">Payment Ref: {{ tr.sales_payment.payment_number }}</div>
+                                </td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-300 text-xs">{{ tr.sales_payment?.sales_invoice?.customer?.name || '-' }}</td>
+                                <td class="px-6 py-4 text-xs text-slate-500">
+                                    {{ tr.reconciled_at ? formatDate(tr.reconciled_at) : '-' }}
+                                    <div class="text-[10px] text-slate-500 mt-0.5">by {{ tr.created_by?.name || 'System' }}</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div v-if="reconciledTransactions.links.length > 3" class="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                    <div class="text-xs text-slate-500">
+                        Showing {{ reconciledTransactions.from }} to {{ reconciledTransactions.to }} of {{ reconciledTransactions.total }} records
+                    </div>
+                    <div class="flex gap-1">
+                        <template v-for="(link, key) in reconciledTransactions.links" :key="key">
+                            <span 
+                                v-if="link.url === null" 
+                                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs text-slate-400 cursor-not-allowed" 
+                                v-html="link.label"
+                            ></span>
+                            <Link 
+                                v-else 
+                                :href="link.url" 
+                                class="px-3 py-1.5 rounded-lg border text-xs transition-all"
+                                :class="link.active 
+                                    ? 'bg-blue-600 border-blue-600 text-white font-bold' 
+                                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                                v-html="link.label"
+                                preserve-scroll
+                            />
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </AppLayout>
+</template>

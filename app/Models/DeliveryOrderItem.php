@@ -33,6 +33,11 @@ class DeliveryOrderItem extends Model
         'notes',
         'is_loaded',
         'qty_invoiced',
+        'inchi',
+        'od',
+        'tebal',
+        'panjang',
+        'kg_delivered',
     ];
 
     protected $casts = [
@@ -40,6 +45,11 @@ class DeliveryOrderItem extends Model
         'qty_delivered' => 'float',
         'qty_invoiced' => 'float',
         'is_loaded' => 'boolean',
+        'inchi' => 'string',
+        'od' => 'float',
+        'tebal' => 'float',
+        'panjang' => 'float',
+        'kg_delivered' => 'float',
     ];
 
     protected static function boot()
