@@ -34,16 +34,22 @@ class QualityControlSeeder extends Seeder
         }
         
         // Create Quality Control Role
+        $qcRoleExists = Role::where('name', 'Quality Control Manager')->exists();
         $qcRole = Role::firstOrCreate(['name' => 'Quality Control Manager']);
-        $qcRole->givePermissionTo($permissions);
+        if (!$qcRoleExists) {
+            $qcRole->givePermissionTo($permissions);
+        }
 
+        $inspectorRoleExists = Role::where('name', 'Quality Inspector')->exists();
         $inspectorRole = Role::firstOrCreate(['name' => 'Quality Inspector']);
-        $inspectorRole->givePermissionTo([
-            'qc.view',
-            'qc.dashboard.view',
-            'qc.incoming_inspection.view',
-            'qc.in-process_qc.view',
-            'qc.ncr.view',
-        ]);
+        if (!$inspectorRoleExists) {
+            $inspectorRole->givePermissionTo([
+                'qc.view',
+                'qc.dashboard.view',
+                'qc.incoming_inspection.view',
+                'qc.in-process_qc.view',
+                'qc.ncr.view',
+            ]);
+        }
     }
 }

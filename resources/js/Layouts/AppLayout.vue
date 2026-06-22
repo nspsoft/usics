@@ -474,7 +474,6 @@ const navigation = [
         href: '#', 
         icon: UsersIcon, 
         current: false,
-        permission: 'hr_payroll.view',
         children: [
             { name: 'Employee Self Service', isHeader: true },
             { name: 'Smart Attendance', href: '/employee/attendance/clock', icon: VideoCameraIcon },
@@ -518,9 +517,10 @@ const navigation = [
         href: '#', 
         icon: BriefcaseIcon, 
         current: false,
+        permission: 'project_matrix.view',
         children: [
-            { name: 'Project Dashboard', href: '/projects', icon: PresentationChartBarIcon },
-            { name: 'Initiate Project', href: '/projects/create', icon: PlusCircleIcon },
+            { name: 'Project Dashboard', href: '/projects', icon: PresentationChartBarIcon, permission: 'project_matrix.projects.view' },
+            { name: 'Initiate Project', href: '/projects/create', icon: PlusCircleIcon, permission: 'project_matrix.projects.create' },
         ]
     },
     {

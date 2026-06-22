@@ -17,7 +17,7 @@ class AttendanceRequestController extends Controller
     public function approve(Request $request, AttendanceRequest $attendanceRequest)
     {
         $user = auth()->user();
-        if (!$user || (!$user->hasAnyRole(['Super Admin', 'Administrator', 'HR']) && !$user->can('hr.attendance.approve'))) {
+        if (!$user || (!$user->hasAnyRole(['Super Admin', 'Administrator', 'HR', 'HR & Payroll']) && !$user->can('hr_payroll.attendance.edit'))) {
             return redirect()->back()->with('error', 'Akses ditolak.');
         }
 
@@ -81,7 +81,7 @@ class AttendanceRequestController extends Controller
     public function reject(Request $request, AttendanceRequest $attendanceRequest)
     {
         $user = auth()->user();
-        if (!$user || (!$user->hasAnyRole(['Super Admin', 'Administrator', 'HR']) && !$user->can('hr.attendance.approve'))) {
+        if (!$user || (!$user->hasAnyRole(['Super Admin', 'Administrator', 'HR', 'HR & Payroll']) && !$user->can('hr_payroll.attendance.edit'))) {
             return redirect()->back()->with('error', 'Akses ditolak.');
         }
 

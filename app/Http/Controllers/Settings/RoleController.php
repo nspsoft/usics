@@ -62,6 +62,7 @@ class RoleController extends Controller
             'maintenance' => 'Maintenance',
             'general_affair' => 'General Affair',
             'meeting_command' => 'Meeting Command',
+            'project_matrix' => 'Project Matrix',
             'settings' => 'Settings'
         ];
 

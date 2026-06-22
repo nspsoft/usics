@@ -106,11 +106,14 @@ class DriverRoleSeeder extends Seeder
         // ========================================
         // Create Driver Role & assign driver perms
         // ========================================
+        $driverRoleExists = Role::where('name', 'Driver')->exists();
         $driverRole = Role::firstOrCreate([
             'name' => 'Driver',
             'guard_name' => 'web',
         ]);
-        $driverRole->syncPermissions($driverPerms);
+        if (!$driverRoleExists) {
+            $driverRole->syncPermissions($driverPerms);
+        }
 
         // ========================================
         // Give Super Admin all new permissions

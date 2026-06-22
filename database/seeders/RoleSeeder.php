@@ -57,6 +57,9 @@ class RoleSeeder extends Seeder
             'Meeting Command' => [
                 'Dashboard List', 'New Meeting'
             ],
+            'Project Matrix' => [
+                'Projects'
+            ],
             'Settings' => [
                 'User Management', 'Roles & Permissions', 'Company Profile', 'AI Configuration', 'Document Numbering', 'Regional & Tax', 'System Preferences', 'Workflow Approval', 'Mobile Navbar', 'Import & Export', 'Database Management', 'Activity Logs'
             ]
@@ -100,10 +103,16 @@ class RoleSeeder extends Seeder
         ];
 
         foreach ($roles as $roleName) {
+            $roleExists = Role::where('name', $roleName)->exists();
             $role = Role::firstOrCreate(['name' => $roleName]);
             
             if ($roleName === 'Super Admin') {
                 $role->syncPermissions(Permission::all());
+                continue;
+            }
+
+            if ($roleExists) {
+                // Skip syncing default permissions for roles that already exist to preserve custom configuration
                 continue;
             }
 

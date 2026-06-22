@@ -30,6 +30,11 @@ class LeaveController extends Controller
 
     public function approve(Leave $leave)
     {
+        $user = auth()->user();
+        if (!$user || (!$user->hasAnyRole(['Super Admin', 'Administrator', 'HR', 'HR & Payroll']) && !$user->can('hr_payroll.leave_management.edit'))) {
+            return redirect()->back()->with('error', 'Akses ditolak.');
+        }
+
         if ($leave->status !== 'pending') {
             return back()->with('error', 'Only pending requests can be approved.');
         }
@@ -67,6 +72,11 @@ class LeaveController extends Controller
 
     public function reject(Request $request, Leave $leave)
     {
+        $user = auth()->user();
+        if (!$user || (!$user->hasAnyRole(['Super Admin', 'Administrator', 'HR', 'HR & Payroll']) && !$user->can('hr_payroll.leave_management.edit'))) {
+            return redirect()->back()->with('error', 'Akses ditolak.');
+        }
+
         if ($leave->status !== 'pending') {
             return back()->with('error', 'Only pending requests can be rejected.');
         }
