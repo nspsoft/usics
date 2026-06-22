@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -49,9 +49,31 @@ const verifiedEmployeeName = ref('');
 const isDetectingLoop = ref(false);
 let detectionInterval = null;
 
+const livenessVerified = ref(false);
+const eyeClosed = ref(false);
+
 const registeredDescriptor = props.employee.face_descriptor 
     ? new Float32Array(JSON.parse(props.employee.face_descriptor))
     : null;
+
+const livenessRequired = computed(() => !!registeredDescriptor);
+
+const getEar = (eyePoints) => {
+    const p1 = eyePoints[0];
+    const p2 = eyePoints[1];
+    const p3 = eyePoints[2];
+    const p4 = eyePoints[3];
+    const p5 = eyePoints[4];
+    const p6 = eyePoints[5];
+    
+    const dist = (a, b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+    
+    const vertical1 = dist(p2, p6);
+    const vertical2 = dist(p3, p5);
+    const horizontal = dist(p1, p4);
+    
+    return (vertical1 + vertical2) / (2.0 * horizontal);
+};
 
 const runFaceDetectionLoop = async () => {
     if (!videoRef.value || !stream.value || !isDetectingLoop.value) return;
@@ -76,7 +98,29 @@ const runFaceDetectionLoop = async () => {
                 if (faceDistance < 0.6) {
                     isVerified = true;
                     verifiedEmployeeName.value = props.employee.full_name;
-                    statusMessage.value = `Face matched: ${props.employee.full_name}`;
+                    
+                    // Liveness detection logic
+                    const landmarks = detection.landmarks;
+                    const leftEye = landmarks.getLeftEye();
+                    const rightEye = landmarks.getRightEye();
+                    const leftEar = getEar(leftEye);
+                    const rightEar = getEar(rightEye);
+                    const averageEar = (leftEar + rightEar) / 2.0;
+                    
+                    if (!livenessVerified.value) {
+                        if (averageEar < 0.22) {
+                            eyeClosed.value = true;
+                            statusMessage.value = 'Mata tertutup (Silakan buka mata kembali)...';
+                        } else if (eyeClosed.value && averageEar > 0.25) {
+                            eyeClosed.value = false;
+                            livenessVerified.value = true;
+                            statusMessage.value = `Liveness verified! Face matched: ${props.employee.full_name}`;
+                        } else {
+                            statusMessage.value = 'Silakan kedipkan mata Anda untuk memverifikasi keaktifan wajah (Liveness Check)';
+                        }
+                    } else {
+                        statusMessage.value = `Liveness Verified. Face matched: ${props.employee.full_name}`;
+                    }
                 } else {
                     verifiedEmployeeName.value = '';
                     statusMessage.value = 'Face mismatch (Unknown Face)';
@@ -301,6 +345,14 @@ onUnmounted(() => {
                              style="width: 480px; height: 360px;">
                             <video ref="videoRef" width="480" height="360" autoplay muted class="absolute top-0 left-0 w-full h-full object-cover"></video>
                             <canvas ref="canvasRef" width="480" height="360" class="absolute top-0 left-0 w-full h-full pointer-events-none z-10"></canvas>
+                            
+                            <!-- Liveness Status Badge -->
+                            <div v-if="livenessRequired" class="absolute top-4 right-4 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2 z-20 shadow-lg">
+                                <div class="h-2 w-2 rounded-full" :class="livenessVerified ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'"></div>
+                                <span class="text-[10px] font-bold text-white uppercase tracking-wider font-mono">
+                                    {{ livenessVerified ? 'Liveness Verified' : 'Blink to verify' }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                     
@@ -308,16 +360,16 @@ onUnmounted(() => {
                         <PrimaryButton 
                             v-if="!todayAttendance?.time_in"
                             @click="captureAndClock" 
-                            :disabled="isLoading || !inRadius || form.processing" 
-                            class="py-2.5 px-8 text-base bg-indigo-600 hover:bg-indigo-700">
+                            :disabled="isLoading || !inRadius || form.processing || (livenessRequired && !livenessVerified)" 
+                            class="py-2.5 px-8 text-base bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition-all">
                             {{ form.processing ? 'Clocking In...' : 'Clock In' }}
                         </PrimaryButton>
                         
                         <PrimaryButton 
                             v-else-if="!todayAttendance?.time_out"
                             @click="captureAndClock" 
-                            :disabled="isLoading || !inRadius || form.processing" 
-                            class="py-2.5 px-8 text-base bg-orange-600 hover:bg-orange-700 focus:bg-orange-700 active:bg-orange-900">
+                            :disabled="isLoading || !inRadius || form.processing || (livenessRequired && !livenessVerified)" 
+                            class="py-2.5 px-8 text-base bg-orange-600 hover:bg-orange-700 focus:bg-orange-700 active:bg-orange-900 disabled:opacity-50 transition-all">
                             {{ form.processing ? 'Clocking Out...' : 'Clock Out' }}
                         </PrimaryButton>
                         
