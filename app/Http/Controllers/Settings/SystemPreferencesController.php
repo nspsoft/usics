@@ -14,6 +14,8 @@ class SystemPreferencesController extends Controller
      */
     public function index()
     {
+        $settings = AppSetting::first() ?? new AppSetting();
+
         return Inertia::render('Settings/SystemPreferences', [
             'preferences' => [
                 // UI/UX
@@ -36,6 +38,11 @@ class SystemPreferencesController extends Controller
                 
                 // Security
                 'session_timeout' => AppSetting::get('session_timeout', 120),
+
+                // Smart Attendance
+                'office_latitude' => $settings->office_latitude ?? '',
+                'office_longitude' => $settings->office_longitude ?? '',
+                'max_radius_meters' => $settings->max_radius_meters ?? 50,
             ],
         ]);
     }
@@ -49,7 +56,38 @@ class SystemPreferencesController extends Controller
             'preferences' => 'required|array',
         ]);
 
+        // Extract and update the Smart Attendance columns directly on the first AppSetting row if present
+        $appSettings = AppSetting::first() ?? new AppSetting();
+        
+        $hasOfficeCols = false;
+        if (array_key_exists('office_latitude', $validated['preferences'])) {
+            $appSettings->office_latitude = $validated['preferences']['office_latitude'];
+            $hasOfficeCols = true;
+        }
+        if (array_key_exists('office_longitude', $validated['preferences'])) {
+            $appSettings->office_longitude = $validated['preferences']['office_longitude'];
+            $hasOfficeCols = true;
+        }
+        if (array_key_exists('max_radius_meters', $validated['preferences'])) {
+            $appSettings->max_radius_meters = $validated['preferences']['max_radius_meters'];
+            $hasOfficeCols = true;
+        }
+        
+        if ($hasOfficeCols) {
+            // If it's a new model, we might need a default key/value to save it successfully if key is required
+            if (!$appSettings->exists) {
+                $appSettings->key = 'office_location';
+                $appSettings->value = ['value' => 'office_location'];
+                $appSettings->group = 'system';
+            }
+            $appSettings->save();
+        }
+
         foreach ($validated['preferences'] as $key => $value) {
+            // Do not save columns as key-value rows
+            if (in_array($key, ['office_latitude', 'office_longitude', 'max_radius_meters'])) {
+                continue;
+            }
             AppSetting::set($key, $value, 'system', ucwords(str_replace('_', ' ', $key)));
         }
 

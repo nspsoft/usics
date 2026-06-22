@@ -15,7 +15,9 @@ import {
     ExclamationCircleIcon,
     ArrowUpTrayIcon,
     DocumentArrowDownIcon,
-    XMarkIcon
+    XMarkIcon,
+    PencilSquareIcon,
+    TrashIcon
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
@@ -122,6 +124,64 @@ const rejectRequest = (requestId) => {
     if (reason) {
         rejectRequestForm.rejection_reason = reason;
         rejectRequestForm.post(route('attendance-requests.reject', requestId), { preserveScroll: true });
+    }
+};
+
+// Edit & Delete feature implementation
+const can = (permission) => {
+    if (!page.props.auth) return false;
+    if (page.props.auth.roles?.includes('Super Admin')) return true;
+    return page.props.auth.permissions?.includes(permission);
+};
+
+const showEditModal = ref(false);
+const editingLog = ref(null);
+
+const editForm = useForm({
+    date: '',
+    clock_in: '',
+    clock_out: '',
+    status: '',
+    note: '',
+});
+
+const getTimeString = (dateTime) => {
+    if (!dateTime) return '';
+    const match = dateTime.match(/(?:T|\s)(\d{2}:\d{2})/);
+    if (match) return match[1];
+    
+    const d = new Date(dateTime);
+    if (isNaN(d.getTime())) return '';
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+};
+
+const openEditModal = (log) => {
+    editingLog.value = log;
+    editForm.date = log.date;
+    editForm.clock_in = getTimeString(log.clock_in);
+    editForm.clock_out = getTimeString(log.clock_out);
+    editForm.status = log.status;
+    editForm.note = log.note || '';
+    showEditModal.value = true;
+};
+
+const submitEditForm = () => {
+    editForm.put(route('hr.attendance.update', editingLog.value.id), {
+        onSuccess: () => {
+            showEditModal.value = false;
+            editingLog.value = null;
+            editForm.reset();
+        },
+    });
+};
+
+const deleteAttendance = (logId) => {
+    if (confirm('Apakah Anda yakin ingin menghapus data absensi ini?')) {
+        router.delete(route('hr.attendance.destroy', logId), {
+            preserveScroll: true
+        });
     }
 };
 </script>
@@ -296,14 +356,32 @@ const rejectRequest = (requestId) => {
                                     </span>
                                 </td>
                                 <td class="px-8 py-5 text-right">
-                                    <button 
-                                        v-if="!log.clock_out"
-                                        @click="performClockOut(log.id)"
-                                        class="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-400/10 rounded-xl transition-all border border-slate-200 dark:border-slate-700 hover:border-blue-500/30"
-                                        title="Force Clock Out"
-                                    >
-                                        <ArrowLeftOnRectangleIcon class="h-5 w-5" />
-                                    </button>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button 
+                                            v-if="!log.clock_out"
+                                            @click="performClockOut(log.id)"
+                                            class="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-400/10 rounded-xl transition-all border border-slate-200 dark:border-slate-700 hover:border-blue-500/30"
+                                            title="Force Clock Out"
+                                        >
+                                            <ArrowLeftOnRectangleIcon class="h-5 w-5" />
+                                        </button>
+                                        <button 
+                                            v-if="can('hr_payroll.attendance.edit')"
+                                            @click="openEditModal(log)"
+                                            class="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-400 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-400/10 rounded-xl transition-all border border-slate-200 dark:border-slate-700 hover:border-indigo-500/30"
+                                            title="Edit Attendance"
+                                        >
+                                            <PencilSquareIcon class="h-5 w-5" />
+                                        </button>
+                                        <button 
+                                            v-if="can('hr_payroll.attendance.delete')"
+                                            @click="deleteAttendance(log.id)"
+                                            class="p-2 text-slate-500 dark:text-slate-400 hover:text-red-400 bg-slate-50 dark:bg-slate-800 hover:bg-red-400/10 rounded-xl transition-all border border-slate-200 dark:border-slate-700 hover:border-red-500/30"
+                                            title="Delete Attendance"
+                                        >
+                                            <TrashIcon class="h-5 w-5" />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             <tr v-if="!attendances.data.length">
@@ -465,6 +543,113 @@ const rejectRequest = (requestId) => {
                                             class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-900/20 hover:bg-indigo-500 disabled:opacity-50 transition-all"
                                         >
                                             Start Import
+                                        </button>
+                                    </div>
+                                </form>
+                            </DialogPanel>
+                        </TransitionChild>
+                    </div>
+                </div>
+            </Dialog>
+        </TransitionRoot>
+
+        <!-- Edit Attendance Modal -->
+        <TransitionRoot as="template" :show="showEditModal">
+            <Dialog as="div" class="relative z-[100]" @close="showEditModal = false">
+                <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0" enter-to="opacity-100" leave="ease-in duration-200" leave-from="opacity-100" leave-to="opacity-0">
+                    <div class="fixed inset-0 bg-white dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" />
+                </TransitionChild>
+
+                <div class="fixed inset-0 z-10 overflow-y-auto">
+                    <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                        <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" enter-to="opacity-100 translate-y-0 sm:scale-100" leave="ease-in duration-200" leave-from="opacity-100 translate-y-0 sm:scale-100" leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+                            <DialogPanel class="relative transform overflow-hidden rounded-[2rem] glass-card text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+                                <form @submit.prevent="submitEditForm">
+                                    <div class="px-8 py-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-950/50">
+                                        <DialogTitle as="h3" class="text-xl font-bold text-slate-900 dark:text-white">
+                                            Edit Attendance Log
+                                        </DialogTitle>
+                                        <button @click="showEditModal = false" type="button" class="text-slate-500 hover:text-slate-900 dark:text-white transition-colors">
+                                            <XMarkIcon class="h-7 w-7" />
+                                        </button>
+                                    </div>
+
+                                    <div class="p-8 space-y-4">
+                                        <div v-if="editingLog" class="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 space-y-1">
+                                            <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Employee</div>
+                                            <div class="text-sm font-bold text-slate-900 dark:text-white">{{ editingLog.employee?.full_name }}</div>
+                                            <div class="text-xs text-slate-500 font-mono">{{ editingLog.employee?.nik }}</div>
+                                        </div>
+
+                                        <div class="space-y-2">
+                                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Date</label>
+                                            <input 
+                                                type="date" 
+                                                v-model="editForm.date"
+                                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50" 
+                                                required
+                                            />
+                                            <p v-if="editForm.errors.date" class="text-[10px] text-red-500 italic">{{ editForm.errors.date }}</p>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div class="space-y-2">
+                                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Clock In</label>
+                                                <input 
+                                                    type="time" 
+                                                    v-model="editForm.clock_in"
+                                                    class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50" 
+                                                />
+                                                <p v-if="editForm.errors.clock_in" class="text-[10px] text-red-500 italic">{{ editForm.errors.clock_in }}</p>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Clock Out</label>
+                                                <input 
+                                                    type="time" 
+                                                    v-model="editForm.clock_out"
+                                                    class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50" 
+                                                />
+                                                <p v-if="editForm.errors.clock_out" class="text-[10px] text-red-500 italic">{{ editForm.errors.clock_out }}</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="space-y-2">
+                                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</label>
+                                            <select 
+                                                v-model="editForm.status"
+                                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50"
+                                                required
+                                            >
+                                                <option value="present">Present</option>
+                                                <option value="late">Late</option>
+                                                <option value="absent">Absent</option>
+                                                <option value="leave">On Leave</option>
+                                                <option value="sick">Sick</option>
+                                                <option value="overtime">Overtime</option>
+                                            </select>
+                                            <p v-if="editForm.errors.status" class="text-[10px] text-red-500 italic">{{ editForm.errors.status }}</p>
+                                        </div>
+
+                                        <div class="space-y-2">
+                                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Note / Keterangan</label>
+                                            <textarea 
+                                                v-model="editForm.note"
+                                                rows="3"
+                                                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50"
+                                                placeholder="Keterangan perubahan..."
+                                            ></textarea>
+                                            <p v-if="editForm.errors.note" class="text-[10px] text-red-500 italic">{{ editForm.errors.note }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="px-8 py-6 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-4">
+                                        <button @click="showEditModal = false" type="button" class="px-6 py-2.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">Cancel</button>
+                                        <button 
+                                            type="submit" 
+                                            :disabled="editForm.processing"
+                                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-900/20 hover:bg-indigo-500 disabled:opacity-50 transition-all"
+                                        >
+                                            Save Changes
                                         </button>
                                     </div>
                                 </form>

@@ -20,10 +20,18 @@ const props = defineProps({
 
 const isEditing = computed(() => !!props.workOrder);
 
+const getFinishedGoodsWarehouseId = () => {
+    if (props.workOrder?.warehouse_id) return props.workOrder.warehouse_id;
+    const found = props.warehouses?.find(w => 
+        w.name && w.name.toLowerCase().replace(/[^a-z0-9]/g, '') === 'finishedgoods'
+    );
+    return found ? found.id : '';
+};
+
 const form = useForm({
     wo_number: props.workOrder?.wo_number || props.woNumber || '',
     bom_id: props.workOrder?.bom_id || '',
-    warehouse_id: props.workOrder?.warehouse_id || '',
+    warehouse_id: getFinishedGoodsWarehouseId(),
     material_warehouse_id: props.workOrder?.material_warehouse_id || props.defaultMaterialWarehouseId || '',
     qty_planned: props.workOrder?.qty_planned || 1,
     planned_start: props.workOrder?.planned_start?.split('T')[0] || new Date().toISOString().split('T')[0],

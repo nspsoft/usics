@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class FinanceReportController extends Controller
 {
-    public function profitAndLoss()
+    public function profitAndLoss(Request $request)
     {
         // Structure:
         // Revenue
@@ -23,9 +23,12 @@ class FinanceReportController extends Controller
         // - Operational
         // Net Profit (calc)
 
-        $revenue = $this->getCategoryBreakdown('Revenue');
-        $cogs = $this->getCategoryBreakdown('Expense', '5100'); // Specifically COGS
-        $expenses = $this->getCategoryBreakdown('Expense', null, ['5100']); // Expenses excluding COGS
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        $revenue = $this->getCategoryBreakdown('Revenue', null, [], $startDate, $endDate);
+        $cogs = $this->getCategoryBreakdown('Expense', '5100', [], $startDate, $endDate); // Specifically COGS
+        $expenses = $this->getCategoryBreakdown('Expense', null, ['5100'], $startDate, $endDate); // Expenses excluding COGS
 
         $totalRevenue = $revenue->sum('total');
         $totalCogs = $cogs->sum('total');
@@ -43,11 +46,12 @@ class FinanceReportController extends Controller
                 'expenses' => $expenses,
                 'total_expenses' => $totalExpenses,
                 'net_profit' => $netProfit
-            ]
+            ],
+            'filters' => $request->only(['start_date', 'end_date'])
         ]);
     }
 
-    private function getCategoryBreakdown($type, $specificCode = null, $excludedCodes = [])
+    private function getCategoryBreakdown($type, $specificCode = null, $excludedCodes = [], $startDate = null, $endDate = null)
     {
         $query = JournalItem::whereHas('coa', function($q) use ($type, $specificCode, $excludedCodes) {
             $q->where('type', $type);
@@ -58,6 +62,12 @@ class FinanceReportController extends Controller
                 $q->whereNotIn('code', $excludedCodes);
             }
         });
+
+        if ($startDate && $endDate) {
+            $query->whereHas('journal', function($q) use ($startDate, $endDate) {
+                $q->whereBetween('date', [$startDate, $endDate]);
+            });
+        }
 
         // Sum Debit - Credit
         $results = $query->join('coas', 'journal_items.coa_id', '=', 'coas.id')

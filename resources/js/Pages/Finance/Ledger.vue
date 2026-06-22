@@ -7,7 +7,8 @@ import {
     CalendarIcon,
     ChevronDownIcon,
     ChevronUpIcon,
-    DocumentTextIcon
+    DocumentTextIcon,
+    ArrowPathIcon
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 import { formatDate } from '@/helpers';
@@ -17,8 +18,12 @@ const props = defineProps({
     filters: Object
 });
 
-const search = ref(props.filters.search || '');
+const search = ref(props.filters?.search || '');
+const startDate = ref(props.filters?.start_date || '');
+const endDate = ref(props.filters?.end_date || '');
+const selectedPeriod = ref('custom');
 const expandedRows = ref(new Set());
+const isSyncing = ref(false);
 
 const toggleRow = (id) => {
     if (expandedRows.value.has(id)) {
@@ -28,13 +33,70 @@ const toggleRow = (id) => {
     }
 };
 
-const handleSearch = debounce(() => {
-    router.get(route('finance.ledger'), { search: search.value }, { preserveState: true, replace: true });
-}, 300);
+const applyFilters = () => {
+    router.get(route('finance.ledger'), { 
+        search: search.value,
+        start_date: startDate.value,
+        end_date: endDate.value
+    }, { preserveState: true, replace: true });
+};
+
+const handleSearch = debounce(applyFilters, 300);
+
+watch([startDate, endDate], () => {
+    applyFilters();
+});
+
+const applyPeriod = (period) => {
+    selectedPeriod.value = period;
+    const now = new Date();
+    
+    if (period === 'this_month') {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        startDate.value = formatDateForInput(start);
+        endDate.value = formatDateForInput(end);
+    } else if (period === 'last_month') {
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const end = new Date(now.getFullYear(), now.getMonth(), 0);
+        startDate.value = formatDateForInput(start);
+        endDate.value = formatDateForInput(end);
+    } else if (period === 'this_year') {
+        const start = new Date(now.getFullYear(), 0, 1);
+        const end = new Date(now.getFullYear(), 11, 31);
+        startDate.value = formatDateForInput(start);
+        endDate.value = formatDateForInput(end);
+    } else if (period === 'all') {
+        startDate.value = '';
+        endDate.value = '';
+    }
+};
+
+const formatDateForInput = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
 
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { 
     style: 'currency', currency: 'IDR', maximumFractionDigits: 0 
 }).format(value);
+
+const syncLedger = () => {
+    isSyncing.value = true;
+    router.post(route('finance.ledger.sync'), {}, {
+        onSuccess: () => {
+            isSyncing.value = false;
+        },
+        onError: () => {
+            isSyncing.value = false;
+        },
+        onFinish: () => {
+            isSyncing.value = false;
+        }
+    });
+};
 
 </script>
 
@@ -61,18 +123,72 @@ const formatCurrency = (value) => new Intl.NumberFormat('id-ID', {
                         </h1>
                     </div>
                     
-                    <!-- Search -->
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <MagnifyingGlassIcon class="h-5 w-5 text-slate-400 dark:text-indigo-400 group-focus-within:text-indigo-600 dark:group-focus-within:text-cyan-400 transition-colors" />
-                        </div>
-                        <input 
-                            v-model="search"
-                            @input="handleSearch"
-                            type="text" 
-                            class="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-white/10 rounded-lg leading-5 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-indigo-100 placeholder-slate-400 dark:placeholder-indigo-400/50 focus:outline-none focus:bg-white dark:focus:bg-white/10 focus:border-indigo-500/50 dark:focus:border-cyan-500/50 focus:ring-1 focus:ring-indigo-500/50 dark:focus:ring-cyan-500/50 sm:text-sm transition-all shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/10" 
-                            placeholder="Search Reference / Desc..."
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Sync Button -->
+                        <button 
+                            @click="syncLedger" 
+                            :disabled="isSyncing" 
+                            class="inline-flex items-center gap-1.5 px-4 py-2 border border-indigo-500/20 dark:border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 dark:bg-[#070718] dark:hover:bg-[#121235] text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold transition-all disabled:opacity-50 font-mono shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20"
                         >
+                            <ArrowPathIcon class="h-4 w-4" :class="{'animate-spin': isSyncing}" />
+                            {{ isSyncing ? 'Syncing...' : 'Sync Transactions' }}
+                        </button>
+
+                        <!-- Period Dropdown -->
+                        <div class="relative group">
+                            <select 
+                                v-model="selectedPeriod" 
+                                @change="applyPeriod(selectedPeriod)"
+                                class="block w-full pl-3 pr-8 py-2 border border-slate-200 dark:border-indigo-500/30 rounded-lg bg-slate-100 dark:bg-[#070718] text-slate-900 dark:text-indigo-300 focus:outline-none focus:bg-white dark:focus:bg-[#070718] focus:border-indigo-500/50 dark:focus:border-cyan-500/50 focus:ring-1 focus:ring-indigo-500/50 dark:focus:ring-cyan-500/50 sm:text-sm transition-all shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20 appearance-none font-mono cursor-pointer"
+                            >
+                                <option value="custom" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">Custom Period</option>
+                                <option value="this_month" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">This Month</option>
+                                <option value="last_month" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">Last Month</option>
+                                <option value="this_year" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">This Year</option>
+                                <option value="all" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">All Time</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-slate-400">
+                                <ChevronDownIcon class="h-4 w-4" />
+                            </div>
+                        </div>
+
+                        <!-- Start Date -->
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <CalendarIcon class="h-4 w-4 text-slate-400 dark:text-indigo-400/70" />
+                            </div>
+                            <input 
+                                v-model="startDate"
+                                type="date" 
+                                class="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-indigo-500/30 rounded-lg bg-slate-100 dark:bg-[#070718] text-slate-900 dark:text-indigo-300 focus:outline-none focus:bg-white dark:focus:bg-[#070718] focus:border-indigo-500/50 dark:focus:border-cyan-500/50 focus:ring-1 focus:ring-indigo-500/50 dark:focus:ring-cyan-500/50 sm:text-sm transition-all shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20 font-mono"
+                            >
+                        </div>
+
+                        <!-- End Date -->
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <CalendarIcon class="h-4 w-4 text-slate-400 dark:text-indigo-400/70" />
+                            </div>
+                            <input 
+                                v-model="endDate"
+                                type="date" 
+                                class="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-indigo-500/30 rounded-lg bg-slate-100 dark:bg-[#070718] text-slate-900 dark:text-indigo-300 focus:outline-none focus:bg-white dark:focus:bg-[#070718] focus:border-indigo-500/50 dark:focus:border-cyan-500/50 focus:ring-1 focus:ring-indigo-500/50 dark:focus:ring-cyan-500/50 sm:text-sm transition-all shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20 font-mono"
+                            >
+                        </div>
+
+                        <!-- Search -->
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <MagnifyingGlassIcon class="h-5 w-5 text-slate-400 dark:text-indigo-400 group-focus-within:text-indigo-600 dark:group-focus-within:text-cyan-400 transition-colors" />
+                            </div>
+                            <input 
+                                v-model="search"
+                                @input="handleSearch"
+                                type="text" 
+                                class="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-indigo-500/30 rounded-lg leading-5 bg-slate-100 dark:bg-[#070718] text-slate-900 dark:text-indigo-300 placeholder-slate-400 dark:placeholder-indigo-400/50 focus:outline-none focus:bg-white dark:focus:bg-[#070718] focus:border-indigo-500/50 dark:focus:border-cyan-500/50 focus:ring-1 focus:ring-indigo-500/50 dark:focus:ring-cyan-500/50 sm:text-sm transition-all shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20 placeholder-slate-400 dark:placeholder-indigo-400/50" 
+                                placeholder="Search Reference / Desc..."
+                            >
+                        </div>
                     </div>
                 </div>
 
@@ -158,20 +274,24 @@ const formatCurrency = (value) => new Intl.NumberFormat('id-ID', {
                     <!-- Pagination (Simple) -->
                     <div class="p-4 border-t border-slate-200 dark:border-white/10 flex justify-between items-center text-xs text-slate-500 transition-colors">
                         <span>Showing {{ journals.from }} to {{ journals.to }} of {{ journals.total }} entries</span>
-                        <div class="flex gap-2">
-                             <component 
-                                :is="link.url ? 'Link' : 'span'"
-                                v-for="link in journals.links" 
-                                :key="link.label"
-                                :href="link.url"
-                                class="px-3 py-1 rounded border border-slate-200 dark:border-white/10 transition-all"
-                                :class="{ 
-                                    'bg-indigo-600 dark:bg-cyan-500/20 text-white dark:text-cyan-400 border-indigo-600 dark:border-cyan-500/50': link.active, 
-                                    'hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer bg-white dark:bg-transparent': link.url && !link.active, 
-                                    'opacity-50 cursor-not-allowed': !link.url 
-                                }"
-                                v-html="link.label"
-                            />
+                        <div class="flex gap-1.5 flex-wrap">
+                            <template v-for="link in journals.links" :key="link.label">
+                                <Link 
+                                    v-if="link.url"
+                                    :href="link.url"
+                                    class="px-3 py-1.5 rounded-lg border text-[11px] font-mono transition-all"
+                                    :class="{ 
+                                        'bg-indigo-600 dark:bg-cyan-500/20 text-white dark:text-cyan-400 border-indigo-600 dark:border-cyan-500/50 font-bold shadow-lg shadow-indigo-500/5 dark:shadow-cyan-500/10': link.active, 
+                                        'hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer bg-slate-50 dark:bg-transparent border-slate-200 dark:border-white/10 text-slate-600 dark:text-indigo-300': !link.active 
+                                    }"
+                                    v-html="link.label"
+                                />
+                                <span 
+                                    v-else
+                                    class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/5 text-[11px] font-mono opacity-40 cursor-not-allowed text-slate-400 dark:text-indigo-400/40"
+                                    v-html="link.label"
+                                />
+                            </template>
                         </div>
                     </div>
                 </div>

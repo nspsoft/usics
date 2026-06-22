@@ -1,16 +1,67 @@
 <script setup>
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { ref, watch } from 'vue';
 import { 
     BanknotesIcon, 
     ArrowTrendingUpIcon, 
     ArrowTrendingDownIcon, 
-    CalculatorIcon
+    CalculatorIcon,
+    CalendarIcon,
+    ChevronDownIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    pnl: Object
+    pnl: Object,
+    filters: Object
 });
+
+const startDate = ref(props.filters?.start_date || '');
+const endDate = ref(props.filters?.end_date || '');
+const selectedPeriod = ref('custom');
+
+const applyFilters = () => {
+    router.get(route('finance.reports'), { 
+        start_date: startDate.value,
+        end_date: endDate.value
+    }, { preserveState: true, replace: true });
+};
+
+watch([startDate, endDate], () => {
+    applyFilters();
+});
+
+const applyPeriod = (period) => {
+    selectedPeriod.value = period;
+    const now = new Date();
+    
+    if (period === 'this_month') {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        startDate.value = formatDateForInput(start);
+        endDate.value = formatDateForInput(end);
+    } else if (period === 'last_month') {
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const end = new Date(now.getFullYear(), now.getMonth(), 0);
+        startDate.value = formatDateForInput(start);
+        endDate.value = formatDateForInput(end);
+    } else if (period === 'this_year') {
+        const start = new Date(now.getFullYear(), 0, 1);
+        const end = new Date(now.getFullYear(), 11, 31);
+        startDate.value = formatDateForInput(start);
+        endDate.value = formatDateForInput(end);
+    } else if (period === 'all') {
+        startDate.value = '';
+        endDate.value = '';
+    }
+};
+
+const formatDateForInput = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
 
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { 
     style: 'currency', currency: 'IDR', maximumFractionDigits: 0 
@@ -36,7 +87,52 @@ const formatCurrency = (value) => new Intl.NumberFormat('id-ID', {
                     <h1 class="text-4xl md:text-5xl font-black text-slate-900 dark:text-white glow-text tracking-tight mb-2 uppercase">
                         PROFIT & LOSS
                     </h1>
-                    <p class="text-slate-500 dark:text-slate-400 text-sm tracking-wide">Statement of Financial Performance</p>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm tracking-wide mb-8">Statement of Financial Performance</p>
+
+                    <!-- Filters Section -->
+                    <div class="flex flex-wrap items-center justify-center gap-3 max-w-2xl mx-auto">
+                        <!-- Period Dropdown -->
+                        <div class="relative group min-w-[160px]">
+                            <select 
+                                v-model="selectedPeriod" 
+                                @change="applyPeriod(selectedPeriod)"
+                                class="block w-full pl-3 pr-8 py-2 border border-slate-200 dark:border-indigo-500/30 rounded-lg bg-slate-100 dark:bg-[#070718] text-slate-900 dark:text-indigo-300 focus:outline-none focus:bg-white dark:focus:bg-[#070718] focus:border-indigo-500/50 dark:focus:border-cyan-500/50 focus:ring-1 focus:ring-indigo-500/50 dark:focus:ring-cyan-500/50 sm:text-sm transition-all shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20 appearance-none font-mono cursor-pointer"
+                            >
+                                <option value="custom" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">Custom Period</option>
+                                <option value="this_month" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">This Month</option>
+                                <option value="last_month" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">Last Month</option>
+                                <option value="this_year" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">This Year</option>
+                                <option value="all" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">All Time</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-slate-400">
+                                <ChevronDownIcon class="h-4 w-4" />
+                            </div>
+                        </div>
+
+                        <!-- Start Date -->
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <CalendarIcon class="h-4 w-4 text-slate-400 dark:text-indigo-400/70" />
+                            </div>
+                            <input 
+                                v-model="startDate"
+                                type="date" 
+                                class="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-indigo-500/30 rounded-lg bg-slate-100 dark:bg-[#070718] text-slate-900 dark:text-indigo-300 focus:outline-none focus:bg-white dark:focus:bg-[#070718] focus:border-indigo-500/50 dark:focus:border-cyan-500/50 focus:ring-1 focus:ring-indigo-500/50 dark:focus:ring-cyan-500/50 sm:text-sm transition-all shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20 font-mono"
+                            >
+                        </div>
+
+                        <!-- End Date -->
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <CalendarIcon class="h-4 w-4 text-slate-400 dark:text-indigo-400/70" />
+                            </div>
+                            <input 
+                                v-model="endDate"
+                                type="date" 
+                                class="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-indigo-500/30 rounded-lg bg-slate-100 dark:bg-[#070718] text-slate-900 dark:text-indigo-300 focus:outline-none focus:bg-white dark:focus:bg-[#070718] focus:border-indigo-500/50 dark:focus:border-cyan-500/50 focus:ring-1 focus:ring-indigo-500/50 dark:focus:ring-cyan-500/50 sm:text-sm transition-all shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20 font-mono"
+                            >
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Main Statement Card -->

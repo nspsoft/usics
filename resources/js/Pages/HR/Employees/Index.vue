@@ -262,13 +262,23 @@ const getStatusBadge = (status) => {
                             {{ employee.employment_status }}
                         </span>
                         
-                        <button 
-                            @click="openModal(employee)"
-                            class="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 group/btn"
-                        >
-                            View Profile
-                            <ChevronRightIcon class="h-3 w-3 group-hover/btn:translate-x-1 transition-transform" />
-                        </button>
+                        <div class="flex items-center gap-4">
+                            <Link 
+                                :href="route('hr.employees.face.show', employee.id)"
+                                class="text-xs font-bold text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors flex items-center gap-1.5"
+                            >
+                                <IdentificationIcon class="h-4 w-4 shrink-0" />
+                                Register Face
+                            </Link>
+
+                            <button 
+                                @click="openModal(employee)"
+                                class="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 group/btn"
+                            >
+                                View Profile
+                                <ChevronRightIcon class="h-3 w-3 group-hover/btn:translate-x-1 transition-transform" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 

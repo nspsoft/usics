@@ -127,4 +127,62 @@ class AttendanceController extends Controller
 
         return redirect()->back()->with('success', 'Clock-out recorded successfully.');
     }
+
+    public function update(Request $request, Attendance $attendance)
+    {
+        $user = auth()->user();
+        if (!$user || (!$user->hasAnyRole(['Super Admin', 'HR & Payroll', 'IT Administrator']) && !$user->can('hr_payroll.attendance.edit'))) {
+            return redirect()->back()->with('error', 'Akses ditolak.');
+        }
+
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'clock_in' => 'nullable|string',
+            'clock_out' => 'nullable|string',
+            'status' => 'required|in:present,late,absent,leave,sick,overtime',
+            'note' => 'nullable|string',
+        ]);
+
+        $dateStr = Carbon::parse($validated['date'])->toDateString();
+
+        $clockIn = null;
+        if (!empty($validated['clock_in'])) {
+            // Check if full datetime or just time
+            if (strlen($validated['clock_in']) <= 8) {
+                $clockIn = Carbon::parse($dateStr . ' ' . $validated['clock_in']);
+            } else {
+                $clockIn = Carbon::parse($validated['clock_in']);
+            }
+        }
+
+        $clockOut = null;
+        if (!empty($validated['clock_out'])) {
+            if (strlen($validated['clock_out']) <= 8) {
+                $clockOut = Carbon::parse($dateStr . ' ' . $validated['clock_out']);
+            } else {
+                $clockOut = Carbon::parse($validated['clock_out']);
+            }
+        }
+
+        $attendance->update([
+            'date' => $dateStr,
+            'clock_in' => $clockIn,
+            'clock_out' => $clockOut,
+            'status' => $validated['status'],
+            'note' => $validated['note'],
+        ]);
+
+        return redirect()->back()->with('success', 'Attendance record updated successfully.');
+    }
+
+    public function destroy(Attendance $attendance)
+    {
+        $user = auth()->user();
+        if (!$user || (!$user->hasAnyRole(['Super Admin', 'HR & Payroll', 'IT Administrator']) && !$user->can('hr_payroll.attendance.delete'))) {
+            return redirect()->back()->with('error', 'Akses ditolak.');
+        }
+
+        $attendance->delete();
+        return redirect()->back()->with('success', 'Attendance record deleted successfully.');
+    }
 }

@@ -559,6 +559,7 @@ Route::middleware(['auth'])->prefix('general-affair')->name('ga.')->group(functi
 Route::middleware(['auth'])->prefix('finance')->name('finance.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Finance\FinanceDashboardController::class, 'index'])->name('dashboard');
     Route::get('/ledger', [App\Http\Controllers\Finance\FinanceLedgerController::class, 'index'])->name('ledger');
+    Route::post('/ledger/sync', [App\Http\Controllers\Finance\FinanceLedgerController::class, 'sync'])->name('ledger.sync');
     Route::get('/reports', [App\Http\Controllers\Finance\FinanceReportController::class, 'profitAndLoss'])->name('reports');
     Route::get('/payment-monitoring', [App\Http\Controllers\Finance\FinanceMonitoringController::class, 'index'])->name('payment-monitoring');
     
@@ -598,6 +599,8 @@ Route::middleware(['auth'])->prefix('hr')->name('hr.')->group(function () {
     Route::post('/attendance-import', [AttendanceController::class, 'import'])->name('attendance.import');
     Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn'])->name('attendance.clock-in');
     Route::post('/attendance/clock-out/{attendance}', [AttendanceController::class, 'clockOut'])->name('attendance.clock-out');
+    Route::put('/attendance/{attendance}', [AttendanceController::class, 'update'])->name('attendance.update');
+    Route::delete('/attendance/{attendance}', [AttendanceController::class, 'destroy'])->name('attendance.destroy');
     
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
     Route::get('/payroll/settings', [PayrollSettingController::class, 'index'])->name('payroll.settings');
