@@ -44,6 +44,96 @@ const loadModels = async () => {
     }
 };
 
+const isFaceDetected = ref(false);
+const verifiedEmployeeName = ref('');
+const isDetectingLoop = ref(false);
+let detectionInterval = null;
+
+const registeredDescriptor = props.employee.face_descriptor 
+    ? new Float32Array(JSON.parse(props.employee.face_descriptor))
+    : null;
+
+const runFaceDetectionLoop = async () => {
+    if (!videoRef.value || !stream.value || !isDetectingLoop.value) return;
+    
+    try {
+        const detection = await faceapi.detectSingleFace(videoRef.value, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+            
+        if (detection) {
+            isFaceDetected.value = true;
+            let isVerified = false;
+            
+            if (registeredDescriptor) {
+                const currentDescriptor = detection.descriptor;
+                let faceDistance = 0;
+                for (let i = 0; i < registeredDescriptor.length; i++) {
+                    faceDistance += Math.pow(registeredDescriptor[i] - currentDescriptor[i], 2);
+                }
+                faceDistance = Math.sqrt(faceDistance);
+                
+                if (faceDistance < 0.6) {
+                    isVerified = true;
+                    verifiedEmployeeName.value = props.employee.full_name;
+                    statusMessage.value = `Face matched: ${props.employee.full_name}`;
+                } else {
+                    verifiedEmployeeName.value = '';
+                    statusMessage.value = 'Face mismatch (Unknown Face)';
+                }
+            } else {
+                verifiedEmployeeName.value = '';
+                statusMessage.value = 'Face detected (No face data registered)';
+            }
+            
+            drawCustomFaceBox(detection, isVerified);
+        } else {
+            isFaceDetected.value = false;
+            verifiedEmployeeName.value = '';
+            // Clear canvas
+            if (canvasRef.value) {
+                const ctx = canvasRef.value.getContext('2d');
+                ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height);
+            }
+        }
+    } catch (err) {
+        console.error("Face detection loop error:", err);
+    }
+    
+    if (isDetectingLoop.value) {
+        detectionInterval = setTimeout(runFaceDetectionLoop, 300);
+    }
+};
+
+const drawCustomFaceBox = (detection, isVerified) => {
+    if (!canvasRef.value || !videoRef.value) return;
+    const ctx = canvasRef.value.getContext('2d');
+    ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height);
+    
+    const displaySize = { 
+        width: videoRef.value.videoWidth || 480, 
+        height: videoRef.value.videoHeight || 360 
+    };
+    faceapi.matchDimensions(canvasRef.value, displaySize);
+    
+    const resizedDetection = faceapi.resizeResults(detection, displaySize);
+    const box = resizedDetection.detection.box;
+    
+    const primaryColor = isVerified ? '#10B981' : '#EF4444';
+    
+    ctx.strokeStyle = primaryColor;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(box.x, box.y, box.width, box.height);
+    
+    ctx.fillStyle = primaryColor;
+    ctx.fillRect(box.x - 1.5, box.y - 30, box.width + 3, 30);
+    
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 12px sans-serif';
+    const textLabel = isVerified ? props.employee.full_name : 'Wajah Tidak Cocok';
+    ctx.fillText(textLabel, box.x + 8, box.y - 10);
+};
+
 const startVideo = () => {
     navigator.mediaDevices.getUserMedia({ video: true })
         .then(currentStream => {
@@ -51,6 +141,9 @@ const startVideo = () => {
             videoRef.value.srcObject = currentStream;
             statusMessage.value = 'Ready. Click "Clock In" when ready.';
             isLoading.value = false;
+            
+            isDetectingLoop.value = true;
+            runFaceDetectionLoop();
         })
         .catch(err => {
             console.error(err);
@@ -155,6 +248,11 @@ const captureAndClock = async () => {
 };
 
 const stopVideo = () => {
+    isDetectingLoop.value = false;
+    if (detectionInterval) {
+        clearTimeout(detectionInterval);
+        detectionInterval = null;
+    }
     if (stream.value) {
         stream.value.getTracks().forEach(track => track.stop());
     }
@@ -202,6 +300,7 @@ onUnmounted(() => {
                              :class="inRadius ? 'border-green-500 dark:border-green-600' : 'border-red-500 dark:border-red-600'" 
                              style="width: 480px; height: 360px;">
                             <video ref="videoRef" width="480" height="360" autoplay muted class="absolute top-0 left-0 w-full h-full object-cover"></video>
+                            <canvas ref="canvasRef" width="480" height="360" class="absolute top-0 left-0 w-full h-full pointer-events-none z-10"></canvas>
                         </div>
                     </div>
                     
