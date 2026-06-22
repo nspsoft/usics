@@ -12,11 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('delivery_order_items', function (Blueprint $table) {
-            $table->string('inchi')->nullable()->after('unit_id');
-            $table->decimal('od', 15, 4)->nullable()->after('inchi');
-            $table->decimal('tebal', 15, 4)->nullable()->after('od');
-            $table->decimal('panjang', 15, 4)->nullable()->after('tebal');
-            $table->decimal('kg_delivered', 15, 4)->nullable()->after('panjang');
+            if (!Schema::hasColumn('delivery_order_items', 'inchi')) {
+                $table->string('inchi')->nullable()->after('unit_id');
+            }
+            if (!Schema::hasColumn('delivery_order_items', 'od')) {
+                $table->decimal('od', 15, 4)->nullable()->after('inchi');
+            }
+            if (!Schema::hasColumn('delivery_order_items', 'tebal')) {
+                $table->decimal('tebal', 15, 4)->nullable()->after('od');
+            }
+            if (!Schema::hasColumn('delivery_order_items', 'panjang')) {
+                $table->decimal('panjang', 15, 4)->nullable()->after('tebal');
+            }
+            if (!Schema::hasColumn('delivery_order_items', 'kg_delivered')) {
+                $table->decimal('kg_delivered', 15, 4)->nullable()->after('panjang');
+            }
         });
     }
 
@@ -26,7 +36,15 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('delivery_order_items', function (Blueprint $table) {
-            $table->dropColumn(['inchi', 'od', 'tebal', 'panjang', 'kg_delivered']);
+            $columns = [];
+            foreach (['inchi', 'od', 'tebal', 'panjang', 'kg_delivered'] as $col) {
+                if (Schema::hasColumn('delivery_order_items', $col)) {
+                    $columns[] = $col;
+                }
+            }
+            if (count($columns) > 0) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };

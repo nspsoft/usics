@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('bank_statement_transactions', function (Blueprint $table) {
-            $table->foreignId('purchase_payment_id')->nullable()->after('sales_payment_id')->constrained('purchase_payments')->nullOnDelete();
-        });
+        if (!Schema::hasColumn('bank_statement_transactions', 'purchase_payment_id')) {
+            Schema::table('bank_statement_transactions', function (Blueprint $table) {
+                $table->foreignId('purchase_payment_id')->nullable()->after('sales_payment_id')->constrained('purchase_payments')->nullOnDelete();
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('bank_statement_transactions', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('purchase_payment_id');
-        });
+        if (Schema::hasColumn('bank_statement_transactions', 'purchase_payment_id')) {
+            Schema::table('bank_statement_transactions', function (Blueprint $table) {
+                $table->dropConstrainedForeignId('purchase_payment_id');
+            });
+        }
     }
 };

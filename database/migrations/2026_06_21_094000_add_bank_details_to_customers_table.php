@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('customers', function (Blueprint $table) {
-            $table->string('bank_name', 100)->nullable()->after('tax_id');
-            $table->string('account_number', 50)->nullable()->after('bank_name');
+            if (!Schema::hasColumn('customers', 'bank_name')) {
+                $table->string('bank_name', 100)->nullable()->after('tax_id');
+            }
+            if (!Schema::hasColumn('customers', 'account_number')) {
+                $table->string('account_number', 50)->nullable()->after('bank_name');
+            }
         });
     }
 
@@ -23,7 +27,16 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('customers', function (Blueprint $table) {
-            $table->dropColumn(['bank_name', 'account_number']);
+            $columns = [];
+            if (Schema::hasColumn('customers', 'bank_name')) {
+                $columns[] = 'bank_name';
+            }
+            if (Schema::hasColumn('customers', 'account_number')) {
+                $columns[] = 'account_number';
+            }
+            if (count($columns) > 0) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };
