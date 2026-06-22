@@ -50,4 +50,18 @@ class EmployeeFaceController extends Controller
 
         return redirect()->route('hr.employees.index')->with('success', 'Face data registered successfully for ' . $employee->full_name . '.');
     }
+
+    public function destroy(Employee $employee)
+    {
+        $employee->face_descriptor = null;
+        
+        if ($employee->profile_picture && strpos($employee->profile_picture, 'employees/face_') === 0) {
+            Storage::disk('public')->delete($employee->profile_picture);
+            $employee->profile_picture = null;
+        }
+
+        $employee->save();
+
+        return redirect()->back()->with('success', 'Face data cleared successfully for ' . $employee->full_name . '.');
+    }
 }

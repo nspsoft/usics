@@ -19,7 +19,8 @@ import {
     EllipsisVerticalIcon,
     ArrowDownTrayIcon,
     ArrowUpTrayIcon,
-    DocumentArrowDownIcon
+    DocumentArrowDownIcon,
+    TrashIcon
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 import { formatNumber, formatCurrency } from '@/helpers';
@@ -141,6 +142,14 @@ const getStatusBadge = (status) => {
     };
     return badges[status] || 'bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/20';
 };
+
+const deleteFace = (employee) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus data master wajah untuk ${employee.full_name}?`)) {
+        router.delete(route('hr.employees.face.destroy', employee.id), {
+            preserveScroll: true
+        });
+    }
+};
 </script>
 
 <template>
@@ -237,7 +246,14 @@ const getStatusBadge = (status) => {
                             {{ employee.full_name.charAt(0).toUpperCase() }}
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-indigo-400 transition-colors">{{ employee.full_name }}</h3>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-indigo-400 transition-colors flex items-center gap-1.5">
+                                {{ employee.full_name }}
+                                <span v-if="employee.face_descriptor" class="inline-flex items-center p-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title="Wajah Terdaftar">
+                                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </span>
+                            </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 font-mono font-bold tracking-widest mt-0.5">NIK: {{ employee.nik }}</p>
                         </div>
                     </div>
@@ -262,14 +278,23 @@ const getStatusBadge = (status) => {
                             {{ employee.employment_status }}
                         </span>
                         
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-3">
                             <Link 
                                 :href="route('hr.employees.face.show', employee.id)"
-                                class="text-xs font-bold text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors flex items-center gap-1.5"
+                                class="text-xs font-bold text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors flex items-center gap-1"
                             >
                                 <IdentificationIcon class="h-4 w-4 shrink-0" />
-                                Register Face
+                                {{ employee.face_descriptor ? 'Update Face' : 'Register Face' }}
                             </Link>
+
+                            <button 
+                                v-if="employee.face_descriptor"
+                                @click="deleteFace(employee)"
+                                class="text-red-500 hover:text-red-400 dark:text-red-400 dark:hover:text-red-300 transition-colors p-1 rounded-lg hover:bg-red-500/10 flex items-center justify-center shrink-0"
+                                title="Hapus Wajah"
+                            >
+                                <TrashIcon class="h-4 w-4" />
+                            </button>
 
                             <button 
                                 @click="openModal(employee)"
