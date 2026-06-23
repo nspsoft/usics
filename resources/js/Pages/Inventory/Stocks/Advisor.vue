@@ -11,6 +11,7 @@ import {
     WrenchIcon,
     CheckCircleIcon,
     ExclamationTriangleIcon,
+    PrinterIcon,
 } from '@heroicons/vue/24/outline';
 import { formatCurrency, formatNumber } from '@/helpers';
 
@@ -338,6 +339,16 @@ const toggleSelectAllPo = (sId) => {
     }
 };
 
+const selectedCategoryName = computed(() => {
+    if (!selectedCategory.value) return 'Semua Kategori';
+    const cat = props.categories.find(c => c.id == selectedCategory.value);
+    return cat ? cat.name : '';
+});
+
+const printReport = () => {
+    window.print();
+};
+
 </script>
 
 <template>
@@ -349,23 +360,28 @@ const toggleSelectAllPo = (sId) => {
             <!-- Header & Back Button -->
             <div class="flex justify-between items-center mb-6">
                 <div class="flex items-center gap-3">
-                    <Link href="/inventory/stocks" class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm">
+                    <Link href="/inventory/stocks" class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm print:hidden">
                         <ArrowLeftIcon class="h-4 w-4" />
                     </Link>
                     <div>
                         <h2 class="font-bold text-xl text-slate-900 dark:text-white flex items-center gap-2">
-                            <SparklesIcon class="h-5 w-5 text-indigo-500 animate-pulse" />
+                            <SparklesIcon class="h-5 w-5 text-indigo-500 animate-pulse print:hidden" />
                             AI Stock & Procurement Advisor
                         </h2>
                         <p class="text-xs text-slate-500 dark:text-slate-400">
                             Analisis stok kritis terotomatisasi berdasarkan Sales Order aktif.
-                            <a href="/docs/ai-advisor.html" target="_blank" class="ml-2 text-indigo-500 hover:underline font-semibold">Lihat Dokumentasi & Diagram Alur ➔</a>
+                            <a href="/docs/ai-advisor.html" target="_blank" class="ml-2 text-indigo-500 hover:underline font-semibold print:hidden">Lihat Dokumentasi & Diagram Alur ➔</a>
+                        </p>
+                        <p v-if="recommendations" class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+                            <span>Kategori: <strong class="text-slate-800 dark:text-slate-200">{{ selectedCategoryName }}</strong></span>
+                            <span class="text-slate-300 dark:text-slate-700">|</span>
+                            <span>Tanggal Analisis: <strong class="text-slate-800 dark:text-slate-200">{{ new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) }}</strong></span>
                         </p>
                     </div>
                 </div>
 
                 <!-- Filter & Trigger Actions -->
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 print:hidden">
                     <div class="w-48">
                         <select v-model="selectedCategory" class="w-full rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-700 dark:text-slate-300 focus:ring-indigo-500 focus:border-indigo-500">
                             <option value="">Semua Kategori</option>
@@ -376,15 +392,19 @@ const toggleSelectAllPo = (sId) => {
                         <ArrowPathIcon class="h-3.5 w-3.5" :class="{ 'animate-spin': isLoading }" />
                         Mulai Analisis
                     </button>
+                    <button v-if="recommendations" @click="printReport" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md hover:shadow-teal-900/20 active:scale-[0.98] transition-all">
+                        <PrinterIcon class="h-3.5 w-3.5" />
+                        Cetak
+                    </button>
                 </div>
             </div>
 
             <!-- Banner Messages -->
-            <div v-if="errorMsg" class="mb-4 p-3 bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400 rounded-xl text-xs flex items-center gap-2 border border-red-200 dark:border-red-900">
+            <div v-if="errorMsg" class="mb-4 p-3 bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400 rounded-xl text-xs flex items-center gap-2 border border-red-200 dark:border-red-900 print:hidden">
                 <ExclamationTriangleIcon class="h-4 w-4" />
                 {{ errorMsg }}
             </div>
-            <div v-if="successMsg" class="mb-4 p-3 bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400 rounded-xl text-xs flex items-center gap-2 border border-green-200 dark:border-green-900">
+            <div v-if="successMsg" class="mb-4 p-3 bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400 rounded-xl text-xs flex items-center gap-2 border border-green-200 dark:border-green-900 print:hidden">
                 <CheckCircleIcon class="h-4 w-4" />
                 {{ successMsg }}
             </div>
@@ -414,7 +434,7 @@ const toggleSelectAllPo = (sId) => {
                                 </div>
                                 Rekomendasi Stock Reclassification
                             </h3>
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-3 print:hidden">
                                 <label class="inline-flex items-center text-xs text-slate-500 cursor-pointer">
                                     <input type="checkbox" :checked="isAllReclassSelected" @change="toggleSelectAllReclass" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 mr-1.5 h-3.5 w-3.5 dark:border-slate-800 dark:bg-slate-950" />
                                     Pilih Semua
@@ -433,7 +453,7 @@ const toggleSelectAllPo = (sId) => {
                         <div class="space-y-4">
                             <div v-for="(rc, idx) in filteredReclassifications" :key="idx" class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                 <div class="flex items-start">
-                                    <input type="checkbox" :checked="selectedReclasses.includes(idx)" @change="toggleReclassSelection(idx)" class="mt-1 rounded border-slate-300 text-teal-600 focus:ring-teal-500 mr-3 h-4 w-4 dark:border-slate-800 dark:bg-slate-950" />
+                                    <input type="checkbox" :checked="selectedReclasses.includes(idx)" @change="toggleReclassSelection(idx)" class="mt-1 rounded border-slate-300 text-teal-600 focus:ring-teal-500 mr-3 h-4 w-4 dark:border-slate-800 dark:bg-slate-950 print:hidden" />
                                     <div class="space-y-1">
                                         <div class="flex items-center gap-2 flex-wrap">
                                             <span class="text-xs font-bold text-slate-500 uppercase">Gunakan</span>
@@ -456,7 +476,7 @@ const toggleSelectAllPo = (sId) => {
                                     <button 
                                         @click="handleCreateReclass(idx, [{ source_product_id: rc.source_product_id, target_product_id: rc.target_product_id, qty: rc.qty }])"
                                         :disabled="isReclassCreating[idx]"
-                                        class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-teal-600 hover:bg-teal-700 text-white disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-sm"
+                                        class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-teal-600 hover:bg-teal-700 text-white disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-sm print:hidden"
                                     >
                                         <ArrowPathIcon v-if="isReclassCreating[idx]" class="h-3 w-3 animate-spin" />
                                         Buat Reclass Draft
@@ -479,14 +499,14 @@ const toggleSelectAllPo = (sId) => {
                             <div v-for="(group, sId) in groupedPos" :key="sId" class="border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
                                 <div class="bg-slate-50 dark:bg-slate-950 px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center flex-wrap gap-2">
                                     <div class="flex items-center">
-                                        <input type="checkbox" :checked="isAllPoSelected(sId)" @change="toggleSelectAllPo(sId)" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500 mr-2 h-4 w-4 dark:border-slate-800 dark:bg-slate-950" />
+                                        <input type="checkbox" :checked="isAllPoSelected(sId)" @change="toggleSelectAllPo(sId)" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500 mr-2 h-4 w-4 dark:border-slate-800 dark:bg-slate-950 print:hidden" />
                                         <h4 class="font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider">{{ group.supplier_name }}</h4>
                                     </div>
                                     <button 
                                         v-if="sId !== 'unknown'"
                                         @click="handleCreatePoSelected(sId)"
                                         :disabled="isPoCreating[sId] || !selectedPos[sId] || selectedPos[sId].length === 0"
-                                        class="px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 transition-all flex items-center gap-1 shadow-sm"
+                                        class="px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 transition-all flex items-center gap-1 shadow-sm print:hidden"
                                     >
                                         <ArrowPathIcon v-if="isPoCreating[sId]" class="h-3 w-3 animate-spin" />
                                         Buat PO Terpilih ({{ selectedPos[sId]?.length || 0 }})
@@ -495,7 +515,7 @@ const toggleSelectAllPo = (sId) => {
                                 <div class="divide-y divide-slate-100 dark:divide-slate-800">
                                     <div v-for="(poItem, pIdx) in group.items" :key="pIdx" class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                                         <div class="flex items-start">
-                                            <input type="checkbox" :checked="selectedPos[sId]?.includes(pIdx)" @change="togglePoSelection(sId, pIdx)" class="mt-1 rounded border-slate-300 text-amber-600 focus:ring-amber-500 mr-3 h-4 w-4 dark:border-slate-800 dark:bg-slate-950" />
+                                            <input type="checkbox" :checked="selectedPos[sId]?.includes(pIdx)" @change="togglePoSelection(sId, pIdx)" class="mt-1 rounded border-slate-300 text-amber-600 focus:ring-amber-500 mr-3 h-4 w-4 dark:border-slate-800 dark:bg-slate-950 print:hidden" />
                                             <div class="space-y-0.5">
                                                 <div class="flex items-center gap-2">
                                                     <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400">{{ poItem.sku }}</span>
@@ -513,7 +533,7 @@ const toggleSelectAllPo = (sId) => {
                                                 v-if="sId !== 'unknown'"
                                                 @click="handleCreatePo(sId, [{ product_id: poItem.product_id, qty: poItem.qty }])"
                                                 :disabled="isPoCreating[sId]"
-                                                class="px-2.5 py-1.5 text-[10px] font-semibold rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-750 transition-all shadow-sm"
+                                                class="px-2.5 py-1.5 text-[10px] font-semibold rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-750 transition-all shadow-sm print:hidden"
                                             >
                                                 Buat Draft PO
                                             </button>
@@ -533,7 +553,7 @@ const toggleSelectAllPo = (sId) => {
                                 </div>
                                 Rekomendasi Perencanaan Produksi (Work Order)
                             </h3>
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-3 print:hidden">
                                 <label class="inline-flex items-center text-xs text-slate-500 cursor-pointer">
                                     <input type="checkbox" :checked="isAllWoSelected" @change="toggleSelectAllWo" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 mr-1.5 h-3.5 w-3.5 dark:border-slate-800 dark:bg-slate-950" />
                                     Pilih Semua
@@ -552,7 +572,7 @@ const toggleSelectAllPo = (sId) => {
                         <div class="space-y-4">
                             <div v-for="(wo, wIdx) in filteredWorkOrders" :key="wIdx" class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                 <div class="flex items-start">
-                                    <input type="checkbox" :checked="selectedWos.includes(wIdx)" @change="toggleWoSelection(wIdx)" class="mt-1 rounded border-slate-300 text-blue-600 focus:ring-blue-500 mr-3 h-4 w-4 dark:border-slate-800 dark:bg-slate-950" />
+                                    <input type="checkbox" :checked="selectedWos.includes(wIdx)" @change="toggleWoSelection(wIdx)" class="mt-1 rounded border-slate-300 text-blue-600 focus:ring-blue-500 mr-3 h-4 w-4 dark:border-slate-800 dark:bg-slate-950 print:hidden" />
                                     <div class="space-y-1">
                                         <div class="flex items-center gap-2 flex-wrap">
                                             <span class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400">{{ wo.sku }}</span>
@@ -573,7 +593,7 @@ const toggleSelectAllPo = (sId) => {
                                     <button 
                                         @click="handleCreateWo(wIdx, [{ product_id: wo.product_id, qty_planned: wo.qty, production_type: wo.production_type || 'internal', supplier_id: wo.supplier_id || null }])"
                                         :disabled="isWoCreating[wIdx]"
-                                        class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-sm"
+                                        class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-sm print:hidden"
                                     >
                                         <ArrowPathIcon v-if="isWoCreating[wIdx]" class="h-3 w-3 animate-spin" />
                                         Buat WO Draft
@@ -606,7 +626,7 @@ const toggleSelectAllPo = (sId) => {
             </div>
 
             <!-- Placeholder State when not yet analyzed -->
-            <div v-else class="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-2xl p-8 shadow-sm relative overflow-hidden">
+            <div v-else class="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-2xl p-8 shadow-sm relative overflow-hidden print:hidden">
                 <!-- Glowing background circles -->
                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
                 
@@ -636,3 +656,45 @@ const toggleSelectAllPo = (sId) => {
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+@media print {
+  /* Print layout optimizations */
+  .grid-cols-1 {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .lg\:col-span-8 {
+    order: 2 !important; /* Recommendations second */
+    width: 100% !important;
+  }
+  
+  .lg\:col-span-4 {
+    order: 1 !important; /* AI Commentary first */
+    width: 100% !important;
+    margin-bottom: 2rem !important;
+  }
+
+  /* Force light theme elements for cleaner printing */
+  .bg-white, .dark\:bg-slate-900, .bg-slate-50, .dark\:bg-slate-950 {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important; /* border-slate-300 */
+    box-shadow: none !important;
+  }
+
+  .text-slate-900, .dark\:text-white, .text-slate-800, .dark\:text-slate-200, .text-slate-700, .dark\:text-slate-300 {
+    color: #0f172a !important;
+  }
+
+  .text-slate-500, .dark\:text-slate-400 {
+    color: #475569 !important;
+  }
+
+  /* Prevent page breaks inside cards for cleaner page splits */
+  .space-y-6 > div, .space-y-4 > div {
+    page-break-inside: avoid !important;
+  }
+}
+</style>
