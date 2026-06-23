@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
@@ -338,9 +338,6 @@ const toggleSelectAllPo = (sId) => {
     }
 };
 
-onMounted(() => {
-    runAnalysis();
-});
 </script>
 
 <template>
@@ -606,6 +603,34 @@ onMounted(() => {
                     </div>
                 </div>
 
+            </div>
+
+            <!-- Placeholder State when not yet analyzed -->
+            <div v-else class="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-2xl p-8 shadow-sm relative overflow-hidden">
+                <!-- Glowing background circles -->
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="relative z-10 flex flex-col items-center max-w-lg text-center">
+                    <div class="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 mb-6 shadow-inner">
+                        <SparklesIcon class="h-10 w-10 animate-pulse" />
+                    </div>
+                    
+                    <h3 class="font-extrabold text-slate-800 dark:text-slate-200 text-lg mb-2">
+                        AI Stock & Procurement Advisor
+                    </h3>
+                    
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-8">
+                        Sistem kecerdasan inventaris hibrida siap menganalisis data pesanan penjualan aktif (Sales Order), ketersediaan stok saat ini, stok ekuivalen (Reclass), ledakan tagihan bahan baku (BOM), dan menyarankan tindakan pengadaan/manufaktur secara otomatis.
+                    </p>
+                    
+                    <button 
+                        @click="runAnalysis" 
+                        class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-900/25 hover:shadow-indigo-900/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        <SparklesIcon class="h-4.5 w-4.5" />
+                        Mulai Analisis Cerdas
+                    </button>
+                </div>
             </div>
 
         </div>
