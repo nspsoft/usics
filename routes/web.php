@@ -150,6 +150,13 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::resource('reclass-mappings', App\Http\Controllers\Inventory\ProductReclassMappingController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
+    // Inventory Intelligence (AI Stock Advisor)
+    Route::get('/intelligence', [App\Http\Controllers\Inventory\InventoryIntelligenceController::class, 'index'])->name('intelligence.index');
+    Route::post('/intelligence/analyze', [App\Http\Controllers\Inventory\InventoryIntelligenceController::class, 'analyze'])->name('intelligence.analyze');
+    Route::post('/intelligence/create-po', [App\Http\Controllers\Inventory\InventoryIntelligenceController::class, 'createPoDraft'])->name('intelligence.create-po');
+    Route::post('/intelligence/create-wo', [App\Http\Controllers\Inventory\InventoryIntelligenceController::class, 'createWoDraft'])->name('intelligence.create-wo');
+    Route::post('/intelligence/create-reclass', [App\Http\Controllers\Inventory\InventoryIntelligenceController::class, 'createReclassDraft'])->name('intelligence.create-reclass');
+
     // Stock Opname
     Route::resource('opname', App\Http\Controllers\Inventory\StockOpnameController::class);
     Route::get('/opname-export', [App\Http\Controllers\Inventory\StockOpnameController::class, 'export'])->name('opname.export');

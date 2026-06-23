@@ -42,6 +42,7 @@ class EmployeeController extends Controller
             'employees' => $query->paginate(20)->withQueryString(),
             'departments' => Department::all(),
             'positions' => Position::all(),
+            'users' => \App\Models\User::orderBy('name')->get(['id', 'name', 'email']),
             'filters' => $request->only(['search', 'department_id', 'status']),
         ]);
     }
@@ -90,8 +91,24 @@ class EmployeeController extends Controller
             'joining_date' => 'required|date',
             'employment_status' => 'required|in:permanent,contract,probation,internship',
             'basic_salary' => 'required|numeric|min:0',
+            'user_id' => 'nullable|exists:users,id',
+            'create_user' => 'nullable|boolean',
             'profile_picture' => 'nullable|image|max:2048', // max 2MB
         ]);
+
+        if (empty($validated['user_id']) && !empty($validated['email'])) {
+            $user = \App\Models\User::where('email', $validated['email'])->first();
+            if ($user) {
+                $validated['user_id'] = $user->id;
+            } elseif (!empty($request->create_user)) {
+                $user = \App\Models\User::create([
+                    'name' => $validated['full_name'],
+                    'email' => $validated['email'],
+                    'password' => \Illuminate\Support\Facades\Hash::make($validated['nik']),
+                ]);
+                $validated['user_id'] = $user->id;
+            }
+        }
 
         if ($request->hasFile('profile_picture')) {
             $path = $request->file('profile_picture')->store('employees', 'public');
@@ -117,8 +134,24 @@ class EmployeeController extends Controller
             'employment_status' => 'required|in:permanent,contract,probation,internship',
             'basic_salary' => 'required|numeric|min:0',
             'is_active' => 'required|boolean',
+            'user_id' => 'nullable|exists:users,id',
+            'create_user' => 'nullable|boolean',
             'profile_picture' => 'nullable|image|max:2048',
         ]);
+
+        if (empty($validated['user_id']) && !empty($validated['email'])) {
+            $user = \App\Models\User::where('email', $validated['email'])->first();
+            if ($user) {
+                $validated['user_id'] = $user->id;
+            } elseif (!empty($request->create_user)) {
+                $user = \App\Models\User::create([
+                    'name' => $validated['full_name'],
+                    'email' => $validated['email'],
+                    'password' => \Illuminate\Support\Facades\Hash::make($validated['nik']),
+                ]);
+                $validated['user_id'] = $user->id;
+            }
+        }
 
         if ($request->hasFile('profile_picture')) {
             // Delete old picture if exists

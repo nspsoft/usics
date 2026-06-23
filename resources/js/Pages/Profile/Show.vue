@@ -10,6 +10,10 @@ import {
 
 const props = defineProps({
     user: Object,
+    mustChangePassword: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const photoPreview = ref(null);
@@ -273,6 +277,17 @@ const updatePassword = () => {
     
     <AppLayout title="Your Profile">
         <div class="max-w-4xl mx-auto space-y-6">
+            <!-- Must Change Password Warning Banner -->
+            <div v-if="mustChangePassword" class="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 flex gap-3 text-amber-600 dark:text-amber-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                    <h3 class="font-bold text-sm">Wajib Mengubah Password Default</h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Anda saat ini login menggunakan password default (nomor NIK). Demi keamanan data pribadi Anda, Anda wajib mengganti password default ini dengan password baru sebelum dapat mengakses menu-menu sistem lainnya.</p>
+                </div>
+            </div>
+
             <!-- Profile Information -->
             <div class="glass-card rounded-2xl p-6">
                 <div class="flex items-center gap-4 mb-6">

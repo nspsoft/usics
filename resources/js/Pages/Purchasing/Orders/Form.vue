@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
     ArrowLeftIcon,
@@ -19,6 +19,12 @@ const props = defineProps({
     products: Array,
     units: Array,
 });
+
+const page = usePage();
+const isAdmin = computed(() => {
+    return page.props.auth.roles?.includes('Super Admin') || page.props.auth.roles?.includes('IT Administrator');
+});
+
 
 const productOptions = computed(() => {
     if (!props.products || !Array.isArray(props.products)) return [];
@@ -156,8 +162,9 @@ const submit = () => {
                         
                         <div>
                             <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">PO Number</label>
-                            <input type="text" v-model="form.po_number" placeholder="(Auto Generated)" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50" />
-                            <p class="mt-1 text-[10px] text-slate-500">Anda dapat mengubah nomor ini secara manual jika diperlukan.</p>
+                            <input type="text" v-model="form.po_number" :disabled="!isAdmin" placeholder="(Auto Generated)" class="w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed" />
+                            <p v-if="isAdmin" class="mt-1 text-[10px] text-slate-500">Anda dapat mengubah nomor ini secara manual jika diperlukan.</p>
+                            <p v-else class="mt-1 text-[10px] text-slate-500">Nomor PO digenerate otomatis secara default (hanya Admin yang dapat mengubahnya).</p>
                         </div>
 
                         <div>

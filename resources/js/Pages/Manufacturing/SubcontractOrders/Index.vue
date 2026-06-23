@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatNumber, formatCurrency } from '@/helpers';
 import { 
@@ -12,6 +12,8 @@ import {
     MagnifyingGlassIcon,
     FunnelIcon,
     ArrowPathIcon,
+    ArrowUpTrayIcon,
+    XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import debounce from 'lodash/debounce';
 
@@ -76,6 +78,65 @@ const getStatusBadge = (status) => {
 const formatDate = (date) => {
     if (!date) return '-';
     return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+const getDispatchQty = (order) => {
+    const wo = order.work_order;
+    if (!wo) return 0;
+    if (!wo.components || wo.components.length === 0) {
+        return ['sent', 'received', 'completed'].includes(order.status) ? parseFloat(wo.qty_planned || 0) : 0;
+    }
+    
+    let minRatio = 1.0;
+    let hasComponents = false;
+    
+    wo.components.forEach(comp => {
+        const required = parseFloat(comp.qty_required || 0);
+        const consumed = parseFloat(comp.qty_consumed || 0);
+        if (required > 0) {
+            hasComponents = true;
+            const ratio = consumed / required;
+            if (ratio < minRatio) {
+                minRatio = ratio;
+            }
+        }
+    });
+    
+    if (!hasComponents) return 0;
+    return parseFloat(wo.qty_planned || 0) * minRatio;
+};
+
+const showDispatchModal = ref(false);
+const selectedOrderForDispatch = ref(null);
+const dispatchForm = useForm({
+    items: [],
+});
+
+const openDispatchModal = (order) => {
+    selectedOrderForDispatch.value = order;
+    dispatchForm.items = order.work_order?.components.map(c => ({
+        id: c.id,
+        name: c.product?.name,
+        sku: c.product?.sku,
+        qty_required: parseFloat(c.qty_required),
+        qty_consumed: parseFloat(c.qty_consumed),
+        qty: Math.max(0, parseFloat(c.qty_required) - parseFloat(c.qty_consumed)),
+    })) || [];
+    showDispatchModal.value = true;
+};
+
+const submitDispatch = () => {
+    if (!selectedOrderForDispatch.value) return;
+    dispatchForm.post(route('manufacturing.subcontract-orders.dispatch', selectedOrderForDispatch.value.id), {
+        onSuccess: () => {
+            showDispatchModal.value = false;
+            selectedOrderForDispatch.value = null;
+        },
+    });
+};
+
+const canDispatch = (order) => {
+    return !['completed', 'cancelled'].includes(order.status);
 };
 </script>
 
@@ -160,12 +221,13 @@ const formatDate = (date) => {
                 <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
                     <thead>
                         <tr class="border-b border-slate-200 dark:border-slate-700">
-                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Order Number</th>
-                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">WO Reference</th>
-                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Supplier</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Order & Supplier</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">WO Ref & PO Number</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Product</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-6 py-4 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Qty Order</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Qty Dispatch</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Blm Dispatch</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Recv</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Balance</th>
                             <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Created At</th>
@@ -173,8 +235,8 @@ const formatDate = (date) => {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <tr v-if="orders.data.length === 0">
-                            <td colspan="10" class="px-6 py-20 text-center">
+                         <tr v-if="orders.data.length === 0">
+                            <td colspan="11" class="px-6 py-20 text-center">
                                 <div class="mx-auto h-20 w-20 rounded-full bg-white dark:bg-slate-950 flex items-center justify-center border border-slate-200 dark:border-slate-800 mb-4">
                                     <TruckIcon class="h-10 w-10 text-slate-700" />
                                 </div>
@@ -191,24 +253,30 @@ const formatDate = (date) => {
                                     <div>
                                         <Link
                                             :href="route('manufacturing.subcontract-orders.show', order.id)"
-                                            class="text-sm font-bold hover:underline"
+                                            class="text-sm font-bold hover:underline block"
                                         >
                                             {{ order.order_number }}
                                         </Link>
-                                        <div class="text-[10px] text-slate-500 font-mono">ID: {{ order.id }}</div>
+                                        <div class="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                            <UserIcon class="h-3.5 w-3.5 text-slate-400" />
+                                            <span>{{ order.supplier?.name || '-' }}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-3 whitespace-nowrap">
-                                <Link :href="route('manufacturing.work-orders.show', order.work_order_id)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white hover:bg-slate-700 transition-colors font-mono text-xs">
-                                    <ClipboardDocumentListIcon class="h-3.5 w-3.5" />
-                                    {{ order.work_order?.wo_number }}
-                                </Link>
-                            </td>
-                            <td class="px-6 py-3 whitespace-nowrap">
-                                <div class="flex items-center gap-2">
-                                    <UserIcon class="h-4 w-4 text-slate-500" />
-                                    <span class="text-sm text-slate-600 dark:text-slate-300 font-medium">{{ order.supplier?.name }}</span>
+                                <div class="flex flex-col gap-1">
+                                    <Link :href="route('manufacturing.work-orders.show', order.work_order_id)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-500 transition-colors font-mono text-xs w-fit">
+                                        <ClipboardDocumentListIcon class="h-3.5 w-3.5" />
+                                        {{ order.work_order?.wo_number }}
+                                    </Link>
+                                    <div class="flex items-center gap-1 text-xs text-slate-500 font-mono pl-1 mt-0.5">
+                                        <span class="text-[10px] text-slate-400 font-semibold uppercase">PO:</span>
+                                        <Link v-if="order.purchase_order" :href="route('purchasing.orders.show', order.purchase_order.id)" class="font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                                            {{ order.purchase_order.po_number }}
+                                        </Link>
+                                        <span v-else class="text-slate-400">-</span>
+                                    </div>
                                 </div>
                             </td>
                             <td class="px-6 py-3 whitespace-nowrap">
@@ -223,6 +291,10 @@ const formatDate = (date) => {
                                 </span>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-right text-slate-600 dark:text-slate-300 font-mono font-bold">{{ formatNumber(order.work_order?.qty_planned) }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-right text-blue-500 font-mono font-bold">{{ formatNumber(getDispatchQty(order)) }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-right text-amber-500 font-mono font-bold">
+                                {{ formatNumber(Math.max(0, parseFloat(order.work_order?.qty_planned || 0) - getDispatchQty(order))) }}
+                            </td>
                             <td class="px-4 py-3 whitespace-nowrap text-right text-emerald-400 font-mono font-bold">{{ formatNumber(order.work_order?.qty_produced) }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-right text-amber-500 font-mono font-bold">
                                 {{ formatNumber(Math.max(0, parseFloat(order.work_order?.qty_planned || 0) - parseFloat(order.work_order?.qty_produced || 0))) }}
@@ -231,14 +303,23 @@ const formatDate = (date) => {
                                 <span class="font-mono text-xs text-slate-500 dark:text-slate-400">{{ formatDate(order.created_at) }}</span>
                             </td>
                             <td class="px-6 py-3 whitespace-nowrap text-right">
-                                <div class="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
-                                    <Link 
-                                        :href="route('manufacturing.subcontract-orders.show', order.id)"
-                                        class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white dark:text-white hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all"
+                                <div class="flex items-center justify-end gap-2">
+                                    <button 
+                                        v-if="canDispatch(order)"
+                                        @click="openDispatchModal(order)"
+                                        class="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-3 py-2 text-xs font-bold text-white shadow-lg shadow-blue-500/20 transition-all"
                                     >
-                                        <EyeIcon class="h-3.5 w-3.5" />
-                                        Detail
-                                    </Link>
+                                        <ArrowUpTrayIcon class="h-3.5 w-3.5" />
+                                        Dispatch
+                                    </button>
+                                    <button 
+                                        v-else
+                                        disabled
+                                        class="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/40 px-3 py-2 text-xs font-bold text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-800"
+                                    >
+                                        <ArrowUpTrayIcon class="h-3.5 w-3.5" />
+                                        Dispatch
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -325,8 +406,72 @@ const formatDate = (date) => {
                     <h4 class="font-bold text-slate-200 text-sm">Deep Audit</h4>
                 </div>
                 <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Click <strong>Detail</strong> to review raw material consumption sent to the vendor and cross-check incoming financial invoices from them.
+                    Click <strong>Order Number</strong> to review raw material consumption sent to the vendor and cross-check incoming financial invoices from them.
                 </p>
+            </div>
+        </div>
+
+        <!-- Dispatch Modal -->
+        <div v-if="showDispatchModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm">
+            <div class="glass-card rounded-3xl w-full max-w-2xl p-6 shadow-2xl">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                        <ArrowUpTrayIcon class="h-6 w-6 text-blue-400" />
+                        Dispatch Materials
+                    </h3>
+                    <button @click="showDispatchModal = false" class="p-2 text-slate-500 hover:text-slate-900 dark:text-white">
+                        <XMarkIcon class="h-6 w-6" />
+                    </button>
+                </div>
+
+                <div class="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-4 mb-6">
+                    <p class="text-xs text-blue-400 font-medium">
+                        Enter the quantity of each material you are currently sending to the subcontractor. 
+                        Stock will be reduced for the specified quantities.
+                    </p>
+                </div>
+                
+                <form @submit.prevent="submitDispatch" class="space-y-6">
+                    <div class="max-h-[40vh] overflow-y-auto space-y-4 pr-2">
+                        <div v-for="item in dispatchForm.items" :key="item.id" class="p-4 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center gap-4">
+                            <div class="flex-1">
+                                <div class="text-sm font-bold text-slate-900 dark:text-white">{{ item.name }}</div>
+                                <div class="text-[10px] text-slate-500 font-mono">{{ item.sku }}</div>
+                                <div class="mt-1 flex gap-3 text-[10px] font-bold uppercase tracking-wider">
+                                    <span class="text-slate-500">Required: {{ formatNumber(item.qty_required) }}</span>
+                                    <span class="text-emerald-500">Sent: {{ formatNumber(item.qty_consumed) }}</span>
+                                </div>
+                            </div>
+                            <div class="w-32">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Qty to send</label>
+                                <input 
+                                    v-model="item.qty"
+                                    type="number"
+                                    step="0.01"
+                                    class="w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-blue-400 font-mono font-bold focus:ring-blue-500"
+                                    placeholder="0"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex gap-3">
+                        <button 
+                            type="button"
+                            @click="showDispatchModal = false"
+                            class="flex-1 py-3 font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-700"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit"
+                            :disabled="dispatchForm.processing"
+                            class="flex-1 py-3 font-bold text-slate-900 dark:text-white bg-blue-600 rounded-xl hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                        >
+                            Confirm Dispatch
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </AppLayout>

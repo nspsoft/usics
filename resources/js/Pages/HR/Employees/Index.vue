@@ -31,6 +31,7 @@ const props = defineProps({
     departments: Array,
     positions: Array,
     filters: Object,
+    users: Array,
 });
 
 const search = ref(props.filters.search);
@@ -65,6 +66,9 @@ const form = useForm({
     joining_date: new Date().toISOString().split('T')[0],
     employment_status: 'probation',
     basic_salary: 0,
+    is_active: true,
+    user_id: '',
+    create_user: true,
     profile_picture: null,
 });
 
@@ -81,10 +85,16 @@ const openModal = (employee = null) => {
         form.joining_date = employee.joining_date;
         form.employment_status = employee.employment_status;
         form.basic_salary = employee.basic_salary;
+        form.is_active = employee.is_active === 1 || employee.is_active === true;
+        form.user_id = employee.user_id || '';
+        form.create_user = false;
         form.profile_picture = null;
     } else {
         form.reset();
         form.joining_date = new Date().toISOString().split('T')[0];
+        form.is_active = true;
+        form.user_id = '';
+        form.create_user = true;
     }
     showModal.value = true;
 };
@@ -446,15 +456,18 @@ const deleteFace = (employee) => {
                                             <div class="space-y-2">
                                                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Full Name</label>
                                                 <input v-model="form.full_name" type="text" class="block w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 transition-all" />
+                                                <p v-if="form.errors.full_name" class="text-[10px] text-red-500 italic">{{ form.errors.full_name }}</p>
                                             </div>
                                             
                                             <div class="space-y-2">
                                                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Email Address</label>
                                                 <input v-model="form.email" type="email" class="block w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 transition-all" />
+                                                <p v-if="form.errors.email" class="text-[10px] text-red-500 italic">{{ form.errors.email }}</p>
                                             </div>
                                             <div class="space-y-2">
                                                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Phone Number</label>
                                                 <input v-model="form.phone" type="text" class="block w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 transition-all" />
+                                                <p v-if="form.errors.phone" class="text-[10px] text-red-500 italic">{{ form.errors.phone }}</p>
                                             </div>
 
                                             <div class="space-y-2">
@@ -463,6 +476,7 @@ const deleteFace = (employee) => {
                                                     <option value="">Select Department</option>
                                                     <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
                                                 </select>
+                                                <p v-if="form.errors.department_id" class="text-[10px] text-red-500 italic">{{ form.errors.department_id }}</p>
                                             </div>
                                             <div class="space-y-2">
                                                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Position</label>
@@ -470,11 +484,13 @@ const deleteFace = (employee) => {
                                                     <option value="">Select Position</option>
                                                     <option v-for="pos in positions" :key="pos.id" :value="pos.id">{{ pos.name }}</option>
                                                 </select>
+                                                <p v-if="form.errors.position_id" class="text-[10px] text-red-500 italic">{{ form.errors.position_id }}</p>
                                             </div>
 
                                             <div class="space-y-2">
                                                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Joining Date</label>
                                                 <input v-model="form.joining_date" type="date" class="block w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 transition-all" />
+                                                <p v-if="form.errors.joining_date" class="text-[10px] text-red-500 italic">{{ form.errors.joining_date }}</p>
                                             </div>
                                             <div class="space-y-2">
                                                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Employment Status</label>
@@ -484,6 +500,16 @@ const deleteFace = (employee) => {
                                                     <option value="probation">Probation</option>
                                                     <option value="internship">Internship</option>
                                                 </select>
+                                                <p v-if="form.errors.employment_status" class="text-[10px] text-red-500 italic">{{ form.errors.employment_status }}</p>
+                                            </div>
+                                            
+                                            <div v-if="editingEmployee" class="space-y-2">
+                                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Account Status</label>
+                                                <select v-model="form.is_active" class="block w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 transition-all">
+                                                    <option :value="true">Active</option>
+                                                    <option :value="false">Inactive</option>
+                                                </select>
+                                                <p v-if="form.errors.is_active" class="text-[10px] text-red-500 italic">{{ form.errors.is_active }}</p>
                                             </div>
 
                                             <div class="space-y-2 md:col-span-2">
@@ -494,11 +520,13 @@ const deleteFace = (employee) => {
                                                     </div>
                                                     <input v-model="form.basic_salary" type="number" class="block w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-3 pl-12 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 transition-all font-mono font-bold" />
                                                 </div>
+                                                <p v-if="form.errors.basic_salary" class="text-[10px] text-red-500 italic">{{ form.errors.basic_salary }}</p>
                                             </div>
 
                                             <div class="space-y-2 md:col-span-2">
                                                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Address</label>
                                                 <textarea v-model="form.address" rows="3" class="block w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 transition-all"></textarea>
+                                                <p v-if="form.errors.address" class="text-[10px] text-red-500 italic">{{ form.errors.address }}</p>
                                             </div>
 
                                             <div class="space-y-2 md:col-span-2">
@@ -510,6 +538,29 @@ const deleteFace = (employee) => {
                                                     accept="image/*"
                                                 />
                                                 <p v-if="form.errors.profile_picture" class="text-[10px] text-red-500 italic">{{ form.errors.profile_picture }}</p>
+                                            </div>
+
+                                            <div class="space-y-2 md:col-span-2">
+                                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Linked System User (Optional)</label>
+                                                <select v-model="form.user_id" class="block w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50 transition-all">
+                                                    <option value="">None (Unlinked)</option>
+                                                    <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }} ({{ user.email }})</option>
+                                                </select>
+                                                <p v-if="form.errors.user_id" class="text-[10px] text-red-500 italic">{{ form.errors.user_id }}</p>
+                                            </div>
+
+                                            <div v-if="!form.user_id && form.email" class="space-y-2 md:col-span-2">
+                                                <div class="flex items-center gap-3 p-4 rounded-xl border border-dashed border-indigo-500/30 bg-indigo-500/5">
+                                                    <input 
+                                                        v-model="form.create_user"
+                                                        type="checkbox" 
+                                                        id="create_user"
+                                                        class="h-5 w-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                                                    />
+                                                    <label for="create_user" class="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                                                        Buat akun user sistem otomatis untuk karyawan ini (Password default: NIK)
+                                                    </label>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

@@ -51,12 +51,20 @@ let detectionInterval = null;
 
 const livenessVerified = ref(false);
 const eyeClosed = ref(false);
+const consecutiveMatches = ref(0);
 
 const registeredDescriptor = props.employee.face_descriptor 
     ? new Float32Array(JSON.parse(props.employee.face_descriptor))
     : null;
 
 const livenessRequired = computed(() => !!registeredDescriptor);
+
+const getFaceDetectorOptions = () => {
+    return new faceapi.TinyFaceDetectorOptions({
+        inputSize: 224,
+        scoreThreshold: 0.3
+    });
+};
 
 const getEar = (eyePoints) => {
     const p1 = eyePoints[0];
@@ -77,9 +85,16 @@ const getEar = (eyePoints) => {
 
 const runFaceDetectionLoop = async () => {
     if (!videoRef.value || !stream.value || !isDetectingLoop.value) return;
+
+    if (videoRef.value.readyState < 2 || videoRef.value.videoWidth === 0) {
+        if (isDetectingLoop.value) {
+            detectionInterval = setTimeout(runFaceDetectionLoop, 300);
+        }
+        return;
+    }
     
     try {
-        const detection = await faceapi.detectSingleFace(videoRef.value, new faceapi.TinyFaceDetectorOptions())
+        const detection = await faceapi.detectSingleFace(videoRef.value, getFaceDetectorOptions())
             .withFaceLandmarks()
             .withFaceDescriptor();
             
@@ -98,6 +113,7 @@ const runFaceDetectionLoop = async () => {
                 if (faceDistance < 0.6) {
                     isVerified = true;
                     verifiedEmployeeName.value = props.employee.full_name;
+                    consecutiveMatches.value++;
                     
                     // Liveness detection logic
                     const landmarks = detection.landmarks;
@@ -115,14 +131,18 @@ const runFaceDetectionLoop = async () => {
                             eyeClosed.value = false;
                             livenessVerified.value = true;
                             statusMessage.value = `Liveness verified! Face matched: ${props.employee.full_name}`;
+                        } else if (consecutiveMatches.value >= 8) {
+                            livenessVerified.value = true;
+                            statusMessage.value = `Liveness verified via presence. Face matched: ${props.employee.full_name}`;
                         } else {
-                            statusMessage.value = 'Silakan kedipkan mata Anda untuk memverifikasi keaktifan wajah (Liveness Check)';
+                            statusMessage.value = `Silakan kedipkan mata Anda untuk memverifikasi keaktifan wajah (${consecutiveMatches.value}/8)`;
                         }
                     } else {
                         statusMessage.value = `Liveness Verified. Face matched: ${props.employee.full_name}`;
                     }
                 } else {
                     verifiedEmployeeName.value = '';
+                    consecutiveMatches.value = 0;
                     statusMessage.value = 'Face mismatch (Unknown Face)';
                 }
             } else {
@@ -134,6 +154,7 @@ const runFaceDetectionLoop = async () => {
         } else {
             isFaceDetected.value = false;
             verifiedEmployeeName.value = '';
+            consecutiveMatches.value = 0;
             // Clear canvas
             if (canvasRef.value) {
                 const ctx = canvasRef.value.getContext('2d');
@@ -142,6 +163,7 @@ const runFaceDetectionLoop = async () => {
         }
     } catch (err) {
         console.error("Face detection loop error:", err);
+        statusMessage.value = `Detection error: ${err.message}`;
     }
     
     if (isDetectingLoop.value) {
@@ -257,7 +279,7 @@ const captureAndClock = async () => {
     isLoading.value = true;
     
     try {
-        const detection = await faceapi.detectSingleFace(videoRef.value, new faceapi.TinyFaceDetectorOptions())
+        const detection = await faceapi.detectSingleFace(videoRef.value, getFaceDetectorOptions())
             .withFaceLandmarks()
             .withFaceDescriptor();
             
@@ -377,6 +399,23 @@ onUnmounted(() => {
                             You have completed your shift today! 🎉
                         </div>
                     </div>
+                </div>
+
+                <!-- Panduan Absensi (Attendance Guide) -->
+                <div class="mt-4 bg-white dark:bg-slate-900 shadow-sm border border-gray-150 dark:border-slate-800 p-4 rounded-xl text-left">
+                    <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Petunjuk Presensi Wajah yang Benar
+                    </h4>
+                    <ul class="space-y-2 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed list-decimal pl-4">
+                        <li><strong>Cahaya Cukup:</strong> Posisi wajah harus menghadap cahaya terang (hindari membelakangi cahaya/backlight agar wajah terbaca jelas).</li>
+                        <li><strong>Wajah Terbuka:</strong> Lepas kacamata hitam, masker, atau topi yang menutupi bagian wajah Anda.</li>
+                        <li><strong>Verifikasi Kehadiran (Liveness):</strong> Tatap kamera lalu **kedipkan mata secara perlahan** ATAU diam/tahan posisi wajah Anda selama 2-3 detik sampai kotak hijau berlabel <span class="text-emerald-500 font-bold">LIVENESS VERIFIED</span> muncul.</li>
+                        <li><strong>Radius Area:</strong> Pastikan status lokasi Anda berwarna hijau (berada di dalam radius kantor).</li>
+                        <li><strong>Klik Tombol:</strong> Jika semua syarat di atas terpenuhi, klik tombol <strong>Clock In</strong> atau <strong>Clock Out</strong> untuk menyimpan absen.</li>
+                    </ul>
                 </div>
             </div>
         </div>

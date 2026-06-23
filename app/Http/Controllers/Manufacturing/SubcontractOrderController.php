@@ -26,12 +26,23 @@ class SubcontractOrderController extends Controller
             })
             ->count();
 
-        $query = SubcontractOrder::with(['workOrder.product', 'supplier', 'purchaseOrder'])
+        $query = SubcontractOrder::with(['workOrder.product', 'workOrder.components', 'supplier', 'purchaseOrder'])
             ->when($request->search, function ($q, $search) {
-                $q->where('order_number', 'like', "%{$search}%")
-                  ->orWhereHas('workOrder', function ($wo) use ($search) {
-                      $wo->where('wo_number', 'like', "%{$search}%");
-                  });
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('order_number', 'like', "%{$search}%")
+                        ->orWhereHas('workOrder', function ($wo) use ($search) {
+                            $wo->where('wo_number', 'like', "%{$search}%")
+                               ->orWhereHas('product', function ($p) use ($search) {
+                                   $p->where('name', 'like', "%{$search}%");
+                               });
+                        })
+                        ->orWhereHas('purchaseOrder', function ($po) use ($search) {
+                            $po->where('po_number', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('supplier', function ($sup) use ($search) {
+                            $sup->where('name', 'like', "%{$search}%");
+                        });
+                });
             })
             ->when($request->status, function ($q, $status) {
                 $q->where('status', $status);

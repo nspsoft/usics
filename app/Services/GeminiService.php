@@ -1381,6 +1381,98 @@ Question: \"{$question}\"";
 
         return null;
     }
+
+    public function analyzeStockShortages(array $shortageData): ?array
+    {
+        $this->ensureConfigured();
+
+        $prompt = "You are an expert Material Requirements Planning (MRP) and Inventory Control Analyst AI.
+        
+        Analyze the following stock shortage and Sales Order demand data:
+        
+        SHORTAGE DATA:
+        " . json_encode($shortageData, JSON_PRETTY_PRINT) . "
+        
+        INSTRUCTIONS:
+        1. Examine each product with a shortage.
+        2. Check if a shortage can be resolved by Reclassification (Stock Reclass) from an equivalent product that has available stock.
+        3. If it cannot be resolved by Reclassification, determine the procurement route:
+           - If it is a purchased product (is_purchased = true, is_manufactured = false), recommend creating a Purchase Order (PO). Check the 'historical_suppliers' list and choose the supplier with the lowest 'cheapest_price'. If no historical suppliers exist, recommend the 'default_supplier_id' and 'default_supplier_name'.
+           - If it is a manufactured product (is_manufactured = true) with production_type = 'internal', recommend a Work Order (Internal).
+           - If it is a manufactured product with production_type = 'subcontract', recommend a Work Order (Subcontract) and suggest the supplier_id if provided.
+        4. For any recommended Work Order (internal or subcontract), check if the required BOM components are short. If BOM components are short, recommend POs for those raw materials (applying the cheapest price supplier check from 'historical_suppliers' if available).
+        5. Write the analysis_summary in professional Bahasa Indonesia. Make it clean and structured.
+        6. Return the response as a JSON object in this exact format:
+        {
+            \"reclassifications\": [
+                {
+                    \"source_product_id\": 1,
+                    \"source_sku\": \"SKU-1\",
+                    \"source_name\": \"Product Source Name\",
+                    \"target_product_id\": 2,
+                    \"target_sku\": \"SKU-2\",
+                    \"target_name\": \"Product Target Name\",
+                    \"qty\": 15.0,
+                    \"reason\": \"Reason text in Bahasa Indonesia\"
+                }
+            ],
+            \"purchase_orders\": [
+                {
+                    \"product_id\": 3,
+                    \"sku\": \"SKU-3\",
+                    \"name\": \"Product Name\",
+                    \"qty\": 50.0,
+                    \"supplier_id\": 5,
+                    \"supplier_name\": \"Supplier Name\",
+                    \"reason\": \"Reason text in Bahasa Indonesia\"
+                }
+            ],
+            \"work_orders\": [
+                {
+                    \"product_id\": 4,
+                    \"sku\": \"SKU-4\",
+                    \"name\": \"Product Name\",
+                    \"qty\": 30.0,
+                    \"production_type\": \"internal\",
+                    \"supplier_id\": null,
+                    \"supplier_name\": \"\",
+                    \"reason\": \"Reason text in Bahasa Indonesia\"
+                }
+            ],
+            \"analysis_summary\": \"<Write a complete markdown analysis of the stock situation, highlighting the reclassifications and procurement plans in Bahasa Indonesia.>\"
+        }
+        
+        Return pure JSON without any markdown formatting or backticks.
+        ";
+
+        if ($this->driver === 'ollama') {
+            return $this->callOllama($prompt, true);
+        }
+        if ($this->driver === 'openrouter') {
+            return $this->callOpenRouter($prompt, null, null, true);
+        }
+
+        try {
+            $response = Http::timeout(120)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'response_mime_type' => 'application/json',
+                ]
+            ]);
+
+            return $this->parseResponse($response);
+        } catch (\Exception $e) {
+            Log::error('AI Stock Analysis Error: ' . $e->getMessage());
+        }
+
+        return null;
+    }
 }
 
 

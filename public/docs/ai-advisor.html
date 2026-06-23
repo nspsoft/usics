@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dokumentasi: AI Stock & Procurement Advisor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --teal: #0d9488;
+            --amber: #d97706;
+            --blue: #2563eb;
+            --border-color: #e2e8f0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0b0f19;
+                --card-bg: #111827;
+                --text-main: #f8fafc;
+                --text-muted: #94a3b8;
+                --primary: #6366f1;
+                --primary-hover: #4f46e5;
+                --teal: #14b8a6;
+                --amber: #f59e0b;
+                --blue: #3b82f6;
+                --border-color: #1f2937;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+
+        .card h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+        }
+
+        .icon-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 0.75rem;
+            font-weight: bold;
+        }
+
+        .icon-primary { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+        .icon-teal { background: rgba(20, 184, 166, 0.1); color: var(--teal); }
+        .icon-amber { background: rgba(245, 158, 11, 0.1); color: var(--amber); }
+
+        p, ul, ol {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        ul, ol {
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        strong {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .formula {
+            background-color: rgba(99, 102, 241, 0.05);
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            margin: 1rem 0;
+            display: block;
+            overflow-x: auto;
+        }
+
+        .diagram-container {
+            background: #ffffff;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .diagram-container {
+                background: #1e293b;
+                border-color: #334155;
+            }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 0.375rem;
+            text-transform: uppercase;
+        }
+        .badge-teal { background: rgba(20, 184, 166, 0.1); color: var(--teal); }
+        .badge-primary { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+        .badge-amber { background: rgba(245, 158, 11, 0.1); color: var(--amber); }
+
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <!-- Header -->
+        <div class="header">
+            <h1>AI Stock & Procurement Advisor</h1>
+            <p>Dokumentasi Alur Proses & Logika Pembuatan Draf Transaksi</p>
+        </div>
+
+        <!-- Card 1: Pengenalan -->
+        <div class="card">
+            <h2>
+                <div class="icon-wrapper icon-primary">🤖</div>
+                Arsitektur Hibrida (Heuristic + AI)
+            </h2>
+            <p>Fitur **AI Stock & Procurement Advisor** menggabungkan dua teknik utama untuk mendapatkan hasil analisis yang cepat, akurat, dan hemat biaya token:</p>
+            <ol>
+                <li><strong>Database Pre-Filtering (Heuristic)</strong>: Backend PHP memfilter awal hanya barang-barang kritis yang memiliki sisa antrean Sales Order (SO) aktif namun kuantitas stok fisiknya tidak mencukupi untuk memenuhi pesanan tersebut.</li>
+                <li><strong>AI Reasoning (Gemini API)</strong>: Data produk kritis hasil filter (biasanya berkisar 10-50 item saja) kemudian dikirimkan ke model AI untuk memproses optimasi jalur alternatif (Reclass), ledakan komponen BOM, dan mencari supplier termurah.</li>
+            </ol>
+        </div>
+
+        <!-- Card 2: Diagram Alir -->
+        <div class="card">
+            <h2>
+                <div class="icon-wrapper icon-teal">📊</div>
+                Diagram Alir Proses (Flowchart)
+            </h2>
+            <p>Alur di bawah ini menunjukkan bagaimana sistem memproses data dari Sales Order hingga pembentukan dokumen draf sekali klik:</p>
+            <div class="diagram-container">
+                <pre class="mermaid">
+graph TD
+    A[Mulai Analisis Advisor] --> B[Ekstraksi Permintaan SO Aktif]
+    B --> C[Hitung Defisit Stok Bersih]
+    C -->|Kekurangan > 0| D[Periksa Opsi Alternatif]
+    C -->|Kekurangan <= 0| Z[Abaikan / Lewati]
+    
+    subgraph Opsi Alternatif & Optimasi
+        D --> E[Cari Pemetaan Reclass Setara]
+        D --> F[BOM Explosion untuk Produk Manufaktur]
+        D --> G[Cari Histori Harga PO Termurah per Supplier]
+    end
+    
+    E --> H[Kompilasi JSON Payload Kritis]
+    F --> H
+    G --> H
+    
+    H --> I[Kirim Payload ke Gemini API]
+    I --> J[AI Memilih Tindakan & Menulis Narasi Analisis]
+    J --> K[Terima Output JSON Rekomendasi]
+    
+    K --> L[Filter Rekomendasi Kuantitas > 0]
+    L --> M[Tampilkan di Dasbor dengan Checklist]
+    
+    M --> N{Pilih Item & Klik Buat Draf}
+    N -->|Draft PO| O[Buat Draf Purchase Order]
+    N -->|Draft WO| P[Buat Draf Work Order]
+    N -->|Draft Reclass| Q[Buat Draf Stock Reclassification]
+    
+    O --> R[Selesai & Tinjau Draf]
+    P --> R
+    Q --> R
+                </pre>
+            </div>
+        </div>
+
+        <!-- Card 3: Formula Perhitungan -->
+        <div class="card">
+            <h2>
+                <div class="icon-wrapper icon-amber">💡</div>
+                Logika Perhitungan Defisit Stok Bersih
+            </h2>
+            <p>Sistem melakukan kalkulasi kekurangan produk secara transparan sebelum diserahkan ke AI. Formula yang digunakan adalah:</p>
+            <div class="formula">
+Defisit Bersih = Total Permintaan SO - (Stok Tersedia Saat Ini + Sisa PO Open + Sisa WO Open)
+            </div>
+            <p>Di mana komponen dihitung sebagai berikut:</p>
+            <ul>
+                <li><strong>Total Permintaan SO</strong>: Total akumulasi kuantitas barang yang dipesan dari SO berstatus <i>confirmed</i> atau <i>processing</i> yang belum terkirim (`qty - qty_delivered`).</li>
+                <li><strong>Stok Tersedia Saat Ini</strong>: Kuantitas stok fisik di seluruh gudang dikurangi stok yang telah dicadangkan (*Reserved*).</li>
+                <li><strong>Sisa PO Open</strong>: Sisa kuantitas barang yang masih dalam pesanan pembelian berjalan (`qty - qty_received` dari PO berstatus <i>ordered</i>/<i>partial</i>).</li>
+                <li><strong>Sisa WO Open</strong>: Sisa rencana produksi berjalan yang belum selesai diproduksi (`qty_planned - qty_produced` dari WO berstatus <i>confirmed</i>/<i>in_progress</i>).</li>
+            </ul>
+        </div>
+
+        <!-- Card 4: Penentuan Tindakan & Supplier Termurah -->
+        <div class="card">
+            <h2>
+                <div class="icon-wrapper icon-primary">⚡</div>
+                Optimalisasi Rekomendasi & Supplier Termurah
+            </h2>
+            <p>AI memproses tiga jenis rekomendasi utama yang dapat dieksekusi secara massal melalui checklist:</p>
+            <ul>
+                <li><span class="badge badge-teal">Stock Reclass</span>: Jika suatu produk kekurangan stok tetapi memiliki pemetaan produk ekuivalen di master data yang stoknya mencukupi, AI akan merekomendasikan pemindahan nama barang terlebih dahulu dibanding melakukan pembelian.</li>
+                <li><span class="badge badge-primary">Work Order (WO)</span>: Untuk produk berbendera manufaktur (`is_manufactured = true`), AI akan menyarankan pembuatan WO (internal atau subkontrak). Jika bahan baku di dalam BOM produk tersebut kurang, AI akan meledakkan komponen tersebut untuk menyarankan pembelian PO bahan baku secara otomatis.</li>
+                <li><span class="badge badge-amber">Purchase Order (PO)</span>: Untuk produk yang dibeli dari luar, AI akan menyarankan pembuatan PO. Sistem mengurutkan histori harga beli termurah dari tabel transaksi PO masa lalu (`purchase_order_items`) dan AI akan otomatis memilih supplier dengan <strong>harga penawaran termurah</strong> sebagai prioritas utama.</li>
+            </ul>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>&copy; 2026 ERP Intelligence System. All rights reserved.</p>
+        </div>
+
+    </div>
+
+    <!-- Include Mermaid.js for drawing diagrams -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
+</body>
+</html>

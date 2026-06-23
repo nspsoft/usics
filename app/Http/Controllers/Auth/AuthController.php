@@ -30,6 +30,14 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+
+            $user = Auth::user();
+            if ($user->employee && \Illuminate\Support\Facades\Hash::check($user->employee->nik, $user->password)) {
+                session(['must_change_password' => true]);
+            } else {
+                session()->forget('must_change_password');
+            }
+
             return redirect()->intended('/dashboard');
         }
 

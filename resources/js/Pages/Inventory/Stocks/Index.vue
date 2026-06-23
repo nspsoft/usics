@@ -12,6 +12,7 @@ import {
     ChevronUpIcon,
     ChevronDownIcon,
     ArrowDownTrayIcon,
+    SparklesIcon,
 } from '@heroicons/vue/24/outline';
 import Pagination from '@/Components/Pagination.vue';
 import debounce from 'lodash/debounce';
@@ -244,6 +245,13 @@ const exportUrl = computed(() => {
                 </div>
                 
                 <div class="flex items-center gap-3">
+                    <Link
+                        href="/inventory/intelligence"
+                        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 shadow-lg shadow-indigo-900/25 transition-all"
+                    >
+                        <SparklesIcon class="h-5 w-5" />
+                        AI Stock Advisor
+                    </Link>
                     <a
                         :href="exportUrl"
                         target="_blank"

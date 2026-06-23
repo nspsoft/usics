@@ -211,8 +211,9 @@ class PurchaseOrderController extends Controller
         DB::transaction(function () use ($validated) {
             $supplier = Supplier::findOrFail($validated['supplier_id']);
 
-            // Use user-provided PO number if available, otherwise auto-generate
-            if (!empty($validated['po_number'])) {
+            // Use user-provided PO number if available (Admin only), otherwise auto-generate
+            $isAdmin = auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('IT Administrator');
+            if ($isAdmin && !empty($validated['po_number'])) {
                 $poNumber = $validated['po_number'];
                 // Sync the counter so next auto-generation continues from here
                 app(DocumentNumberService::class)->sync('purchase_order', $poNumber);
@@ -378,6 +379,11 @@ class PurchaseOrderController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.discount_percent' => 'nullable|numeric|min:0|max:100',
         ]);
+
+        $isAdmin = auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('IT Administrator');
+        if (!$isAdmin && $order->po_number !== $validated['po_number']) {
+            return back()->withErrors(['po_number' => 'Hanya Admin yang dapat mengubah PO Number secara manual.']);
+        }
 
         DB::transaction(function () use ($validated, $order) {
         $updateData = [

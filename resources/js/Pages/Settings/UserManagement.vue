@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { ref, computed, watch } from 'vue';
+import { Head, useForm, router, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { 
     UserGroupIcon, 
@@ -14,27 +14,36 @@ import {
     BuildingOfficeIcon
 } from '@heroicons/vue/24/outline';
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
+import debounce from 'lodash/debounce';
 
 const props = defineProps({
-    users: Array,
+    users: Object,
     roles: Array,
     suppliers: Array,
+    filters: Object,
 });
 
-const searchQuery = ref('');
+const searchQuery = ref(props.filters?.search || '');
+const perPage = ref(props.filters?.per_page || 10);
+const userType = ref(props.filters?.type || 'all');
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteConfirm = ref(false);
 const userToEdit = ref(null);
 const userToDelete = ref(null);
 
-const filteredUsers = computed(() => {
-    return props.users.filter(user => 
-        user.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        (user.supplier && user.supplier.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
-    );
-});
+const applyFilters = debounce(() => {
+    router.get(route('settings.users'), {
+        search: searchQuery.value || undefined,
+        per_page: perPage.value || undefined,
+        type: userType.value !== 'all' ? userType.value : undefined,
+    }, {
+        preserveState: true,
+        replace: true,
+    });
+}, 300);
+
+watch([searchQuery, perPage, userType], applyFilters);
 
 const form = useForm({
     name: '',
@@ -121,7 +130,7 @@ const deleteUser = () => {
             <!-- List Section -->
             <div class="rounded-2xl glass-card overflow-hidden shadow-xl">
                 <!-- Toolbar -->
-                <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between gap-4">
+                <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div class="relative max-w-sm w-full">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <MagnifyingGlassIcon class="h-5 w-5 text-slate-500" />
@@ -133,6 +142,36 @@ const deleteUser = () => {
                             class="block w-full pl-10 pr-3 py-2 glass-card rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                         />
                     </div>
+                    
+                    <div class="flex items-center gap-4">
+                        <!-- User Type Filter -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Type:</span>
+                            <select 
+                                v-model="userType" 
+                                class="block rounded-xl border-0 bg-white dark:bg-slate-950 py-1.5 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
+                            >
+                                <option value="all">All Users</option>
+                                <option value="internal">Internal</option>
+                                <option value="supplier">Supplier</option>
+                            </select>
+                        </div>
+
+                        <!-- Page Size Selector -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Per Page:</span>
+                            <select 
+                                v-model="perPage" 
+                                class="block rounded-xl border-0 bg-white dark:bg-slate-950 py-1.5 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
+                            >
+                                <option :value="5">5</option>
+                                <option :value="10">10</option>
+                                <option :value="25">25</option>
+                                <option :value="50">50</option>
+                                <option :value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Table -->
@@ -140,65 +179,95 @@ const deleteUser = () => {
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50 dark:bg-slate-900/50">
-                                <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">User</th>
-                                <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Access Info</th>
-                                <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                                <th class="px-6 py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">User</th>
+                                <th class="px-6 py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Access Info</th>
+                                <th class="px-6 py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
-                            <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors group">
-                                <td class="px-6 py-4">
+                            <tr v-for="user in users.data" :key="user.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors group">
+                                <td class="px-6 py-2">
                                     <div class="flex items-center gap-3">
-                                        <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                                        <div class="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-xs font-bold text-blue-400 border border-blue-500/20 shrink-0">
                                             {{ user.name.charAt(0).toUpperCase() }}
                                         </div>
                                         <div>
                                             <div class="text-sm font-semibold text-slate-900 dark:text-white">{{ user.name }}</div>
-                                            <div class="text-xs text-slate-500">{{ user.email }}</div>
-                                            <div v-if="user.supplier" class="text-xs text-blue-500 font-medium flex items-center gap-1 mt-0.5">
-                                                <BuildingOfficeIcon class="h-3 w-3" />
-                                                {{ user.supplier.name }}
+                                            <div v-if="user.employee" class="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-bold tracking-wide mt-0.5">
+                                                NIK: {{ user.employee.nik }}
                                             </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div v-if="user.roles && user.roles.length > 0" class="flex items-center gap-2">
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">
-                                            <ShieldCheckIcon class="h-3.5 w-3.5" />
-                                            {{ user.roles[0].name }}
-                                        </span>
-                                    </div>
-                                    <div v-else class="text-xs text-slate-600 italic">No role assigned</div>
+                                <td class="px-6 py-2 text-sm text-slate-500 dark:text-slate-400">
+                                    {{ user.email }}
                                 </td>
-                                <td class="px-6 py-4 text-right">
+                                <td class="px-6 py-2">
+                                    <div class="flex flex-col gap-1">
+                                        <div v-if="user.roles && user.roles.length > 0" class="flex items-center gap-2">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-400 text-[10px] font-bold border border-indigo-500/20">
+                                                <ShieldCheckIcon class="h-3 w-3" />
+                                                {{ user.roles[0].name }}
+                                            </span>
+                                        </div>
+                                        <div v-else class="text-[10px] text-slate-600 italic">No role assigned</div>
+                                        
+                                        <div v-if="user.supplier" class="text-[10px] text-blue-500 font-semibold flex items-center gap-1">
+                                            <BuildingOfficeIcon class="h-3 w-3 text-blue-500" />
+                                            {{ user.supplier.name }} (Supplier)
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-2 text-right">
                                     <div class="flex items-center justify-end gap-1">
                                         <button 
                                             type="button"
                                             @click="openEditModal(user)"
-                                            class="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-transparent hover:border-blue-500/30"
+                                            class="p-1.5 text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all border border-transparent hover:border-blue-500/30"
                                             title="Edit User"
                                         >
-                                            <PencilSquareIcon class="h-5 w-5" />
+                                            <PencilSquareIcon class="h-4.5 w-4.5" />
                                         </button>
                                         <button 
                                             type="button"
                                             @click="confirmDelete(user)"
-                                            class="p-2 text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all border border-transparent hover:border-red-500/30"
+                                            class="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all border border-transparent hover:border-red-500/30"
                                             title="Delete User"
                                         >
-                                            <TrashIcon class="h-5 w-5" />
+                                            <TrashIcon class="h-4.5 w-4.5" />
                                         </button>
                                     </div>
                                 </td>
                             </tr>
-                            <tr v-if="filteredUsers.length === 0">
-                                <td colspan="3" class="px-6 py-12 text-center text-slate-500 italic">
+                            <tr v-if="!users.data || users.data.length === 0">
+                                <td colspan="4" class="px-6 py-12 text-center text-slate-500 italic">
                                     No users found matching your search.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Showing {{ users.from || 0 }} to {{ users.to || 0 }} of {{ users.total || 0 }} users
+                    </p>
+                    <div class="flex items-center gap-2">
+                        <Link
+                            v-for="link in users.links"
+                            :key="link.label"
+                            :href="link.url || '#'"
+                            class="px-3 py-1.5 rounded-lg text-sm transition-colors"
+                            :class="link.active 
+                                ? 'bg-blue-600 text-white' 
+                                : link.url 
+                                    ? 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white' 
+                                    : 'text-slate-300 dark:text-slate-600 cursor-not-allowed'"
+                            v-html="link.label"
+                        />
+                    </div>
                 </div>
             </div>
         </div>

@@ -14,6 +14,7 @@ class ProfileController extends Controller
     {
         return Inertia::render('Profile/Show', [
             'user' => Auth::user(),
+            'mustChangePassword' => session('must_change_password') === true,
         ]);
     }
 
@@ -147,6 +148,8 @@ class ProfileController extends Controller
         $user->update([
             'password' => Hash::make($validated['password']),
         ]);
+
+        session()->forget('must_change_password');
 
         return back()->with('success', 'Password updated successfully.');
     }
