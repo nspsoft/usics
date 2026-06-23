@@ -58,6 +58,26 @@ const getStatusLabel = (status) => {
     }
 };
 
+const getProductTypeBadge = (type) => {
+    const badges = {
+        raw_material: 'bg-amber-100 text-amber-800 dark:bg-amber-800/30 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+        wip: 'bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+        finished_good: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-800/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+        spare_part: 'bg-purple-100 text-purple-800 dark:bg-purple-800/30 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+    };
+    return badges[type] || 'bg-slate-100 text-slate-800 dark:bg-slate-800/30 dark:text-slate-400 border-slate-200 dark:border-slate-800';
+};
+
+const getProductTypeLabel = (type) => {
+    const labels = {
+        raw_material: 'Raw Material',
+        wip: 'WIP',
+        finished_good: 'Finished Good',
+        spare_part: 'Spare Part',
+    };
+    return labels[type] || type;
+};
+
 const exportExcel = () => {
     const params = new URLSearchParams();
     if (selectedCategory.value) params.append('category', selectedCategory.value);
@@ -184,6 +204,7 @@ const exportExcel = () => {
                                 <th class="py-3 px-4 text-left font-bold text-slate-500 tracking-wider uppercase text-xs">SKU</th>
                                 <th class="py-3 px-4 text-left font-bold text-slate-500 tracking-wider uppercase text-xs">Product Name</th>
                                 <th class="py-3 px-4 text-left font-bold text-slate-500 tracking-wider uppercase text-xs">Category</th>
+                                <th class="py-3 px-4 text-left font-bold text-slate-500 tracking-wider uppercase text-xs">Type</th>
                                 <th class="py-3 px-4 text-right font-bold text-slate-500 tracking-wider uppercase text-xs">Stock Qty</th>
                                 <th class="py-3 px-4 text-center font-bold text-slate-500 tracking-wider uppercase text-xs">Last Out Date</th>
                                 <th class="py-3 px-4 text-center font-bold text-slate-500 tracking-wider uppercase text-xs">Days Inactive</th>
@@ -195,6 +216,14 @@ const exportExcel = () => {
                                 <td class="py-3 px-4 font-mono text-xs text-slate-500">{{ item.sku }}</td>
                                 <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">{{ item.name }}</td>
                                 <td class="py-3 px-4 text-slate-500 text-xs">{{ item.category }}</td>
+                                <td class="py-3 px-4 text-slate-500 text-xs">
+                                    <span 
+                                        class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border"
+                                        :class="getProductTypeBadge(item.product_type)"
+                                    >
+                                        {{ getProductTypeLabel(item.product_type) }}
+                                    </span>
+                                </td>
                                 <td class="py-3 px-4 text-right font-mono text-slate-900 dark:text-white">
                                     {{ formatNumber(item.qty) }} <span class="text-[10px] text-slate-400">{{ item.unit }}</span>
                                 </td>
@@ -214,7 +243,7 @@ const exportExcel = () => {
                                 </td>
                             </tr>
                             <tr v-if="data.data.length === 0">
-                                <td colspan="7" class="py-12 px-4 text-center text-slate-500 italic">No inventory records found for the selected filters.</td>
+                                <td colspan="8" class="py-12 px-4 text-center text-slate-500 italic">No inventory records found for the selected filters.</td>
                             </tr>
                         </tbody>
                     </table>

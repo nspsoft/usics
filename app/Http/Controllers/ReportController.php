@@ -277,6 +277,7 @@ class ReportController extends Controller
                     'sku' => $p->sku,
                     'name' => $p->name,
                     'category' => $p->category->name ?? '-',
+                    'product_type' => $p->product_type,
                     'qty' => $qty,
                     'unit' => $p->unit->symbol ?? ($p->unit->name ?? 'pcs'),
                     'last_out_date' => $p->last_out_date ? \Carbon\Carbon::parse($p->last_out_date)->format('Y-m-d') : '-',
@@ -331,11 +332,12 @@ class ReportController extends Controller
 
         return Excel::download(new ReportExport(
             $data,
-            ['SKU', 'Product Name', 'Category', 'Stock Qty', 'Unit', 'Last Out Date', 'Days Inactive', 'Classification'],
+            ['SKU', 'Product Name', 'Category', 'Product Type', 'Stock Qty', 'Unit', 'Last Out Date', 'Days Inactive', 'Classification'],
             fn ($row) => [
                 $row['sku'], 
                 $row['name'], 
                 $row['category'], 
+                ucwords(str_replace('_', ' ', $row['product_type'] ?? '')),
                 $row['qty'], 
                 $row['unit'],
                 $row['last_out_date'], 
