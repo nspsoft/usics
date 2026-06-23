@@ -141,7 +141,7 @@ const canDispatch = (order) => {
     }
     const planned = parseFloat(order.work_order?.qty_planned || 0);
     const dispatched = getDispatchQty(order);
-    return (planned - dispatched) > 0.01;
+    return (planned - dispatched) > 0;
 };
 </script>
 
