@@ -659,10 +659,16 @@ const printReport = () => {
 
 <style scoped>
 @media print {
+  /* Page margins */
+  @page {
+    margin: 0.8cm;
+  }
+
   /* Print layout optimizations */
   .grid-cols-1 {
     display: flex !important;
     flex-direction: column !important;
+    gap: 0.5rem !important;
   }
   
   .lg\:col-span-8 {
@@ -673,7 +679,65 @@ const printReport = () => {
   .lg\:col-span-4 {
     order: 1 !important; /* AI Commentary first */
     width: 100% !important;
-    margin-bottom: 2rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* Compress layouts, margins and paddings */
+  .mb-6 {
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .space-y-6 > * + * {
+    margin-top: 0.5rem !important;
+  }
+
+  .space-y-4 > * + * {
+    margin-top: 0.35rem !important;
+  }
+
+  .p-5 {
+    padding: 0.6rem 0.75rem !important;
+  }
+
+  .p-4 {
+    padding: 0.4rem 0.6rem !important;
+  }
+
+  .px-4 {
+    padding-left: 0.4rem !important;
+    padding-right: 0.4rem !important;
+  }
+
+  .py-3 {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+  }
+
+  .gap-6 {
+    gap: 0.5rem !important;
+  }
+
+  /* Scale font-sizes down for compact printing */
+  .text-xl {
+    font-size: 1.15rem !important;
+  }
+  .text-lg {
+    font-size: 1rem !important;
+  }
+  .text-sm {
+    font-size: 0.75rem !important;
+  }
+  .text-xs {
+    font-size: 0.7rem !important;
+  }
+  .text-\[11px\] {
+    font-size: 0.68rem !important;
+  }
+  .text-\[10px\] {
+    font-size: 0.62rem !important;
+  }
+  .font-bold {
+    font-weight: 700 !important;
   }
 
   /* Force light theme elements for cleaner printing */
@@ -692,9 +756,16 @@ const printReport = () => {
     color: #475569 !important;
   }
 
-  /* Prevent page breaks inside cards for cleaner page splits */
-  .space-y-6 > div, .space-y-4 > div {
+  /* Prevent page breaks inside individual item rows instead of the entire card container */
+  .space-y-4 > div, 
+  .divide-y > div,
+  .border.rounded-xl {
     page-break-inside: avoid !important;
+  }
+  
+  /* Allow cards containing lists to break across pages */
+  .bg-white.rounded-2xl {
+    page-break-inside: auto !important;
   }
 }
 </style>

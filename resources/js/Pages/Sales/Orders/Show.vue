@@ -137,11 +137,37 @@ const submitReplaceProduct = (itemId) => {
     });
 };
 
+// ─── PO Editing ───
+const isEditingPo = ref(false);
+const poForm = useForm({
+    customer_po_number: props.salesOrder.customer_po_number || ''
+});
+
+const startEditingPo = () => {
+    isEditingPo.value = true;
+    poForm.customer_po_number = props.salesOrder.customer_po_number || '';
+};
+
+const cancelEditingPo = () => {
+    isEditingPo.value = false;
+    poForm.clearErrors();
+};
+
+const submitPo = () => {
+    poForm.put(route('sales.orders.update-po', props.salesOrder.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            isEditingPo.value = false;
+        }
+    });
+};
+
 // ─── Status Badge ───
 const getStatusClass = (status) => {
     const classes = {
         draft: 'bg-slate-500/10 text-slate-500 dark:text-slate-400 ring-slate-500/20',
         confirmed: 'bg-blue-500/10 text-blue-400 ring-blue-500/20',
+        waiting_po: 'bg-orange-500/10 text-orange-400 ring-orange-500/20',
         processing: 'bg-amber-500/10 text-amber-400 ring-amber-500/20',
         shipped: 'bg-purple-500/10 text-purple-400 ring-purple-500/20',
         delivered: 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20',
@@ -526,6 +552,47 @@ const getStatusClass = (status) => {
                     <div class="rounded-2xl glass-card p-6">
                         <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Order Details</h3>
                         <dl class="space-y-4">
+                            <div>
+                                <dt class="text-xs text-slate-500">Customer PO</dt>
+                                <dd class="text-sm text-slate-900 dark:text-white font-medium flex items-center gap-2">
+                                    <span v-if="!isEditingPo" class="font-mono font-bold">{{ salesOrder.customer_po_number || 'Tanpa PO' }}</span>
+                                    <input
+                                        v-else
+                                        v-model="poForm.customer_po_number"
+                                        type="text"
+                                        class="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500/50 py-1 px-2"
+                                        placeholder="PO-XXXXX"
+                                        @keyup.enter="submitPo"
+                                        @keyup.esc="cancelEditingPo"
+                                    />
+                                    <button
+                                        v-if="!isEditingPo && salesOrder.status !== 'cancelled'"
+                                        @click="startEditingPo"
+                                        class="p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-all cursor-pointer"
+                                        title="Edit PO"
+                                    >
+                                        <PencilSquareIcon class="h-4 w-4" />
+                                    </button>
+                                    <div v-else-if="isEditingPo" class="flex items-center gap-1">
+                                        <button
+                                            @click="submitPo"
+                                            class="p-1 rounded-md text-emerald-500 hover:bg-emerald-500/10 transition-all cursor-pointer"
+                                            title="Save"
+                                            :disabled="poForm.processing"
+                                        >
+                                            <CheckIcon class="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            @click="cancelEditingPo"
+                                            class="p-1 rounded-md text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                                            title="Cancel"
+                                        >
+                                            <XMarkIcon class="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </dd>
+                                <div v-if="poForm.errors.customer_po_number" class="text-xs text-red-500 mt-1 font-bold">{{ poForm.errors.customer_po_number }}</div>
+                            </div>
                             <div>
                                 <dt class="text-xs text-slate-500">Warehouse</dt>
                                 <dd class="text-sm text-slate-900 dark:text-white font-medium">{{ salesOrder.warehouse.name }}</dd>

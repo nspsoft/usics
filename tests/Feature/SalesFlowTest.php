@@ -190,4 +190,97 @@ class SalesFlowTest extends TestCase
         $invoice->refresh();
         $this->assertEquals('paid', $invoice->status, 'Invoice status should be paid');
     }
+
+    public function test_sales_order_po_handling()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $company = Company::firstOrCreate([
+            'code' => 'TEST-001',
+            'name' => 'Test Company',
+            'email' => 'test@company.com',
+        ], [
+            'code' => 'TEST-001',
+            'name' => 'Test Company',
+            'email' => 'test@company.com',
+        ]);
+
+        $customer = Customer::firstOrCreate([
+            'company_id' => $company->id,
+            'name' => 'Test Customer Feature',
+            'email' => 'customer.feature@test.com',
+            'phone' => '0812999999',
+            'address' => 'Jl. Feature Test',
+            'code' => 'CUST-TEST',
+        ], [
+            'company_id' => $company->id,
+            'name' => 'Test Customer Feature',
+            'email' => 'customer.feature@test.com',
+            'phone' => '0812999999',
+            'address' => 'Jl. Feature Test',
+            'code' => 'CUST-TEST',
+        ]);
+
+        $warehouse = Warehouse::firstOrCreate([
+            'company_id' => $company->id,
+            'code' => 'WH-TEST',
+            'name' => 'Test Warehouse',
+            'type' => 'warehouse',
+        ], [
+            'company_id' => $company->id,
+            'code' => 'WH-TEST',
+            'name' => 'Test Warehouse',
+            'type' => 'warehouse',
+        ]);
+
+        // 1. Create SO without PO number
+        $so1 = \App\Models\SalesOrder::create([
+            'so_number' => 'SO-TEST-PO-1',
+            'customer_po_number' => null,
+            'customer_id' => $customer->id,
+            'warehouse_id' => $warehouse->id,
+            'order_date' => now()->toDateString(),
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+
+        // 2. Confirm SO1 -> Should transition to waiting_po
+        $response = $this->post(route('sales.orders.confirm', $so1->id));
+        $response->assertSessionHasNoErrors();
+        $so1->refresh();
+        $this->assertEquals('waiting_po', $so1->status);
+
+        // 3. Update PO on SO1 -> Should transition to confirmed
+        $response = $this->put(route('sales.orders.update-po', $so1->id), [
+            'customer_po_number' => 'PO-NEW-123',
+        ]);
+        $response->assertSessionHasNoErrors();
+        $so1->refresh();
+        $this->assertEquals('PO-NEW-123', $so1->customer_po_number);
+        $this->assertEquals('confirmed', $so1->status);
+
+        // 4. Create SO2, confirm it with PO number filled -> Should be confirmed
+        $so2 = \App\Models\SalesOrder::create([
+            'so_number' => 'SO-TEST-PO-2',
+            'customer_po_number' => 'PO-NEW-456',
+            'customer_id' => $customer->id,
+            'warehouse_id' => $warehouse->id,
+            'order_date' => now()->toDateString(),
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
+        $response = $this->post(route('sales.orders.confirm', $so2->id));
+        $so2->refresh();
+        $this->assertEquals('confirmed', $so2->status);
+
+        // 5. Try updating SO2's PO to a duplicate of SO1 (PO-NEW-123) -> Should fail with validation error
+        $response = $this->put(route('sales.orders.update-po', $so2->id), [
+            'customer_po_number' => 'PO-NEW-123',
+        ]);
+        $response->assertSessionHas('error');
+        $so2->refresh();
+        $this->assertEquals('PO-NEW-456', $so2->customer_po_number);
+    }
 }
+

@@ -345,13 +345,16 @@ class SalesOrderController extends Controller
             return back()->with('error', 'Only draft orders can be confirmed.');
         }
 
+        $status = empty($order->customer_po_number) ? SalesOrder::STATUS_WAITING_PO : SalesOrder::STATUS_CONFIRMED;
+
         $order->update([
-            'status' => 'confirmed',
+            'status' => $status,
             'confirmed_by' => auth()->id(),
             'confirmed_at' => now(),
         ]);
 
-        return back()->with('success', 'Sales Order confirmed.');
+        $statusLabel = $status === SalesOrder::STATUS_WAITING_PO ? 'Waiting PO' : 'Confirmed';
+        return back()->with('success', "Sales Order confirmed (Status: {$statusLabel}).");
     }
 
     public function bulkConfirm(Request $request)
@@ -367,8 +370,9 @@ class SalesOrderController extends Controller
 
         foreach ($orders as $order) {
             if ($order->status === 'draft') {
+                $status = empty($order->customer_po_number) ? SalesOrder::STATUS_WAITING_PO : SalesOrder::STATUS_CONFIRMED;
                 $order->update([
-                    'status' => 'confirmed',
+                    'status' => $status,
                     'confirmed_by' => auth()->id(),
                     'confirmed_at' => now(),
                 ]);
@@ -674,6 +678,51 @@ class SalesOrderController extends Controller
             \Log::error("Error creating consolidated invoice for SO {$order->so_number}: " . $e->getMessage());
             return back()->with('error', 'Error creating invoice: ' . $e->getMessage());
         }
+    }
+
+    public function updatePo(Request $request, SalesOrder $order)
+    {
+        $validated = $request->validate([
+            'customer_po_number' => \App\Models\AppSetting::get('require_po_number', false) ? 'required|string|max:50' : 'nullable|string|max:50',
+        ]);
+
+        if ($order->status === SalesOrder::STATUS_CANCELLED) {
+            return back()->with('error', 'Tidak bisa mengubah PO Number untuk order yang sudah dibatalkan.');
+        }
+
+        if (!empty($validated['customer_po_number'])) {
+            $existing = SalesOrder::where('customer_po_number', $validated['customer_po_number'])
+                ->where('id', '!=', $order->id)
+                ->where('status', '!=', SalesOrder::STATUS_CANCELLED)
+                ->first();
+
+            if ($existing) {
+                return back()->with('error', "PO Number '{$validated['customer_po_number']}' sudah digunakan di order {$existing->so_number}.");
+            }
+        }
+
+        $oldPo = $order->customer_po_number;
+        $newPo = $validated['customer_po_number'];
+
+        if ($oldPo !== $newPo) {
+            $updateData = ['customer_po_number' => $newPo];
+            
+            if ($order->status === SalesOrder::STATUS_WAITING_PO && !empty($newPo)) {
+                $updateData['status'] = SalesOrder::STATUS_CONFIRMED;
+                $updateData['confirmed_by'] = auth()->id();
+                $updateData['confirmed_at'] = now();
+            }
+
+            $order->update($updateData);
+
+            activity()
+                ->performedOn($order)
+                ->causedBy(auth()->user())
+                ->withProperties(['old_po_number' => $oldPo, 'new_po_number' => $newPo])
+                ->log("Updated Customer PO Number from '{$oldPo}' to '{$newPo}'.");
+        }
+
+        return back()->with('success', 'PO Number berhasil diperbarui.');
     }
 
     public function export()
