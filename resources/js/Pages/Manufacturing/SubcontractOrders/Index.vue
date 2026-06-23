@@ -136,7 +136,12 @@ const submitDispatch = () => {
 };
 
 const canDispatch = (order) => {
-    return !['completed', 'cancelled'].includes(order.status);
+    if (['completed', 'cancelled'].includes(order.status)) {
+        return false;
+    }
+    const planned = parseFloat(order.work_order?.qty_planned || 0);
+    const dispatched = getDispatchQty(order);
+    return (planned - dispatched) > 0.01;
 };
 </script>
 
