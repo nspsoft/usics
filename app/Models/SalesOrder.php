@@ -136,6 +136,31 @@ class SalesOrder extends Model
         ]);
     }
 
+    public function recalculateStatus(): void
+    {
+        if ($this->status === self::STATUS_CANCELLED) {
+            return;
+        }
+
+        if ($this->status === self::STATUS_DRAFT) {
+            return;
+        }
+
+        $hasItems = $this->items()->exists();
+        $allDelivered = $hasItems && $this->items->every(fn($item) => $item->isFullyDelivered());
+        $someDelivered = $hasItems && $this->items->some(fn($item) => $item->qty_delivered > 0);
+
+        if ($allDelivered) {
+            $this->status = !empty($this->customer_po_number) ? self::STATUS_DELIVERED : self::STATUS_WAITING_PO;
+        } elseif ($someDelivered) {
+            $this->status = !empty($this->customer_po_number) ? self::STATUS_PROCESSING : self::STATUS_WAITING_PO;
+        } else {
+            $this->status = !empty($this->customer_po_number) ? self::STATUS_CONFIRMED : self::STATUS_WAITING_PO;
+        }
+
+        $this->save();
+    }
+
     public function isEditable(): bool
     {
         return in_array($this->status, [self::STATUS_DRAFT, self::STATUS_WAITING_PO]);

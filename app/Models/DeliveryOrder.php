@@ -165,9 +165,9 @@ class DeliveryOrder extends Model
 
         // Update SO status
         $so = $this->salesOrder;
-        $allDelivered = $so->items->every(fn($item) => $item->isFullyDelivered());
-        $so->status = $allDelivered ? SalesOrder::STATUS_DELIVERED : SalesOrder::STATUS_PROCESSING;
-        $so->save();
+        if ($so) {
+            $so->recalculateStatus();
+        }
 
         $this->status = self::STATUS_COMPLETED;
         $this->delivered_at = now();

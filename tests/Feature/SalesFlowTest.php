@@ -274,13 +274,13 @@ class SalesFlowTest extends TestCase
         $so2->refresh();
         $this->assertEquals('confirmed', $so2->status);
 
-        // 5. Try updating SO2's PO to a duplicate of SO1 (PO-NEW-123) -> Should fail with validation error
+        // 5. Try updating SO2's PO to a duplicate of SO1 (PO-NEW-123) -> Should succeed!
         $response = $this->put(route('sales.orders.update-po', $so2->id), [
             'customer_po_number' => 'PO-NEW-123',
         ]);
-        $response->assertSessionHas('error');
+        $response->assertSessionHasNoErrors();
         $so2->refresh();
-        $this->assertEquals('PO-NEW-456', $so2->customer_po_number);
+        $this->assertEquals('PO-NEW-123', $so2->customer_po_number);
     }
 }
 

@@ -690,31 +690,13 @@ class SalesOrderController extends Controller
             return back()->with('error', 'Tidak bisa mengubah PO Number untuk order yang sudah dibatalkan.');
         }
 
-        if (!empty($validated['customer_po_number'])) {
-            $existing = SalesOrder::where('customer_po_number', $validated['customer_po_number'])
-                ->where('id', '!=', $order->id)
-                ->where('status', '!=', SalesOrder::STATUS_CANCELLED)
-                ->first();
-
-            if ($existing) {
-                return back()->with('error', "PO Number '{$validated['customer_po_number']}' sudah digunakan di order {$existing->so_number}.");
-            }
-        }
-
         $oldPo = $order->customer_po_number;
         $newPo = $validated['customer_po_number'];
 
+        $order->customer_po_number = $newPo;
+        $order->recalculateStatus();
+
         if ($oldPo !== $newPo) {
-            $updateData = ['customer_po_number' => $newPo];
-            
-            if ($order->status === SalesOrder::STATUS_WAITING_PO && !empty($newPo)) {
-                $updateData['status'] = SalesOrder::STATUS_CONFIRMED;
-                $updateData['confirmed_by'] = auth()->id();
-                $updateData['confirmed_at'] = now();
-            }
-
-            $order->update($updateData);
-
             activity()
                 ->performedOn($order)
                 ->causedBy(auth()->user())

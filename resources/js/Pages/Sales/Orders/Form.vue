@@ -143,16 +143,23 @@ const getPriceDeviation = (item) => {
 };
 
 const duplicatePoWarning = ref('');
+const hasConfirmedDuplicatePo = ref(false);
+
+watch(() => form.customer_po_number, () => {
+    duplicatePoWarning.value = '';
+    hasConfirmedDuplicatePo.value = false;
+});
 
 const submit = async () => {
     // Check duplicate PO number before submit (only for new SO)
-    if (!props.salesOrder && form.customer_po_number) {
+    if (!props.salesOrder && form.customer_po_number && !hasConfirmedDuplicatePo.value) {
         try {
             const res = await axios.get(route('sales.orders.check-po'), {
                 params: { po_number: form.customer_po_number }
             });
             if (res.data.exists) {
-                duplicatePoWarning.value = `PO Number "${form.customer_po_number}" sudah terdaftar di ${res.data.so_number}. Tidak bisa membuat SO duplikat.`;
+                duplicatePoWarning.value = `PO Number "${form.customer_po_number}" sudah terdaftar di ${res.data.so_number}. Tekan tombol simpan sekali lagi jika Anda yakin ingin menggunakan PO yang sama.`;
+                hasConfirmedDuplicatePo.value = true;
                 return;
             }
         } catch (e) {

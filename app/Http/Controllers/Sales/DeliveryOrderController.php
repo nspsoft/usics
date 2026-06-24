@@ -1769,19 +1769,7 @@ class DeliveryOrderController extends Controller
                     
                     // Rekalkulasi status SO lama
                     $oldSo->refresh();
-                    $allDelivered = $oldSo->items->every(fn($item) => $item->isFullyDelivered());
-                    $someDelivered = $oldSo->items->some(fn($item) => $item->qty_delivered > 0);
-
-                    if ($allDelivered) {
-                        $oldSo->status = \App\Models\SalesOrder::STATUS_DELIVERED;
-                    } elseif ($someDelivered) {
-                        $oldSo->status = \App\Models\SalesOrder::STATUS_PROCESSING;
-                    } else {
-                        if ($oldSo->status === \App\Models\SalesOrder::STATUS_DELIVERED || $oldSo->status === \App\Models\SalesOrder::STATUS_PROCESSING) {
-                            $oldSo->status = $oldSo->customer_po_number ? \App\Models\SalesOrder::STATUS_CONFIRMED : \App\Models\SalesOrder::STATUS_WAITING_PO;
-                        }
-                    }
-                    $oldSo->save();
+                    $oldSo->recalculateStatus();
                 }
 
                 // 2. Alokasikan qty terkirim ke SO baru dan update relasi DO item
@@ -1798,15 +1786,7 @@ class DeliveryOrderController extends Controller
 
                 // Rekalkulasi status SO baru
                 $newSo->refresh();
-                $allDelivered = $newSo->items->every(fn($item) => $item->isFullyDelivered());
-                $someDelivered = $newSo->items->some(fn($item) => $item->qty_delivered > 0);
-
-                if ($allDelivered) {
-                    $newSo->status = \App\Models\SalesOrder::STATUS_DELIVERED;
-                } elseif ($someDelivered) {
-                    $newSo->status = \App\Models\SalesOrder::STATUS_PROCESSING;
-                }
-                $newSo->save();
+                $newSo->recalculateStatus();
 
                 // Hubungkan DO utama ke SO baru
                 $deliveryOrder->sales_order_id = $newSo->id;
