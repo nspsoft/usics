@@ -542,19 +542,34 @@ class DeliveryOrderController extends Controller
                 if ($request->sales_order_id) {
                     $order = SalesOrder::findOrFail($request->sales_order_id);
                 } else {
-                    // Auto-create Sales Order for Direct DO (Waiting PO)
-                    $order = SalesOrder::create([
-                        'so_number' => SalesOrder::generateSoNumber(),
-                        'customer_id' => $request->customer_id,
-                        'warehouse_id' => $request->warehouse_id,
-                        'order_date' => now(),
-                        'status' => SalesOrder::STATUS_WAITING_PO,
-                        'notes' => 'Auto-created from Direct Delivery Order',
-                        'shipping_address' => $request->shipping_address,
-                        'created_by' => auth()->id(),
-                        'subtotal' => 0,
-                        'total' => 0,
-                    ]);
+                    // Find existing monthly Penampung Sales Order for Direct DO (Waiting PO)
+                    $deliveryDate = $request->delivery_date ? \Carbon\Carbon::parse($request->delivery_date) : now();
+                    
+                    $order = SalesOrder::where('customer_id', $request->customer_id)
+                        ->where('status', SalesOrder::STATUS_WAITING_PO)
+                        ->where(function($q) {
+                            $q->whereNull('customer_po_number')->orWhere('customer_po_number', '');
+                        })
+                        ->whereYear('order_date', $deliveryDate->year)
+                        ->whereMonth('order_date', $deliveryDate->month)
+                        ->where('notes', 'like', 'Penampung Direct DO%')
+                        ->first();
+
+                    if (!$order) {
+                        $monthName = $deliveryDate->locale('id')->translatedFormat('F Y');
+                        $order = SalesOrder::create([
+                            'so_number' => SalesOrder::generateSoNumber(),
+                            'customer_id' => $request->customer_id,
+                            'warehouse_id' => $request->warehouse_id,
+                            'order_date' => $deliveryDate->toDateString(),
+                            'status' => SalesOrder::STATUS_WAITING_PO,
+                            'notes' => "Penampung Direct DO ({$monthName})",
+                            'shipping_address' => $request->shipping_address,
+                            'created_by' => auth()->id(),
+                            'subtotal' => 0,
+                            'total' => 0,
+                        ]);
+                    }
                 }
 
                 // Generate Custom DO Number: 020/DO/JRI-KBI/II/26
@@ -636,20 +651,29 @@ class DeliveryOrderController extends Controller
                             throw new \Exception("Kuantitas untuk [{$soItem->product->name}] melebihi sisa pesanan (Maks: {$allowable}).");
                         }
                     } else {
-                        // Logic for Direct DO: Create SO Item first
-                        $soItem = $order->items()->create([
-                            'product_id' => $itemData['product_id'],
-                            'qty' => $itemData['qty_delivered'],
-                            'unit_id' => $itemData['unit_id'],
-                            'unit_price' => 0, // Pending PO/Invoice
-                            'subtotal' => 0,
-                        ]);
+                        // Logic for Direct DO: Find or create SO Item on the Penampung SO
+                        $soItem = $order->items()
+                            ->where('product_id', $itemData['product_id'])
+                            ->where('unit_id', $itemData['unit_id'])
+                            ->first();
+
+                        if ($soItem) {
+                            $soItem->increment('qty', $itemData['qty_delivered']);
+                        } else {
+                            $soItem = $order->items()->create([
+                                'product_id' => $itemData['product_id'],
+                                'qty' => $itemData['qty_delivered'],
+                                'unit_id' => $itemData['unit_id'],
+                                'unit_price' => 0, // Pending PO/Invoice
+                                'subtotal' => 0,
+                            ]);
+                        }
                     }
 
                     $do->items()->create([
                         'sales_order_item_id' => $soItem->id,
                         'product_id' => $soItem->product_id,
-                        'qty_ordered' => $soItem->qty,
+                        'qty_ordered' => $request->sales_order_id ? $soItem->qty : $itemData['qty_delivered'],
                         'qty_delivered' => $itemData['qty_delivered'],
                         'unit_id' => $soItem->unit_id,
                         'notes' => $itemData['notes'] ?? null,

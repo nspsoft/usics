@@ -282,5 +282,77 @@ class SalesFlowTest extends TestCase
         $so2->refresh();
         $this->assertEquals('PO-NEW-123', $so2->customer_po_number);
     }
+
+    public function test_direct_do_reuses_monthly_penampung_so()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $company = Company::firstOrCreate(['code' => 'TEST-001', 'name' => 'Test Company', 'email' => 'test@company.com'], ['code' => 'TEST-001', 'name' => 'Test Company', 'email' => 'test@company.com']);
+        $customer = Customer::firstOrCreate(['code' => 'CUST-DIRECT'], ['company_id' => $company->id, 'name' => 'Test Direct Customer', 'email' => 'direct@test.com', 'phone' => '08128888', 'address' => 'Jl. Direct']);
+        $warehouse = Warehouse::firstOrCreate(['code' => 'WH-TEST'], ['company_id' => $company->id, 'name' => 'Test Warehouse', 'type' => 'warehouse']);
+        $unit = Unit::firstOrCreate(['code' => 'PCS'], ['name' => 'Pieces', 'company_id' => $company->id]);
+        $category = \App\Models\Category::firstOrCreate(['code' => 'TEST'], ['name' => 'Test Category', 'company_id' => $company->id, 'type' => 'product']);
+        $product = Product::firstOrCreate(['sku' => 'PROD-DIRECT-1'], ['company_id' => $company->id, 'name' => 'Product Direct 1', 'unit_id' => $unit->id, 'category_id' => $category->id, 'product_type' => 'finished_good', 'is_sold' => true, 'selling_price' => 50000]);
+
+        // Create 1st Direct DO
+        $do1Data = [
+            'customer_id' => $customer->id,
+            'warehouse_id' => $warehouse->id,
+            'delivery_date' => now()->toDateString(),
+            'vehicle_id' => 'manual',
+            'vehicle_number' => 'B 1111 DUMMY',
+            'driver_name' => 'Driver 1',
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'unit_id' => $unit->id,
+                    'qty_delivered' => 50,
+                ]
+            ]
+        ];
+
+        $response1 = $this->post(route('sales.deliveries.store'), $do1Data);
+        $response1->assertSessionHasNoErrors();
+
+        $do1 = \App\Models\DeliveryOrder::latest('id')->first();
+        $so1 = $do1->salesOrder;
+
+        $this->assertNotNull($so1);
+        $this->assertEquals('waiting_po', $so1->status);
+        $this->assertStringContainsString('Penampung Direct DO', $so1->notes);
+        $this->assertEquals(50, $so1->items->first()->qty);
+
+        // Create 2nd Direct DO for same customer in same month
+        $do2Data = [
+            'customer_id' => $customer->id,
+            'warehouse_id' => $warehouse->id,
+            'delivery_date' => now()->toDateString(),
+            'vehicle_id' => 'manual',
+            'vehicle_number' => 'B 2222 DUMMY',
+            'driver_name' => 'Driver 2',
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'unit_id' => $unit->id,
+                    'qty_delivered' => 30,
+                ]
+            ]
+        ];
+
+        $response2 = $this->post(route('sales.deliveries.store'), $do2Data);
+        $response2->assertSessionHasNoErrors();
+
+        $do2 = \App\Models\DeliveryOrder::latest('id')->first();
+        $so2 = $do2->salesOrder;
+
+        // Verify it reused the exact same Sales Order!
+        $this->assertEquals($so1->id, $so2->id, "2nd Direct DO should reuse 1st Direct DO's Sales Order for the same month");
+
+        // Verify accumulated item quantity (50 + 30 = 80)
+        $so1->refresh();
+        $this->assertEquals(80, $so1->items->first()->qty, "SO item qty should accumulate to 80");
+    }
 }
+
 
