@@ -249,7 +249,7 @@ const getStatusClass = (status) => {
                         Confirm Order
                     </Link>
                     <Link
-                        v-if="salesOrder.status === 'draft'"
+                        v-if="['draft', 'waiting_po'].includes(salesOrder.status)"
                         :href="route('sales.orders.edit', salesOrder.id)"
                         class="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white dark:text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20"
                     >
