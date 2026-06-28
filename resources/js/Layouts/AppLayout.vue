@@ -83,6 +83,7 @@ import {
     CalendarIcon,
     CalendarDaysIcon as CalendarAltIcon,
     VideoCameraIcon,
+    LifebuoyIcon,
 } from '@heroicons/vue/24/outline';
 import TechnoHeaderBg from '@/Components/TechnoHeaderBg.vue';
 
@@ -543,6 +544,12 @@ const navigation = [
             { name: 'Blueprint Interactive', href: '/project/blueprint', icon: MapIcon },
             { name: 'System Testing (UAT)', href: '/settings/uat', icon: CheckCircleIcon, permission: 'settings.view', target: '_blank' },
         ]
+    },
+    { 
+        name: 'Helpdesk Support', 
+        href: '/helpdesk', 
+        icon: LifebuoyIcon, 
+        current: false 
     },
     { 
         name: 'Settings', 

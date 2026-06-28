@@ -867,6 +867,16 @@ Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(functi
     Route::post('/traccar/test', [App\Http\Controllers\Settings\TraccarSettingController::class, 'test'])->name('traccar.test');
 });
 
+// Helpdesk & Support Module
+Route::prefix('helpdesk')->name('helpdesk.')->middleware(['auth'])->group(function () {
+    Route::get('/', [App\Http\Controllers\Helpdesk\HelpdeskController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\Helpdesk\HelpdeskController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\Helpdesk\HelpdeskController::class, 'store'])->name('store');
+    Route::get('/{ticket}', [App\Http\Controllers\Helpdesk\HelpdeskController::class, 'show'])->name('show');
+    Route::post('/{ticket}/reply', [App\Http\Controllers\Helpdesk\HelpdeskController::class, 'reply'])->name('reply');
+    Route::put('/{ticket}/status', [App\Http\Controllers\Helpdesk\HelpdeskController::class, 'updateStatus'])->name('status');
+});
+
 // Admin
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
     Route::get('/activity-logs/dashboard', [App\Http\Controllers\Admin\ActivityLogController::class, 'dashboard'])->name('activity-logs.dashboard');
