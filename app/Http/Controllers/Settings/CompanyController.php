@@ -22,6 +22,10 @@ class CompanyController extends Controller
                 'company_logo_text' => AppSetting::get('company_logo_text', 'jidoka'),
                 'company_full_name' => AppSetting::get('company_full_name', 'PT. JIDOKA RESULT INDONESIA'),
                 'company_address' => AppSetting::get('company_address', "Kawasan Industri JABABEKA I\nJl. Jababeka II Blok C No. 19 L, Pasir gombong, Cikarang Utara\nBekasi 17530 Jawa Barat. Telp : 021 8938 3915\ne_mail : jidoka.pt@yahoo.com"),
+            ],
+            'helpdesk_settings' => [
+                'helpdesk_wa_number' => AppSetting::get('helpdesk_wa_number', ''),
+                'helpdesk_email_address' => AppSetting::get('helpdesk_email_address', ''),
             ]
         ]);
     }
@@ -47,6 +51,8 @@ class CompanyController extends Controller
             'company_logo_text' => 'nullable|string',
             'company_full_name' => 'nullable|string',
             'company_address' => 'nullable|string',
+            'helpdesk_wa_number' => 'nullable|string',
+            'helpdesk_email_address' => 'nullable|email',
         ]);
 
         if ($request->hasFile('logo_file')) {
@@ -66,7 +72,7 @@ class CompanyController extends Controller
 
         $company->save();
 
-        // Save Print Header Settings
+        // Save Print Header & Helpdesk Settings
         if ($request->has('company_logo_text')) {
             AppSetting::set('company_logo_text', $request->company_logo_text, 'company_profile', 'Company Logo Text');
         }
@@ -75,6 +81,12 @@ class CompanyController extends Controller
         }
         if ($request->has('company_address')) {
             AppSetting::set('company_address', $request->company_address, 'company_profile', 'Company Address (Print Header)');
+        }
+        if ($request->has('helpdesk_wa_number')) {
+            AppSetting::set('helpdesk_wa_number', $request->helpdesk_wa_number, 'helpdesk', 'Helpdesk WhatsApp Number');
+        }
+        if ($request->has('helpdesk_email_address')) {
+            AppSetting::set('helpdesk_email_address', $request->helpdesk_email_address, 'helpdesk', 'Helpdesk Email Address');
         }
 
         try {

@@ -788,6 +788,9 @@ Route::middleware(['auth'])->prefix('employee')->name('employee.')->group(functi
 // Settings
 Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(function () {
     Route::get('/', fn () => Inertia::render('Settings/Index'))->name('index');
+    Route::post('/company/update-print', [App\Http\Controllers\Settings\CompanyController::class, 'updatePrintSettings'])->name('company.update-print');
+    Route::post('/company/update-helpdesk', [App\Http\Controllers\Settings\CompanyController::class, 'updateHelpdeskSettings'])->name('company.update-helpdesk');
+    
     Route::get('/users', [App\Http\Controllers\Settings\UserController::class, 'index'])->name('users');
     Route::post('/users', [App\Http\Controllers\Settings\UserController::class, 'store'])->name('users.store');
     Route::put('/users/{user}', [App\Http\Controllers\Settings\UserController::class, 'update'])->name('users.update');

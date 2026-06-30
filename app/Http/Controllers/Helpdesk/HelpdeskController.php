@@ -10,9 +10,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Services\HelpdeskNotificationService;
 
 class HelpdeskController extends Controller
 {
+    protected HelpdeskNotificationService $notificationService;
+
+    public function __construct(HelpdeskNotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
     public function index(Request $request): Response
     {
         $query = HelpdeskTicket::with(['user', 'assignedTo'])
@@ -90,6 +97,9 @@ class HelpdeskController extends Controller
             'attachment_path' => $attachmentPath,
         ]);
 
+        // Send notification for new ticket
+        $this->notificationService->notifyNewTicket($ticket);
+
         return redirect()->route('helpdesk.show', $ticket->id)
             ->with('success', 'Tiket helpdesk berhasil dibuat!');
     }
@@ -118,12 +128,15 @@ class HelpdeskController extends Controller
             $attachmentPath = $request->file('attachment')->store('helpdesk/replies', 'public');
         }
 
-        $ticket->replies()->create([
+        $reply = $ticket->replies()->create([
             'user_id' => auth()->id(),
             'message' => $validated['message'],
             'is_internal' => $validated['is_internal'] ?? false,
             'attachment_path' => $attachmentPath,
         ]);
+
+        // Send notification
+        $this->notificationService->notifyTicketReply($reply);
 
         // If user replies and status was pending_user, set to in_progress
         if ($ticket->status === 'pending_user' && $ticket->user_id === auth()->id()) {
@@ -152,7 +165,13 @@ class HelpdeskController extends Controller
             $updateData['resolved_at'] = now();
         }
 
+        $oldStatus = $ticket->status;
         $ticket->update($updateData);
+
+        // Notify if status changed
+        if ($oldStatus !== $ticket->status) {
+            $this->notificationService->notifyStatusUpdate($ticket);
+        }
 
         return back()->with('success', 'Status tiket berhasil diperbarui!');
     }

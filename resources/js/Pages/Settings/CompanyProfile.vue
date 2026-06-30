@@ -18,7 +18,8 @@ import {
 
 const props = defineProps({
     company: Object,
-    print_settings: Object
+    print_settings: Object,
+    helpdesk_settings: Object
 });
 
 const logoPreview = ref(props.company?.logo || '/images/jicos.png');
@@ -40,6 +41,8 @@ const form = useForm({
     company_logo_text: props.print_settings?.company_logo_text || 'jidoka',
     company_full_name: props.print_settings?.company_full_name || 'PT. JIDOKA RESULT INDONESIA',
     company_address: props.print_settings?.company_address || '',
+    helpdesk_wa_number: props.helpdesk_settings?.helpdesk_wa_number || '',
+    helpdesk_email_address: props.helpdesk_settings?.helpdesk_email_address || '',
 });
 
 const onFileChange = (e) => {
@@ -252,6 +255,34 @@ const submit = () => {
                             <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Company Address & Contact Block</label>
                             <textarea v-model="form.company_address" rows="5" class="form-input" placeholder="Kawasan Industri JABABEKA I..."></textarea>
                             <p class="text-[10px] text-slate-400 mt-1 ml-1">This text will be printed exactly as typed (preserves line breaks) on the right side of the logo.</p>
+                        </div>
+                    </div>
+
+                    <!-- Helpdesk Notification Settings -->
+                    <div class="glass-card rounded-2xl p-8 space-y-6">
+                        <div class="flex items-center gap-2 text-rose-400 mb-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+                            <EnvelopeIcon class="h-5 w-5" />
+                            <h4 class="text-xs font-black uppercase tracking-widest">Helpdesk Notifications</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4">
+                            Configure the central IT support contact. All new unassigned tickets will be sent to these contacts.
+                        </p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-1.5">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Central WhatsApp Number</label>
+                                <div class="relative group">
+                                    <PhoneIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-rose-400 transition-colors" />
+                                    <input v-model="form.helpdesk_wa_number" type="text" class="form-input !pl-12" placeholder="+62..." />
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Central Email Address</label>
+                                <div class="relative group">
+                                    <EnvelopeIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-rose-400 transition-colors" />
+                                    <input v-model="form.helpdesk_email_address" type="email" class="form-input !pl-12" placeholder="it.support@..." />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
