@@ -572,42 +572,41 @@ class DeliveryOrderController extends Controller
                     }
                 }
 
-                // Generate Custom DO Number: 020/DO/JRI-KBI/II/26
+                // Generate Custom DO Number based on Delivery Date: 020/DO/JRI-KBI/II/26
+                $deliveryDate = $request->delivery_date ? \Carbon\Carbon::parse($request->delivery_date) : now();
+                
                 $customer = \App\Models\Customer::find($order->customer_id);
                 $custCode = $customer ? ($customer->code ?? 'GEN') : 'GEN';
-                $monthRoman = $this->getRomanMonth(date('n'));
-
-                try {
-                    $number = app(\App\Services\DocumentNumberService::class)->generate('delivery_order', [
-                        'CUST_CODE' => $custCode,
-                        'ROMAN_MONTH' => $monthRoman
-                    ]);
-                } catch (\Exception $e) {
-                    // Fallback to manual generation if service fails
-                    $yearShort = date('y');
-                    $formatSuffix = "/DO/JRI-{$custCode}/{$monthRoman}/{$yearShort}";
-                    
-                    if (DB::connection()->getDriverName() === 'mysql') {
-                        $lastDO = DeliveryOrder::where('do_number', 'REGEXP', '^[0-9]+/DO/JRI-')
-                            ->orderByRaw('CAST(SUBSTRING_INDEX(do_number, "/", 1) AS UNSIGNED) DESC')
-                            ->first();
-                    } else {
-                        $lastDO = DeliveryOrder::where('do_number', 'like', '%/DO/JRI-%')
-                            ->orderByDesc('id')
-                            ->first();
-                    }
-
-                    if ($lastDO) {
-                        $parts = explode('/', $lastDO->do_number, 2);
-                        $lastRun = ctype_digit($parts[0]) ? (int) $parts[0] : 0;
-                        $nextRun = $lastRun + 1;
-                    } else {
-                        $nextRun = 1; 
-                    }
-                    
-                    $nextRunPadded = str_pad($nextRun, 3, '0', STR_PAD_LEFT);
-                    $number = "{$nextRunPadded}{$formatSuffix}";
+                $monthRoman = $this->getRomanMonth($deliveryDate->format('n'));
+                $yearShort = $deliveryDate->format('y');
+                
+                $formatSuffix = "/DO/JRI-{$custCode}/{$monthRoman}/{$yearShort}";
+                
+                // Get the highest sequence number for this specific month & year globally (ignoring customer code)
+                if (DB::connection()->getDriverName() === 'mysql') {
+                    $lastDO = DeliveryOrder::where('do_number', 'like', "%/DO/JRI-%/{$monthRoman}/{$yearShort}")
+                        ->orderByRaw('CAST(SUBSTRING_INDEX(do_number, "/", 1) AS UNSIGNED) DESC')
+                        ->first();
+                } else {
+                    // Fallback for testing (SQLite)
+                    $lastDO = DeliveryOrder::where('do_number', 'like', "%/DO/JRI-%/{$monthRoman}/{$yearShort}")
+                        ->get()
+                        ->sortByDesc(function ($do) {
+                            $parts = explode('/', $do->do_number);
+                            return isset($parts[0]) && is_numeric($parts[0]) ? (int) $parts[0] : 0;
+                        })->first();
                 }
+
+                if ($lastDO) {
+                    $parts = explode('/', $lastDO->do_number, 2);
+                    $lastRun = ctype_digit($parts[0]) ? (int) $parts[0] : 0;
+                    $nextRun = $lastRun + 1;
+                } else {
+                    $nextRun = 1; 
+                }
+                
+                $nextRunPadded = str_pad($nextRun, 3, '0', STR_PAD_LEFT);
+                $number = "{$nextRunPadded}{$formatSuffix}";
 
                 $doData = [
                     'do_number' => $number,
