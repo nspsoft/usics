@@ -176,10 +176,10 @@
             <tr>
                 <td width="60%">
                     <div style="display: flex; align-items: center; gap: 15px;">
-                        <img src="/images/jri-official-logo.png" alt="logo" style="height: 60px;">
+                        <img src="{{ \App\Models\AppSetting::get('company_logo_path', '/images/jri-official-logo.png') }}" alt="logo" style="height: 60px;">
                         <div>
-                            <div class="company-logo-text">jidoka</div>
-                            <div class="company-full-name">PT. JIDOKA RESULT INDONESIA</div>
+                            <div class="company-logo-text">{{ \App\Models\AppSetting::get('company_logo_text', 'jidoka') }}</div>
+                            <div class="company-full-name">{{ \App\Models\AppSetting::get('company_full_name', 'PT. JIDOKA RESULT INDONESIA') }}</div>
                         </div>
                     </div>
                     <div class="company-address" style="margin-top: 10px;">

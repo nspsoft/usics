@@ -158,19 +158,19 @@
         <tr>
             <td width="55%">
                 <div style="margin-bottom: 10px;">
-                    <img src="/images/jri-official-logo.png" alt="logo" class="company-logo-img">
+                    <img src="{{ \App\Models\AppSetting::get('company_logo_path', '/images/jri-official-logo.png') }}" alt="logo" class="company-logo-img">
                     <div>
-                        <div class="company-header-text">jidoka</div>
-                        <div class="company-header-sub">PT. JIDOKA RESULT INDONESIA</div>
+                        <div class="company-header-text">{{ \App\Models\AppSetting::get('company_logo_text', 'jidoka') }}</div>
+                        <div class="company-header-sub">{{ \App\Models\AppSetting::get('company_full_name', 'PT. JIDOKA RESULT INDONESIA') }}</div>
                     </div>
                     <div style="clear: both;"></div>
                 </div>
                 <div class="company-address">
-                    Kawasan Industri JABABEKA I<br>
-                    Jl. Jababeka II Blok C No. 19 L<br>
-                    Pasirgombong, Cikarang Utara, Bekasi 17530 Jawa Barat<br>
-                    Telp : +62 21 89383915, Fax. : +62 21 89383915<br>
-                    e_mail : purchasing@jidoka.co.id
+                    {!! nl2br(e(\App\Models\AppSetting::get('company_address', 'Kawasan Industri JABABEKA I
+Jl. Jababeka II Blok C No. 19 L
+Pasirgombong, Cikarang Utara, Bekasi 17530 Jawa Barat
+Telp : +62 21 89383915, Fax. : +62 21 89383915
+e_mail : purchasing@jidoka.co.id'))) !!}
                 </div>
             </td>
             <td width="45%" style="vertical-align: top; padding-top: 30px;">
@@ -334,7 +334,7 @@
             <tr>
                 <td class="box-cell" width="55%">
                     <div class="font-bold">PLEASE DELIVER TO :</div>
-                    <div style="margin-top: 5px; font-weight: bold;">PT. JIDOKA RESULT INDONESIA</div>
+                    <div style="margin-top: 5px; font-weight: bold;">{{ \App\Models\AppSetting::get('company_full_name', 'PT. JIDOKA RESULT INDONESIA') }}</div>
                     <div style="font-size: 8pt;">
                         Jl. Pinang Blok F16 - Nomor 18C Delta Silicon 3<br>
                         Kawasan Industri Lippo - Cikarang, Desa Cicau, Cikarang Pusat<br>

@@ -25,7 +25,7 @@
     <div class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
         <div class="p-6 text-center border-b border-slate-800 bg-slate-950/50">
             <div class="flex justify-center mb-4">
-                <img src="/images/jri-official-logo.png" alt="logo" class="h-10">
+                <img src="{{ \App\Models\AppSetting::get('company_logo_path', '/images/jri-official-logo.png') }}" alt="logo" class="h-10">
             </div>
             <h1 class="text-lg font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
                 VERIFIKASI PENERIMAAN BARANG

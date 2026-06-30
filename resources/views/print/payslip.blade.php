@@ -124,14 +124,14 @@
     <table class="header-table">
         <tr>
             <td width="65%">
-                <img src="/images/jri-official-logo.png" alt="logo" class="company-logo-img">
+                <img src="{{ \App\Models\AppSetting::get('company_logo_path', '/images/jri-official-logo.png') }}" alt="logo" class="company-logo-img">
                 <div>
-                    <div class="company-header-text">jidoka</div>
-                    <div class="company-header-sub">PT. JIDOKA RESULT INDONESIA</div>
+                    <div class="company-header-text">{{ \App\Models\AppSetting::get('company_logo_text', 'jidoka') }}</div>
+                    <div class="company-header-sub">{{ \App\Models\AppSetting::get('company_full_name', 'PT. JIDOKA RESULT INDONESIA') }}</div>
                 </div>
                 <div class="company-address">
-                    Kawasan Industri JABABEKA I, Jl. Jababeka II Blok C No. 19 L<br>
-                    Cikarang Utara, Bekasi 17530 Jawa Barat
+                    {!! nl2br(e(\App\Models\AppSetting::get('company_address', 'Kawasan Industri JABABEKA I, Jl. Jababeka II Blok C No. 19 L
+Cikarang Utara, Bekasi 17530 Jawa Barat'))) !!}
                 </div>
             </td>
             <td width="35%">

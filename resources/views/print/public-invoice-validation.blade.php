@@ -26,7 +26,7 @@
         <div class="p-6 space-y-6">
             <!-- Company Info -->
             <div class="flex items-center gap-4 pb-6 border-b border-slate-100 uppercase">
-                <div class="text-xl font-black italic text-[#E21E26]">jidoka</div>
+                <div class="text-xl font-black italic text-[#E21E26]">{{ \App\Models\AppSetting::get('company_logo_text', 'jidoka') }}</div>
                 <div class="h-4 w-px bg-slate-200"></div>
                 <div class="text-[10px] font-bold text-slate-400 leading-tight">
                     PT. Jidoka Result Indonesia

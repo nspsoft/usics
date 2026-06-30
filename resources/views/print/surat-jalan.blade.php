@@ -144,17 +144,17 @@
         <tr>
             <td width="55%">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                    <img src="/images/jri-official-logo.png" alt="logo" style="height: 50px;">
+                    <img src="{{ \App\Models\AppSetting::get('company_logo_path', '/images/jri-official-logo.png') }}" alt="logo" style="height: 50px;">
                     <div>
-                        <div class="company-logo-text">jidoka</div>
-                        <div class="company-full-name">PT. JIDOKA RESULT INDONESIA</div>
+                        <div class="company-logo-text">{{ \App\Models\AppSetting::get('company_logo_text', 'jidoka') }}</div>
+                        <div class="company-full-name">{{ \App\Models\AppSetting::get('company_full_name', 'PT. JIDOKA RESULT INDONESIA') }}</div>
                     </div>
                 </div>
                 <div class="company-address">
-                    Kawasan Industri JABABEKA I<br>
-                    Jl. Jababeka II Blok C No. 19 L, Pasir gombong, Cikarang Utara<br>
-                    Bekasi 17530 Jawa Barat. Telp : 021 8938 3915<br>
-                    e_mail : jidoka.pt@yahoo.com
+                    {!! nl2br(e(\App\Models\AppSetting::get('company_address', 'Kawasan Industri JABABEKA I
+Jl. Jababeka II Blok C No. 19 L, Pasir gombong, Cikarang Utara
+Bekasi 17530 Jawa Barat. Telp : 021 8938 3915
+e_mail : jidoka.pt@yahoo.com'))) !!}
                 </div>
             </td>
             <td width="45%" style="vertical-align: top;">

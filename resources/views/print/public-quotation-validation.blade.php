@@ -13,7 +13,7 @@
     <div class="w-full max-w-md bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-xl">
         <div class="p-8 text-center border-b border-slate-100 bg-white">
             <div class="flex justify-center mb-6">
-                <img src="/images/jri-official-logo.png" alt="logo" class="h-12">
+                <img src="{{ \App\Models\AppSetting::get('company_logo_path', '/images/jri-official-logo.png') }}" alt="logo" class="h-12">
             </div>
             <h1 class="text-xl font-black italic tracking-tighter text-blue-600">
                 VERIFIKASI QUOTATION

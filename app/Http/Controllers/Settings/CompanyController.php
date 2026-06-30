@@ -17,7 +17,12 @@ class CompanyController extends Controller
     {
         $company = Company::first();
         return Inertia::render('Settings/CompanyProfile', [
-            'company' => $company
+            'company' => $company,
+            'print_settings' => [
+                'company_logo_text' => AppSetting::get('company_logo_text', 'jidoka'),
+                'company_full_name' => AppSetting::get('company_full_name', 'PT. JIDOKA RESULT INDONESIA'),
+                'company_address' => AppSetting::get('company_address', "Kawasan Industri JABABEKA I\nJl. Jababeka II Blok C No. 19 L, Pasir gombong, Cikarang Utara\nBekasi 17530 Jawa Barat. Telp : 021 8938 3915\ne_mail : jidoka.pt@yahoo.com"),
+            ]
         ]);
     }
 
@@ -39,6 +44,9 @@ class CompanyController extends Controller
             'currency' => 'nullable|string|max:3',
             'timezone' => 'nullable|string|max:255',
             'logo_file' => 'nullable|image|max:2048',
+            'company_logo_text' => 'nullable|string',
+            'company_full_name' => 'nullable|string',
+            'company_address' => 'nullable|string',
         ]);
 
         if ($request->hasFile('logo_file')) {
@@ -58,11 +66,21 @@ class CompanyController extends Controller
 
         $company->save();
 
+        // Save Print Header Settings
+        if ($request->has('company_logo_text')) {
+            AppSetting::set('company_logo_text', $request->company_logo_text, 'company_profile', 'Company Logo Text');
+        }
+        if ($request->has('company_full_name')) {
+            AppSetting::set('company_full_name', $request->company_full_name, 'company_profile', 'Company Full Name');
+        }
+        if ($request->has('company_address')) {
+            AppSetting::set('company_address', $request->company_address, 'company_profile', 'Company Address (Print Header)');
+        }
+
         try {
             app(FaviconService::class)->generateForCompany($company);
         } catch (\Throwable $e) {
         }
-
 
         return redirect()->back()->with('success', 'Company profile updated successfully.');
     }

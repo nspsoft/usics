@@ -12,11 +12,13 @@ import {
     PhotoIcon,
     CheckBadgeIcon,
     ClockIcon,
-    BanknotesIcon
+    BanknotesIcon,
+    DocumentTextIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    company: Object
+    company: Object,
+    print_settings: Object
 });
 
 const logoPreview = ref(props.company?.logo || '/images/jicos.png');
@@ -35,6 +37,9 @@ const form = useForm({
     currency: props.company?.currency || 'IDR',
     timezone: props.company?.timezone || 'Asia/Jakarta',
     logo_file: null,
+    company_logo_text: props.print_settings?.company_logo_text || 'jidoka',
+    company_full_name: props.print_settings?.company_full_name || 'PT. JIDOKA RESULT INDONESIA',
+    company_address: props.print_settings?.company_address || '',
 });
 
 const onFileChange = (e) => {
@@ -220,6 +225,33 @@ const submit = () => {
                                     </select>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <!-- Print Document Headers -->
+                    <div class="glass-card rounded-2xl p-8 space-y-6">
+                        <div class="flex items-center gap-2 text-fuchsia-400 mb-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+                            <DocumentTextIcon class="h-5 w-5" />
+                            <h4 class="text-xs font-black uppercase tracking-widest">Print Document Headers</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4">
+                            Configure the header text that appears on printed documents like Invoices, Sales Orders, and Delivery Orders.
+                        </p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-1.5">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Company Logo Text</label>
+                                <input v-model="form.company_logo_text" type="text" class="form-input" placeholder="jidoka" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Company Full Name</label>
+                                <input v-model="form.company_full_name" type="text" class="form-input" placeholder="PT. JIDOKA RESULT INDONESIA" />
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Company Address & Contact Block</label>
+                            <textarea v-model="form.company_address" rows="5" class="form-input" placeholder="Kawasan Industri JABABEKA I..."></textarea>
+                            <p class="text-[10px] text-slate-400 mt-1 ml-1">This text will be printed exactly as typed (preserves line breaks) on the right side of the logo.</p>
                         </div>
                     </div>
 

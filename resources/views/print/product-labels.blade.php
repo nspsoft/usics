@@ -134,8 +134,8 @@
         <div class="label-card">
             <div class="label-header">
                 <div class="header-left">
-                    <img src="/images/jri-official-logo.png" alt="Logo">
-                    <span class="company-title">PT. JIDOKA RESULT INDONESIA</span>
+                    <img src="{{ \App\Models\AppSetting::get('company_logo_path', '/images/jri-official-logo.png') }}" alt="Logo">
+                    <span class="company-title">{{ \App\Models\AppSetting::get('company_full_name', 'PT. JIDOKA RESULT INDONESIA') }}</span>
                 </div>
                 <div class="header-right">
                     @php
