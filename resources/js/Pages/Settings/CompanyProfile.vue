@@ -41,6 +41,7 @@ const form = useForm({
     company_logo_text: props.print_settings?.company_logo_text || 'jidoka',
     company_full_name: props.print_settings?.company_full_name || 'PT. JIDOKA RESULT INDONESIA',
     company_address: props.print_settings?.company_address || '',
+    print_logo_file: null,
     helpdesk_wa_number: props.helpdesk_settings?.helpdesk_wa_number || '',
     helpdesk_email_address: props.helpdesk_settings?.helpdesk_email_address || '',
 });
@@ -249,6 +250,12 @@ const submit = () => {
                                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Company Full Name</label>
                                 <input v-model="form.company_full_name" type="text" class="form-input" placeholder="PT. JIDOKA RESULT INDONESIA" />
                             </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Document Logo (Image)</label>
+                            <input type="file" @input="form.print_logo_file = $event.target.files[0]" class="form-input !py-2.5" accept="image/*" />
+                            <p class="text-[10px] text-slate-400 mt-1 ml-1">Upload a specific logo for printed documents (Invoices, PO, DO). Leave empty to keep current.</p>
                         </div>
 
                         <div class="space-y-1.5">

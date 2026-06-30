@@ -51,6 +51,7 @@ class CompanyController extends Controller
             'company_logo_text' => 'nullable|string',
             'company_full_name' => 'nullable|string',
             'company_address' => 'nullable|string',
+            'print_logo_file' => 'nullable|image|max:2048',
             'helpdesk_wa_number' => 'nullable|string',
             'helpdesk_email_address' => 'nullable|email',
         ]);
@@ -62,6 +63,11 @@ class CompanyController extends Controller
             }
             $path = $request->file('logo_file')->store('logos', 'public');
             $validated['logo'] = '/storage/' . $path;
+        }
+
+        if ($request->hasFile('print_logo_file')) {
+            $path = $request->file('print_logo_file')->store('logos', 'public');
+            AppSetting::set('company_logo_path', '/storage/' . $path, 'company_profile', 'Print Document Logo Path');
         }
 
         $company->fill($validated);
