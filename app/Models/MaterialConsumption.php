@@ -31,11 +31,14 @@ class MaterialConsumption extends Model
         'batch_number',
         'consumption_date',
         'consumed_by',
+        'unit_cost',
+        'total_cost',
     ];
 
     protected $casts = [
         'qty' => 'float',
         'unit_cost' => 'double',
+        'total_cost' => 'double',
         'consumption_date' => 'date',
     ];
 
@@ -76,6 +79,15 @@ class MaterialConsumption extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (MaterialConsumption $consumption) {
+            $stock = ProductStock::where('product_id', $consumption->product_id)
+                ->where('warehouse_id', $consumption->warehouse_id)
+                ->first();
+            $avgCost = $stock ? $stock->avg_cost : 0;
+            $consumption->unit_cost = $avgCost;
+            $consumption->total_cost = $avgCost * $consumption->qty;
+        });
+
         static::created(function (MaterialConsumption $consumption) {
             // Update WO component consumed qty
             $woComp = $consumption->workOrderComponent;

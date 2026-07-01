@@ -19,7 +19,19 @@ const props = defineProps({
         type: String,
         default: 'production',
     },
+    dynamicCostElements: Array,
+    dynamicTotalValue: [Number, String],
+    factoryAbsorption: [Number, String],
+    netMarginEstimate: [Number, String],
 });
+
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value || 0);
+};
+
+const formatPercent = (value) => {
+    return (value > 0 ? '+' : '') + (value || 0) + '%';
+};
 
 // --- Real-time Clock ---
 const time = ref('');
@@ -35,80 +47,97 @@ onMounted(() => {
 onUnmounted(() => clearInterval(timer));
 
 const costElements = computed(() => {
-    switch (props.mode) {
-        case 'overhead':
-            return [
-                { name: 'Machinery Depreciation', value: 'Rp 42.000.000', percentage: 49, color: '#f59e0b' },
-                { name: 'Factory Power & Utilities', value: 'Rp 21.500.000', percentage: 25, color: '#ef4444' },
-                { name: 'Machine Maintenance', value: 'Rp 13.000.000', percentage: 15, color: '#10b981' },
-                { name: 'Indirect Supervision', value: 'Rp 8.500.000', percentage: 11, color: '#ec4899' },
-            ];
-        case 'profitability':
-            return [
-                { name: 'Gross Revenue', value: 'Rp 1.250.000.000', percentage: 100, color: '#10b981' },
-                { name: 'Manufacturing Cost (COGS)', value: 'Rp 690.400.000', percentage: 55, color: '#ef4444' },
-                { name: 'Operating Expenses (OPEX)', value: 'Rp 170.000.000', percentage: 14, color: '#f59e0b' },
-                { name: 'Net Profit Margin (EBITDA)', value: 'Rp 389.600.000', percentage: 31, color: '#3b82f6' },
-            ];
-        default:
-            return [
-                { name: 'Raw Materials', value: 'Rp 450.000.000', percentage: 65, color: '#3b82f6' },
-                { name: 'Direct Labor', value: 'Rp 120.000.000', percentage: 18, color: '#8b5cf6' },
-                { name: 'Factory Overhead', value: 'Rp 85.000.000', percentage: 12, color: '#22d3ee' },
-                { name: 'Other Costs', value: 'Rp 35.000.000', percentage: 5, color: '#64748b' },
-            ];
+    let elements = [];
+    if (props.dynamicCostElements && props.dynamicCostElements.length > 0) {
+        elements = props.dynamicCostElements;
+    } else {
+        switch (props.mode) {
+            case 'overhead':
+                elements = [
+                    { name: 'Machinery Depreciation', value: 'Rp 42.000.000', percentage: 49, color: '#f59e0b' },
+                    { name: 'Factory Power & Utilities', value: 'Rp 21.500.000', percentage: 25, color: '#ef4444' },
+                    { name: 'Machine Maintenance', value: 'Rp 13.000.000', percentage: 15, color: '#10b981' },
+                    { name: 'Indirect Supervision', value: 'Rp 8.500.000', percentage: 11, color: '#ec4899' },
+                ];
+                break;
+            case 'profitability':
+                elements = [
+                    { name: 'Gross Revenue', value: 'Rp 1.250.000.000', percentage: 100, color: '#10b981' },
+                    { name: 'Manufacturing Cost (COGS)', value: 'Rp 690.400.000', percentage: 55, color: '#ef4444' },
+                    { name: 'Operating Expenses (OPEX)', value: 'Rp 170.000.000', percentage: 14, color: '#f59e0b' },
+                    { name: 'Net Profit Margin (EBITDA)', value: 'Rp 389.600.000', percentage: 31, color: '#3b82f6' },
+                ];
+                break;
+            default:
+                elements = [
+                    { name: 'Raw Materials', value: 'Rp 450.000.000', percentage: 65, color: '#3b82f6' },
+                    { name: 'Direct Labor', value: 'Rp 120.000.000', percentage: 18, color: '#8b5cf6' },
+                    { name: 'Factory Overhead', value: 'Rp 85.000.000', percentage: 12, color: '#22d3ee' },
+                    { name: 'Other Costs', value: 'Rp 35.000.000', percentage: 5, color: '#64748b' },
+                ];
+                break;
+        }
     }
+
+    return elements.map(el => ({
+        ...el,
+        value: typeof el.value === 'number' ? formatCurrency(el.value) : el.value
+    }));
 });
 
 const pageConfig = computed(() => {
+    let totalVal = props.dynamicTotalValue !== undefined ? formatCurrency(props.dynamicTotalValue) : 'Rp 690.400.000';
+    let absorption = props.factoryAbsorption !== undefined ? props.factoryAbsorption + '%' : '98.2%';
+    let margin = props.netMarginEstimate !== undefined ? formatPercent(props.netMarginEstimate) : '+22.4%';
+
     switch (props.mode) {
         case 'overhead':
             return {
                 heading: 'OVERHEAD ALLOCATION',
-                bannerTitle: 'Overhead Allocation Blueprint',
-                bannerDescription: 'Blueprinting phase: Implementing overhead allocation engine using cost drivers (machine hours, labor hours, energy). Allocations are posted to work orders and item-level costs.',
+                bannerTitle: 'Overhead Allocation Dashboard',
+                bannerDescription: 'Live tracking of overhead allocation engine using cost drivers (machine hours, labor hours, energy). Allocations are posted to work orders and item-level costs in real-time.',
                 breakdownTitle: 'Overhead Allocation Breakdown',
                 totalLabel: 'Total Allocated Overhead',
-                totalValue: 'Rp 85.000.000',
+                totalValue: totalVal,
                 panel1Title: 'Allocation Keys',
                 panel1Desc: 'Post allocation based on current cost drivers: Machine Hours (55%), Direct Labor Hours (30%), Square Footage (15%).',
                 panel1Button: 'Recalculate Cost Drivers',
                 panel2Title: 'Factory Absorption',
                 panel2Desc: 'Live tracking of overhead cost absorption across all active production lines and machines.',
                 panel2BadgeLabel: 'FACTORY ABSORPTION RATE',
-                panel2BadgeValue: '98.2%',
+                panel2BadgeValue: absorption,
             };
         case 'profitability':
             return {
                 heading: 'PROFITABILITY ANALYTICS',
-                bannerTitle: 'Profitability Analytics Blueprint',
-                bannerDescription: 'Blueprinting phase: Implementing profitability analytics per item/customer/order by combining selling price, actual HPP, and overhead allocation. Detecting margin leakage and pricing anomalies.',
+                bannerTitle: 'Profitability Analytics Dashboard',
+                bannerDescription: 'Live profitability analytics per item/customer/order by combining selling price, actual HPP, and overhead allocation. Detecting margin leakage and pricing anomalies.',
                 breakdownTitle: 'Cost & Margin Breakdown',
-                totalLabel: 'Estimated Net Profit (EBIT)',
-                totalValue: 'Rp 389.600.000',
+                totalLabel: 'Estimated Net Profit (EBITDA)',
+                totalValue: totalVal,
                 panel1Title: 'Margin Sensitivity',
                 panel1Desc: 'Analyze profitability sensitivity based on raw material price fluctuations (steel coil +10%, scrap price -5%).',
                 panel1Button: 'Run Sensitivity Analysis',
                 panel2Title: 'Net Margin',
                 panel2Desc: 'Live profitability detection based on current selling price and actual manufacturing HPP.',
                 panel2BadgeLabel: 'NET MARGIN ESTIMATE',
-                panel2BadgeValue: '+31.1%',
+                panel2BadgeValue: margin,
             };
         default:
             return {
                 heading: 'PRODUCTION COSTING',
-                bannerTitle: 'Production Costing Blueprint',
-                bannerDescription: 'Blueprinting phase: Implementing real-time actual costing engine. This module calculates COGS (HPP) by aggregating Raw Material (FIFO/Weighted), Direct Labor, and allocated Overhead for every Work Order.',
+                bannerTitle: 'Production Costing Dashboard',
+                bannerDescription: 'Live real-time actual costing engine. This module calculates COGS (HPP) by aggregating Raw Material (FIFO/Weighted), Direct Labor, and allocated Overhead for every Work Order.',
                 breakdownTitle: 'Production Cost Breakdown',
                 totalLabel: 'Total Estimated COGS (HPP)',
-                totalValue: 'Rp 690.400.000',
+                totalValue: totalVal,
                 panel1Title: 'Variance Analytics',
                 panel1Desc: 'Comparing Standard Cost vs Actual Cost. Automatic detection of efficiency leaks and material variance.',
                 panel1Button: 'RUN VARIANCE AUDIT',
                 panel2Title: 'Margin Pulse',
                 panel2Desc: 'Live profitability detection based on current selling price and actual manufacturing HPP.',
                 panel2BadgeLabel: 'NET MARGIN ESTIMATE',
-                panel2BadgeValue: '+22.4%',
+                panel2BadgeValue: margin,
             };
     }
 });
