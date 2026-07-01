@@ -177,9 +177,10 @@ class DeliveryOrderController extends Controller
             // If DOs are from different SOs, we just pick the first one as "Master" SO or leave it if schema allows.
             // Let's assume same Customer is the constraint.
             
-            $invoice->invoice_number = \App\Models\SalesInvoice::generateInvoiceNumber($customer);
-            $invoice->invoice_date = now();
-            $invoice->due_date = now()->addDays(30); // Default term
+            $invoiceDate = now();
+            $invoice->invoice_number = \App\Models\SalesInvoice::generateInvoiceNumber($customer, $invoiceDate);
+            $invoice->invoice_date = $invoiceDate;
+            $invoice->due_date = (clone $invoiceDate)->addDays(30); // Default term
             $invoice->status = 'draft';
             $invoice->tax_percent = $firstDO->salesOrder->tax_percent ?? 11;
             $invoice->notes = 'Consolidated Invoice from DOs: ' . $deliveryOrders->pluck('do_number')->implode(', ');
@@ -1101,7 +1102,7 @@ class DeliveryOrderController extends Controller
                 
                 $invoice = \App\Models\SalesInvoice::create([
                     'company_id' => $deliveryOrder->company_id,
-                    'invoice_number' => \App\Models\SalesInvoice::generateInvoiceNumber($deliveryOrder->customer),
+                    'invoice_number' => \App\Models\SalesInvoice::generateInvoiceNumber($deliveryOrder->customer, $invoiceDate),
                     'sales_order_id' => $so->id,
                     'customer_id' => $deliveryOrder->customer_id,
                     'invoice_date' => $invoiceDate,
@@ -1402,7 +1403,7 @@ class DeliveryOrderController extends Controller
                     if (empty($groupedItems)) continue;
 
                     $invoiceDate = ($dos->max('delivery_date') ? Carbon::parse($dos->max('delivery_date')) : now());
-                    $invoiceNumber = \App\Models\SalesInvoice::generateInvoiceNumber($so->customer);
+                    $invoiceNumber = \App\Models\SalesInvoice::generateInvoiceNumber($so->customer, $invoiceDate);
                     $invoice = \App\Models\SalesInvoice::create([
                         'company_id' => $so->company_id,
                         'invoice_number' => $invoiceNumber,
