@@ -46,18 +46,16 @@ class ProductionDashboardController extends Controller
 
         // 2. Shift Productivity (Today)
         $shifts = Shift::where('is_active', true)->get();
-        $shiftProductivity = ProductionEntry::whereDate('production_date', $today)
-            ->select('shift', DB::raw('SUM(qty_produced) as total_qty'))
-            ->groupBy('shift')
-            ->get()
-            ->map(function($item) use ($shifts) {
-                $shiftName = $shifts->firstWhere('id', $item->shift)->name ?? "Shift " . $item->shift;
-                return [
-                    'name' => $shiftName,
-                    'output' => (float)$item->total_qty,
-                    'target' => 500, // Example target
-                ];
-            });
+        $shiftProductivity = $shifts->map(function($shift) use ($today) {
+            $totalQty = ProductionEntry::whereDate('production_date', $today)
+                ->where('shift', $shift->id)
+                ->sum('qty_produced');
+            return [
+                'name' => $shift->name,
+                'output' => (float)$totalQty,
+                'target' => 500, // Example target
+            ];
+        });
 
         // 3. Machine Status
         $machines = Machine::where('is_active', true)->get()->map(function ($machine) use ($today) {

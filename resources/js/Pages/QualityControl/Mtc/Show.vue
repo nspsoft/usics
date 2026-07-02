@@ -46,21 +46,36 @@ const filteredLocations = computed(() => {
     return props.locations.filter(loc => loc.warehouse_id === Number(warehouseId.value));
 });
 
-// Staging Items states
-const items = ref(props.document.items.map(item => ({
-    id: item.id,
-    product_id: item.product_id || '',
-    product_no: item.product_no || '',
-    heat_no: item.heat_no || '',
-    size: item.size || '',
-    quantity: item.quantity || 1,
-    weight_kg: item.weight_kg ? Number(item.weight_kg) : 0,
-    yp_mpa: item.yp_mpa || '',
-    ts_mpa: item.ts_mpa || '',
-    el_percent: item.el_percent || '',
-    chemical_ladle: item.chemical_ladle || {},
-    chemical_product: item.chemical_product || {},
-})));
+const formatTo4Decimals = (val) => {
+    if (val === null || val === undefined || val === '') return '0.0000';
+    const num = Number(val);
+    return isNaN(num) ? '0.0000' : num.toFixed(4);
+};
+
+const elements = ['C', 'Si', 'Mn', 'P', 'S', 'Al', 'Cr', 'Ni', 'B', 'Cu', 'Mo', 'CEQ'];
+
+const items = ref(props.document.items.map(item => {
+    const ladle = item.chemical_ladle || {};
+    const formattedLadle = {};
+    elements.forEach(el => {
+        formattedLadle[el] = formatTo4Decimals(ladle[el]);
+    });
+
+    return {
+        id: item.id,
+        product_id: item.product_id || '',
+        product_no: item.product_no || '',
+        heat_no: item.heat_no || '',
+        size: item.size || '',
+        quantity: item.quantity || 1,
+        weight_kg: item.weight_kg ? Number(item.weight_kg) : 0,
+        yp_mpa: item.yp_mpa || '',
+        ts_mpa: item.ts_mpa || '',
+        el_percent: item.el_percent || '',
+        chemical_ladle: formattedLadle,
+        chemical_product: item.chemical_product || {},
+    };
+}));
 
 // Active Item Details Modal
 const selectedItemIndex = ref(null);
@@ -69,6 +84,14 @@ const showDetailsModal = ref(false);
 const openItemDetails = (index) => {
     selectedItemIndex.value = index;
     showDetailsModal.value = true;
+};
+
+const formatElementOnBlur = (el) => {
+    const item = items.value[selectedItemIndex.value];
+    if (item && item.chemical_ladle) {
+        const val = item.chemical_ladle[el];
+        item.chemical_ladle[el] = formatTo4Decimals(val);
+    }
 };
 
 // Auto mapping trigger: try to fuzzy match supplier
@@ -655,9 +678,9 @@ const triggerReExtract = () => {
                                 <div v-for="el in ['C', 'Si', 'Mn', 'P', 'S', 'Al', 'Cr', 'Ni', 'B', 'Cu', 'Mo', 'CEQ']" :key="el">
                                     <label class="block text-[10px] font-bold text-slate-500 font-mono mb-1">{{ el }}</label>
                                     <input 
-                                        type="number"
-                                        step="0.0001"
+                                        type="text"
                                         v-model="items[selectedItemIndex].chemical_ladle[el]"
+                                        @blur="formatElementOnBlur(el)"
                                         :disabled="document.status !== 'draft'"
                                         class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono"
                                     />

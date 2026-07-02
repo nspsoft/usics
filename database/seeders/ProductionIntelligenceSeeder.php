@@ -466,18 +466,7 @@ class ProductionIntelligenceSeeder extends Seeder
                     $qtyPerShiftBase = $qtyStep / $numShifts;
 
                     foreach ($shiftsToProcess as $shift) {
-                        // Skip if it's in the future (e.g. today's later shifts)
-                        $isFutureShift = false;
-                        if ($entryDate->isToday()) {
-                            $currentHour = Carbon::now()->hour;
-                            if ($shift->name === 'Shift 2' && $currentHour < 15) {
-                                $isFutureShift = true;
-                            } elseif ($shift->name === 'Shift 3' && $currentHour < 23) {
-                                $isFutureShift = true;
-                            }
-                        }
-                        if ($isFutureShift) continue;
-
+                        // Seed entries for all shifts on today's date
                         // Qty with slight variance per shift (+/- 10%)
                         $shiftQtyPlanned = $qtyPerShiftBase * (1 + rand(-10, 10) / 100);
                         
