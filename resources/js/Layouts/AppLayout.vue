@@ -608,12 +608,6 @@ const navigation = [
         ]
     },
     { 
-        name: 'Helpdesk Support', 
-        href: '/helpdesk', 
-        icon: LifebuoyIcon, 
-        current: false 
-    },
-    { 
         name: 'Settings', 
         href: '#', 
         icon: Cog6ToothIcon, 
@@ -641,6 +635,12 @@ const navigation = [
             { name: 'Traccar Tracking', href: '/settings/traccar', icon: MapPinIcon, permission: 'settings.view' },
             { name: 'RFID Gate Simulator', href: '/warehouse/rfid', icon: CpuChipIcon, permission: 'settings.view' },
         ]
+    },
+    { 
+        name: 'Helpdesk Support', 
+        href: '/helpdesk', 
+        icon: LifebuoyIcon, 
+        current: false 
     },
 ];
 
