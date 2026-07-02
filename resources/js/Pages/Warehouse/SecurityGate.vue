@@ -25,7 +25,8 @@ import {
   ShieldX,
   Wifi,
   LogIn,
-  LogOut
+  LogOut,
+  Sparkles
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -37,7 +38,7 @@ const page = usePage();
 
 // State
 const selectedDoId = ref('');
-const scanAction = ref('entry');
+const scanAction = ref('smart');
 const rfidInputText = ref('');
 const processing = ref(false);
 const isMuted = ref(false);
@@ -143,19 +144,25 @@ const triggerScan = () => {
       }
       if (flash.error) {
         playSound('error');
+        speakMessage('Gagal memproses. Akses ditolak.');
       } else if (flash.warning) {
         playSound('warning');
+        speakMessage('Perhatian. Dokumen kendaraan kedaluwarsa.');
       } else {
         playSound('success');
-        // Speak voice greeting
-        if (scanAction.value === 'entry') {
+        // Speak voice greeting based on the action determined by the server
+        const actionDone = data?.scan_action;
+        if (actionDone === 'entry') {
           speakMessage('Silakan masuk');
-        } else if (scanAction.value === 'exit') {
+        } else if (actionDone === 'exit') {
           speakMessage('Selamat jalan');
         }
       }
     },
-    onError: () => playSound('error'),
+    onError: () => {
+      playSound('error');
+      speakMessage('Gagal memproses.');
+    },
     onFinish: () => processing.value = false,
   });
 };
@@ -520,13 +527,18 @@ onUnmounted(() => {
             </h3>
             <!-- Mode toggle -->
             <div class="flex border border-slate-700 rounded-lg overflow-hidden">
+              <button @click="scanAction = 'smart'"
+                class="text-[9px] font-mono font-bold px-2.5 py-1 transition-all flex items-center gap-1"
+                :class="scanAction === 'smart' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : 'bg-slate-800 text-slate-400 hover:text-white'">
+                <Sparkles class="w-3 h-3 text-cyan-300 animate-pulse" /> AUTO
+              </button>
               <button @click="scanAction = 'entry'"
-                class="text-[9px] font-mono font-bold px-3 py-1 transition-all flex items-center gap-1"
+                class="text-[9px] font-mono font-bold px-2.5 py-1 transition-all flex items-center gap-1"
                 :class="scanAction === 'entry' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'">
                 <LogIn class="w-3 h-3" /> MASUK
               </button>
               <button @click="scanAction = 'exit'"
-                class="text-[9px] font-mono font-bold px-3 py-1 transition-all flex items-center gap-1"
+                class="text-[9px] font-mono font-bold px-2.5 py-1 transition-all flex items-center gap-1"
                 :class="scanAction === 'exit' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'">
                 <LogOut class="w-3 h-3" /> KELUAR
               </button>
@@ -564,7 +576,9 @@ onUnmounted(() => {
             </div>
             <div v-else class="text-center mb-4">
               <p class="text-base font-bold text-white">Silakan Tap Kartu RFID Truk</p>
-              <p class="text-xs text-slate-400 mt-1">Dekatkan kartu ke USB Reader untuk {{ scanAction === 'entry' ? 'Masuk' : 'Keluar' }}</p>
+              <p class="text-xs text-slate-400 mt-1">
+                Dekatkan kartu ke USB Reader untuk {{ scanAction === 'entry' ? 'Masuk' : (scanAction === 'exit' ? 'Keluar' : 'Proses Otomatis') }}
+              </p>
             </div>
 
             <!-- Manual select & trigger -->
@@ -600,10 +614,12 @@ onUnmounted(() => {
                 class="w-full py-3 rounded-xl text-sm font-bold font-mono tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 :class="scanAction === 'entry'
                   ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-500/20'
-                  : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-blue-500/20'">
-                <component :is="processing ? RefreshCw : (scanAction === 'entry' ? LogIn : LogOut)"
+                  : (scanAction === 'exit'
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-blue-500/20'
+                    : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-blue-500/20')">
+                <component :is="processing ? RefreshCw : (scanAction === 'entry' ? LogIn : (scanAction === 'exit' ? LogOut : Sparkles))"
                   class="w-4 h-4" :class="processing ? 'animate-spin' : ''" />
-                {{ processing ? 'MEMPROSES...' : (scanAction === 'entry' ? '⚡ SIMULASI TAP MASUK' : '⚡ SIMULASI TAP KELUAR') }}
+                {{ processing ? 'MEMPROSES...' : (scanAction === 'entry' ? '⚡ SIMULASI TAP MASUK' : (scanAction === 'exit' ? '⚡ SIMULASI TAP KELUAR' : '⚡ SIMULASI TAP OTOMATIS')) }}
               </button>
             </div>
 

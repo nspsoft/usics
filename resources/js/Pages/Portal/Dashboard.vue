@@ -160,29 +160,29 @@ const chartOptions = {
                         <!-- New Orders Card (Featured) -->
                         <div class="md:col-span-1 relative group md:hover:scale-105 transition-all duration-300">
                              <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-500"></div>
-                             <div class="relative h-full bg-slate-900 rounded-2xl p-6 border border-white/10 overflow-hidden flex flex-col justify-between">
+                             <div class="relative h-full bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-none overflow-hidden flex flex-col justify-between">
                                 <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <ShoppingCartIcon class="w-24 h-24 text-white transform rotate-12" />
+                                    <ShoppingCartIcon class="w-24 h-24 text-slate-400 dark:text-white transform rotate-12" />
                                 </div>
                                 
                                 <div>
                                     <div class="flex items-center justify-between mb-4">
-                                        <div class="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30">
-                                            <ShoppingCartIcon class="w-6 h-6 text-cyan-400" />
+                                        <div class="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 dark:from-cyan-500/20 dark:to-blue-500/20 border border-cyan-500/20 dark:border-cyan-500/30">
+                                            <ShoppingCartIcon class="w-6 h-6 text-cyan-500 dark:text-cyan-400" />
                                         </div>
-                                        <div class="bg-cyan-500/20 text-cyan-300 text-[10px] font-bold px-2 py-1 rounded-full border border-cyan-500/20">NEW</div>
+                                        <div class="bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 text-[10px] font-bold px-2 py-1 rounded-full border border-cyan-500/20">NEW</div>
                                     </div>
-                                    <h3 class="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">New Orders</h3>
-                                    <div class="text-4xl font-black text-white tracking-tight mb-1">{{ metrics.pending_pos }}</div>
-                                    <p class="text-cyan-400/80 text-xs flex items-center gap-1">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                                    <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">New Orders</h3>
+                                    <div class="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-1">{{ metrics.pending_pos }}</div>
+                                    <p class="text-cyan-600 dark:text-cyan-400/80 text-xs flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400"></span>
                                         Awaiting Action
                                     </p>
                                 </div>
 
-                                <Link href="/portal/purchase-orders" class="mt-6 flex items-center justify-between group/link w-full py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 transition-colors">
-                                    <span class="text-xs font-bold text-white">Process Now</span>
-                                    <ArrowRightIcon class="w-4 h-4 text-white group-hover/link:translate-x-1 transition-transform" />
+                                <Link href="/portal/purchase-orders" class="mt-6 flex items-center justify-between group/link w-full py-2 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/5 transition-colors">
+                                    <span class="text-xs font-bold text-slate-700 dark:text-white">Process Now</span>
+                                    <ArrowRightIcon class="w-4 h-4 text-slate-700 dark:text-white group-hover/link:translate-x-1 transition-transform" />
                                 </Link>
                              </div>
                         </div>
@@ -253,36 +253,36 @@ const chartOptions = {
                 <!-- Right Column: Recent Activity & Actions (4 cols) -->
                 <div class="lg:col-span-4 flex flex-col gap-6">
                     <!-- Quick Actions -->
-                    <div class="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl shadow-xl border border-indigo-500/20 p-6 text-white relative overflow-hidden">
-                        <div class="absolute inset-0 bg-[url('/images/grid.svg')] opacity-10"></div>
-                        <h3 class="font-bold mb-4 flex items-center gap-2 relative z-10">
-                            <BoltIcon class="w-5 h-5 text-yellow-400" />
+                    <div class="bg-white dark:bg-gradient-to-br dark:from-indigo-900 dark:to-slate-900 rounded-2xl shadow-lg dark:shadow-xl border border-slate-200 dark:border-indigo-500/20 p-6 text-slate-800 dark:text-white relative overflow-hidden">
+                        <div class="absolute inset-0 bg-[url('/images/grid.svg')] opacity-[0.03] dark:opacity-10"></div>
+                        <h3 class="font-bold mb-4 flex items-center gap-2 relative z-10 text-slate-900 dark:text-white">
+                            <BoltIcon class="w-5 h-5 text-yellow-500 dark:text-yellow-400" />
                             Quick Actions
                         </h3>
                         <div class="space-y-3 relative z-10">
-                            <Link :href="route('portal.purchase-orders.index')" class="flex items-center p-3 rounded-xl bg-white/5 hover:bg-indigo-500/20 border border-white/5 hover:border-indigo-500/50 transition-all group backdrop-blur-sm cursor-pointer">
-                                <div class="p-2 rounded-lg bg-indigo-500/20 text-indigo-300 mr-3 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                            <Link :href="route('portal.purchase-orders.index')" class="flex items-center p-3 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-indigo-500/10 dark:hover:bg-indigo-500/20 border border-slate-100 dark:border-white/5 hover:border-indigo-500/30 dark:hover:border-indigo-500/50 transition-all group backdrop-blur-sm cursor-pointer">
+                                <div class="p-2 rounded-lg bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 mr-3 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
                                     <ShoppingCartIcon class="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <div class="font-bold text-sm text-indigo-100">Review Orders</div>
-                                    <div class="text-[10px] text-indigo-300/60">Check pending requests</div>
+                                    <div class="font-bold text-sm text-slate-800 dark:text-indigo-100">Review Orders</div>
+                                    <div class="text-[10px] text-slate-500 dark:text-indigo-300/60">Check pending requests</div>
                                 </div>
-                                <ArrowRightIcon class="w-4 h-4 text-indigo-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+                                <ArrowRightIcon class="w-4 h-4 text-indigo-500 dark:text-indigo-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
                             </Link>
 
-                             <Link :href="route('portal.deliveries.index')" class="flex items-center p-3 rounded-xl bg-white/5 hover:bg-orange-500/20 border border-white/5 hover:border-orange-500/50 transition-all group backdrop-blur-sm cursor-pointer">
-                                <div class="p-2 rounded-lg bg-orange-500/20 text-orange-300 mr-3 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                             <Link :href="route('portal.deliveries.index')" class="flex items-center p-3 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-orange-500/10 dark:hover:bg-orange-500/20 border border-slate-100 dark:border-white/5 hover:border-orange-500/30 dark:hover:border-orange-500/50 transition-all group backdrop-blur-sm cursor-pointer">
+                                <div class="p-2 rounded-lg bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-300 mr-3 group-hover:bg-orange-500 group-hover:text-white transition-colors">
                                     <TruckIcon class="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <div class="font-bold text-sm text-orange-100">Track Shipments</div>
-                                    <div class="text-[10px] text-orange-300/60">Monitor delivery status</div>
+                                    <div class="font-bold text-sm text-slate-800 dark:text-orange-100">Track Shipments</div>
+                                    <div class="text-[10px] text-slate-500 dark:text-orange-300/60">Monitor delivery status</div>
                                 </div>
-                                 <ArrowRightIcon class="w-4 h-4 text-orange-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+                                 <ArrowRightIcon class="w-4 h-4 text-orange-500 dark:text-orange-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
                             </Link>
                         </div>
-                    </div>
+                     </div>
 
                     <!-- Recent Orders List -->
                      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 flex flex-col flex-1 overflow-hidden">

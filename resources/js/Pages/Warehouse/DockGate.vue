@@ -151,14 +151,21 @@ const triggerScan = () => {
       }
       if (flash.warning) {
         playSound('warning');
+        speakMessage('Gagal memproses. Periksa status armada.');
       } else {
         playSound('success');
-        if (data?.delivery_order?.status === 'picking') {
+        const status = data?.delivery_order?.status;
+        if (status === 'picking') {
           speakMessage('Pemuatan dimulai. Silakan muat barang.');
+        } else if (status === 'packed') {
+          speakMessage('Pemuatan selesai. Silakan menuju jembatan timbang.');
         }
       }
     },
-    onError: () => playSound('error'),
+    onError: () => {
+      playSound('error');
+      speakMessage('Gagal memproses.');
+    },
     onFinish: () => processing.value = false,
   });
 };
@@ -386,7 +393,7 @@ onUnmounted(() => {
           <div class="p-4 flex-1 flex flex-col">
             <template v-if="selectedDo">
               <!-- Vehicle Details -->
-              <div class="relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800 mb-3 h-40">
+              <div class="relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800 mb-3 h-52">
                 <img v-if="selectedDo.vehicle?.vehicle_photo_url" :src="selectedDo.vehicle.vehicle_photo_url" class="w-full h-full object-cover" alt="Vehicle" />
                 <div v-else class="w-full h-full flex items-center justify-center">
                   <Truck class="w-12 h-12 text-slate-700" />

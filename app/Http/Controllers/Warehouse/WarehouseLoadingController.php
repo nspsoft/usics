@@ -241,7 +241,7 @@ class WarehouseLoadingController extends Controller
     {
         $request->validate([
             'delivery_order_id' => 'required|exists:delivery_orders,id',
-            'action' => 'required|in:entry,exit',
+            'action' => 'required|in:entry,exit,smart',
         ]);
 
         $deliveryOrder = DeliveryOrder::with(['customer', 'vehicle', 'warehouse', 'items.product', 'items.unit'])
@@ -251,10 +251,19 @@ class WarehouseLoadingController extends Controller
         $tagId = "RFID-TRUCK-" . str_replace(' ', '', strtoupper($plate));
         $vehicle = $deliveryOrder->vehicle;
 
+        $action = $request->action;
+        if ($action === 'smart') {
+            if ($deliveryOrder->status === 'draft') {
+                $action = 'entry';
+            } else {
+                $action = 'exit';
+            }
+        }
+
         $status = 'success';
         $message = '';
 
-        if ($request->action === 'entry') {
+        if ($action === 'entry') {
             if ($deliveryOrder->status !== 'draft') {
                 $status = 'warning';
                 $message = "Truk {$plate} sudah tercatat masuk sebelumnya. Status saat ini: " . strtoupper($deliveryOrder->status);
@@ -279,7 +288,7 @@ class WarehouseLoadingController extends Controller
         \App\Models\RfidScanLog::create([
             'delivery_order_id' => $deliveryOrder->id,
             'tag_id' => $tagId,
-            'reader_id' => $request->action === 'entry' ? 'gate_entry' : 'gate_exit',
+            'reader_id' => $action === 'entry' ? 'gate_entry' : 'gate_exit',
             'simulated_weight' => null,
             'status' => $status,
             'message' => $message,
@@ -327,7 +336,7 @@ class WarehouseLoadingController extends Controller
                 'compliance' => $compliance,
                 'scan_status' => $status,
                 'scan_message' => $message,
-                'scan_action' => $request->action,
+                'scan_action' => $action,
                 'scan_time' => now()->toDateTimeString(),
             ]);
     }
@@ -381,7 +390,17 @@ class WarehouseLoadingController extends Controller
             ]);
             $message = "📦 START LOADING: Pemuatan barang DO #{$deliveryOrder->do_number} untuk truk {$plate} dimulai di {$request->loading_bay}.";
         } elseif ($deliveryOrder->status === 'picking') {
-            $message = "📖 DATA LOADED: Menampilkan detail kargo DO #{$deliveryOrder->do_number} untuk truk {$plate}.";
+            $totalItems = $deliveryOrder->items->count();
+            $loadedItems = $deliveryOrder->items->where('is_loaded', true)->count();
+
+            if ($totalItems > 0 && $totalItems === $loadedItems) {
+                $deliveryOrder->update([
+                    'status' => 'packed'
+                ]);
+                $message = "✅ FINISH LOADING: Pemuatan barang DO #{$deliveryOrder->do_number} selesai. Truk {$plate} siap menuju timbangan.";
+            } else {
+                $message = "📖 DATA LOADED: Menampilkan detail kargo DO #{$deliveryOrder->do_number} untuk truk {$plate}.";
+            }
         } else {
             $status = 'warning';
             $message = "⚠️ Status DO saat ini: " . strtoupper($deliveryOrder->status) . ". Pemuatan tidak dapat dilakukan.";

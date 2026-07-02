@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             UatCrmSeeder::class,
             CrmDummySeeder::class,
             SalesVisitSeeder::class,
+            DraftSoDoSeeder::class,
             UatLogisticsSeeder::class,
             QcDummyDataSeeder::class,
             GaDummySeeder::class,

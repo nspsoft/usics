@@ -227,7 +227,13 @@ onMounted(() => {
                 <button @click="sidebarOpen = true" class="lg:hidden p-2 text-slate-500">
                     <Bars3Icon class="h-6 w-6" />
                 </button>
-                <div class="flex-1"></div>
+                <div class="flex-1 flex items-center pl-4" v-if="$page.props.auth.user.supplier">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 animate-pulse"></span>
+                        Vendor: {{ $page.props.auth.user.supplier.name }}
+                    </span>
+                </div>
+                <div class="flex-1" v-else></div>
                 <div class="flex items-center gap-4">
                     <!-- Theme Toggle -->
                     <button 
@@ -291,7 +297,10 @@ onMounted(() => {
 
                     <div class="text-right hidden sm:block">
                         <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $page.props.auth.user.name }}</p>
-                        <p class="text-xs text-slate-500">{{ $page.props.auth.user.email }}</p>
+                        <p class="text-xs text-indigo-600 dark:text-indigo-400 font-bold" v-if="$page.props.auth.user.supplier">
+                            {{ $page.props.auth.user.supplier.name }}
+                        </p>
+                        <p class="text-xs text-slate-500" v-else>{{ $page.props.auth.user.email }}</p>
                     </div>
                     <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold border border-indigo-200">
                         {{ $page.props.auth.user.name.charAt(0) }}

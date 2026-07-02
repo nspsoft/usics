@@ -81,12 +81,12 @@ class MapuController extends Controller
             // 2. Current Stock (S_P)
             $currentStock = ProductStock::where('product_id', $rm->id)->sum('qty_on_hand') ?? 0.0;
 
-            // 3. Outstanding PO Qty (Expected arrival <= T-1)
+            // 3. Outstanding PO Qty (Expected arrival <= T)
             $outstandingPo = DB::table('purchase_order_items')
                 ->join('purchase_orders', 'purchase_order_items.purchase_order_id', '=', 'purchase_orders.id')
                 ->where('purchase_order_items.product_id', $rm->id)
                 ->whereIn('purchase_orders.status', ['approved', 'ordered', 'partial', 'acknowledged'])
-                ->where('purchase_orders.expected_date', '<=', $waitPeriodEnd->copy()->endOfMonth())
+                ->where('purchase_orders.expected_date', '<=', $arrivalMonth->copy()->endOfMonth())
                 ->sum(DB::raw('purchase_order_items.qty - purchase_order_items.qty_received')) ?? 0.0;
 
             // 4. Projected Consumption during Wait Period (P to T-1)

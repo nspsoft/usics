@@ -86,7 +86,9 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $user,
+                'user' => $user ? array_merge($user->toArray(), [
+                    'supplier' => $user->supplier ? $user->supplier->only(['id', 'name', 'code']) : null
+                ]) : null,
                 'permissions' => $user ? $user->getAllPermissions()->pluck('name') : [],
                 'roles' => $user ? $user->getRoleNames() : [],
                 'unreadNotificationsCount' => $user ? $user->unreadNotifications()->count() : 0,
