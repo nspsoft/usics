@@ -83,7 +83,7 @@ class SalesVisitSeeder extends Seeder
         for ($i = 0; $i < 12; $i++) {
             $sales = $salesUsers->random();
             $customer = $customers->random();
-            $plannedDate = Carbon::now()->subDays(rand(1, 10))->setHour(rand(9, 15))->setMinute(0);
+            $plannedDate = Carbon::create(2026, 4, 1)->addDays(rand(0, 89))->setHour(rand(9, 15))->setMinute(0);
             
             // Check-in location slightly offset from customer location
             $checkInLat = $customer->latitude + (rand(-50, 50) / 100000.0);

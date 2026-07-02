@@ -88,7 +88,7 @@ const submit = () => {
 };
 
 const webhookUrl = computed(() => {
-    const base = page.props.appUrl || window.location.origin;
+    const base = typeof window !== 'undefined' ? window.location.origin : (page.props.appUrl || '');
     if (activeTab.value === 'purchasing') {
         return `${base}/whatsapp-purchasing/webhook`;
     }

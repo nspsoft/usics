@@ -22,26 +22,39 @@ const props = defineProps({
     default_params: Object
 });
 
-const params = ref({ ...props.default_params });
+import { watch } from 'vue';
+
+const params = ref({ 
+    ...props.default_params,
+    // Dynamic process-specific default parameters
+    slitting_fee: 250,
+    slitting_scrap: 3,
+    
+    blanking_fee: 550,
+    blanking_scrap: 18,
+    
+    welding_fee: 1200,
+    welding_scrap: 8,
+    
+    shearing_fee: 350,
+    shearing_scrap: 5,
+});
+
 const loading = ref(false);
 const error = ref(null);
 const analysisResult = ref(null);
 
-// Pre-fill defaults based on SKU prefixes
+// Pre-fill defaults based on SKU prefixes and current params
 const getSkuDefaults = (sku) => {
     const s = (sku || '').toUpperCase();
     if (s.startsWith('SC-')) {
-        // Slit Coil / Slitting
-        return { processing_fee: 250, scrap_recovery: 3 };
+        return { processing_fee: params.value.slitting_fee, scrap_recovery: params.value.slitting_scrap };
     } else if (s.startsWith('FG-BLNK-') || s.startsWith('FG-COMP-')) {
-        // Blanking / Components
-        return { processing_fee: 550, scrap_recovery: 18 };
+        return { processing_fee: params.value.blanking_fee, scrap_recovery: params.value.blanking_scrap };
     } else if (s.startsWith('FG-TWB-')) {
-        // Tailored Welded Blanks
-        return { processing_fee: 1200, scrap_recovery: 8 };
+        return { processing_fee: params.value.welding_fee, scrap_recovery: params.value.welding_scrap };
     } else {
-        // Fallback/Others (e.g. Shearing / general plates)
-        return { processing_fee: 350, scrap_recovery: 5 };
+        return { processing_fee: params.value.shearing_fee, scrap_recovery: params.value.shearing_scrap };
     }
 };
 
@@ -51,8 +64,55 @@ const productsList = ref(props.products.map(p => {
         ...p,
         processing_fee: defaults.processing_fee,
         scrap_recovery: defaults.scrap_recovery,
+        is_fee_dirty: false,
+        is_scrap_dirty: false,
     };
 }));
+
+// Set dirty-flags to prevent global parameter changes from overwriting manual overrides
+const markFeeDirty = (product) => {
+    product.is_fee_dirty = true;
+};
+const markScrapDirty = (product) => {
+    product.is_scrap_dirty = true;
+};
+
+// Watch global process parameters and dynamically update products that aren't dirty
+watch(
+    () => [
+        params.value.slitting_fee,
+        params.value.slitting_scrap,
+        params.value.blanking_fee,
+        params.value.blanking_scrap,
+        params.value.welding_fee,
+        params.value.welding_scrap,
+        params.value.shearing_fee,
+        params.value.shearing_scrap,
+    ],
+    () => {
+        productsList.value.forEach(p => {
+            const sku = p.sku.toUpperCase();
+            if (sku.startsWith('SC-')) {
+                if (!p.is_fee_dirty) p.processing_fee = params.value.slitting_fee;
+                if (!p.is_scrap_dirty) p.scrap_recovery = params.value.slitting_scrap;
+            } else if (sku.startsWith('FG-BLNK-') || sku.startsWith('FG-COMP-')) {
+                if (!p.is_fee_dirty) p.processing_fee = params.value.blanking_fee;
+                if (!p.is_scrap_dirty) p.scrap_recovery = params.value.blanking_scrap;
+            } else if (sku.startsWith('FG-TWB-')) {
+                if (!p.is_fee_dirty) p.processing_fee = params.value.welding_fee;
+                if (!p.is_scrap_dirty) p.scrap_recovery = params.value.welding_scrap;
+            } else {
+                if (!p.is_fee_dirty) p.processing_fee = params.value.shearing_fee;
+                if (!p.is_scrap_dirty) p.scrap_recovery = params.value.shearing_scrap;
+            }
+        });
+        
+        // Update general fallback for backend API validation
+        params.value.processing_fee = params.value.shearing_fee;
+        params.value.scrap_recovery = params.value.shearing_scrap;
+    },
+    { deep: true }
+);
 
 const runAnalysis = async () => {
     loading.value = true;
@@ -185,18 +245,84 @@ const copyToClipboard = (value) => {
                             <input type="number" v-model.number="params.target_margin" class="form-input w-full rounded-xl" placeholder="Contoh: 15" required />
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                <InformationCircleIcon class="h-4 w-4 text-cyan-400" /> Ongkos Slitting/Potong (IDR/kg)
-                            </label>
-                            <input type="number" v-model.number="params.processing_fee" class="form-input w-full rounded-xl" placeholder="Contoh: 350" required />
-                        </div>
+                        <!-- Biaya & Scrap per Mesin (Compact) -->
+                        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                            <div class="flex items-center gap-2 pb-0.5">
+                                <SparklesIcon class="h-4 w-4 text-cyan-400" />
+                                <h4 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Default per Mesin</h4>
+                            </div>
+                            
+                            <!-- Slitting -->
+                            <div class="flex items-center justify-between gap-3 p-2 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-200 dark:border-slate-800">
+                                <div class="w-1/2 min-w-[110px]">
+                                    <span class="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider block">1. Slitting (SC-)</span>
+                                    <span class="text-[9px] text-slate-400 block -mt-0.5 lowercase font-medium">slit coil</span>
+                                </div>
+                                <div class="flex items-center gap-2 w-1/2 justify-end">
+                                    <div class="relative w-20">
+                                        <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-500">Rp</span>
+                                        <input type="number" v-model.number="params.slitting_fee" class="form-input w-full rounded-lg text-xs py-1.5 pl-6 pr-1 text-center font-bold" placeholder="Fee" title="Ongkos (IDR/kg)" />
+                                    </div>
+                                    <div class="relative w-16">
+                                        <input type="number" v-model.number="params.slitting_scrap" class="form-input w-full rounded-lg text-xs py-1.5 pl-1 pr-4 text-center font-bold" placeholder="Scrap" title="Scrap (%)" />
+                                        <span class="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                <InformationCircleIcon class="h-4 w-4 text-amber-400" /> Faktor Pemulihan Scrap (%)
-                            </label>
-                            <input type="number" v-model.number="params.scrap_recovery" class="form-input w-full rounded-xl" placeholder="Contoh: 5" required />
+                            <!-- Blanking -->
+                            <div class="flex items-center justify-between gap-3 p-2 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-200 dark:border-slate-800">
+                                <div class="w-1/2 min-w-[110px]">
+                                    <span class="text-[10px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-wider block">2. Blanking (FG-BLNK)</span>
+                                    <span class="text-[9px] text-slate-400 block -mt-0.5 lowercase font-medium">plat cetak</span>
+                                </div>
+                                <div class="flex items-center gap-2 w-1/2 justify-end">
+                                    <div class="relative w-20">
+                                        <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-500">Rp</span>
+                                        <input type="number" v-model.number="params.blanking_fee" class="form-input w-full rounded-lg text-xs py-1.5 pl-6 pr-1 text-center font-bold" placeholder="Fee" title="Ongkos (IDR/kg)" />
+                                    </div>
+                                    <div class="relative w-16">
+                                        <input type="number" v-model.number="params.blanking_scrap" class="form-input w-full rounded-lg text-xs py-1.5 pl-1 pr-4 text-center font-bold" placeholder="Scrap" title="Scrap (%)" />
+                                        <span class="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Laser Welding -->
+                            <div class="flex items-center justify-between gap-3 p-2 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-200 dark:border-slate-800">
+                                <div class="w-1/2 min-w-[110px]">
+                                    <span class="text-[10px] font-black text-rose-500 dark:text-rose-400 uppercase tracking-wider block">3. Laser (FG-TWB)</span>
+                                    <span class="text-[9px] text-slate-400 block -mt-0.5 lowercase font-medium">las laser</span>
+                                </div>
+                                <div class="flex items-center gap-2 w-1/2 justify-end">
+                                    <div class="relative w-20">
+                                        <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-500">Rp</span>
+                                        <input type="number" v-model.number="params.welding_fee" class="form-input w-full rounded-lg text-xs py-1.5 pl-6 pr-1 text-center font-bold" placeholder="Fee" title="Ongkos (IDR/kg)" />
+                                    </div>
+                                    <div class="relative w-16">
+                                        <input type="number" v-model.number="params.welding_scrap" class="form-input w-full rounded-lg text-xs py-1.5 pl-1 pr-4 text-center font-bold" placeholder="Scrap" title="Scrap (%)" />
+                                        <span class="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Shearing -->
+                            <div class="flex items-center justify-between gap-3 p-2 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-200 dark:border-slate-800">
+                                <div class="w-1/2 min-w-[110px]">
+                                    <span class="text-[10px] font-black text-cyan-500 dark:text-cyan-400 uppercase tracking-wider block">4. Shearing (Lainnya)</span>
+                                    <span class="text-[9px] text-slate-400 block -mt-0.5 lowercase font-medium">potong biasa</span>
+                                </div>
+                                <div class="flex items-center gap-2 w-1/2 justify-end">
+                                    <div class="relative w-20">
+                                        <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-500">Rp</span>
+                                        <input type="number" v-model.number="params.shearing_fee" class="form-input w-full rounded-lg text-xs py-1.5 pl-6 pr-1 text-center font-bold" placeholder="Fee" title="Ongkos (IDR/kg)" />
+                                    </div>
+                                    <div class="relative w-16">
+                                        <input type="number" v-model.number="params.shearing_scrap" class="form-input w-full rounded-lg text-xs py-1.5 pl-1 pr-4 text-center font-bold" placeholder="Scrap" title="Scrap (%)" />
+                                        <span class="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -298,7 +424,8 @@ const copyToClipboard = (value) => {
                                         <input 
                                             type="number" 
                                             v-model.number="p.processing_fee" 
-                                            class="w-16 px-1.5 py-0.5 text-xs text-center border border-slate-300 dark:border-slate-800 rounded bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" 
+                                            @input="markFeeDirty(p)"
+                                            class="w-16 px-1.5 py-0.5 text-xs text-center border border-slate-300 dark:border-slate-800 rounded bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 font-semibold" 
                                             min="0"
                                         />
                                         <span class="text-[10px] text-slate-400">/kg</span>
@@ -309,7 +436,8 @@ const copyToClipboard = (value) => {
                                         <input 
                                             type="number" 
                                             v-model.number="p.scrap_recovery" 
-                                            class="w-12 px-1.5 py-0.5 text-xs text-center border border-slate-300 dark:border-slate-800 rounded bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" 
+                                            @input="markScrapDirty(p)"
+                                            class="w-12 px-1.5 py-0.5 text-xs text-center border border-slate-300 dark:border-slate-800 rounded bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 font-semibold" 
                                             min="0" 
                                             max="100"
                                         />
