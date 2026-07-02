@@ -96,6 +96,65 @@ const formatElementOnBlur = (el) => {
     }
 };
 
+const GRADE_STANDARDS = {
+    'SPHC': {
+        C: { max: 0.15 },
+        Si: { max: 0.30 },
+        Mn: { max: 0.60 },
+        P: { max: 0.050 },
+        S: { max: 0.050 },
+        yp_mpa: { min: 235 },
+        ts_mpa: { min: 270 },
+        el_percent: { min: 27 }
+    },
+    'SPCC': {
+        C: { max: 0.15 },
+        Si: { max: 0.05 },
+        Mn: { max: 0.60 },
+        P: { max: 0.100 },
+        S: { max: 0.035 },
+    },
+    'SGCC': {
+        C: { max: 0.15 },
+        Si: { max: 0.05 },
+        Mn: { max: 0.60 },
+        P: { max: 0.05 },
+        S: { max: 0.05 },
+    },
+    'API 5L': {
+        C: { max: 0.24 },
+        Mn: { max: 1.20 },
+        P: { max: 0.025 },
+        S: { max: 0.015 },
+        yp_mpa: { min: 245, max: 450 },
+        ts_mpa: { min: 415 },
+        el_percent: { min: 23 }
+    }
+};
+
+const getValidationWarning = (elOrProp, value) => {
+    const spec = specAndType.value;
+    if (!spec || value === undefined || value === null || value === '') return null;
+    
+    const normalizedSpec = spec.toUpperCase();
+    const matchedGrade = Object.keys(GRADE_STANDARDS).find(g => normalizedSpec.includes(g) || g.includes(normalizedSpec));
+    if (!matchedGrade) return null;
+    
+    const limits = GRADE_STANDARDS[matchedGrade][elOrProp];
+    if (!limits) return null;
+    
+    const val = Number(value);
+    if (isNaN(val)) return null;
+    
+    if (limits.min !== undefined && val < limits.min) {
+        return `Min ${limits.min}`;
+    }
+    if (limits.max !== undefined && val > limits.max) {
+        return `Max ${limits.max}`;
+    }
+    return null;
+};
+
 // Auto mapping trigger: try to fuzzy match supplier
 const autoMapSupplier = () => {
     if (!supplierName.value) return;
@@ -710,30 +769,48 @@ const triggerReExtract = () => {
                             <h5 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono border-b border-slate-900 pb-1">Mechanical Test</h5>
                             <div class="grid grid-cols-3 gap-3">
                                 <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 font-mono mb-1">Yield Point (YP - MPa)</label>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[10px] font-bold text-slate-500 font-mono">Yield Point (YP - MPa)</label>
+                                        <span v-if="getValidationWarning('yp_mpa', items[selectedItemIndex].yp_mpa)" class="text-[9px] font-bold text-rose-400 font-mono">
+                                            {{ getValidationWarning('yp_mpa', items[selectedItemIndex].yp_mpa) }}
+                                        </span>
+                                    </div>
                                     <input 
                                         type="text" 
                                         v-model="items[selectedItemIndex].yp_mpa" 
                                         :disabled="document.status !== 'draft'"
-                                        class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono" 
+                                        class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono transition-colors" 
+                                        :class="{'border-rose-500/85 text-rose-300 bg-rose-950/15 focus:border-rose-500': getValidationWarning('yp_mpa', items[selectedItemIndex].yp_mpa)}"
                                     />
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 font-mono mb-1">Tensile Strength (TS - MPa)</label>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[10px] font-bold text-slate-500 font-mono">Tensile Strength (TS - MPa)</label>
+                                        <span v-if="getValidationWarning('ts_mpa', items[selectedItemIndex].ts_mpa)" class="text-[9px] font-bold text-rose-400 font-mono">
+                                            {{ getValidationWarning('ts_mpa', items[selectedItemIndex].ts_mpa) }}
+                                        </span>
+                                    </div>
                                     <input 
                                         type="text" 
                                         v-model="items[selectedItemIndex].ts_mpa" 
                                         :disabled="document.status !== 'draft'"
-                                        class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono" 
+                                        class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono transition-colors" 
+                                        :class="{'border-rose-500/85 text-rose-300 bg-rose-950/15 focus:border-rose-500': getValidationWarning('ts_mpa', items[selectedItemIndex].ts_mpa)}"
                                     />
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 font-mono mb-1">Elongation (EL - %)</label>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[10px] font-bold text-slate-500 font-mono">Elongation (EL - %)</label>
+                                        <span v-if="getValidationWarning('el_percent', items[selectedItemIndex].el_percent)" class="text-[9px] font-bold text-rose-400 font-mono">
+                                            {{ getValidationWarning('el_percent', items[selectedItemIndex].el_percent) }}
+                                        </span>
+                                    </div>
                                     <input 
                                         type="text" 
                                         v-model="items[selectedItemIndex].el_percent" 
                                         :disabled="document.status !== 'draft'"
-                                        class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono" 
+                                        class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono transition-colors" 
+                                        :class="{'border-rose-500/85 text-rose-300 bg-rose-950/15 focus:border-rose-500': getValidationWarning('el_percent', items[selectedItemIndex].el_percent)}"
                                     />
                                 </div>
                             </div>
@@ -744,13 +821,19 @@ const triggerReExtract = () => {
                             <h5 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono border-b border-slate-900 pb-1">Chemical Ladle Analysis (%)</h5>
                             <div class="grid grid-cols-4 gap-3">
                                 <div v-for="el in ['C', 'Si', 'Mn', 'P', 'S', 'Al', 'Cr', 'Ni', 'B', 'Cu', 'Mo', 'CEQ']" :key="el">
-                                    <label class="block text-[10px] font-bold text-slate-500 font-mono mb-1">{{ el }}</label>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[10px] font-bold text-slate-500 font-mono">{{ el }}</label>
+                                        <span v-if="getValidationWarning(el, items[selectedItemIndex].chemical_ladle[el])" class="text-[9px] font-bold text-rose-400 font-mono">
+                                            {{ getValidationWarning(el, items[selectedItemIndex].chemical_ladle[el]) }}
+                                        </span>
+                                    </div>
                                     <input 
                                         type="text"
                                         v-model="items[selectedItemIndex].chemical_ladle[el]"
                                         @blur="formatElementOnBlur(el)"
                                         :disabled="document.status !== 'draft'"
-                                        class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono"
+                                        class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono transition-colors"
+                                        :class="{'border-rose-500/85 text-rose-300 bg-rose-950/15 focus:border-rose-500': getValidationWarning(el, items[selectedItemIndex].chemical_ladle[el])}"
                                     />
                                 </div>
                             </div>

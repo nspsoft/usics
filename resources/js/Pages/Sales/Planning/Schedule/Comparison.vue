@@ -708,10 +708,6 @@ const printOfficial = () => {
                         {{ mode === 'weekly' ? 'Weekly' : 'Daily' }} Delivery Monitoring Matrix
                     </h2>
                 </div>
-                <button @click="printOfficial" class="flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white px-5 py-2 rounded-lg text-sm font-bold transition-colors no-print shadow-md">
-                    <PrinterIcon class="w-4 h-4" />
-                    Print Official (PT JIDOKA)
-                </button>
             </div>
         </template>
 

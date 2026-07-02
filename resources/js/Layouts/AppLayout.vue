@@ -487,6 +487,7 @@ const navigation = [
             { name: 'Defect Management (NCR)', href: '/qc/ncr', icon: ShieldExclamationIcon, permission: 'qc.ncr.view' },
             { name: 'COA Generator', href: '/qc/coa/create', icon: DocumentTextIcon, permission: 'qc.coa.view' },
             { name: 'MTC Documents (AI)', href: '/qc/mtc', icon: SparklesIcon, permission: 'qc.view' },
+            { name: 'MTC Coils Registry', href: '/qc/mtc/coils', icon: QueueListIcon, permission: 'qc.view' },
         ]
     },
     { 
@@ -501,6 +502,7 @@ const navigation = [
             
             { name: 'Transaksi & Operasional', isHeader: true },
             { name: 'Loading Queue', href: '/warehouse/loading', icon: CubeIcon, permission: 'logistics.view' },
+            { name: 'Security Gate', href: '/warehouse/security-gate', icon: ShieldCheckIcon, permission: 'logistics.view' },
             { name: 'Delivery Planning', href: '/logistics/planning', icon: MapIcon, permission: 'logistics.delivery_planning.view' },
             { name: 'Dispatch', href: '/logistics/dispatch', icon: TruckIcon, permission: 'logistics.view' },
             { name: 'Vehicle Fleet', href: '/logistics/fleet', icon: TruckIcon, permission: 'logistics.vehicle_fleet.view' },
@@ -634,6 +636,7 @@ const navigation = [
             { name: 'WhatsApp Bot', href: '/settings/whatsapp', icon: ChatBubbleLeftRightIcon, permission: 'settings.company_profile.view' },
             { name: 'Traccar Tracking', href: '/settings/traccar', icon: MapPinIcon, permission: 'settings.view' },
             { name: 'RFID Gate Simulator', href: '/warehouse/rfid', icon: CpuChipIcon, permission: 'settings.view' },
+            { name: 'Security Gate', href: '/warehouse/security-gate', icon: ShieldCheckIcon, permission: 'settings.view' },
         ]
     },
     { 
@@ -974,8 +977,11 @@ onUnmounted(() => {
                             <img :src="$page.props.company?.logo || '/images/usics.png'" alt="Logo" class="w-full h-full object-cover" />
                         </div>
                         <div class="flex flex-col">
-                            <span class="text-lg font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-400 uppercase">USICS MENU</span>
-                            <span class="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] -mt-1">Manufacturing System</span>
+                            <div class="flex items-center select-none font-black italic tracking-wider logo-font text-xl">
+                                <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-green-400">US</span><span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-400">ICS</span>
+                                <span class="text-white text-xs font-semibold not-italic tracking-normal ml-1">MENU</span>
+                            </div>
+                            <span class="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] -mt-0.5">Manufacturing System</span>
                         </div>
                     </div>
                     <button @click="closeSidebar" class="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-90">
@@ -1114,7 +1120,16 @@ onUnmounted(() => {
                              <img :src="$page.props.company?.logo || '/images/usics.png'" alt="Logo" class="w-full h-full object-cover" />
                         </div>
                         <div v-show="!collapsed" class="transition-opacity duration-200" :class="collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'">
-                            <span class="text-4xl font-black italic tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-white to-cyan-400 whitespace-nowrap drop-shadow-[0_0_10px_rgba(6,182,212,0.6)]" style="font-family: 'Segoe UI', sans-serif;">{{ $page.props.company?.name || 'USICS' }}</span>
+                            <template v-if="($page.props.company?.name || 'USICS').toUpperCase() === 'USICS'">
+                                <span class="text-4xl font-black italic tracking-wide select-none logo-font whitespace-nowrap drop-shadow-[0_0_20px_rgba(56,189,248,0.3)]">
+                                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-green-400">US</span><span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-400 drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]">ICS</span>
+                                </span>
+                            </template>
+                            <template v-else>
+                                <span class="text-3xl font-black italic tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-white to-cyan-400 whitespace-nowrap drop-shadow-[0_0_10px_rgba(6,182,212,0.6)]" style="font-family: 'Segoe UI', sans-serif;">
+                                    {{ $page.props.company?.name }}
+                                </span>
+                            </template>
                         </div>
                     </div>
                 </div>

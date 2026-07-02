@@ -370,6 +370,7 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     // Pricing Intelligence
     Route::get('/pricing-intelligence', [App\Http\Controllers\Sales\PricingIntelligenceController::class, 'index'])->name('pricing-intelligence.index');
     Route::post('/pricing-intelligence/analyze', [App\Http\Controllers\Sales\PricingIntelligenceController::class, 'analyze'])->name('pricing-intelligence.analyze');
+    Route::post('/pricing-intelligence/save-calculator', [App\Http\Controllers\Sales\PricingIntelligenceController::class, 'saveCalculatorSettings'])->name('pricing-intelligence.save-calculator');
 
     Route::get('/quotations/next-number', [App\Http\Controllers\Sales\QuotationController::class, 'generateNextNumber'])->name('quotations.next-number');
     Route::resource('quotations', App\Http\Controllers\Sales\QuotationController::class);
@@ -525,6 +526,7 @@ Route::middleware(['auth'])->prefix('qc')->name('qc.')->group(function () {
 
     // MTC AI Extraction
     Route::get('/mtc', [App\Http\Controllers\QualityControl\MtcController::class, 'index'])->name('mtc.index');
+    Route::get('/mtc/coils', [App\Http\Controllers\QualityControl\MtcController::class, 'coilsIndex'])->name('mtc.coils');
     Route::get('/mtc/create', [App\Http\Controllers\QualityControl\MtcController::class, 'create'])->name('mtc.create');
     Route::post('/mtc/upload', [App\Http\Controllers\QualityControl\MtcController::class, 'upload'])->name('mtc.upload');
     Route::get('/mtc/{document}', [App\Http\Controllers\QualityControl\MtcController::class, 'show'])->name('mtc.show');
@@ -677,6 +679,10 @@ Route::middleware(['auth'])->prefix('warehouse')->name('warehouse.')->group(func
     // Crane RFID Simulation
     Route::get('/crane', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'craneIndex'])->name('crane.index');
     Route::post('/crane/move', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'craneMove'])->name('crane.move');
+
+    // Security Gate RFID Dashboard (Pos Satpam)
+    Route::get('/security-gate', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'securityGateIndex'])->name('security-gate.index');
+    Route::post('/security-gate/scan', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'securityGateScan'])->name('security-gate.scan');
 });
 
 // Logistics

@@ -6,12 +6,12 @@ $features = [
         'description' => 'Maximize revenue with integrated sales and customer relationship management.',
         'color' => 'from-blue-500 to-cyan-400',
         'items' => [
-            'WhatsApp Center Integration',
-            'Sales Hub Dashboard',
+            'Stateful AI WhatsApp Orchestrator',
+            'AI PO Extractor & PDF Parser',
+            'AI Pricing Recommendation',
+            'Pricing Intelligence (LME / Kurs)',
             'Quotations & Sales Orders',
             'Delivery Orders & Invoices',
-            'CRM Intelligence & Leads',
-            'AI PO Extractor (Auto-Order)',
         ]
     ],
     [
@@ -20,11 +20,11 @@ $features = [
         'description' => 'Streamline procurement and manage supplier relationships efficiently.',
         'color' => 'from-emerald-500 to-teal-400',
         'items' => [
-            'Procurement Operations',
-            'Supplier Management',
+            'AI Delivery Note (DN) Extractor',
             'Purchase Requests & Orders',
+            'Supplier Scorecard & History',
             'Goods Receipts (QR Support)',
-            'AI Generated Receipt (OCR)',
+            'Workflow Approval Integration',
             'Purchase Invoices & Returns',
         ]
     ],
@@ -34,12 +34,12 @@ $features = [
         'description' => 'Real-time stock visibility and advanced warehouse control.',
         'color' => 'from-orange-500 to-amber-400',
         'items' => [
-            'Inventory Command Center',
-            'Multi-Warehouse Management',
-            'Stock Movements & History',
-            'Digital Stock Opname',
-            'Unit Management',
-            'Safety Stock Alerts',
+            'Overhead Crane RFID Auto-Putaway',
+            'Stock Opname Live HUD (2D Grid)',
+            'AI Discrepancy Advisor',
+            'Multi-Warehouse 2D Layout Mapping',
+            'Stock Movements & History (Audit Trail)',
+            'Safety Stock & Reorder Alerts',
         ]
     ],
     [
@@ -48,12 +48,12 @@ $features = [
         'description' => 'Smart production planning and shop floor control.',
         'color' => 'from-indigo-500 to-purple-400',
         'items' => [
-            'Intelligence Hub (OEE)',
+            'Real-time Production OEE Tracking',
             'Bill of Materials (BOM)',
             'Work Orders (SPK)',
             'Production Routing',
-            'Machine Management',
-            'Subcontract Orders',
+            'Shift & Machine Management',
+            'Subcontract Orders (Maklon)',
         ]
     ],
     [
@@ -62,11 +62,12 @@ $features = [
         'description' => 'Ensure product excellence with integrated QA checks.',
         'color' => 'from-rose-500 to-pink-400',
         'items' => [
+            'AI MTC (Mill Test Certificate) Extractor',
+            'Defect Management (NCR) Quarantine',
+            'Digital COA (Certificate of Analysis)',
             'Incoming Material Inspection',
             'In-Process Quality Checks',
-            'Quality Checklists',
-            'Defect Tracking',
-            'Inspection Certificates',
+            'Qc Master Standards & Limits',
         ]
     ],
     [
@@ -75,11 +76,11 @@ $features = [
         'description' => 'Keep your assets running with preventive maintenance.',
         'color' => 'from-gray-600 to-gray-400',
         'items' => [
-            'Preventive Schedules',
-            'Breakdown Logging',
-            'Spareparts Inventory',
-            'Technician Assignment',
-            'MTBF & MTTR Analysis',
+            'AI Maintenance Advisor & Prediction',
+            'Auto-PR Spareparts (Stock Trigger)',
+            'Preventive Maintenance Schedules',
+            'Breakdown Logging & Downtime Tracker',
+            'Technician Assignment & Spareparts DB',
         ]
     ],
     [
@@ -88,11 +89,11 @@ $features = [
         'description' => 'Optimize fleet utilization and on-time deliveries.',
         'color' => 'from-cyan-600 to-blue-500',
         'items' => [
-            'Logistics Hub Dashboard',
-            'Delivery Route Planning',
-            'Vehicle Fleet Management',
-            'Driver Assignment',
-            'Fuel Monitoring',
+            'AI VRP Route Optimization',
+            'Loading Queue HUD & TTS Announcement',
+            'RFID Checkpoint Gate & Weighbridge',
+            'Driver Mobile App Tracking',
+            'Vehicle Fleet & GPS Integrations',
         ]
     ],
     [
@@ -101,12 +102,12 @@ $features = [
         'description' => 'Accurate financial tracking and production costing.',
         'color' => 'from-yellow-500 to-amber-500',
         'items' => [
+            'AI Bank Reconciliation (Excel Matcher)',
+            'Production Costing (HPP/COGS)',
+            'Overhead Allocation & Rates',
             'General Ledger',
             'Profit & Loss Reports',
             'AP & AR Monitoring',
-            'Production Costing (HPP)',
-            'Overhead Allocation',
-            'Profitability Analytics',
         ]
     ],
     [
@@ -115,28 +116,41 @@ $features = [
         'description' => 'Manage your workforce, attendance, and payroll.',
         'color' => 'from-pink-500 to-rose-400',
         'items' => [
-            'Employee Directory',
-            'Digital Attendance',
-            'Automated Payroll',
-            'Shift Management',
-            'Performance Tracking',
+            'Face Recognition Camera Attendance',
+            'Leave Conflict Prevention (My Time-Off)',
+            'Automated Payroll & Slip Generator',
+            'OKR Objectives & Key Results',
+            'Employee Directory & Shifts',
         ]
     ],
-     [
+    [
+        'title' => 'General Affair (GA)',
+        'icon' => 'BuildingOfficeIcon',
+        'description' => 'Coordinate vehicle bookings, assets, and office maintenance.',
+        'color' => 'from-amber-600 to-orange-500',
+        'items' => [
+            'Smart Vehicle Booking & Approvals',
+            'Office Asset Management & Tracking',
+            'GA Ticketing & Issue Resolution',
+            'Preventive Maintenance (PM) Schedules',
+            'Fleet Management & Trip Logs',
+        ]
+    ],
+    [
         'title' => 'System & Settings',
         'icon' => 'Cog6ToothIcon',
         'description' => 'Configure the system to match your business rules.',
         'color' => 'from-slate-500 to-slate-400',
         'items' => [
-            'User & Role Management',
-            'Approval Workflows',
-            'WhatsApp Bot Config',
-            'Activity Logs (Audit)',
-            'Database Backup/Restore',
-            'AI Configuration',
+            'Dynamic Workflow Approval Engine',
+            'Audit Trail Activity Logs (Full)',
+            'User & Role Permissions (Spatie ACL)',
+            'WhatsApp Bot & Gateway Config',
+            'Database Backup/Restore & Seeds',
+            'AI Configuration Settings',
         ]
     ],
-     [
+    [
         'title' => 'External Portals',
         'icon' => 'GlobeAltIcon',
         'description' => 'Secure access for your suppliers and customers.',
@@ -330,6 +344,8 @@ $features = [
                                 <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                             @elseif ($feature['icon'] == 'GlobeAltIcon')
                                 <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                            @elseif ($feature['icon'] == 'BuildingOfficeIcon')
+                                <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                             @else
                                 <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                             @endif

@@ -54,7 +54,7 @@ class WhatsappWebhookController extends Controller
             }
         }
 
-        if (!$phone || !$message) {
+        if (!$phone || (!$message && !$mediaUrl)) {
             return response()->json(['status' => 'ignored', 'reason' => 'invalid_payload']);
         }
 
@@ -70,7 +70,7 @@ class WhatsappWebhookController extends Controller
 
         try {
             // Process message and get response
-            $response = $this->botService->handleIncomingMessage($phone, $message, $pushName, $mediaUrl);
+            $response = $this->botService->handleIncomingMessage($phone, $message ?? '', $pushName, $mediaUrl);
 
             return response()->json([
                 'status' => 'success',

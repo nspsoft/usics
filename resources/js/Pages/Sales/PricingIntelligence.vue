@@ -25,19 +25,15 @@ const props = defineProps({
 import { watch } from 'vue';
 
 const params = ref({ 
-    ...props.default_params,
-    // Dynamic process-specific default parameters
     slitting_fee: 250,
     slitting_scrap: 3,
-    
     blanking_fee: 550,
     blanking_scrap: 18,
-    
     welding_fee: 1200,
     welding_scrap: 8,
-    
     shearing_fee: 350,
     shearing_scrap: 5,
+    ...props.default_params
 });
 
 const loading = ref(false);
@@ -182,6 +178,177 @@ const calculateCostDetails = (p) => {
     };
 };
 
+// AI Process Cost Calculator
+const showCalcModal = ref(false);
+const calcMachineType = ref('slitting'); // 'slitting' | 'blanking' | 'welding' | 'shearing'
+const calcForm = ref({
+    investment: 1200000000,
+    useful_life: 10,
+    working_hours_monthly: 200,
+    power: 45,
+    load_factor: 80,
+    electricity_tariff: 1500,
+    operator_count: 2,
+    operator_salary: 30000,
+    maintenance_monthly: 4000000,
+    hourly_output: 1500
+});
+
+const openCalculator = (type) => {
+    calcMachineType.value = type;
+    
+    // Load from saved database settings if available, otherwise use hardcoded fallbacks
+    const saved = props.default_params['calc_' + type];
+    if (saved) {
+        calcForm.value = { ...saved };
+    } else {
+        if (type === 'slitting') {
+            calcForm.value = {
+                investment: 1500000000,
+                useful_life: 10,
+                working_hours_monthly: 200,
+                power: 55,
+                load_factor: 70,
+                electricity_tariff: 1500,
+                operator_count: 3,
+                operator_salary: 32000,
+                maintenance_monthly: 6000000,
+                hourly_output: 1800
+            };
+        } else if (type === 'blanking') {
+            calcForm.value = {
+                investment: 1800000000,
+                useful_life: 12,
+                working_hours_monthly: 200,
+                power: 75,
+                load_factor: 75,
+                electricity_tariff: 1500,
+                operator_count: 2,
+                operator_salary: 30000,
+                maintenance_monthly: 8000000,
+                hourly_output: 1200
+            };
+        } else if (type === 'welding') {
+            calcForm.value = {
+                investment: 2500000000,
+                useful_life: 8,
+                working_hours_monthly: 220,
+                power: 90,
+                load_factor: 85,
+                electricity_tariff: 1500,
+                operator_count: 2,
+                operator_salary: 35000,
+                maintenance_monthly: 12000000,
+                hourly_output: 800
+            };
+        } else {
+            // Shearing / Fallback
+            calcForm.value = {
+                investment: 600000000,
+                useful_life: 10,
+                working_hours_monthly: 180,
+                power: 30,
+                load_factor: 60,
+                electricity_tariff: 1500,
+                operator_count: 2,
+                operator_salary: 28000,
+                maintenance_monthly: 3000000,
+                hourly_output: 1000
+            };
+        }
+    }
+    showCalcModal.value = true;
+};
+
+// Real-time calculation results
+const calcResults = computed(() => {
+    const f = calcForm.value;
+    
+    // 1. Depreciation per hour
+    const depreciationPerHour = f.investment / (f.useful_life * 12 * f.working_hours_monthly);
+    
+    // 2. Electricity cost per hour
+    const electricityPerHour = f.power * (f.load_factor / 100) * f.electricity_tariff;
+    
+    // 3. Operator cost per hour
+    const operatorPerHour = f.operator_count * f.operator_salary;
+    
+    // 4. Maintenance cost per hour
+    const maintenancePerHour = f.maintenance_monthly / f.working_hours_monthly;
+    
+    // Total Machine Hour Rate (MHR)
+    const machineHourRate = depreciationPerHour + electricityPerHour + operatorPerHour + maintenancePerHour;
+    
+    // Cost per KG
+    const costPerKg = f.hourly_output > 0 ? (machineHourRate / f.hourly_output) : 0;
+    
+    return {
+        depreciationPerHour,
+        electricityPerHour,
+        operatorPerHour,
+        maintenancePerHour,
+        machineHourRate,
+        costPerKg: Math.round(costPerKg * 100) / 100 // round to 2 decimals
+    };
+});
+
+const applyCalcResults = () => {
+    const feeKey = calcMachineType.value + '_fee';
+    params.value[feeKey] = Math.round(calcResults.value.costPerKg);
+    showCalcModal.value = false;
+    
+    // Auto-update non-dirty products of this type
+    productsList.value.forEach(p => {
+        const sku = p.sku.toUpperCase();
+        const prefixMatch = 
+            (calcMachineType.value === 'slitting' && sku.startsWith('SC-')) ||
+            (calcMachineType.value === 'blanking' && (sku.startsWith('FG-BLNK-') || sku.startsWith('FG-COMP-'))) ||
+            (calcMachineType.value === 'welding' && sku.startsWith('FG-TWB-')) ||
+            (calcMachineType.value === 'shearing' && !sku.startsWith('SC-') && !sku.startsWith('FG-BLNK-') && !sku.startsWith('FG-COMP-') && !sku.startsWith('FG-TWB-'));
+            
+        if (prefixMatch && !p.is_fee_dirty) {
+            p.processing_fee = params.value[feeKey];
+        }
+    });
+};
+
+const isSavingCalc = ref(false);
+const applyAndSaveCalcResults = async () => {
+    isSavingCalc.value = true;
+    try {
+        const feeKey = calcMachineType.value + '_fee';
+        const scrapKey = calcMachineType.value + '_scrap';
+        const finalFee = Math.round(calcResults.value.costPerKg);
+        const finalScrap = params.value[scrapKey];
+
+        const response = await axios.post(route('pricing-intelligence.save-calculator'), {
+            machine_type: calcMachineType.value,
+            fee: finalFee,
+            scrap: finalScrap,
+            calc_form: calcForm.value
+        });
+
+        if (response.data.success) {
+            // Update in-memory props so next open loads these new defaults
+            props.default_params['calc_' + calcMachineType.value] = { ...calcForm.value };
+            props.default_params[feeKey] = finalFee;
+            props.default_params[scrapKey] = finalScrap;
+
+            // Apply locally to form parameters
+            applyCalcResults();
+            
+            alert(`Berhasil menyimpan pengaturan default & menerapkan tarif baru: Rp ${finalFee}/kg ke kategori ${calcMachineType.value.toUpperCase()}!`);
+        } else {
+            alert('Gagal menyimpan default ke database.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Terjadi kesalahan saat menyimpan pengaturan ke database.');
+    } finally {
+        isSavingCalc.value = false;
+    }
+};
+
 // Copy price to clipboard helper
 const copyToClipboard = (value) => {
     navigator.clipboard.writeText(value);
@@ -255,7 +422,12 @@ const copyToClipboard = (value) => {
                             <!-- Slitting -->
                             <div class="flex items-center justify-between gap-3 p-2 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-200 dark:border-slate-800">
                                 <div class="w-1/2 min-w-[110px]">
-                                    <span class="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider block">1. Slitting (SC-)</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider block">1. Slitting (SC-)</span>
+                                        <button @click="openCalculator('slitting')" class="p-0.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors" title="Buka Kalkulator AI Ongkos Proses">
+                                            <SparklesIcon class="h-3 w-3" />
+                                        </button>
+                                    </div>
                                     <span class="text-[9px] text-slate-400 block -mt-0.5 lowercase font-medium">slit coil</span>
                                 </div>
                                 <div class="flex items-center gap-2 w-1/2 justify-end">
@@ -273,7 +445,12 @@ const copyToClipboard = (value) => {
                             <!-- Blanking -->
                             <div class="flex items-center justify-between gap-3 p-2 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-200 dark:border-slate-800">
                                 <div class="w-1/2 min-w-[110px]">
-                                    <span class="text-[10px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-wider block">2. Blanking (FG-BLNK)</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[10px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-wider block">2. Blanking (FG-BLNK)</span>
+                                        <button @click="openCalculator('blanking')" class="p-0.5 rounded text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Buka Kalkulator AI Ongkos Proses">
+                                            <SparklesIcon class="h-3 w-3" />
+                                        </button>
+                                    </div>
                                     <span class="text-[9px] text-slate-400 block -mt-0.5 lowercase font-medium">plat cetak</span>
                                 </div>
                                 <div class="flex items-center gap-2 w-1/2 justify-end">
@@ -291,7 +468,12 @@ const copyToClipboard = (value) => {
                             <!-- Laser Welding -->
                             <div class="flex items-center justify-between gap-3 p-2 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-200 dark:border-slate-800">
                                 <div class="w-1/2 min-w-[110px]">
-                                    <span class="text-[10px] font-black text-rose-500 dark:text-rose-400 uppercase tracking-wider block">3. Laser (FG-TWB)</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[10px] font-black text-rose-500 dark:text-rose-400 uppercase tracking-wider block">3. Laser (FG-TWB)</span>
+                                        <button @click="openCalculator('welding')" class="p-0.5 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors" title="Buka Kalkulator AI Ongkos Proses">
+                                            <SparklesIcon class="h-3 w-3" />
+                                        </button>
+                                    </div>
                                     <span class="text-[9px] text-slate-400 block -mt-0.5 lowercase font-medium">las laser</span>
                                 </div>
                                 <div class="flex items-center gap-2 w-1/2 justify-end">
@@ -309,7 +491,12 @@ const copyToClipboard = (value) => {
                             <!-- Shearing -->
                             <div class="flex items-center justify-between gap-3 p-2 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-200 dark:border-slate-800">
                                 <div class="w-1/2 min-w-[110px]">
-                                    <span class="text-[10px] font-black text-cyan-500 dark:text-cyan-400 uppercase tracking-wider block">4. Shearing (Lainnya)</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[10px] font-black text-cyan-500 dark:text-cyan-400 uppercase tracking-wider block">4. Shearing (Lainnya)</span>
+                                        <button @click="openCalculator('shearing')" class="p-0.5 rounded text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors" title="Buka Kalkulator AI Ongkos Proses">
+                                            <SparklesIcon class="h-3 w-3" />
+                                        </button>
+                                    </div>
                                     <span class="text-[9px] text-slate-400 block -mt-0.5 lowercase font-medium">potong biasa</span>
                                 </div>
                                 <div class="flex items-center gap-2 w-1/2 justify-end">
@@ -611,6 +798,196 @@ const copyToClipboard = (value) => {
                         </div>
                     </div>
 
+                </div>
+            </div>
+
+            <!-- AI Process Cost Calculator Modal -->
+            <div v-if="showCalcModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-md transition-all animate-in fade-in duration-200">
+                <div class="relative max-w-5xl w-full glass-card border border-white/10 rounded-[32px] overflow-hidden bg-slate-900/95 text-slate-100 shadow-2xl p-6 md:p-8 flex flex-col lg:flex-row gap-6 md:gap-8 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+                    
+                    <!-- Close Button -->
+                    <button @click="showCalcModal = false" class="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors text-slate-400 hover:text-white">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+
+                    <!-- Left: Inputs Section -->
+                    <div class="lg:w-7/12 space-y-4">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                                <SparklesIcon class="h-4 w-4" />
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-black text-white uppercase tracking-wider">Kalkulator Biaya Proses AI</h3>
+                                <p class="text-[10px] text-slate-400">Kalkulasi Machine Hour Rate (MHR) & estimasi biaya proses per kg secara presisi untuk kategori: <span class="font-bold text-indigo-400 uppercase">{{ calcMachineType }}</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Param Inputs Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                            <!-- 1. Depresiasi -->
+                            <div class="space-y-3 p-3.5 bg-slate-950/40 rounded-2xl border border-white/5">
+                                <h4 class="text-[10px] font-black text-indigo-400 uppercase tracking-wider">A. Biaya Depresiasi Mesin</h4>
+                                <div class="space-y-2">
+                                    <div>
+                                        <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Nilai Investasi Mesin (IDR)</label>
+                                        <input type="number" v-model.number="calcForm.investment" class="form-input w-full text-xs rounded-lg py-1.5 px-3 font-semibold" />
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Umur (Tahun)</label>
+                                            <input type="number" v-model.number="calcForm.useful_life" class="form-input w-full text-xs rounded-lg py-1.5 px-3 font-semibold text-center" />
+                                        </div>
+                                        <div>
+                                            <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Jam/Bulan</label>
+                                            <input type="number" v-model.number="calcForm.working_hours_monthly" class="form-input w-full text-xs rounded-lg py-1.5 px-3 font-semibold text-center" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. Energi -->
+                            <div class="space-y-3 p-3.5 bg-slate-950/40 rounded-2xl border border-white/5">
+                                <h4 class="text-[10px] font-black text-emerald-400 uppercase tracking-wider">B. Konsumsi Energi Listrik</h4>
+                                <div class="space-y-2">
+                                    <div>
+                                        <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Daya Listrik Motor (kW)</label>
+                                        <input type="number" v-model.number="calcForm.power" class="form-input w-full text-xs rounded-lg py-1.5 px-3 font-semibold" />
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Load factor (%)</label>
+                                            <input type="number" v-model.number="calcForm.load_factor" class="form-input w-full text-xs rounded-lg py-1.5 px-3 font-semibold text-center" />
+                                        </div>
+                                        <div>
+                                            <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Tarif (Rp/kWh)</label>
+                                            <input type="number" v-model.number="calcForm.electricity_tariff" class="form-input w-full text-xs rounded-lg py-1.5 px-3 font-semibold text-center" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. Operator -->
+                            <div class="space-y-3 p-3.5 bg-slate-950/40 rounded-2xl border border-white/5">
+                                <h4 class="text-[10px] font-black text-rose-400 uppercase tracking-wider">C. Tenaga Kerja Langsung</h4>
+                                <div class="space-y-2">
+                                    <div>
+                                        <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Upah Operator/Jam/Orang</label>
+                                        <input type="number" v-model.number="calcForm.operator_salary" class="form-input w-full text-xs rounded-lg py-1.5 px-3 font-semibold" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Jumlah Crew / Operator</label>
+                                        <input type="number" v-model.number="calcForm.operator_count" class="form-input w-full text-xs rounded-lg py-1.5 px-3 font-semibold text-center" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 4. Maintenance & Output -->
+                            <div class="space-y-3 p-3.5 bg-slate-950/40 rounded-2xl border border-white/5">
+                                <h4 class="text-[10px] font-black text-cyan-400 uppercase tracking-wider">D. Maintenance & Output</h4>
+                                <div class="space-y-2">
+                                    <div>
+                                        <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Perawatan Bulanan (Dies/Blade/Oli)</label>
+                                        <input type="number" v-model.number="calcForm.maintenance_monthly" class="form-input w-full text-xs rounded-lg py-1.5 px-3 font-semibold" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Rata-rata Output Aktual (Kg/Jam)</label>
+                                        <input type="number" v-model.number="calcForm.hourly_output" class="form-input w-full text-xs rounded-lg py-1.5 px-3 font-semibold text-center font-black text-indigo-400" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Outputs & Real-time formulas explanation -->
+                    <div class="lg:w-5/12 flex flex-col justify-between p-4 bg-slate-950/80 rounded-3xl border border-white/10">
+                        <div class="space-y-5">
+                            <h3 class="text-sm font-black text-white uppercase tracking-wider border-b border-white/5 pb-2">Rincian Formula & Hasil Kalkulasi</h3>
+                            
+                            <div class="space-y-2.5 text-xs">
+                                <!-- Step 1 -->
+                                <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                                    <div>
+                                        <p class="font-bold text-slate-300">1. Depresiasi per Jam</p>
+                                        <p class="text-[9px] text-slate-500 italic">Investasi / (Tahun * 12 * Jam)</p>
+                                    </div>
+                                    <span class="font-mono text-slate-200 font-bold">{{ formatCurrency(calcResults.depreciationPerHour) }}</span>
+                                </div>
+                                <!-- Step 2 -->
+                                <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                                    <div>
+                                        <p class="font-bold text-slate-300">2. Konsumsi Listrik per Jam</p>
+                                        <p class="text-[9px] text-slate-500 italic">kW * Load% * Rp/kWh</p>
+                                    </div>
+                                    <span class="font-mono text-slate-200 font-bold">{{ formatCurrency(calcResults.electricityPerHour) }}</span>
+                                </div>
+                                <!-- Step 3 -->
+                                <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                                    <div>
+                                        <p class="font-bold text-slate-300">3. Gaji Operator per Jam</p>
+                                        <p class="text-[9px] text-slate-500 italic">Jumlah Crew * Gaji per jam</p>
+                                    </div>
+                                    <span class="font-mono text-slate-200 font-bold">{{ formatCurrency(calcResults.operatorPerHour) }}</span>
+                                </div>
+                                <!-- Step 4 -->
+                                <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                                    <div>
+                                        <p class="font-bold text-slate-300">4. Perawatan per Jam</p>
+                                        <p class="text-[9px] text-slate-500 italic">Biaya Bulanan / Jam Kerja</p>
+                                    </div>
+                                    <span class="font-mono text-slate-200 font-bold">{{ formatCurrency(calcResults.maintenancePerHour) }}</span>
+                                </div>
+                                
+                                <!-- Machine Hour Rate -->
+                                <div class="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex justify-between items-center my-3">
+                                    <div>
+                                        <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Machine Hour Rate (MHR)</p>
+                                        <p class="text-[8px] text-slate-400 italic">Total Ongkos Operasional Mesin per Jam</p>
+                                    </div>
+                                    <span class="font-mono text-sm text-indigo-400 font-black">{{ formatCurrency(calcResults.machineHourRate) }}/jam</span>
+                                </div>
+
+                                <!-- Output per Kg final -->
+                                <div class="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Biaya Proses per Kg</span>
+                                        <span class="font-mono text-base text-emerald-400 font-black">Rp {{ calcResults.costPerKg }}</span>
+                                    </div>
+                                    <p class="text-[8.5px] text-slate-400 leading-normal italic text-right border-t border-white/5 pt-1">
+                                        Formula: Rp {{ formatNumber(calcResults.machineHourRate) }} (MHR) / {{ formatNumber(calcForm.hourly_output) }} kg (Kapasitas Output/Jam)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-6 flex flex-col sm:flex-row gap-2">
+                            <button 
+                                @click="showCalcModal = false"
+                                class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                            >
+                                Batal
+                            </button>
+                            <button 
+                                @click="applyCalcResults"
+                                class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors text-center"
+                                title="Terapkan biaya proses ke tabel simulasi hanya untuk sesi ini."
+                            >
+                                Terapkan Sementara
+                            </button>
+                            <button 
+                                @click="applyAndSaveCalcResults"
+                                :disabled="isSavingCalc"
+                                class="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-blue-600/20 text-center flex items-center justify-center gap-2"
+                                title="Terapkan biaya proses ke simulasi dan simpan nilai-nilai input ini secara permanen sebagai default database."
+                            >
+                                <ArrowPathIcon v-if="isSavingCalc" class="h-3.5 w-3.5 animate-spin" />
+                                <SparklesIcon v-else class="h-3.5 w-3.5 text-cyan-400" />
+                                {{ isSavingCalc ? 'Menyimpan...' : 'Simpan & Terapkan' }}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

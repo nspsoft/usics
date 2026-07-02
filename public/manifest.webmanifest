@@ -1,7 +1,7 @@
 {
-    "name": "JICOS ERP",
-    "short_name": "JICOS",
-    "description": "Enterprise Resource Planning System by Jidoka Result Indonesia",
+    "name": "USICS ERP",
+    "short_name": "USICS",
+    "description": "United Steel Intelligence Control System for PT USC",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0f172a",

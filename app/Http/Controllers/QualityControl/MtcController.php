@@ -235,7 +235,7 @@ class MtcController extends Controller
                         }
                     }
 
-                    MtcItem::create([
+                    $item = MtcItem::create([
                         'mtc_document_id' => $document->id,
                         'product_id' => $product_id,
                         'product_no' => $itemData['product_no'] ?? null,
@@ -254,6 +254,9 @@ class MtcController extends Controller
                         'chemical_product' => $chemProduct,
                         'compliance_status' => 'unchecked',
                     ]);
+
+                    $item->checkCompliance($document->spec_and_type);
+                    $item->save();
                 }
 
             return $document;
@@ -335,6 +338,9 @@ class MtcController extends Controller
                             'chemical_ladle' => $itemData['chemical_ladle'] ?? null,
                             'chemical_product' => $itemData['chemical_product'] ?? null,
                         ]);
+
+                        $item->checkCompliance($request->input('spec_and_type'));
+                        $item->save();
                     }
                 }
             }
@@ -388,6 +394,9 @@ class MtcController extends Controller
                         'weight_kg' => $itemData['weight_kg'],
                         'size' => $itemData['size'],
                     ]);
+
+                    $item->checkCompliance($document->spec_and_type);
+                    $item->save();
 
                     // Parse thickness and width from size
                     $dimensions = $this->parseDimensions($itemData['size']);
@@ -578,7 +587,7 @@ class MtcController extends Controller
                         }
                     }
 
-                    MtcItem::create([
+                    $item = MtcItem::create([
                         'mtc_document_id' => $document->id,
                         'product_id' => $product_id,
                         'product_no' => $itemData['product_no'] ?? null,
@@ -595,6 +604,9 @@ class MtcController extends Controller
                         'chemical_product' => $chemProduct,
                         'compliance_status' => 'unchecked',
                     ]);
+
+                    $item->checkCompliance($document->spec_and_type);
+                    $item->save();
                 }
         });
 
@@ -685,6 +697,41 @@ class MtcController extends Controller
         return response()->json([
             'success' => true,
             'supplier' => $supplier,
+        ]);
+    }
+
+    /**
+     * Display listing of all extracted coils (MtcItems).
+     */
+    public function coilsIndex(Request $request)
+    {
+        $query = MtcItem::with(['document.supplier', 'product']);
+
+        // Filter by Search (coil number, heat number)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('product_no', 'like', "%{$search}%")
+                  ->orWhere('heat_no', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by Compliance Status
+        if ($request->filled('compliance_status')) {
+            $query->where('compliance_status', $request->compliance_status);
+        }
+
+        // Filter by Product ID
+        if ($request->filled('product_id')) {
+            $query->where('product_id', $request->product_id);
+        }
+
+        $items = $query->orderByDesc('created_at')->paginate(20);
+
+        return Inertia::render('QualityControl/Mtc/CoilsIndex', [
+            'items' => $items,
+            'products' => Product::orderBy('name')->get(['id', 'name']),
+            'filters' => $request->only(['search', 'compliance_status', 'product_id']),
         ]);
     }
 }

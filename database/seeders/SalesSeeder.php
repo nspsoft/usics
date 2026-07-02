@@ -451,7 +451,7 @@ class SalesSeeder extends Seeder
                         'customer_id' => $customer->id,
                         'product_id' => $product->id,
                         'period' => $period,
-                        'qty_forecast' => rand(1500, 8000),
+                        'qty_forecast' => rand(150, 800),
                         'notes' => 'Monthly forecast for ' . $customer->code . ' / ' . $product->sku,
                     ]);
                 }

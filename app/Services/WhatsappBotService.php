@@ -40,7 +40,19 @@ class WhatsappBotService
     public function handleIncomingMessage(string $phone, string $message, ?string $pushName = null, ?string $mediaUrl = null): string
     {
         // 1. Check if the sender is an internal employee (Sales Representative)
-        $employee = \App\Models\Employee::where('phone', 'like', "%{$phone}%")->first();
+        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+        $variations = [
+            $cleanPhone,
+            '0' . substr($cleanPhone, 2), // 62xxx -> 0xxx
+            substr($cleanPhone, 2), // Remove 62
+        ];
+        
+        $employee = \App\Models\Employee::where(function ($q) use ($variations) {
+            foreach ($variations as $p) {
+                if (empty($p)) continue;
+                $q->orWhere('phone', 'like', "%{$p}%");
+            }
+        })->first();
         
         if ($employee) {
             Log::info("WhatsApp message from Employee: {$employee->full_name} ({$phone})");

@@ -213,6 +213,125 @@ class WarehouseLoadingController extends Controller
         ]);
     }
 
+    /**
+     * Security Gate RFID Dashboard — Pos Satpam
+     */
+    public function securityGateIndex()
+    {
+        $deliveryOrders = DeliveryOrder::with(['customer', 'vehicle', 'warehouse', 'items.product', 'items.unit'])
+            ->whereIn('status', ['draft', 'picking', 'packed'])
+            ->orderBy('delivery_date')
+            ->get();
+
+        $scans = \App\Models\RfidScanLog::with('deliveryOrder.customer')
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        return Inertia::render('Warehouse/SecurityGate', [
+            'deliveryOrders' => $deliveryOrders,
+            'scans' => $scans,
+        ]);
+    }
+
+    /**
+     * Handle RFID tap scan at Security Gate
+     */
+    public function securityGateScan(Request $request)
+    {
+        $request->validate([
+            'delivery_order_id' => 'required|exists:delivery_orders,id',
+            'action' => 'required|in:entry,exit',
+        ]);
+
+        $deliveryOrder = DeliveryOrder::with(['customer', 'vehicle', 'warehouse', 'items.product', 'items.unit'])
+            ->findOrFail($request->delivery_order_id);
+
+        $plate = $deliveryOrder->vehicle_number ?? ($deliveryOrder->vehicle->license_plate ?? 'TANPA-PLAT');
+        $tagId = "RFID-TRUCK-" . str_replace(' ', '', strtoupper($plate));
+        $vehicle = $deliveryOrder->vehicle;
+
+        $status = 'success';
+        $message = '';
+
+        if ($request->action === 'entry') {
+            if ($deliveryOrder->status !== 'draft') {
+                $status = 'warning';
+                $message = "Truk {$plate} sudah tercatat masuk sebelumnya. Status saat ini: " . strtoupper($deliveryOrder->status);
+            } else {
+                $message = "✅ GATE ENTRY: Truk {$plate} (DO #{$deliveryOrder->do_number}) berhasil memasuki area pabrik.";
+            }
+        } else {
+            // exit
+            if ($deliveryOrder->status !== 'packed') {
+                $status = 'error';
+                $message = "❌ GATE EXIT DITOLAK: Truk {$plate} belum selesai proses loading/timbangan. Status: " . strtoupper($deliveryOrder->status);
+            } else {
+                $deliveryOrder->update([
+                    'status' => 'shipped',
+                    'delivered_at' => now(),
+                ]);
+                $message = "✅ GATE EXIT: Truk {$plate} (DO #{$deliveryOrder->do_number}) berhasil keluar pabrik. Status: SHIPPED.";
+            }
+        }
+
+        // Log scan
+        \App\Models\RfidScanLog::create([
+            'delivery_order_id' => $deliveryOrder->id,
+            'tag_id' => $tagId,
+            'reader_id' => $request->action === 'entry' ? 'gate_entry' : 'gate_exit',
+            'simulated_weight' => null,
+            'status' => $status,
+            'message' => $message,
+        ]);
+
+        // Activity log
+        if ($status !== 'error') {
+            activity()
+                ->performedOn($deliveryOrder)
+                ->withProperties([
+                    'action' => $request->action,
+                    'tag_id' => $tagId,
+                    'gate' => $request->action === 'entry' ? 'Pintu Masuk' : 'Pintu Keluar',
+                ])
+                ->log("Security Gate RFID: " . $message);
+        }
+
+        // Build vehicle compliance data
+        $compliance = [];
+        if ($vehicle) {
+            $now = now();
+            $compliance = [
+                'stnk' => [
+                    'number' => $vehicle->stnk_number,
+                    'expiry' => $vehicle->stnk_expiry,
+                    'status' => !$vehicle->stnk_expiry ? 'unknown'
+                        : ($vehicle->stnk_expiry < $now ? 'expired'
+                        : ($vehicle->stnk_expiry < $now->copy()->addDays(30) ? 'near_expiry' : 'active')),
+                ],
+                'kir' => [
+                    'number' => $vehicle->kir_number,
+                    'expiry' => $vehicle->kir_expiry,
+                    'status' => !$vehicle->kir_expiry ? 'unknown'
+                        : ($vehicle->kir_expiry < $now ? 'expired'
+                        : ($vehicle->kir_expiry < $now->copy()->addDays(30) ? 'near_expiry' : 'active')),
+                ],
+            ];
+        }
+
+        return back()->with($status === 'error' ? 'error' : 'success', $message)
+            ->with('scannedData', [
+                'delivery_order' => $deliveryOrder->fresh(['customer', 'vehicle', 'warehouse', 'items.product', 'items.unit']),
+                'vehicle_photo' => $vehicle?->vehicle_photo_url,
+                'driver_photo' => $vehicle?->driver_photo_url,
+                'compliance' => $compliance,
+                'scan_status' => $status,
+                'scan_message' => $message,
+                'scan_action' => $request->action,
+                'scan_time' => now()->toDateTimeString(),
+            ]);
+    }
+
     public function rfidSimulate(Request $request)
     {
         $request->validate([

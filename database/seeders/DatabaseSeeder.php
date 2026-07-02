@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             UatLogisticsSeeder::class,
             QcDummyDataSeeder::class,
             GaDummySeeder::class,
+            AssignActivityCauserSeeder::class,
         ]);
     }
 }
