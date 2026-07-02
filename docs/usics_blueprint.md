@@ -182,6 +182,17 @@ erDiagram
     APPROVAL_REQUESTS ||--o{ APPROVAL_HISTORY : "dilacak oleh"
 ```
 
+### D. ERD Modul Kualitas (Quality Control / QC)
+```mermaid
+erDiagram
+    INVENTORY_LOTS }|--o| MTC_DOCUMENTS : "diverifikasi dengan"
+    GOODS_RECEIPTS ||--o{ QC_INSPECTIONS : "diinspeksi via"
+    QC_INSPECTIONS ||--o{ QC_INSPECTION_ITEMS : berisi
+    QC_MASTER_POINTS ||--o{ QC_INSPECTION_ITEMS : "menjadi standar"
+    INVENTORY_LOTS ||--o{ NON_CONFORMANCE_REPORTS : "dilaporkan cacat"
+    INVENTORY_LOTS ||--o{ COA_DOCUMENTS : "diterbitkan sertifikat"
+```
+
 ## 2.2 Ringkasan Tabel Berdasarkan Kategori
 
 | Domain (Area) | Tabel Utama | Deskripsi Singkat |
@@ -191,7 +202,7 @@ erDiagram
 | **Penjualan (Sales)** | `customers`, `customer_contacts`, `quotations`, `quotation_items`, `sales_orders`, `sales_order_items`, `delivery_orders`, `delivery_order_items`, `sales_invoices`, `sales_invoice_items`, `sales_returns` | Siklus penjualan dari PO Masuk sampai Tagihan & Retur |
 | **Pembelian (Purchasing)** | `suppliers`, `supplier_contacts`, `purchase_requests`, `purchase_orders`, `purchase_order_items`, `goods_receipts`, `goods_receipt_items`, `purchase_invoices`, `purchase_returns`, `rfqs` | Pembelian barang dari pengajuan, PO, penerimaan, sampai retur |
 | **Pabrikasi (Manufacturing)** | `boms`, `bom_components`, `bom_operations`, `work_orders`, `work_order_components`, `production_entries`, `material_consumptions`, `subcontract_orders` | Resep produksi (BOM), Perintah Kerja, Pencatatan Bahan Baku, dan Titip Cetak |
-| **Kualitas (QC)** | `qc_inspections`, `qc_inspection_items`, `qc_master_points`, `non_conformance_reports`, `coa_documents` | Standar inspeksi mutu dan sertifikat lolos uji |
+| **Kualitas (QC)** | `qc_inspections`, `qc_inspection_items`, `qc_master_points`, `non_conformance_reports`, `coa_documents`, `mtc_documents` | Standar inspeksi mutu, sertifikat lolos uji, dan database sertifikat pabrik (MTC) |
 | **Keuangan (Finance)**| `sales_invoices`, `purchase_invoices`, `purchase_payments`, `tax_rates` | Catatan utang & piutang, bukti pembayaran, tarif pajak |
 | **SDM (HR)** | `employees`, `departments`, `positions`, `attendances`, `payrolls`, `payroll_items`, `shifts` | Karyawan, jabatan, absen sidik jari/Mesin, dan penggajian |
 | **Logistik** | `vehicles`, `delivery_schedules`, `locations` | Armada truk dan penjadwalan ekspedisi |
@@ -435,6 +446,7 @@ Ketika sebuah Work Order di-klik **Complete (Selesai)**, sistem secara otomatis:
 
 - Terhubung dengan modul Gudang dan Pabrikasi. Bisa di-*setting* agar barang yang diterima harus di-inspeksi standarnya dulu (dimensi, berat, cat, dsb) sebelum sah bertambah menjadi stok yang bisa dijual.
 - Ada fasilitas pembuatan Sertifikat Kualitas Laboratorium (Certificate of Analysis / COA). 
+- **Dokumen MTC AI (AI MTC Documents Extractor)**: Ekstraksi cerdas dokumen Mill Test Certificate (MTC) dari supplier menggunakan kecerdasan buatan, mengurai data spesifikasi komposisi kimia dan pengujian fisik baja, serta memetakan dan memverifikasinya langsung dengan *Inventory Lot* (`inventory_lots`) terdaftar untuk menjamin kualitas material sebelum masuk lantai produksi.
 
 ---
 

@@ -261,6 +261,7 @@ const testConnection = async () => {
                                         <EyeSlashIcon v-else class="h-5 w-5" />
                                     </button>
                                 </div>
+                                <p v-if="form.errors.fonnte_api_token" class="text-xs text-red-500 mt-1">{{ form.errors.fonnte_api_token }}</p>
                                 <p class="text-[10px] text-slate-500 mt-2 px-1">
                                     Get your API token from <a href="https://fonnte.com" target="_blank" class="text-emerald-400 hover:underline">Fonnte Dashboard</a> → Device → API.
                                 </p>
@@ -277,6 +278,7 @@ const testConnection = async () => {
                                     class="form-input focus:ring-emerald-500/50 focus:border-emerald-500" 
                                     placeholder="e.g. 6281234567890" 
                                 />
+                                <p v-if="form.errors.fonnte_device" class="text-xs text-red-500 mt-1">{{ form.errors.fonnte_device }}</p>
                             </div>
                         </div>
                     </div>
@@ -310,6 +312,7 @@ const testConnection = async () => {
                                         <EyeSlashIcon v-else class="h-5 w-5" />
                                     </button>
                                 </div>
+                                <p v-if="form.errors.wablas_api_token" class="text-xs text-red-500 mt-1">{{ form.errors.wablas_api_token }}</p>
                                 <p class="text-[10px] text-slate-500 mt-2 px-1">
                                     Get your API token from <a href="https://wablas.com" target="_blank" class="text-blue-400 hover:underline">Wablas Dashboard</a> → API Key.
                                 </p>
@@ -326,6 +329,7 @@ const testConnection = async () => {
                                     class="form-input focus:ring-blue-500/50 focus:border-blue-500" 
                                     placeholder="e.g. 6281234567890" 
                                 />
+                                <p v-if="form.errors.wablas_device" class="text-xs text-red-500 mt-1">{{ form.errors.wablas_device }}</p>
                             </div>
 
                             <div class="space-y-2">
@@ -339,6 +343,7 @@ const testConnection = async () => {
                                     class="form-input focus:ring-blue-500/50 focus:border-blue-500" 
                                     placeholder="e.g. https://pati.wablas.com" 
                                 />
+                                <p v-if="form.errors.wablas_server_url" class="text-xs text-red-500 mt-1">{{ form.errors.wablas_server_url }}</p>
                                 <p class="text-[10px] text-slate-500 mt-2 px-1">
                                     Default: <code>https://pati.wablas.com</code>.
                                 </p>
@@ -371,6 +376,7 @@ const testConnection = async () => {
                                     class="form-input min-h-[120px] resize-none focus:ring-emerald-500/50 focus:border-emerald-500" 
                                     placeholder="Gaya bahasa formal, ceria, dll..."
                                 ></textarea>
+                                <p v-if="form.errors.whatsapp_bot_instruction" class="text-xs text-red-500 mt-1">{{ form.errors.whatsapp_bot_instruction }}</p>
                             </div>
                         </div>
                     </div>
@@ -448,6 +454,7 @@ const testConnection = async () => {
                                         <EyeSlashIcon v-else class="h-5 w-5" />
                                     </button>
                                 </div>
+                                <p v-if="form.errors.purchasing_fonnte_api_token" class="text-xs text-red-500 mt-1">{{ form.errors.purchasing_fonnte_api_token }}</p>
                                 <p class="text-[10px] text-slate-500 mt-2 px-1">
                                     Get your API token from <a href="https://fonnte.com" target="_blank" class="text-purple-400 hover:underline">Fonnte Dashboard</a>.
                                 </p>
@@ -464,6 +471,7 @@ const testConnection = async () => {
                                     class="form-input focus:ring-purple-500/50 focus:border-purple-500" 
                                     placeholder="e.g. 6281234567890" 
                                 />
+                                <p v-if="form.errors.purchasing_fonnte_device" class="text-xs text-red-500 mt-1">{{ form.errors.purchasing_fonnte_device }}</p>
                             </div>
                         </div>
                     </div>
@@ -497,6 +505,7 @@ const testConnection = async () => {
                                         <EyeSlashIcon v-else class="h-5 w-5" />
                                     </button>
                                 </div>
+                                <p v-if="form.errors.purchasing_wablas_api_token" class="text-xs text-red-500 mt-1">{{ form.errors.purchasing_wablas_api_token }}</p>
                                 <p class="text-[10px] text-slate-500 mt-2 px-1">
                                     Get your API token from <a href="https://wablas.com" target="_blank" class="text-blue-400 hover:underline">Wablas Dashboard</a>.
                                 </p>
@@ -513,6 +522,7 @@ const testConnection = async () => {
                                     class="form-input focus:ring-blue-500/50 focus:border-blue-500" 
                                     placeholder="e.g. 6281234567890" 
                                 />
+                                <p v-if="form.errors.purchasing_wablas_device" class="text-xs text-red-500 mt-1">{{ form.errors.purchasing_wablas_device }}</p>
                             </div>
 
                             <div class="space-y-2">
@@ -526,6 +536,7 @@ const testConnection = async () => {
                                     class="form-input focus:ring-blue-500/50 focus:border-blue-500" 
                                     placeholder="e.g. https://pati.wablas.com" 
                                 />
+                                <p v-if="form.errors.purchasing_wablas_server_url" class="text-xs text-red-500 mt-1">{{ form.errors.purchasing_wablas_server_url }}</p>
                             </div>
                         </div>
                     </div>
@@ -555,6 +566,7 @@ const testConnection = async () => {
                                     class="form-input min-h-[120px] resize-none focus:ring-purple-500/50 focus:border-purple-500" 
                                     placeholder="Gaya bahasa formal, informatif, dll..."
                                 ></textarea>
+                                <p v-if="form.errors.purchasing_whatsapp_bot_instruction" class="text-xs text-red-500 mt-1">{{ form.errors.purchasing_whatsapp_bot_instruction }}</p>
                             </div>
                         </div>
                     </div>
