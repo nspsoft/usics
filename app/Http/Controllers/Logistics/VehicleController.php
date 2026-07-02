@@ -69,6 +69,7 @@ class VehicleController extends Controller
     {
         $validated = $request->validate([
             'license_plate' => 'required|string|max:20|unique:vehicles,license_plate',
+            'rfid_card' => 'nullable|string|max:50|unique:vehicles,rfid_card',
             'traccar_device_id' => 'nullable|integer|unique:vehicles,traccar_device_id',
             'vehicle_type' => 'nullable|string|max:50',
             'brand' => 'nullable|string|max:50',
@@ -115,6 +116,7 @@ class VehicleController extends Controller
     {
         $validated = $request->validate([
             'license_plate' => 'required|string|max:20|unique:vehicles,license_plate,' . $vehicle->id,
+            'rfid_card' => 'nullable|string|max:50|unique:vehicles,rfid_card,' . $vehicle->id,
             'traccar_device_id' => 'nullable|integer|unique:vehicles,traccar_device_id,' . $vehicle->id,
             'vehicle_type' => 'nullable|string|max:50',
             'brand' => 'nullable|string|max:50',

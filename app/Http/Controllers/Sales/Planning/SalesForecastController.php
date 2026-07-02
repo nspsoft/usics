@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Imports\SalesForecastImport;
 use App\Models\SalesForecast;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 

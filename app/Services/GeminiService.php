@@ -19,6 +19,7 @@ class GeminiService
     protected ?string $openrouterApiKey = null;
     protected ?string $openrouterModel = null;
     protected ?string $customBotInstruction = null;
+    protected ?string $companyName = null;
 
     public function __construct()
     {
@@ -49,6 +50,7 @@ class GeminiService
             $this->openrouterModel = $aiSettings['openrouter_model'] ?? 'google/gemini-2.5-flash';
 
             $this->customBotInstruction = (string) AppSetting::get('whatsapp_bot_instruction', '');
+            $this->companyName = (string) (AppSetting::get('company_full_name') ?: ($company?->legal_name ?: ($company?->name ?: 'USICS ERP')));
             $this->isConfigured = true;
         } catch (\Exception $e) {
             Log::error('GeminiService configuration failed: ' . $e->getMessage());
@@ -573,7 +575,7 @@ class GeminiService
         
         $systemInstruction = $this->customBotInstruction 
             ? "Personality & Context: {$this->customBotInstruction}"
-            : "You are a friendly and professional customer service assistant for PT JIDOKA.";
+            : "You are a friendly and professional customer service assistant for {$this->companyName}.";
 
         // Build conversation history context
         $historyText = '';
@@ -636,7 +638,7 @@ Return JSON strictly: { \"intent\": \"...\", \"parameters\": { \"order_number\":
         $this->ensureConfigured();
         $systemInstruction = $this->customBotInstruction 
             ? "Personality & Context: {$this->customBotInstruction}"
-            : "You are a helpful customer service assistant for PT JIDOKA.";
+            : "You are a helpful customer service assistant for {$this->companyName}.";
 
         // Build conversation history context
         $historyText = '';
@@ -1118,7 +1120,7 @@ Return pure JSON without any markdown formatting or backticks.";
         $purchasingInstruction = AppSetting::get('purchasing_whatsapp_bot_instruction', '');
         $systemInstruction = $purchasingInstruction 
             ? "Personality & Context: {$purchasingInstruction}"
-            : "You are a friendly and professional procurement/purchasing assistant for PT JIDOKA RESULT INDONESIA. Your job is to serve our suppliers and vendors.";
+            : "You are a friendly and professional procurement/purchasing assistant for {$this->companyName}. Your job is to serve our suppliers and vendors.";
 
         $historyText = '';
         if (!empty($conversationHistory)) {
@@ -1178,7 +1180,7 @@ Return JSON strictly: { \"intent\": \"...\", \"parameters\": { \"po_number\": \"
         $purchasingInstruction = AppSetting::get('purchasing_whatsapp_bot_instruction', '');
         $systemInstruction = $purchasingInstruction 
             ? "Personality & Context: {$purchasingInstruction}"
-            : "You are a helpful purchasing assistant for PT JIDOKA RESULT INDONESIA, dealing with suppliers.";
+            : "You are a helpful purchasing assistant for {$this->companyName}, dealing with suppliers.";
 
         $historyText = '';
         if (!empty($conversationHistory)) {

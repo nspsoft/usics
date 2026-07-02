@@ -38,6 +38,7 @@ const page = usePage();
 // State
 const selectedDoId = ref('');
 const scanAction = ref('entry');
+const rfidInputText = ref('');
 const processing = ref(false);
 const isMuted = ref(false);
 const lastSync = ref(new Date().toLocaleTimeString());
@@ -101,6 +102,26 @@ const playSound = (type = 'success') => {
   } catch (e) { /* silent */ }
 };
 
+// Text to Speech
+const speakMessage = (text) => {
+  if (isMuted.value || typeof window === 'undefined' || !window.speechSynthesis) return;
+  try {
+    window.speechSynthesis.cancel(); // stop current speech
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'id-ID';
+    utterance.rate = 0.95; // slightly slower for clearer output
+    utterance.pitch = 1.0;
+    
+    // Attempt to load Indonesian voice
+    const voices = window.speechSynthesis.getVoices();
+    const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
+    if (idVoice) {
+      utterance.voice = idVoice;
+    }
+    window.speechSynthesis.speak(utterance);
+  } catch (e) { /* silent */ }
+};
+
 // Trigger scan
 const triggerScan = () => {
   if (!selectedDoId.value) {
@@ -120,9 +141,19 @@ const triggerScan = () => {
         scannedData.value = data;
         showCompliancePanel.value = true;
       }
-      if (flash.error) playSound('error');
-      else if (flash.warning) playSound('warning');
-      else playSound('success');
+      if (flash.error) {
+        playSound('error');
+      } else if (flash.warning) {
+        playSound('warning');
+      } else {
+        playSound('success');
+        // Speak voice greeting
+        if (scanAction.value === 'entry') {
+          speakMessage('Silakan masuk');
+        } else if (scanAction.value === 'exit') {
+          speakMessage('Selamat jalan');
+        }
+      }
     },
     onError: () => playSound('error'),
     onFinish: () => processing.value = false,
@@ -141,6 +172,11 @@ const selectDO = (doItem) => {
 
 // RFID USB Reader keyboard listener
 const handleKeyDown = (e) => {
+  // Allow Enter inside input if it's the scan input
+  if (e.target.id === 'rfid-manual-input' && e.key === 'Enter') {
+    handleManualScan();
+    return;
+  }
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
 
   if (e.key === 'Enter') {
@@ -159,19 +195,35 @@ const handleKeyDown = (e) => {
 };
 
 const processRfidTag = (tag) => {
-  // Tag format: RFID-TRUCK-B1234ABC or just B1234ABC
-  const plateRaw = tag.replace('RFID-TRUCK-', '').replace(/-/g, '');
-  // Find DO by matching vehicle plate (remove spaces for comparison)
+  // Tag format: RFID-TRUCK-B1234ABC or just B1234ABC or raw card UID
+  const cleanedInput = tag.replace('RFID-TRUCK-', '').replace(/[\s-]/g, '').toUpperCase();
+  
+  // Find DO by matching vehicle plate or registered rfid_card (remove spaces & hyphens for comparison)
   const match = props.deliveryOrders.find(d => {
-    const doPlate = (d.vehicle_number || d.vehicle?.license_plate || '').replace(/\s/g, '').toUpperCase();
-    return doPlate === plateRaw.toUpperCase();
+    const doPlate = (d.vehicle_number || d.vehicle?.license_plate || '').replace(/[\s-]/g, '').toUpperCase();
+    const doRfid = (d.vehicle?.rfid_card || '').replace(/[\s-]/g, '').toUpperCase();
+    return doPlate === cleanedInput || (doRfid && doRfid === cleanedInput);
   });
 
   if (match) {
     selectDO(match);
-    setTimeout(() => triggerScan(), 200);
+    // Automatically trigger the scan API call after selecting it
+    setTimeout(() => triggerScan(), 100);
   } else {
     playSound('error');
+    // Set a dummy flash error for feedback
+    scannedData.value = {
+      scan_status: 'error',
+      scan_message: `❌ Tag/Plat "${tag}" tidak ditemukan dalam antrean aktif.`,
+      scan_time: new Date().toLocaleTimeString()
+    };
+  }
+};
+
+const handleManualScan = () => {
+  if (rfidInputText.value.trim().length > 0) {
+    processRfidTag(rfidInputText.value.trim());
+    rfidInputText.value = '';
   }
 };
 
@@ -517,9 +569,25 @@ onUnmounted(() => {
 
             <!-- Manual select & trigger -->
             <div class="w-full space-y-3 mt-auto">
+              <!-- Direct Scan Input Box -->
               <div>
-                <label class="text-[9px] font-mono text-slate-500 uppercase tracking-wider mb-1 block">Pilih DO Manual</label>
+                <label class="text-[9px] font-mono text-slate-500 uppercase tracking-wider mb-1 block">Simulasi Scan (Ketik Plat / Tag RFID & Tekan Enter)</label>
+                <div class="relative">
+                  <input
+                    id="rfid-manual-input"
+                    v-model="rfidInputText"
+                    type="text"
+                    placeholder="Contoh: B 9123 SFX atau RFID-TRUCK-..."
+                    class="w-full bg-slate-950 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-xs text-white focus:ring-blue-500/50 focus:border-blue-500/50 font-mono placeholder:text-slate-600"
+                  />
+                  <Scan class="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-500" />
+                </div>
+              </div>
+
+              <div>
+                <label class="text-[9px] font-mono text-slate-500 uppercase tracking-wider mb-1 block">Pilih DO Manual (Alternatif)</label>
                 <select v-model="selectedDoId"
+                  @change="() => { scannedData = null; showCompliancePanel = false; }"
                   class="w-full bg-slate-950 border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:ring-blue-500/50 focus:border-blue-500/50 font-mono">
                   <option value="">-- Pilih Delivery Order --</option>
                   <option v-for="d in deliveryOrders" :key="d.id" :value="d.id">

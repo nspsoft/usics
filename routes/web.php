@@ -205,6 +205,12 @@ Route::prefix('purchasing')->name('purchasing.')->middleware(['auth'])->group(fu
     Route::get('/delivery-schedule', [App\Http\Controllers\Purchasing\DeliveryScheduleController::class, 'index'])->name('delivery-schedule');
     Route::get('/procurement-forecast', [App\Http\Controllers\Purchasing\ProcurementForecastController::class, 'index'])->name('procurement-forecast');
     Route::get('/supplier-scorecard', [App\Http\Controllers\Purchasing\SupplierScorecardController::class, 'index'])->name('supplier-scorecard');
+    
+    // MAPU (Import Purchase Planner)
+    Route::get('/mapu', [App\Http\Controllers\Purchasing\MapuController::class, 'index'])->name('mapu.index');
+    Route::get('/mapu/calculate', [App\Http\Controllers\Purchasing\MapuController::class, 'calculate'])->name('mapu.calculate');
+    Route::post('/mapu/create-pr', [App\Http\Controllers\Purchasing\MapuController::class, 'createPurchaseRequest'])->name('mapu.create-pr');
+
     Route::resource('suppliers', SupplierController::class);
     Route::get('/suppliers-export', [SupplierController::class, 'export'])->name('suppliers.export');
     Route::post('/suppliers-import', [SupplierController::class, 'import'])->name('suppliers.import');
@@ -683,6 +689,10 @@ Route::middleware(['auth'])->prefix('warehouse')->name('warehouse.')->group(func
     // Security Gate RFID Dashboard (Pos Satpam)
     Route::get('/security-gate', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'securityGateIndex'])->name('security-gate.index');
     Route::post('/security-gate/scan', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'securityGateScan'])->name('security-gate.scan');
+
+    // Loading Dock RFID Terminal
+    Route::get('/dock-gate', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'dockGateIndex'])->name('dock-gate.index');
+    Route::post('/dock-gate/scan', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'dockGateScan'])->name('dock-gate.scan');
 });
 
 // Logistics

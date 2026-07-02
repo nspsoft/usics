@@ -30,6 +30,7 @@ const editingVehicle = ref(null);
 
 const form = useForm({
     license_plate: '',
+    rfid_card: '',
     traccar_device_id: null,
     vehicle_type: '',
     brand: '',
@@ -83,6 +84,7 @@ const openEditModal = (vehicle) => {
     editingVehicle.value = vehicle;
     form.clearErrors();
     form.license_plate = vehicle.license_plate;
+    form.rfid_card = vehicle.rfid_card || '';
     form.traccar_device_id = vehicle.traccar_device_id;
     form.vehicle_type = vehicle.vehicle_type;
     form.brand = vehicle.brand;
@@ -439,6 +441,12 @@ const getDoStatusColor = (status) => {
                             <div class="space-y-2">
                                 <label class="text-xs font-black uppercase tracking-widest text-slate-500">No Polisi (License Plate)</label>
                                 <input v-model="form.license_plate" type="text" class="w-full bg-slate-50 dark:bg-slate-800 border-0 ring-1 ring-slate-200 dark:ring-slate-700 rounded-xl px-4 py-3 shadow-inner focus:ring-2 focus:ring-blue-500 transition-all font-bold uppercase" placeholder="B 1234 ABC" required />
+                                <div v-if="form.errors.license_plate" class="text-[11px] font-bold text-red-600">{{ form.errors.license_plate }}</div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black uppercase tracking-widest text-slate-500">Nomor Kartu RFID</label>
+                                <input v-model="form.rfid_card" type="text" class="w-full bg-slate-50 dark:bg-slate-800 border-0 ring-1 ring-slate-200 dark:ring-slate-700 rounded-xl px-4 py-3 shadow-inner focus:ring-2 focus:ring-blue-500 transition-all font-mono" placeholder="Contoh: 1029384756" />
+                                <div v-if="form.errors.rfid_card" class="text-[11px] font-bold text-red-600">{{ form.errors.rfid_card }}</div>
                             </div>
                             <div class="space-y-2">
                                 <label class="text-xs font-black uppercase tracking-widest text-slate-500">Traccar Device</label>

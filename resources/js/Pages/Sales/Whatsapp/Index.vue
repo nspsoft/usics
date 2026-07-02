@@ -263,6 +263,24 @@ const labelColors = {
 
 const getLabelClass = (color) => labelColors[color] || labelColors.slate;
 
+const getSentimentBadge = (contact) => {
+    const sentiment = contact?.last_metadata?.sentiment;
+    if (!sentiment) return null;
+
+    switch (sentiment) {
+        case 'angry':
+            return { label: '😡 Angry', class: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800' };
+        case 'anxious':
+            return { label: '😰 Anxious/Urgent', class: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800' };
+        case 'happy':
+            return { label: '😊 Happy', class: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' };
+        case 'neutral':
+            return { label: '😐 Neutral', class: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700' };
+        default:
+            return null;
+    }
+};
+
 // Auto refresh history every 10s if active
 let pollingInterval;
 onMounted(() => {
@@ -435,6 +453,13 @@ const startNewChat = () => {
                         <div class="mt-2 flex items-center gap-2 flex-wrap">
                             <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                                 {{ contact.last_intent || 'Unknown' }}
+                            </span>
+                            <!-- Sentiment Badge -->
+                            <span 
+                                v-if="getSentimentBadge(contact)"
+                                :class="`px-2 py-0.5 rounded text-[10px] font-bold border ${getSentimentBadge(contact).class}`"
+                            >
+                                {{ getSentimentBadge(contact).label }}
                             </span>
                             <!-- Contact Labels -->
                             <span 
@@ -669,6 +694,13 @@ const startNewChat = () => {
                                 <span class="text-xs text-slate-500 block mb-1">Last Detected Intent</span>
                                 <span class="text-xs font-bold text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 inline-block">
                                     ✨ {{ activeContact.last_intent }}
+                                </span>
+                            </div>
+
+                            <div v-if="getSentimentBadge(activeContact)">
+                                <span class="text-xs text-slate-500 block mb-1">Customer Mood / Sentiment</span>
+                                <span :class="`text-xs font-bold px-3 py-1.5 rounded-lg border inline-block ${getSentimentBadge(activeContact).class}`">
+                                    {{ getSentimentBadge(activeContact).label }}
                                 </span>
                             </div>
                         </div>

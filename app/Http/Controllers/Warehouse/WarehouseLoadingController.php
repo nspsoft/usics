@@ -332,6 +332,89 @@ class WarehouseLoadingController extends Controller
             ]);
     }
 
+    /**
+     * Loading Dock RFID Terminal Dashboard
+     */
+    public function dockGateIndex()
+    {
+        $deliveryOrders = DeliveryOrder::with(['customer', 'vehicle', 'warehouse', 'items.product', 'items.unit'])
+            ->whereIn('status', ['draft', 'picking', 'packed'])
+            ->orderBy('delivery_date')
+            ->get();
+
+        $scans = \App\Models\RfidScanLog::with('deliveryOrder.customer')
+            ->where('reader_id', 'bay_loading')
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        return Inertia::render('Warehouse/DockGate', [
+            'deliveryOrders' => $deliveryOrders,
+            'scans' => $scans,
+        ]);
+    }
+
+    /**
+     * Handle RFID tap scan at Loading Dock
+     */
+    public function dockGateScan(Request $request)
+    {
+        $request->validate([
+            'delivery_order_id' => 'required|exists:delivery_orders,id',
+            'loading_bay' => 'required|string',
+        ]);
+
+        $deliveryOrder = DeliveryOrder::with(['customer', 'vehicle', 'warehouse', 'items.product', 'items.unit'])
+            ->findOrFail($request->delivery_order_id);
+
+        $plate = $deliveryOrder->vehicle_number ?? ($deliveryOrder->vehicle->license_plate ?? 'TANPA-PLAT');
+        $tagId = "RFID-TRUCK-" . str_replace(' ', '', strtoupper($plate));
+
+        $status = 'success';
+        $message = '';
+
+        if ($deliveryOrder->status === 'draft') {
+            $deliveryOrder->update([
+                'status' => 'picking',
+                'loading_bay' => $request->loading_bay,
+                'called_at' => now(),
+            ]);
+            $message = "📦 START LOADING: Pemuatan barang DO #{$deliveryOrder->do_number} untuk truk {$plate} dimulai di {$request->loading_bay}.";
+        } elseif ($deliveryOrder->status === 'picking') {
+            $message = "📖 DATA LOADED: Menampilkan detail kargo DO #{$deliveryOrder->do_number} untuk truk {$plate}.";
+        } else {
+            $status = 'warning';
+            $message = "⚠️ Status DO saat ini: " . strtoupper($deliveryOrder->status) . ". Pemuatan tidak dapat dilakukan.";
+        }
+
+        // Log scan
+        \App\Models\RfidScanLog::create([
+            'delivery_order_id' => $deliveryOrder->id,
+            'tag_id' => $tagId,
+            'reader_id' => 'bay_loading',
+            'simulated_weight' => null,
+            'status' => $status,
+            'message' => $message,
+        ]);
+
+        // Activity log
+        activity()
+            ->performedOn($deliveryOrder)
+            ->withProperties([
+                'tag_id' => $tagId,
+                'loading_bay' => $request->loading_bay,
+            ])
+            ->log("Loading Dock RFID: " . $message);
+
+        return back()->with($status === 'warning' ? 'warning' : 'success', $message)
+            ->with('dockScannedData', [
+                'delivery_order' => $deliveryOrder->fresh(['customer', 'vehicle', 'warehouse', 'items.product', 'items.unit']),
+                'scan_status' => $status,
+                'scan_message' => $message,
+                'scan_time' => now()->toDateTimeString(),
+            ]);
+    }
+
     public function rfidSimulate(Request $request)
     {
         $request->validate([

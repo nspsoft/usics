@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatNumber } from '@/helpers';
 import L from 'leaflet';
@@ -14,8 +14,11 @@ import {
     CheckCircleIcon,
     ExclamationTriangleIcon,
     CurrencyDollarIcon,
-    ScaleIcon
+    ScaleIcon,
+    QuestionMarkCircleIcon,
+    XMarkIcon
 } from '@heroicons/vue/24/outline';
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
 import axios from 'axios';
 
 const props = defineProps({
@@ -31,6 +34,7 @@ const loading = ref(false);
 const applying = ref(false);
 const error = ref(null);
 const result = ref(null);
+const showHelpModal = ref(false);
 
 const mapEl = ref(null);
 const map = ref(null);
@@ -327,6 +331,13 @@ onBeforeUnmount(() => {
                         <p class="text-sm text-slate-500 dark:text-slate-400">Rencanakan rute multi-stop paling hemat bahan bakar dan kapasitas berat truk secara otomatis</p>
                     </div>
                 </div>
+                <button 
+                    @click="showHelpModal = true"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-sm font-semibold border border-indigo-500/20 transition-all hover:scale-105"
+                >
+                    <QuestionMarkCircleIcon class="h-5 w-5" />
+                    <span>Panduan AI VRP</span>
+                </button>
             </div>
 
             <!-- Error Banner -->
@@ -561,6 +572,65 @@ onBeforeUnmount(() => {
                     <div ref="mapEl" class="h-[600px] w-full z-10"></div>
                 </div>
             </div>
+            <!-- AI VRP Guide Modal -->
+            <TransitionRoot as="template" :show="showHelpModal">
+                <Dialog as="div" class="relative z-[99]" @close="showHelpModal = false">
+                    <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0" enter-to="opacity-100" leave="ease-in duration-200" leave-from="opacity-100" leave-to="opacity-0">
+                        <div class="fixed inset-0 bg-slate-950/50 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" />
+                    </TransitionChild>
+
+                    <div class="fixed inset-0 z-10 overflow-y-auto">
+                        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                            <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" enter-to="opacity-100 translate-y-0 sm:scale-100" leave="ease-in duration-200" leave-from="opacity-100 translate-y-0 sm:scale-100" leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+                                <DialogPanel class="relative transform overflow-hidden rounded-2xl glass-card text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl">
+                                    <!-- Title/Header -->
+                                    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                                        <DialogTitle as="h3" class="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-white flex items-center gap-2">
+                                            <QuestionMarkCircleIcon class="h-5 w-5 text-indigo-500" />
+                                            <span>Cara Kerja & Panduan AI VRP</span>
+                                        </DialogTitle>
+                                        <button @click="showHelpModal = false" type="button" class="text-slate-500 hover:text-slate-900 dark:text-white transition-colors">
+                                            <XMarkIcon class="h-6 w-6" />
+                                        </button>
+                                    </div>
+
+                                    <!-- Content -->
+                                    <div class="p-6 space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                                        <div class="space-y-2">
+                                            <h4 class="font-bold text-slate-950 dark:text-white text-xs">1. Apa itu AI VRP?</h4>
+                                            <p>AI VRP (Vehicle Routing Problem) Optimizer adalah asisten logistik pintar yang otomatis menghitung rute pengiriman multi-tujuan (multi-stop) yang paling optimal. Sistem mencari rute terpendek untuk menghemat bahan bakar truk.</p>
+                                        </div>
+
+                                        <div class="space-y-2">
+                                            <h4 class="font-bold text-slate-950 dark:text-white text-xs">2. Persyaratan Input Data</h4>
+                                            <ul class="list-disc pl-4 space-y-1">
+                                                <li><strong>Peta Koordinat</strong>: Pastikan alamat pelanggan pada Delivery Order (DO) yang dipilih memiliki koordinat Latitude & Longitude terdaftar pada Master Data Pelanggan.</li>
+                                                <li><strong>Kapasitas Truk</strong>: Berat total muatan barang pada DO diusahakan tidak melebihi daya tampung maksimum truk terpilih. Sistem akan memberi peringatan merah jika terjadi overload.</li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="space-y-2">
+                                            <h4 class="font-bold text-slate-950 dark:text-white text-xs">3. Langkah-Langkah Penggunaan</h4>
+                                            <ol class="list-decimal pl-4 space-y-1.5">
+                                                <li>Pilih satu atau lebih <strong>Kendaraan</strong> yang ingin dikerahkan pada panel kiri.</li>
+                                                <li>Centang daftar <strong>Delivery Order (DO)</strong> yang ingin dijadwalkan hari ini.</li>
+                                                <li>Klik tombol biru <strong>AI Selesaikan Rute VRP</strong> untuk mengirim data ke AI.</li>
+                                                <li>Periksa garis rute dan urutan nomor stop (Sequence 1, 2, dst) yang digambar pada peta OpenStreetMap di sebelah kanan.</li>
+                                                <li>Tinjau rincian biaya uang jalan rekomendasi di panel hasil optimasi. Jika sudah sesuai, klik <strong>Terapkan Rute & Cetak Uang Jalan</strong>.</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+
+                                    <!-- Footer -->
+                                    <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                                        <button @click="showHelpModal = false" type="button" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all text-xs">Mengerti</button>
+                                    </div>
+                                </DialogPanel>
+                            </TransitionChild>
+                        </div>
+                    </div>
+                </Dialog>
+            </TransitionRoot>
         </div>
     </AppLayout>
 </template>

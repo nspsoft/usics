@@ -137,7 +137,7 @@ class WhatsappBotService
                                     foreach ($so->items as $item) {
                                         $response .= "- " . ($item->product->name ?? 'N/A') . " (Qty: " . floatval($item->qty) . " Pcs) @ Rp " . number_format($item->unit_price, 0, ',', '.') . "\n";
                                     }
-                                    $response .= "\n*Total Nilai:* Rp " . number_format($so->total_amount, 0, ',', '.') . "\n\n";
+                                    $response .= "\n*Total Nilai:* Rp " . number_format($so->total, 0, ',', '.') . "\n\n";
                                     $response .= "Balas *CONFIRM* untuk mengonfirmasi Sales Order ini secara otomatis.";
                                 } else {
                                     $response = "Gagal membuat draf Sales Order. Silakan periksa kembali kecocokan produk/customer.";
@@ -169,7 +169,7 @@ class WhatsappBotService
         $customer = $this->findCustomerByPhone($phone);
         
         // Log incoming message
-        $this->logMessage($phone, $message, 'incoming', $customer?->id);
+        $incomingMsg = $this->logMessage($phone, $message, 'incoming', $customer?->id);
 
         // Fetch last 8 messages for conversation context (memory)
         $conversationHistory = WhatsappMessage::where('phone', $phone)
@@ -192,6 +192,18 @@ class WhatsappBotService
 
         // Analyze intent using Gemini (with conversation history)
         $intent = $this->gemini->analyzeCustomerIntent($message, $customerContext, $conversationHistory);
+
+        // Update incoming message with analyzed intent and sentiment
+        if ($incomingMsg) {
+            $incomingMsg->update([
+                'intent' => $intent['intent'] ?? 'unknown',
+                'metadata' => array_merge($incomingMsg->metadata ?? [], [
+                    'sentiment' => $intent['sentiment'] ?? 'neutral',
+                    'confidence' => $intent['confidence'] ?? null,
+                    'parameters' => $intent['parameters'] ?? []
+                ])
+            ]);
+        }
 
         Log::info('WhatsApp Bot Intent', ['phone' => $phone, 'intent' => $intent]);
 
@@ -231,7 +243,7 @@ class WhatsappBotService
     }
 
     /**
-     * Find customer by phone number
+     * Find customer by phone number (checks both Customer & CustomerContact)
      */
     protected function findCustomerByPhone(string $phone): ?Customer
     {
@@ -245,11 +257,27 @@ class WhatsappBotService
             substr($phone, 2), // Remove 62
         ];
 
-        return Customer::where(function ($q) use ($variations) {
+        // 1. Search in Customer phone
+        $customer = Customer::where(function ($q) use ($variations) {
             foreach ($variations as $p) {
+                if (empty($p)) continue;
                 $q->orWhere('phone', 'like', "%{$p}%");
             }
         })->first();
+
+        if ($customer) {
+            return $customer;
+        }
+
+        // 2. Search in CustomerContact phone
+        $contact = CustomerContact::where(function ($q) use ($variations) {
+            foreach ($variations as $p) {
+                if (empty($p)) continue;
+                $q->orWhere('phone', 'like', "%{$p}%");
+            }
+        })->first();
+
+        return $contact?->customer;
     }
 
     /**
@@ -318,7 +346,7 @@ class WhatsappBotService
             return "✅ Tidak ada tagihan yang tertunggak.\n\nTerima kasih telah menjadi pelanggan setia kami!";
         }
 
-        $total = $invoices->sum('total_amount');
+        $total = $invoices->sum('total');
         $response = "📄 *Invoice Outstanding*\n\n";
 
         foreach ($invoices as $invoice) {
@@ -327,7 +355,7 @@ class WhatsappBotService
             $status = $isOverdue ? "⚠️ JATUH TEMPO" : "📅 {$dueDate}";
             
             $response .= "• *{$invoice->invoice_number}*\n";
-            $response .= "  Rp " . number_format($invoice->total_amount, 0, ',', '.') . "\n";
+            $response .= "  Rp " . number_format($invoice->total, 0, ',', '.') . "\n";
             $response .= "  {$status}\n\n";
         }
 
@@ -529,7 +557,7 @@ class WhatsappBotService
     /**
      * Log message to database
      */
-    protected function logMessage(string $phone, string $message, string $direction, ?int $customerId = null, ?string $intent = null): void
+    protected function logMessage(string $phone, string $message, string $direction, ?int $customerId = null, ?string $intent = null, ?array $metadata = null): ?WhatsappMessage
     {
         try {
             if ($direction === 'notification') {
@@ -551,19 +579,23 @@ class WhatsappBotService
                 'direction' => $direction,
                 'message' => $message,
                 'intent' => $intent,
+                'metadata' => $metadata,
             ];
 
             if (self::$hasIsReadColumn) {
                 $payload['is_read'] = $direction !== 'incoming';
             }
 
-            WhatsappMessage::create($payload);
+            $msg = WhatsappMessage::create($payload);
 
             if ($direction === 'incoming') {
                 Cache::forget('whatsapp_unread_count');
             }
+
+            return $msg;
         } catch (\Exception $e) {
             Log::error('Failed to log WhatsApp message: ' . $e->getMessage());
+            return null;
         }
     }
 
@@ -703,11 +735,11 @@ class WhatsappBotService
             $product = $item->product;
             if (!$product) continue;
 
-            $qtyRequired = floatval($item->qty);
+            $qtyRequired = round(floatval($item->qty));
 
             $fgStock = \App\Models\ProductStock::where('product_id', $product->id)->sum('qty_on_hand');
             $fgReserved = \App\Models\ProductStock::where('product_id', $product->id)->sum('qty_reserved');
-            $fgFree = max(0, $fgStock - $fgReserved);
+            $fgFree = round(max(0, $fgStock - $fgReserved));
 
             $report .= "📦 *FG ({$product->sku}):*\n";
             $report .= "- Kebutuhan: {$qtyRequired} Pcs\n";
@@ -718,16 +750,16 @@ class WhatsappBotService
                 continue;
             }
 
-            $deficit = $qtyRequired - $fgFree;
+            $deficit = round($qtyRequired - $fgFree);
             $report .= "⚠️ Defisit: {$deficit} Pcs\n";
 
-            $wipQty = \App\Models\WorkOrder::where('product_id', $product->id)
+            $wipQty = round(\App\Models\WorkOrder::where('product_id', $product->id)
                 ->whereIn('status', [\App\Models\WorkOrder::STATUS_CONFIRMED, \App\Models\WorkOrder::STATUS_IN_PROGRESS])
-                ->sum(\Illuminate\Support\Facades\DB::raw('qty_planned - qty_produced'));
+                ->sum(\Illuminate\Support\Facades\DB::raw('qty_planned - qty_produced')));
             
             $report .= "🏭 *WIP (WO Aktif):* {$wipQty} Pcs\n";
             
-            $netDeficit = max(0, $deficit - $wipQty);
+            $netDeficit = round(max(0, $deficit - $wipQty));
             if ($netDeficit <= 0) {
                 $report .= "✅ Defisit tercover antrean produksi aktif.\n\n";
                 continue;
@@ -804,12 +836,13 @@ class WhatsappBotService
                     ]);
 
                     foreach ($rmDeficits as $def) {
+                        $deficitVal = round($def['deficit']);
                         $pr->items()->create([
                             'product_id' => $def['product']->id,
-                            'qty' => $def['deficit'],
+                            'qty' => $deficitVal,
                             'description' => 'Bahan baku kurang untuk memproduksi ' . $product->name,
                         ]);
-                        $prSummary[] = "- *{$prNumber}* ({$def['product']->name}) sebanyak *{$def['deficit']}*";
+                        $prSummary[] = "- *{$prNumber}* ({$def['product']->name}) sebanyak *{$deficitVal}*";
                     }
                     $prCreatedCount++;
                 } catch (\Exception $e) {

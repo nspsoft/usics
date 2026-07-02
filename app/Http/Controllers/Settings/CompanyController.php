@@ -116,7 +116,7 @@ class CompanyController extends Controller
             'openrouter_model' => 'google/gemini-2.5-flash',
         ];
 
-        $defaultInstruction = "Anda adalah Customer Service Jidoka AI yang ramah. Tugas Anda adalah melayani Customer dan Staff PT JIDOKA dengan sopan, ceria, dan membantu.";
+        $defaultInstruction = "Anda adalah Customer Service Assistant PT UNITED STEEL CENTER INDONESIA (USC INDONESIA) yang ramah. Tugas Anda adalah melayani Customer dan Staff PT UNITED STEEL CENTER INDONESIA dengan sopan, ceria, dan membantu.";
 
         $emailSettings = $company->settings['email'] ?? [];
         $emailSettings['imap_password'] = '';

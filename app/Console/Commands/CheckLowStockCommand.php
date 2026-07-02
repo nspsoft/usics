@@ -75,7 +75,8 @@ class CheckLowStockCommand extends Command
         }
 
         $message .= "Harap segera buat *Purchase Request (PR)* atau *Production Request* untuk mengisi kembali stok barang-barang ini.\n\n";
-        $message .= "_Sistem Otomatis Jidoka ERP_";
+        $companyName = \App\Models\AppSetting::get('company_full_name') ?: 'USICS ERP';
+        $message .= "_Sistem Otomatis {$companyName}_";
 
         // Send via WhatsApp
         try {

@@ -14,6 +14,7 @@ class Vehicle extends Model
         'company_id',
         'traccar_device_id',
         'license_plate',
+        'rfid_card',
         'vehicle_type',
         'brand',
         'capacity_weight',

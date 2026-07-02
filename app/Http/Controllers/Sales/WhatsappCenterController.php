@@ -39,10 +39,20 @@ class WhatsappCenterController extends Controller
             ->selectRaw('MAX(created_at) as last_activity')
             ->selectRaw('(SELECT message FROM whatsapp_messages wm WHERE wm.phone = whatsapp_messages.phone ORDER BY created_at DESC LIMIT 1) as last_message')
             ->selectRaw('(SELECT intent FROM whatsapp_messages wm WHERE wm.phone = whatsapp_messages.phone ORDER BY created_at DESC LIMIT 1) as last_intent')
+            ->selectRaw('(SELECT metadata FROM whatsapp_messages wm WHERE wm.phone = whatsapp_messages.phone ORDER BY created_at DESC LIMIT 1) as last_metadata')
             ->groupBy('phone', 'customer_id')
             ->orderByDesc('last_activity')
             ->with('customer:id,name,contact_person,profile_photo_path')
             ->get();
+
+        $contacts->transform(function ($contact) {
+            if ($contact->last_metadata) {
+                $contact->last_metadata = is_string($contact->last_metadata) 
+                    ? json_decode($contact->last_metadata, true) 
+                    : $contact->last_metadata;
+            }
+            return $contact;
+        });
 
         $totalUnread = 0;
         $templates = collect();

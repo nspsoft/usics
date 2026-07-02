@@ -48,7 +48,7 @@ class PurchasingWhatsappBotService
         $supplier = $this->findSupplierByPhone($phone);
         
         // Log incoming message
-        $this->logMessage($phone, $message, 'incoming', $supplier?->id);
+        $incomingMsg = $this->logMessage($phone, $message, 'incoming', $supplier?->id);
 
         // Fetch last 8 messages for conversation context (memory)
         $conversationHistory = WhatsappMessage::where('phone', $phone)
@@ -72,6 +72,18 @@ class PurchasingWhatsappBotService
 
         // Analyze intent using Gemini (with conversation history)
         $intent = $this->gemini->analyzeSupplierIntent($message, $supplierContext, $conversationHistory);
+
+        // Update incoming message with analyzed intent and sentiment
+        if ($incomingMsg) {
+            $incomingMsg->update([
+                'intent' => $intent['intent'] ?? 'unknown',
+                'metadata' => array_merge($incomingMsg->metadata ?? [], [
+                    'sentiment' => $intent['sentiment'] ?? 'neutral',
+                    'confidence' => $intent['confidence'] ?? null,
+                    'parameters' => $intent['parameters'] ?? []
+                ])
+            ]);
+        }
 
         Log::info('Purchasing WhatsApp Bot Intent', ['phone' => $phone, 'intent' => $intent]);
 
@@ -498,7 +510,7 @@ class PurchasingWhatsappBotService
     /**
      * Log message to database
      */
-    protected function logMessage(string $phone, string $message, string $direction, ?int $supplierId = null, ?string $intent = null): void
+    protected function logMessage(string $phone, string $message, string $direction, ?int $supplierId = null, ?string $intent = null, ?array $metadata = null): ?WhatsappMessage
     {
         try {
             if ($direction === 'notification') {
@@ -521,19 +533,23 @@ class PurchasingWhatsappBotService
                 'message' => $message,
                 'intent' => $intent,
                 'module' => 'purchasing',
+                'metadata' => $metadata,
             ];
 
             if (self::$hasIsReadColumn) {
                 $payload['is_read'] = $direction !== 'incoming';
             }
 
-            WhatsappMessage::create($payload);
+            $msg = WhatsappMessage::create($payload);
 
             if ($direction === 'incoming') {
                 Cache::forget('purchasing_whatsapp_unread_count');
             }
+
+            return $msg;
         } catch (\Exception $e) {
             Log::error('Failed to log Purchasing WhatsApp message: ' . $e->getMessage());
+            return null;
         }
     }
 }
