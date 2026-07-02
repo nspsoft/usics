@@ -132,50 +132,50 @@ const getStatusStyle = (status) => {
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-white dark:bg-slate-950/30">
-                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Employee</th>
-                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest text-right">Basic Salary</th>
-                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest text-right">Allowances</th>
-                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest text-right">Net Pay</th>
-                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest text-center">Status</th>
-                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest text-right"></th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Employee</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-600 uppercase tracking-widest text-right">Basic Salary</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-600 uppercase tracking-widest text-right">Allowances</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-600 uppercase tracking-widest text-right">Net Pay</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-600 uppercase tracking-widest text-center">Status</th>
+                            <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-600 uppercase tracking-widest text-right"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="payroll in payrolls.data" :key="payroll.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors group">
-                            <td class="px-8 py-5">
-                                <Link :href="route('hr.payroll.show', payroll.id)" class="flex items-center gap-3 group/link">
-                                    <div class="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            <td class="px-4 py-2">
+                                <Link :href="route('hr.payroll.show', payroll.id)" class="flex items-center gap-2.5 group/link">
+                                    <div class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                                         {{ payroll.employee.full_name.charAt(0) }}
                                     </div>
                                     <div>
-                                        <div class="text-sm font-bold text-slate-900 dark:text-white group-hover/link:text-indigo-400 transition-colors">{{ payroll.employee.full_name }}</div>
+                                        <div class="text-xs font-bold text-slate-900 dark:text-white group-hover/link:text-indigo-400 transition-colors">{{ payroll.employee.full_name }}</div>
                                         <div class="text-[10px] text-slate-500">{{ payroll.employee.position?.name }}</div>
                                     </div>
                                 </Link>
                             </td>
-                            <td class="px-8 py-5 text-right font-mono text-xs text-slate-600 dark:text-slate-300">
+                            <td class="px-4 py-2 text-right font-mono text-xs text-slate-600 dark:text-slate-300">
                                 {{ formatCurrency(payroll.basic_salary) }}
                             </td>
-                            <td class="px-8 py-5 text-right font-mono text-xs text-emerald-400">
+                            <td class="px-4 py-2 text-right font-mono text-xs text-emerald-400">
                                 + {{ formatCurrency(payroll.total_allowances) }}
                             </td>
-                            <td class="px-8 py-5 text-right font-mono text-sm font-bold text-slate-900 dark:text-white">
+                            <td class="px-4 py-2 text-right font-mono text-xs font-bold text-slate-900 dark:text-white">
                                 {{ formatCurrency(payroll.net_salary) }}
                             </td>
-                            <td class="px-8 py-5 text-center">
-                                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border" :class="getStatusStyle(payroll.status)">
+                            <td class="px-4 py-2 text-center">
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border" :class="getStatusStyle(payroll.status)">
                                     {{ payroll.status }}
                                 </span>
                             </td>
-                            <td class="px-8 py-5 text-right">
-                                <Link :href="route('hr.payroll.show', payroll.id)" class="p-2 text-slate-500 hover:text-slate-900 dark:text-white transition-colors">
-                                    <ChevronRightIcon class="h-5 w-5" />
+                            <td class="px-4 py-2 text-right">
+                                <Link :href="route('hr.payroll.show', payroll.id)" class="p-1.5 text-slate-500 hover:text-slate-900 dark:text-white transition-colors inline-block">
+                                    <ChevronRightIcon class="h-4 w-4" />
                                 </Link>
                             </td>
                         </tr>
                         <tr v-if="!payrolls.data.length">
-                            <td colspan="6" class="px-8 py-16 text-center">
-                                <div class="text-slate-500 text-sm italic">No payroll records found for this period. Click "Generate" to start.</div>
+                            <td colspan="6" class="px-4 py-10 text-center">
+                                <div class="text-slate-500 text-xs italic">No payroll records found for this period. Click "Generate" to start.</div>
                             </td>
                         </tr>
                     </tbody>
