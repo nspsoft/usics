@@ -26,7 +26,7 @@ const guides = [
     {
         id: 'getting-started',
         title: 'Getting Started',
-        description: 'Master the basics of your JICOS Portal dashboard.',
+        description: 'Master the basics of your USICS Portal dashboard.',
         icon: HomeIcon,
         steps: [
             {

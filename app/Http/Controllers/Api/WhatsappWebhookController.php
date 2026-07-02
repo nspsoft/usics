@@ -34,6 +34,26 @@ class WhatsappWebhookController extends Controller
         $message = $request->input('message');
         $pushName = $request->input('pushName'); // Wablas specific
         
+        // Audio notes detection & transcription
+        $mediaUrl = $request->input('url') ?: $request->input('media');
+        $extension = strtolower((string)$request->input('extension'));
+        $type = strtolower((string)$request->input('type'));
+
+        $isAudio = in_array($extension, ['ogg', 'mp3', 'wav', 'm4a', 'aac', 'amr']) || 
+                   in_array($type, ['audio', 'voice', 'ptt']) ||
+                   ($mediaUrl && (str_contains($mediaUrl, '.ogg') || str_contains($mediaUrl, '.mp3') || str_contains($mediaUrl, '.wav') || str_contains($mediaUrl, '.m4a') || str_contains($mediaUrl, '.amr') || str_contains($mediaUrl, 'voice')));
+
+        if ($isAudio && $mediaUrl) {
+            /** @var \App\Services\GeminiService $gemini */
+            $gemini = app(\App\Services\GeminiService::class);
+            $transcription = $gemini->transcribeAudioFromUrl($mediaUrl);
+            if ($transcription) {
+                $message = $transcription;
+            } else {
+                Log::warning('Audio transcription failed or returned empty. Falling back to original message.');
+            }
+        }
+
         if (!$phone || !$message) {
             return response()->json(['status' => 'ignored', 'reason' => 'invalid_payload']);
         }
@@ -50,7 +70,7 @@ class WhatsappWebhookController extends Controller
 
         try {
             // Process message and get response
-            $response = $this->botService->handleIncomingMessage($phone, $message, $pushName);
+            $response = $this->botService->handleIncomingMessage($phone, $message, $pushName, $mediaUrl);
 
             return response()->json([
                 'status' => 'success',

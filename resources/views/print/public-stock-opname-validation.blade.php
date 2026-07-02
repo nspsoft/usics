@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Opname Validation - JICOS ERP</title>
+    <title>Stock Opname Validation - USICS ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -19,7 +19,7 @@
                 </svg>
             </div>
             <h1 class="text-2xl font-extrabold uppercase tracking-tight">Valid Stock Opname</h1>
-            <p class="text-emerald-100 opacity-90 mt-1 font-medium">Verified by Jicos ERP System</p>
+            <p class="text-emerald-100 opacity-90 mt-1 font-medium">Verified by Usics ERP System</p>
         </div>
 
         <div class="p-6 space-y-6">

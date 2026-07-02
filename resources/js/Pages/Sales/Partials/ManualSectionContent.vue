@@ -366,4 +366,54 @@ defineProps({ sectionId: String });
         <span class="text-lg">💡</span> <span><b>Tips:</b> Pastikan file PO berkualitas baik. Selalu review hasil ekstraksi — AI bisa salah membaca angka jika dokumen kurang jelas.</span>
     </div>
 </div>
+
+<!-- 13. Smart AI WhatsApp Orchestrator -->
+<div v-else-if="sectionId === 'whatsapp-orchestrator'" class="space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+            <h4 class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mb-3">💬 Langkah Kerja (Sales Rep)</h4>
+            <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400 pl-4 list-disc marker:text-emerald-500">
+                <li><b>Unggah Berkas PO:</b> Kirim file PO (.pdf/.jpg) ke nomor WhatsApp Gateway resmi perusahaan. Ketik <i>"proses PO"</i> atau <i>"input PO"</i> pada takarir.</li>
+                <li><b>Tinjau Draf:</b> AI akan mengekstrak informasi dan membalas rincian draft SO (Customer, Item, Qty, Harga).</li>
+                <li><b>Konfirmasi:</b> Cukup balas chat tersebut dengan mengetik <b>"CONFIRM"</b>.</li>
+            </ul>
+        </div>
+        <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+            <h4 class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mb-3">🛠️ Proses Otomatis Sistem (Audit)</h4>
+            <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400 pl-4 list-disc marker:text-emerald-500">
+                <li><b>FG Stock Audit:</b> Mengecek ketersediaan bebas barang jadi.</li>
+                <li><b>WIP Queue Audit:</b> Mengecek antrean produksi berjalan.</li>
+                <li><b>Auto WO & BOM Explosion:</b> Jika kurang, otomatis membuat draft <i>Work Order</i> dan melacak kebutuhan bahan baku (HRC/CRC Mother Coil).</li>
+                <li><b>Auto PR:</b> Jika bahan baku kurang, otomatis membuat draf <i>Purchase Request</i> bahan baku ke divisi Purchasing.</li>
+            </ul>
+        </div>
+    </div>
+    <div class="p-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-start gap-2 text-sm text-emerald-700 dark:text-emerald-300">
+        <span class="text-lg">💡</span> <span><b>Penting:</b> Nomor WhatsApp Sales Representative wajib terdaftar di master data Karyawan ERP (HR ➔ Employee Directory) agar pesan dikenali dan diproses.</span>
+    </div>
+</div>
+
+<!-- 14. AI Pricing Intelligence -->
+<div v-else-if="sectionId === 'pricing-intelligence'" class="space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+            <h4 class="text-sm font-bold text-violet-600 dark:text-violet-400 mb-3">📈 Simulasi Dasbor</h4>
+            <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400 pl-4 list-disc marker:text-violet-500">
+                <li><b>Variabel Global:</b> Masukkan LME price (USD/ton), exchange rate USD/IDR, target profit margin %, processing fee per kg, dan scrap recovery %.</li>
+                <li><b>Analisis Produk:</b> Pilih item penjualan untuk menyimulasikan HPP, margin kotor, harga eceran aman, dan prediksi tren pasar baja dunia.</li>
+                <li><b>Daftar Produk:</b> Produk diambil secara otomatis dari data master barang yang berstatus <i>Active</i> dan tercentang opsi <i>Is Sold (Dapat Jual)</i> di modul Inventory.</li>
+            </ul>
+        </div>
+        <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+            <h4 class="text-sm font-bold text-violet-600 dark:text-violet-400 mb-3">✨ Rekomendasi di Quotation</h4>
+            <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400 pl-4 list-disc marker:text-violet-500">
+                <li><b>Tombol Sparkle AI:</b> Di form Quotation (Create/Edit), klik ikon Sparkle di samping input unit price.</li>
+                <li><b>Modal Analisis:</b> Layar popup akan menampilkan perbandingan harga historis PO customer, harga jual dasar, dan rekomendasi margin aman dari Gemini AI.</li>
+            </ul>
+        </div>
+    </div>
+    <div class="p-3 bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800 rounded-xl flex items-start gap-2 text-sm text-violet-700 dark:text-violet-300">
+        <span class="text-lg">💡</span> <span><b>Tips:</b> Gunakan simulasi harga secara berkala untuk menyesuaikan penawaran terhadap volatilitas pasar baja global.</span>
+    </div>
+</div>
 </template>

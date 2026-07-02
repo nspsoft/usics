@@ -210,7 +210,7 @@ const supplierData = computed(() => ({
                                 </h3>
                             </div>
                             <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-amber-500 w-[70%] shadow-[0_0_10px_#f59e0b]"></div>
+                                <div class="h-full bg-amber-500 shadow-[0_0_10px_#f59e0b] transition-all duration-1000" :style="{ width: stats.monthly_spend > 0 ? Math.max(Math.min((stats.monthly_spend / 100000000) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>
@@ -228,7 +228,7 @@ const supplierData = computed(() => ({
                                 </h3>
                             </div>
                             <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-cyan-500 w-[50%] shadow-[0_0_10px_#06b6d4]"></div>
+                                <div class="h-full bg-cyan-500 shadow-[0_0_10px_#06b6d4] transition-all duration-1000" :style="{ width: stats.open_orders > 0 ? Math.max(Math.min((stats.open_orders / 100) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>
@@ -246,7 +246,7 @@ const supplierData = computed(() => ({
                                 </h3>
                             </div>
                              <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-rose-500 w-[30%] shadow-[0_0_10px_#f43f5e]"></div>
+                                <div class="h-full bg-rose-500 shadow-[0_0_10px_#f43f5e] transition-all duration-1000" :style="{ width: stats.pending_approvals > 0 ? Math.max(Math.min((stats.pending_approvals / 100) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>
@@ -264,7 +264,7 @@ const supplierData = computed(() => ({
                                 </h3>
                             </div>
                              <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-emerald-500 w-[94%] shadow-[0_0_10px_#10b981]"></div>
+                                <div class="h-full bg-emerald-500 shadow-[0_0_10px_#10b981] transition-all duration-1000" :style="{ width: stats.supplier_performance > 0 ? Math.max(Math.min((stats.supplier_performance / 100) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>

@@ -181,7 +181,7 @@ onBeforeUnmount(() => {
                 <div class="group relative flex items-center justify-center p-6 transition-transform duration-500 hover:scale-125 cursor-pointer">
                     <div class="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <img 
-                        :src="$page.props.company?.logo || '/images/jicos.png'" 
+                        :src="$page.props.company?.logo || '/images/usics.png'" 
                         alt="Company Logo" 
                         class="h-32 w-auto object-contain drop-shadow-[0_0_20px_rgba(6,182,212,0.6)] relative z-10" 
                     />

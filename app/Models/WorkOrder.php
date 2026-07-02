@@ -106,6 +106,11 @@ class WorkOrder extends Model
         return $this->hasMany(WorkOrderComponent::class);
     }
 
+    public function outputs(): HasMany
+    {
+        return $this->hasMany(WorkOrderOutput::class);
+    }
+
     public function productionEntries(): HasMany
     {
         return $this->hasMany(ProductionEntry::class);
@@ -166,6 +171,18 @@ class WorkOrder extends Model
                 'unit_id' => $bomComp->unit_id,
             ]);
         }
+
+        if ($this->bom->outputs()->count() > 0) {
+            $multiplier = $this->qty_planned / $this->bom->qty;
+            foreach ($this->bom->outputs as $bomOutput) {
+                $this->outputs()->create([
+                    'product_id' => $bomOutput->product_id,
+                    'qty_planned' => $bomOutput->qty_ratio * $multiplier,
+                    'qty_produced' => 0,
+                    'weight_produced' => 0,
+                ]);
+            }
+        }
     }
 
     /**
@@ -193,7 +210,9 @@ class WorkOrder extends Model
         }
 
         $goodQty = (float) ($this->qty_produced ?? 0);
-        if ($goodQty <= 0) {
+        $totalOutputQty = $this->outputs()->sum('qty_produced');
+        
+        if ($goodQty <= 0 && $totalOutputQty <= 0) {
             $this->update([
                 'status' => self::STATUS_COMPLETED,
                 'actual_end' => now(),
@@ -201,31 +220,72 @@ class WorkOrder extends Model
             return;
         }
 
-        // Add finished goods to stock
-        $stock = ProductStock::firstOrCreate(
-            [
-                'product_id' => $this->product_id,
-                'warehouse_id' => $this->warehouse_id,
-            ],
-            [
-                'qty_on_hand' => 0,
-                'qty_reserved' => 0,
-                'qty_incoming' => 0,
-                'qty_outgoing' => 0,
-                'avg_cost' => 0,
-            ]
-        );
-
         // Calculate production cost
         $productionCost = $this->calculateProductionCost();
-        
-        $stock->adjustStock(
-            $goodQty,
-            $productionCost / $goodQty,
-            StockMovement::TYPE_PRODUCTION_OUT,
-            $this,
-            "Production Output WO #{$this->wo_number}"
-        );
+
+        if ($this->outputs()->count() > 0) {
+            // Divergent Manufacturing (Multiple Outputs)
+            $totalWeight = $this->outputs()->sum('weight_produced');
+            
+            foreach ($this->outputs as $woOutput) {
+                $qty = (float) $woOutput->qty_produced;
+                if ($qty <= 0) continue;
+
+                $stock = ProductStock::firstOrCreate(
+                    [
+                        'product_id' => $woOutput->product_id,
+                        'warehouse_id' => $this->warehouse_id,
+                    ],
+                    [
+                        'qty_on_hand' => 0,
+                        'qty_reserved' => 0,
+                        'qty_incoming' => 0,
+                        'qty_outgoing' => 0,
+                        'avg_cost' => 0,
+                    ]
+                );
+
+                // Allocate cost by weight ratio if weights are provided, otherwise by qty ratio
+                $weightRatio = ($totalWeight > 0 && $woOutput->weight_produced > 0)
+                    ? ($woOutput->weight_produced / $totalWeight) 
+                    : ($qty / $totalOutputQty);
+
+                $allocatedCost = $productionCost * $weightRatio;
+
+                $stock->adjustStock(
+                    $qty,
+                    $allocatedCost / $qty,
+                    StockMovement::TYPE_PRODUCTION_OUT,
+                    $this,
+                    "Production Output (Slitting/Shearing) WO #{$this->wo_number}"
+                );
+            }
+        } else {
+            // Convergent Manufacturing (Single Output)
+            if ($goodQty > 0) {
+                $stock = ProductStock::firstOrCreate(
+                    [
+                        'product_id' => $this->product_id,
+                        'warehouse_id' => $this->warehouse_id,
+                    ],
+                    [
+                        'qty_on_hand' => 0,
+                        'qty_reserved' => 0,
+                        'qty_incoming' => 0,
+                        'qty_outgoing' => 0,
+                        'avg_cost' => 0,
+                    ]
+                );
+
+                $stock->adjustStock(
+                    $goodQty,
+                    $productionCost / $goodQty,
+                    StockMovement::TYPE_PRODUCTION_OUT,
+                    $this,
+                    "Production Output WO #{$this->wo_number}"
+                );
+            }
+        }
 
         $this->update([
             'status' => self::STATUS_COMPLETED,

@@ -121,7 +121,7 @@ class GeminiService
                 ->withHeaders([
                     'Authorization' => "Bearer {$this->openrouterApiKey}",
                     'HTTP-Referer' => url('/'),
-                    'X-Title' => 'JICOS ERP',
+                    'X-Title' => 'USICS ERP',
                 ])
                 ->post('https://openrouter.ai/api/v1/chat/completions', $payload);
 
@@ -1469,6 +1469,445 @@ Question: \"{$question}\"";
             return $this->parseResponse($response);
         } catch (\Exception $e) {
             Log::error('AI Stock Analysis Error: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Transcribe an audio file to text using Gemini.
+     */
+    public function transcribeAudio(string $filePath, string $mimeType): ?string
+    {
+        $this->ensureConfigured();
+
+        if ($this->driver === 'ollama') {
+            Log::warning('Ollama does not natively support direct audio transcription in this context.');
+            return null;
+        }
+
+        if ($this->driver === 'openrouter') {
+            if (!$this->openrouterApiKey) {
+                Log::error('OpenRouter API Key is not configured.');
+                return null;
+            }
+
+            // Map mimeType to format string (e.g. audio/mp3 -> mp3, audio/ogg -> ogg, etc.)
+            $format = 'mp3';
+            if (str_contains($mimeType, 'ogg') || str_contains($mimeType, 'opus')) {
+                $format = 'ogg';
+            } elseif (str_contains($mimeType, 'wav')) {
+                $format = 'wav';
+            } elseif (str_contains($mimeType, 'm4a')) {
+                $format = 'm4a';
+            }
+
+            try {
+                $base64Data = base64_encode(file_get_contents($filePath));
+                
+                $payload = [
+                    'model' => $this->openrouterModel,
+                    'messages' => [
+                        [
+                            'role' => 'user',
+                            'content' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => "Dengarkan audio ini dengan seksama dan transkripsikan seluruh isi ucapannya ke dalam bentuk teks bahasa Indonesia secara lengkap dan akurat. Jangan tambahkan penjelasan lain, hanya teks hasil transkripsi."
+                                ],
+                                [
+                                    'type' => 'input_audio',
+                                    'input_audio' => [
+                                        'data' => $base64Data,
+                                        'format' => $format
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ];
+
+                $response = Http::timeout(120)
+                    ->withHeaders([
+                        'Authorization' => "Bearer {$this->openrouterApiKey}",
+                        'HTTP-Referer' => url('/'),
+                        'X-Title' => 'USICS ERP',
+                    ])
+                    ->post('https://openrouter.ai/api/v1/chat/completions', $payload);
+
+                if ($response->successful()) {
+                    $result = $response->json();
+                    return $result['choices'][0]['message']['content'] ?? null;
+                }
+                
+                Log::error('OpenRouter Audio Transcription Failed: ' . $response->body());
+            } catch (\Exception $e) {
+                Log::error('Exception in GeminiService (transcribeAudio OpenRouter): ' . $e->getMessage());
+            }
+            
+            return null;
+        }
+
+        if (!$this->apiKey) {
+            Log::error('Gemini API Key is not configured for Audio Processing.');
+            return null;
+        }
+
+        try {
+            $fileData = base64_encode(file_get_contents($filePath));
+            $prompt = "Dengarkan audio ini dengan seksama dan transkripsikan seluruh isi ucapannya ke dalam bentuk teks bahasa Indonesia secara lengkap dan akurat. Jangan tambahkan penjelasan lain, hanya teks hasil transkripsi.";
+
+            $response = Http::timeout(60)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt],
+                            [
+                                'inline_data' => [
+                                    'mime_type' => $mimeType,
+                                    'data' => $fileData
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]);
+
+            if ($response->successful()) {
+                $result = $response->json();
+                return $result['candidates'][0]['content']['parts'][0]['text'] ?? null;
+            }
+
+            Log::error('Gemini Audio Transcription Failed: ' . $response->body());
+        } catch (\Exception $e) {
+            Log::error('Exception in GeminiService (transcribeAudio): ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Download audio file from URL and transcribe it.
+     */
+    public function transcribeAudioFromUrl(string $url): ?string
+    {
+        try {
+            Log::info('Downloading audio file for transcription from: ' . $url);
+            $response = Http::timeout(60)->get($url);
+            if (!$response->successful()) {
+                Log::error('Failed to download audio file from url: ' . $url . ' Status: ' . $response->status());
+                return null;
+            }
+
+            $content = $response->body();
+            // Determine mimetype from URL, headers, or default to audio/ogg
+            $contentType = $response->header('Content-Type');
+            
+            // Clean content type (e.g. "audio/ogg; codecs=opus" -> "audio/ogg")
+            if ($contentType) {
+                $contentType = explode(';', $contentType)[0];
+            } else {
+                $contentType = 'audio/ogg';
+            }
+            
+            // If the URL has an extension, map it to a proper mime type
+            $extension = strtolower(pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION));
+            if ($extension === 'mp3') {
+                $contentType = 'audio/mp3';
+            } elseif ($extension === 'wav') {
+                $contentType = 'audio/wav';
+            } elseif ($extension === 'm4a') {
+                $contentType = 'audio/m4a';
+            }
+
+            // Write to a temporary file in storage/app/tmp
+            $tempDir = storage_path('app/tmp');
+            if (!file_exists($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+            $tempFile = $tempDir . '/' . uniqid('voice_') . '.tmp';
+            file_put_contents($tempFile, $content);
+
+            $transcription = $this->transcribeAudio($tempFile, $contentType);
+
+            // Clean up temp file
+            if (file_exists($tempFile)) {
+                unlink($tempFile);
+            }
+
+            if ($transcription) {
+                Log::info('Successfully transcribed audio to: ' . $transcription);
+            } else {
+                Log::warning('Audio transcription returned null');
+            }
+
+            return $transcription;
+        } catch (\Exception $e) {
+            Log::error('transcribeAudioFromUrl exception: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Solve the Vehicle Routing Problem (VRP) using Gemini AI.
+     */
+    public function solveVrp(array $vehicles, array $deliveryOrders, float $depotLat, float $depotLng): ?array
+    {
+        $this->ensureConfigured();
+
+        $prompt = "You are a professional logistics coordinator and Vehicle Routing Problem (VRP) optimization engine.
+        
+        Your goal is to optimize delivery routes for a fleet of vehicles delivering orders to various customer locations from a central depot.
+        
+        DEPOT COORDINATES (Start & End Point):
+        Latitude: {$depotLat}
+        Longitude: {$depotLng}
+        
+        AVAILABLE VEHICLES:
+        " . json_encode($vehicles, JSON_PRETTY_PRINT) . "
+        
+        PENDING DELIVERY ORDERS:
+        " . json_encode($deliveryOrders, JSON_PRETTY_PRINT) . "
+        
+        INSTRUCTIONS:
+        1. Group/cluster the delivery orders into optimized routes/shipments.
+        2. Assign each shipment to ONE vehicle.
+        3. Make sure the total weight of all delivery orders in a single shipment does not exceed the vehicle's capacity (capacity_weight).
+        4. Sort the stops in each route logically based on geographic proximity to form a sequence (Stop 1 -> Stop 2 -> Stop 3).
+        5. For each shipment, calculate:
+           - Total weight (sum of order weights).
+           - Total estimated distance (Manhattan or Haversine distance sequence from depot -> Stop 1 -> Stop 2 -> ... -> depot, in km).
+           - Suggested travel allowance (Uang Jalan) in Rupiah (IDR). Provide a realistic recommendation (e.g. Rp 100.000 - Rp 500.000 depending on distance and number of stops).
+           - Route description (e.g., \"Rute Jakarta Barat - Tangerang\").
+        6. Return the response as a JSON object in this exact format:
+        {
+            \"shipments\": [
+                {
+                    \"vehicle_id\": 1,
+                    \"vehicle_plate\": \"B 1234 ABC\",
+                    \"driver_name\": \"Supir A\",
+                    \"route_name\": \"Route description\",
+                    \"total_weight\": 1200.0,
+                    \"estimated_distance_km\": 35.5,
+                    \"suggested_allowance\": 250000,
+                    \"stops\": [
+                        {
+                            \"sequence\": 1,
+                            \"delivery_order_id\": 5,
+                            \"do_number\": \"DO-202607-0001\",
+                            \"customer_name\": \"Customer X\",
+                            \"address\": \"Address X\",
+                            \"latitude\": -6.123,
+                            \"longitude\": 106.456,
+                            \"weight\": 500.0
+                        }
+                    ]
+                }
+            ],
+            \"unassigned_orders\": [
+                {
+                    \"delivery_order_id\": 6,
+                    \"do_number\": \"DO-202607-0002\",
+                    \"reason\": \"Reason why it could not be assigned (e.g., all vehicle capacities exceeded)\"
+                }
+            ]
+        }
+        
+        Return pure JSON without any markdown formatting or backticks.
+        ";
+
+        if ($this->driver === 'ollama') {
+            return $this->callOllama($prompt, true);
+        }
+        if ($this->driver === 'openrouter') {
+            return $this->callOpenRouter($prompt, null, null, true);
+        }
+
+        try {
+            $response = Http::timeout(120)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'response_mime_type' => 'application/json',
+                ]
+            ]);
+
+            return $this->parseResponse($response);
+        } catch (\Exception $e) {
+            Log::error('AI VRP Optimization Error: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Analyze dynamic pricing for steel products using Gemini AI.
+     */
+    public function analyzeDynamicPricing(array $products, array $params): ?array
+    {
+        $this->ensureConfigured();
+
+        $prompt = "You are a professional industrial steel pricing analyst and AI financial manager for USICS (United Steel Intelligence Control System).
+        
+        Your task is to calculate and suggest optimal selling prices for a list of steel products based on cost data, market parameters, and pricing strategies.
+        
+        PRICING PARAMETERS:
+        - LME Steel Price: {$params['lme_price']} USD / Metric Ton
+        - USD to IDR Exchange Rate: {$params['exchange_rate']} IDR
+        - Target Margin: {$params['target_margin']}%
+        - Processing/Slitting Fee: {$params['processing_fee']} IDR / kg
+        - Scrap Recovery Factor: {$params['scrap_recovery']}%
+        
+        PRODUCTS TO ANALYZE:
+        " . json_encode($products, JSON_PRETTY_PRINT) . "
+        
+        FORMULA/LOGIC INSTRUCTIONS:
+        1. Calculate the raw material LME cost per kg in IDR: (LME Price * Exchange Rate) / 1000.
+        2. Combine the product's base cost_price with the raw material price change relative to typical base costs. Or calculate from scratch:
+           - Raw Material Cost = (LME Price * Exchange Rate) / 1000.
+           - Processing Cost = Use the product's specific `processing_fee` if it is present and not null, otherwise fallback to the global Processing/Slitting Fee parameter.
+           - Scrap Recovery Factor = Use the product's specific `scrap_recovery` if it is present and not null, otherwise fallback to the global Scrap Recovery Factor parameter.
+           - Scrap Recovery Discount = Raw Material Cost * (Scrap Recovery Factor / 100) * 0.4 (assuming scrap value is 40% of prime steel value).
+           - Suggested Cost Price = Raw Material Cost + Processing Cost - Scrap Recovery Discount.
+           - Use the Suggested Cost Price or the product's actual cost_price (whichever is higher/more appropriate) as the base suggested cost.
+        3. Recommended Selling Price = Suggested Cost Price / (1 - (Target Margin / 100)).
+        4. Min Selling Price = Suggested Cost Price / (1 - ((Target Margin - 3) / 100)).
+        5. Max Selling Price = Suggested Cost Price / (1 - ((Target Margin + 4) / 100)).
+        6. Determine the Market Trend (bullish, stable, bearish) based on LME steel price level (e.g. above 600 USD/ton is bullish, 500-600 is stable, below 500 is bearish).
+        7. Provide a detailed markdown strategic recommendation report explaining market factors, inventory holding tips, and customer pricing policies.
+        
+        Return the response as a JSON object in this exact format:
+        {
+            \"market_trend\": \"bullish|stable|bearish\",
+            \"market_trend_explanation\": \"Short explanation of trend.\",
+            \"pricing_suggestions\": [
+                {
+                    \"sku\": \"RM-STEEL-001\",
+                    \"suggested_cost_price\": 16500,
+                    \"min_selling_price\": 18000,
+                    \"recommended_selling_price\": 19500,
+                    \"max_selling_price\": 21000,
+                    \"margin_percentage\": 15.4,
+                    \"rationale\": \"Brief rationale explaining cost breakdown and why this price is recommended.\"
+                }
+            ],
+            \"strategic_recommendations\": \"### Analisis Pasar & Strategi Harga\\n\\n1. **Kondisi Pasar:** ...\\n2. **Rekomendasi Inventory:** ...\"
+        }
+        
+        Return pure JSON without any markdown formatting or backticks.
+        ";
+
+        if ($this->driver === 'ollama') {
+            return $this->callOllama($prompt, true);
+        }
+        if ($this->driver === 'openrouter') {
+            return $this->callOpenRouter($prompt, null, null, true);
+        }
+
+        try {
+            $response = Http::timeout(120)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'response_mime_type' => 'application/json',
+                ]
+            ]);
+
+            return $this->parseResponse($response);
+        } catch (\Exception $e) {
+            Log::error('AI Pricing Intelligence Error: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Run AI Predictive Maintenance Analysis using Gemini AI.
+     */
+    public function analyzePredictiveMaintenance(array $machines, array $spareparts, array $breakdowns): ?array
+    {
+        $this->ensureConfigured();
+
+        $prompt = "You are a professional industrial plant engineer and AI Predictive Maintenance Consultant.
+        
+        Your goal is to analyze the telemetry, health scores, breakdown history, and sparepart stocks of a steel pipe manufacturing plant, identify risks, and recommend proactive maintenance actions and sparepart purchases.
+        
+        MACHINES DATA:
+        " . json_encode($machines, JSON_PRETTY_PRINT) . "
+        
+        CRITICAL SPAREPARTS:
+        " . json_encode($spareparts, JSON_PRETTY_PRINT) . "
+        
+        RECENT BREAKDOWNS:
+        " . json_encode($breakdowns, JSON_PRETTY_PRINT) . "
+        
+        INSTRUCTIONS:
+        1. Diagnose the machines with low health scores or imminent predicted failure dates. Provide a clear engineering diagnosis and recommended preventive maintenance actions for each.
+        2. Identify critical sparepart shortages. Determine which parts should be ordered immediately to support upcoming preventive maintenance or mitigate breakdown risks.
+        3. Recommend specific purchase quantities for each sparepart.
+        4. Return the results as a JSON object in this exact format:
+        {
+            \"critical_machines\": [
+                {
+                    \"machine_id\": 1,
+                    \"machine_name\": \"Slitter Machine A\",
+                    \"machine_code\": \"SLT-A\",
+                    \"health_score\": 65,
+                    \"diagnosis\": \"Frequent breakdown logs indicate alignment issues or high wear rate on the blades.\",
+                    \"recommended_actions\": \"Schedule calibration check, inspect main arbor alignment, and prepare replacement blades.\",
+                    \"priority\": \"High\"
+                }
+            ],
+            \"sparepart_recommendations\": [
+                {
+                    \"sparepart_id\": 3,
+                    \"part_number\": \"SP-SLT-BLADE-01\",
+                    \"name\": \"Slitter Blade 300mm\",
+                    \"recommended_qty\": 4,
+                    \"priority\": \"High\",
+                    \"justification\": \"Required for upcoming scheduled calibration and blade replacement on Slitter Machine A due to high wear rate.\"
+                }
+            ],
+            \"general_insights\": \"Summary of plant health and suggestions for improving overall equipment effectiveness (OEE).\"
+        }
+        
+        Return pure JSON without any markdown formatting or backticks.
+        ";
+
+        if ($this->driver === 'ollama') {
+            return $this->callOllama($prompt, true);
+        }
+        if ($this->driver === 'openrouter') {
+            return $this->callOpenRouter($prompt, null, null, true);
+        }
+
+        try {
+            $response = Http::timeout(120)->post("{$this->baseUrl}?key={$this->apiKey}", [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'response_mime_type' => 'application/json',
+                ]
+            ]);
+
+            return $this->parseResponse($response);
+        } catch (\Exception $e) {
+            Log::error('AI Predictive Maintenance Error: ' . $e->getMessage());
         }
 
         return null;

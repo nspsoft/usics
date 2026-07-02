@@ -32,7 +32,8 @@ Mengelola seluruh alur pesanan dari klien hingga penagihan dan pelacakan barang.
 *   **Customers (Pelanggan)**: Database master list nama pembeli/perusahaan.
     *   **Cara Input:** Buka menu > Tambah Baru > Masukkan profil lengkap perusahaan, alamat NPWP, titik pengiriman, kontak perwakilan (PIC Client).
 *   **Quotations (Surat Penawaran)**: Penawaran harga barang ke pelanggan.
-    *   **Cara Input:** Buat Quotation baru > Pilih Customer > Isi daftar produk dan harga yang ditawarkan beserta Diskon/PPn. > Ajukan untuk minta persetujuan (Approval) Atasan.
+    *   **Cara Input:** Buat Quotation baru > Pilih Customer > Isi daftar produk. Klik tombol Sparkle (rekomendasi AI) di samping kolom harga untuk mendapatkan masukan harga optimal berdasarkan analitik Gemini AI sebelum penawaran resmi dirilis.
+*   **Pricing Intelligence**: Dasbor simulasi harga dinamis produk baja. Masukkan harga LME baja, kurs USD, margin target, biaya pemrosesan, dan recovery scrap untuk menyimulasikan margin keuntungan yang presisi per produk. Daftar produk yang dianalisis ditarik otomatis dari master barang yang berstatus **Active** dan dicentang opsi **Is Sold** di modul Inventory.
 *   **Sales Orders (SO)**: Pesanan resmi yang masuk. Jika *Quotation* di-ACC atau *Deal*, bisa diconvert menjadi *Sales Order*, atau Anda bisa membuat SO Manual.
 *   **Delivery Orders (DO)**: Surat Jalan keluarnya barang ke pelanggan.
     *   **Cara Input:** Buka dokumen SO yang akan dikirim > Klik *Create DO*. Sistem hanya akan mengizinkan pembuatan DO jika barang di gudang mencukupi (*Stock Ter-Reservasi*).
@@ -42,7 +43,8 @@ Mengelola seluruh alur pesanan dari klien hingga penagihan dan pelacakan barang.
 *   **SO & DO Items Report**: Laporan dalam format tabel untuk meng-export (Unduh Excel) daftar barang yang dipesan dan dikirim (Pivot Tabel).
 *   **Information**: Halaman papan buletin informasi terbaru dari departemen penjualan.
 *   **PO Tracking**: Membantu staf melacak sejauh mana Purchase Order dari pelanggan sedang dikerjakan pabrik (Misal: Apakah masih proses produksi atau siap kirim?).
-*   **AI PO Extractor**: FItur AI cerdas. Unggah PDF pesanan asli dari HP/Customer, dan AI akan otomatis membaca nominal harga & jenis barang ke dalam rancangan Sales Order di sistem (tanpa ketik manual).
+*   **AI PO Extractor**: Fitur AI cerdas. Unggah PDF pesanan asli dari HP/Customer, dan AI akan otomatis membaca nominal harga & jenis barang ke dalam rancangan Sales Order di sistem (tanpa ketik manual).
+*   **WhatsApp AI Sales-to-Production Orchestrator**: Integrasi bot WA cerdas. Sales representative dapat mengirim file PDF PO ke WhatsApp Gateway untuk diekstraksi menjadi draf SO. Setelah membalas `CONFIRM`, sistem akan mengubah status menjadi `confirmed` dan otomatis mengaudit rantai pasok (FG, WIP, BOM, RM) serta menerbitkan draf Work Order (WO) dan Purchase Request (PR) jika stok kurang.
 
 ## 2. MODUL CRM (CUSTOMER RELATIONSHIP MANAGEMENT)
 Sarana pendekatan pasar, kampanye komunikasi, dan prospek harian.
@@ -87,11 +89,13 @@ Memantau posisi stok bahan, retensi masa berlaku, pemindahan lokasi.
     *   **Cara Input:** Masukkan Barcode/SKU, Nama, Harga Rata-Rata Pokok, Batas Maksimal / Batas Minimal Stok, Satuan dasar.
 *   **Unit Management**: Setting perhitungan UOM (Unit of Measurement). (Contoh mengatur 1 Dus = 12 Pcs, 1 Box = 24 Pcs).
 *   **Current Stock**: Layar *Real-time* jumlah ketersediaan stok fisik per produk per gudang. Jika stok "Minus" atau Sentuh Minimal, muncul indikator URGENT.
-*   **Warehouses**: Pendaftaran denah gudang dan klasifikasi lokasinya (Rak, Baris, Kolom) ke dalam sistem ERP. Mengelola batasan kapasitas tamping gudang.
+*   **Warehouses & Locations**: Pendaftaran denah gudang dan klasifikasi lokasinya (Rak, Baris, Kolom) ke dalam sistem ERP. Terintegrasi dengan tata letak visual 2D.
+*   **Crane RFID & Auto-Putaway**: Layar kendali cockpit overhead crane logistik yang mendeteksi pemindahan kumparan baja (*steel coils*) melalui sensor RFID secara otomatis. Karyawan dapat memindahkan koil ke slot rak secara visual, sistem akan otomatis melakukan *Auto-Putaway* dan mencatatkan mutasi kartu stok secara real-time.
 *   **Stock Movements & Transfers**: Formulir pindah barang.
     *   **Cara Input:** Ingin memindah barang Rak A ke Rak B atau Gudang 1 ke Gudang 2. Input kuantitas dan lokasi pindah agar pencatatan rak selalu terkontrol akurat.
-*   **Stock Opname**: Audit Hitung Fisik Gudang secara Periodik (Akhir Bulan/Tahun).
+*   **Stock Opname & Live HUD**: Audit Hitung Fisik Gudang secara Periodik (Akhir Bulan/Tahun).
     *   **Cara Input:** Sistem mem-freeze nilai buku, karyawan menghitung jumlah di lapangan. Jika "Hasil Fisik" tidak sama dengan "Buku", sistem akan menciptakan Jurnal Penyesuaian (*Adjustment*) surplus/defisit otomatis.
+    *   **Live HUD & AI Advisor:** Admin dapat mengklik ikon **"Buka Monitor & Simulasi Scan HUD"** di baris antrean dokumen opname. Layar HUD interaktif memproyeksikan visualisasi rak gudang 2D (Merah/Kuning/Hijau) yang diperbarui seketika oleh auditor di lapangan melalui simulasi pemindaian barcode / RFID. Fitur **AI Discrepancy Advisor** menganalisis deviasi stok fisik dan menyarankan pencarian barang tertukar secara cerdas.
 *   **Inventory Aging**: Laporan umur membusuknya stok di gudang (*Dead Stock/Slow Moving*). Barang yang tak bergerak lebih dari 90 Hari bisa dideteksi untuk dikampanyekan diskon oleh marketing.
 
 ## 5. MODUL MANUFACTURING (PABRIKASI)
@@ -137,8 +141,10 @@ Optimasi antrian kirim truk agar hemat solar serta *tracking* armada.
 **PIC Utama:** Logistics Planner, Delivery Dispatcher, Supir.
 
 *   **Logistics Hub**: Dasbor utilisasi truk yang berjalan keluar di jalan raya hari ini dan estimasi barang terkumpul.
-*   **Loading Queue**: Monitoring proses *Load/Unload* barang forklift pabrik per-nopol kendaraan. (*Queue Time / Dock Time Management*).
-*   **Delivery Planning**: Pengelompokkan beberapa *Delivery Order (DO)* beda pelanggan menjadi 1 Jadwal Keberangkatan jika arahnya segaris rute. (*Routing Consolidation*).
+*   **Loading Queue**: Monitoring proses *Load/Unload* barang forklift pabrik per-nopol kendaraan. (*Queue Time / Dock Time Management*). Terintegrasi dengan fitur **Panggil Supir** untuk mengarahkan armada ke Loading Bay.
+*   **TV Display Antrean & Suara Panggilan**: Layar monitor TV besar logistik dengan visual futuristik HUD gelap dan fitur Text-to-Speech (TTS) bahasa Indonesia untuk memanggil supir agar segera memarkirkan truk ke Bay yang ditentukan.
+*   **Simulator RFID Checkpoint**: Modul simulasi webhook perangkat RFID scanner untuk mencatat alur masuk pos satpam (*Gate In*), penimbangan timbangan kosong (*Weighbridge Tare*), pemuatan di dermaga (*Bay Loading*), penimbangan timbangan isi (*Weighbridge Gross*), dan keluar pos satpam (*Gate Out*).
+*   **Delivery Planning & AI VRP Route Optimization**: Pengelompokkan beberapa *Delivery Order (DO)* beda pelanggan menjadi 1 Jadwal Keberangkatan jika arahnya segaris rute. Terintegrasi dengan modul AI VRP untuk rekomendasi rute distribusi terbaik.
 *   **Dispatch**: 
     - Penugasan nama Kendaraan & Nama Supir terhadap *Plan* yang telah dibuat. Status bisa diubah dari `Dispatched` (Berangkat) lalu diklik ke jalan `In-Transit`, hingga `Delivered` ketika Supir serah terima Tanda Tangan.
 *   **Vehicle Fleet**: Database inventaris transportasi beroda milik kantor. Digunakan untuk mengingat pajak uji *KEIR*, STNK Tahunan Kendaraan Bermotor, serta log riwayat kilometer penggantian Ban.

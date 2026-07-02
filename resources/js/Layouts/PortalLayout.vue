@@ -123,10 +123,10 @@ onMounted(() => {
                 <div class="flex items-center justify-between mb-8">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.3)] shrink-0 overflow-hidden">
-                            <img :src="$page.props.company?.logo || '/images/jicos.png'" alt="Logo" class="w-full h-full object-cover" />
+                            <img :src="$page.props.company?.logo || '/images/usics.png'" alt="Logo" class="w-full h-full object-cover" />
                         </div>
                         <div class="flex flex-col">
-                            <span class="text-2xl font-black italic tracking-tighter text-slate-900 dark:text-white">JICOS PORTAL</span>
+                            <span class="text-2xl font-black italic tracking-tighter text-slate-900 dark:text-white">USICS PORTAL</span>
                             <span class="text-[8px] font-bold text-indigo-500 uppercase tracking-[0.2em] -mt-1 font-mono">Supplier Gateway</span>
                         </div>
                     </div>
@@ -158,14 +158,14 @@ onMounted(() => {
                 :class="isSidebarCollapsed ? 'py-4 h-[73px]' : 'py-8 h-[120px]'"
             >
                 <div v-if="isSidebarCollapsed" class="w-10 h-10 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.3)] shrink-0 overflow-hidden cursor-pointer" @click="toggleSidebar">
-                     <img :src="$page.props.company?.logo || '/images/jicos.png'" alt="Logo" class="w-full h-full object-cover" />
+                     <img :src="$page.props.company?.logo || '/images/usics.png'" alt="Logo" class="w-full h-full object-cover" />
                 </div>
                 <div v-else class="flex flex-col items-center gap-3 fade-in">
                     <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.7)] hover:border-cyan-500/50 overflow-hidden group">
-                        <img :src="$page.props.company?.logo || '/images/jicos.png'" alt="Logo" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <img :src="$page.props.company?.logo || '/images/usics.png'" alt="Logo" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     </div>
                     <div class="text-center px-4">
-                        <span class="text-2xl font-black italic tracking-[0.05em] text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.3)] leading-none block">JICOS PORTAL</span>
+                        <span class="text-2xl font-black italic tracking-[0.05em] text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.3)] leading-none block">USICS PORTAL</span>
                         <div class="h-1 w-12 bg-indigo-500 mx-auto mt-2 rounded-full shadow-[0_0_8px_#6366f1]"></div>
                     </div>
                 </div>

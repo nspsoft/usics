@@ -94,12 +94,12 @@ class HandleInertiaRequests extends Middleware
             ],
             'company' => $company
                 ? [
-                    'name' => $company->name ?? 'JICOS ERP',
-                    'logo' => $company->logo ?? '/images/jicos.png',
+                    'name' => $company->name ?? 'USICS ERP',
+                    'logo' => $company->logo ?? '/images/usics.png',
                 ]
                 : [
-                    'name' => 'JICOS ERP',
-                    'logo' => '/images/jicos.png',
+                    'name' => 'USICS ERP',
+                    'logo' => '/images/usics.png',
                 ],
             'csrf_token' => csrf_token(),
             'settings' => [

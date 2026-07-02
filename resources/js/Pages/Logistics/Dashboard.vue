@@ -215,7 +215,7 @@ const getDoStatusClass = (status) => {
                                 </h3>
                             </div>
                              <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-emerald-500 shadow-[0_0_10px_#10b981]" style="width: 75%"></div>
+                                <div class="h-full bg-emerald-500 shadow-[0_0_10px_#10b981] transition-all duration-1000" :style="{ width: stats.available_vehicles > 0 ? Math.max(Math.min((stats.available_vehicles / 50) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>

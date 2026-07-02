@@ -38,7 +38,7 @@ const menuItems = [
 const content = {
     overview: {
         title: 'Executive Summary',
-        subtitle: 'JICOS ERP Implementation for PT JIDOKA',
+        subtitle: 'USICS ERP Implementation for PT JIDOKA',
         body: `
             <div class="space-y-8 animate-fade-in-up">
                 <!-- Hero Section / Vision -->
@@ -400,7 +400,7 @@ const content = {
     },
     bpd: {
         title: 'Business Process Document',
-        subtitle: 'As-Is (Manual) vs To-Be (Digital JICOS)',
+        subtitle: 'As-Is (Manual) vs To-Be (Digital USICS)',
         body: `
             <div class="space-y-8 animate-fade-in-up">
                 
@@ -412,7 +412,7 @@ const content = {
                             <svg class="w-6 h-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
                             Core Process Transformation
                         </h3>
-                        <p class="text-slate-400 text-sm max-w-2xl">Perubahan radikal dari eksekusi manual yang bertumpu pada operator menjadi eksekusi digital yang diotomatiskan (Automated Trigger) melalui standarisasi alur kerja JICOS ERP.</p>
+                        <p class="text-slate-400 text-sm max-w-2xl">Perubahan radikal dari eksekusi manual yang bertumpu pada operator menjadi eksekusi digital yang diotomatiskan (Automated Trigger) melalui standarisasi alur kerja USICS ERP.</p>
                     </div>
                 </div>
 
@@ -481,7 +481,7 @@ const content = {
                             </div>
                             <div>
                                 <h4 class="text-xl font-black text-emerald-400 tracking-tight">TO-BE Model</h4>
-                                <span class="text-xs font-semibold text-emerald-500 uppercase tracking-widest">JICOS Digital Ecosystem</span>
+                                <span class="text-xs font-semibold text-emerald-500 uppercase tracking-widest">USICS Digital Ecosystem</span>
                             </div>
                         </div>
 
@@ -639,7 +639,7 @@ const content = {
                         <!-- Mini Interactive Calculator Mockup -->
                         <div class="bg-slate-900 border border-slate-700/50 rounded-xl p-5 relative overflow-hidden">
                             <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-900/20 blur-xl rounded-full"></div>
-                            <h5 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Simulasi Perhitungan Validasi (Kode: JICOS-FRD-01)</h5>
+                            <h5 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Simulasi Perhitungan Validasi (Kode: USICS-FRD-01)</h5>
                             
                             <div class="space-y-2 font-mono text-sm relative z-10">
                                 <div class="flex justify-between border-b border-slate-800 pb-2">
@@ -842,7 +842,7 @@ const content = {
                             <svg class="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                             Role-Based Access Control (RBAC)
                         </h3>
-                        <p class="text-slate-400 text-sm max-w-2xl">Penetapan matriks hak guna otoritas setiap departemen di dalam JICOS ERP untuk memastikan prinsip <strong class="text-white">Least Privilege</strong> dan menghindari kebocoran maupun manipulasi data lintas sektoral.</p>
+                        <p class="text-slate-400 text-sm max-w-2xl">Penetapan matriks hak guna otoritas setiap departemen di dalam USICS ERP untuk memastikan prinsip <strong class="text-white">Least Privilege</strong> dan menghindari kebocoran maupun manipulasi data lintas sektoral.</p>
                     </div>
                 </div>
 
@@ -1020,7 +1020,7 @@ const content = {
         body: `
             <div class="space-y-8 animate-fade-in-up">
                 <p class="text-slate-300 leading-relaxed max-w-3xl">
-                    Arsitektur JICOS dirancang untuk dapat berkomunikasi secara *seamless* dengan berbagai ekosistem eksternal maupun internal perusahaan melalui API, Webhook, dan protokol koneksi langsung perangkat keras.
+                    Arsitektur USICS dirancang untuk dapat berkomunikasi secara *seamless* dengan berbagai ekosistem eksternal maupun internal perusahaan melalui API, Webhook, dan protokol koneksi langsung perangkat keras.
                 </p>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1204,7 +1204,7 @@ const content = {
                         
                         <h3 class="text-3xl font-black text-white mb-4 tracking-tight">Dedicated UAT Workspace</h3>
                         <p class="text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-                            Berdasarkan kompleksitas arsitektur JICOS, <strong>User Acceptance Testing (UAT)</strong> memiliki ratusan skenario end-to-end yang harus dilacak status eksekusinya (Passed/Failed). Kami telah menyediakan modul khusus (Dedicated) yang lebih interaktif alih-alih merangkumnya di dokumen statis ini.
+                            Berdasarkan kompleksitas arsitektur USICS, <strong>User Acceptance Testing (UAT)</strong> memiliki ratusan skenario end-to-end yang harus dilacak status eksekusinya (Passed/Failed). Kami telah menyediakan modul khusus (Dedicated) yang lebih interaktif alih-alih merangkumnya di dokumen statis ini.
                         </p>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mb-10 text-left">
@@ -1289,7 +1289,7 @@ const renderMermaid = async () => {
             <aside class="w-72 bg-[#0a0a1a] border-r border-slate-800 flex flex-col z-20">
                 <div class="p-6 border-b border-slate-800">
                     <h2 class="text-xl font-black text-white tracking-tight">BLUEPRINT<span class="text-cyan-500">.HUB</span></h2>
-                    <p class="text-xs text-slate-500 mt-1">Strategic Documentation JICOS</p>
+                    <p class="text-xs text-slate-500 mt-1">Strategic Documentation USICS</p>
                 </div>
                 <nav class="flex-1 overflow-y-auto p-4 space-y-1">
                     <button 

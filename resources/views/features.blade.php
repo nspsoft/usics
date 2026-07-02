@@ -157,7 +157,7 @@ $features = [
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Features - {{ config('app.name', 'JICOS ERP') }}</title>
+    <title>Features - {{ config('app.name', 'USICS ERP') }}</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -248,7 +248,7 @@ $features = [
                     <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
                         <span class="text-white font-bold text-lg">J</span>
                     </div>
-                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">JICOS ERP</span>
+                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">USICS ERP</span>
                 </div>
                 
                 <!-- Desktop Menu -->
@@ -287,7 +287,7 @@ $features = [
                     <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600">Modern Manufacturing</span>
                 </h1>
                 <p class="text-lg text-slate-400 mb-10 leading-relaxed max-w-2xl mx-auto">
-                    A comprehensive, modular ERP designed to streamline your entire production lifecycle. From raw materials to finished goods, JICOS brings clarity to chaos.
+                    A comprehensive, modular ERP designed to streamline your entire production lifecycle. From raw materials to finished goods, USICS brings clarity to chaos.
                 </p>
                 <div class="flex justify-center gap-4">
                      <a href="#modules" class="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-cyan-500/30 transition-all transform hover:-translate-y-1">
@@ -358,7 +358,7 @@ $features = [
             <div class="mt-20 text-center glass-card rounded-3xl p-12 relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-r from-cyan-600/20 to-blue-600/20 pointer-events-none"></div>
                 <h2 class="text-3xl font-bold text-white mb-4 relative z-10">Ready to transform your factory?</h2>
-                <p class="text-slate-400 mb-8 max-w-xl mx-auto relative z-10">Join forward-thinking manufacturers who have optimized their production with JICOS ERP.</p>
+                <p class="text-slate-400 mb-8 max-w-xl mx-auto relative z-10">Join forward-thinking manufacturers who have optimized their production with USICS ERP.</p>
                 <div class="flex justify-center gap-4 relative z-10">
                     <a href="{{ route('register') }}" class="px-8 py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-cyan-50 transition-colors">
                         Start Free Trial
@@ -371,7 +371,7 @@ $features = [
             
             <!-- Footer -->
             <div class="mt-12 text-center border-t border-slate-800 pt-8">
-                <p class="text-slate-500 text-sm">&copy; {{ date('Y') }} JICOS ERP. All rights reserved.</p>
+                <p class="text-slate-500 text-sm">&copy; {{ date('Y') }} USICS ERP. All rights reserved.</p>
             </div>
         </div>
     </div>

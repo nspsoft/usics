@@ -112,7 +112,7 @@ class WhatsappSettingController extends Controller
             $provider = AppSetting::get('whatsapp_provider', 'fonnte');
         }
 
-        $testMessage = "🔔 *JICOS ERP - Test Connection (" . ($module === 'purchasing' ? 'Purchasing Bot' : 'Sales Bot') . ")*\n\n";
+        $testMessage = "🔔 *USICS ERP - Test Connection (" . ($module === 'purchasing' ? 'Purchasing Bot' : 'Sales Bot') . ")*\n\n";
         $testMessage .= "✅ Koneksi WhatsApp Bot berhasil!\n\n";
         $testMessage .= "📱 Provider: " . strtoupper($provider) . "\n";
         $testMessage .= "⏰ Waktu: " . now()->format('d M Y H:i:s') . "\n\n";

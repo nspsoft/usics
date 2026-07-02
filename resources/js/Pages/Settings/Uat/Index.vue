@@ -104,7 +104,7 @@ const progressColor = computed(() => {
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 class="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Pengujian Sistem (UAT)</h1>
-                    <p class="text-sm text-slate-500">Pantau dan verifikasi kesiapan fitur sistem JICOS ERP.</p>
+                    <p class="text-sm text-slate-500">Pantau dan verifikasi kesiapan fitur sistem USICS ERP.</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <Link 

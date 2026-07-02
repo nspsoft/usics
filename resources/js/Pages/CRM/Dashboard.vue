@@ -259,7 +259,7 @@ const formatNumber = (value) => new Intl.NumberFormat('id-ID').format(value);
                                 </h3>
                             </div>
                             <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-cyan-500 w-[65%] shadow-[0_0_10px_#22d3ee]"></div>
+                                <div class="h-full bg-cyan-500 shadow-[0_0_10px_#22d3ee] transition-all duration-1000" :style="{ width: props.kpi.active_pipelines > 0 ? Math.max(Math.min((props.kpi.active_pipelines / 100) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>

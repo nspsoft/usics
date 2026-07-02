@@ -22,7 +22,7 @@ class FaviconService
         }
 
         if (!$sourcePath) {
-            $fallback = public_path('images/jicos.png');
+            $fallback = public_path('images/usics.png');
             $sourcePath = is_file($fallback) ? $fallback : null;
         }
 

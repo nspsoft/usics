@@ -792,4 +792,79 @@ class StockOpnameController extends Controller
 
         return back()->with('success', 'Dokumen berhasil disetujui sebagai Manager.');
     }
+
+    public function hudIndex(StockOpname $opname): Response
+    {
+        $opname->load([
+            'warehouse.locations' => function ($q) {
+                $q->where('is_active', true);
+            },
+            'items.product'
+        ]);
+
+        // Get all products to populate the scanner select box
+        $products = Product::active()->orderBy('name')->get(['id', 'sku', 'name', 'cost_price', 'selling_price']);
+
+        return Inertia::render('Inventory/Opname/Hud', [
+            'opname' => $opname,
+            'products' => $products,
+        ]);
+    }
+
+    public function scanItem(StockOpname $opname, Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'qty_physic' => 'required|numeric|min:0',
+            'notes' => 'nullable|string|max:255',
+        ]);
+
+        $productId = $request->product_id;
+        $qtyPhysic = (float) $request->qty_physic;
+
+        // Find existing opname item or calculate system stock quantity
+        $item = StockOpnameItem::where('stock_opname_id', $opname->id)
+            ->where('product_id', $productId)
+            ->first();
+
+        if ($item) {
+            $qtySystem = $item->qty_system;
+            $qtyDifference = $qtyPhysic - $qtySystem;
+            $item->update([
+                'qty_physic' => $qtyPhysic,
+                'qty_difference' => $qtyDifference,
+                'notes' => $request->notes ?? $item->notes
+            ]);
+        } else {
+            // Get current stock count in the warehouse
+            $qtySystem = (float) ProductStock::where([
+                'product_id' => $productId,
+                'warehouse_id' => $opname->warehouse_id
+            ])->sum('qty_on_hand');
+
+            $qtyDifference = $qtyPhysic - $qtySystem;
+
+            $item = StockOpnameItem::create([
+                'stock_opname_id' => $opname->id,
+                'product_id' => $productId,
+                'qty_system' => $qtySystem,
+                'qty_physic' => $qtyPhysic,
+                'qty_difference' => $qtyDifference,
+                'notes' => $request->notes
+            ]);
+        }
+
+        // Save scan audit log
+        $product = Product::find($productId);
+        \App\Models\RfidScanLog::create([
+            'delivery_order_id' => null,
+            'tag_id' => "RFID-OPNAME-" . str_replace(' ', '', strtoupper($product->sku)),
+            'reader_id' => "READER-OPNAME-01",
+            'simulated_weight' => $product->cost_price, 
+            'status' => $qtyDifference == 0 ? 'success' : 'warning',
+            'message' => "Opname Pemindaian: SKU {$product->sku} ({$product->name}). Fisik: {$qtyPhysic} Pcs | Buku: {$qtySystem} Pcs. Selisih: {$qtyDifference} Pcs.",
+        ]);
+
+        return back()->with('success', "Pemindaian SKU {$product->sku} berhasil disimpan.");
+    }
 }

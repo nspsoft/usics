@@ -13,7 +13,7 @@ class JidokaDetailedSeeder extends Seeder
         $managerId = 1; // Administrator
 
         // 1. Get or Create the Main Project
-        $projectName = 'JICOS ERP IMPLEMENTATION';
+        $projectName = 'USICS ERP IMPLEMENTATION';
         $project = DB::table('projects')->where('name', $projectName)->first();
         
         if ($project) {
@@ -23,7 +23,7 @@ class JidokaDetailedSeeder extends Seeder
         } else {
             $projectId = DB::table('projects')->insertGetId([
                 'name' => $projectName,
-                'description' => 'Implementasi JICOS ERP untuk Solusi Pengemasan Presisi Tinggi PT JIDOKA.',
+                'description' => 'Implementasi USICS ERP untuk Solusi Pengemasan Presisi Tinggi PT JIDOKA.',
                 'start_date' => '2026-01-23',
                 'end_date' => '2026-03-01',
                 'status' => 'active',
@@ -79,7 +79,7 @@ class JidokaDetailedSeeder extends Seeder
                 'name' => 'PHASE 5: GO-LIVE & SUPPORT',
                 'start' => '2026-02-28', 'end' => '2026-03-05', 'status' => 'todo', 'progress' => 0,
                 'tasks' => [
-                    ['name' => 'System Cut-Over', 'desc' => 'Transisi dari Excel ke JICOS.', 'progress' => 0, 'status' => 'todo'],
+                    ['name' => 'System Cut-Over', 'desc' => 'Transisi dari Excel ke USICS.', 'progress' => 0, 'status' => 'todo'],
                     ['name' => 'OFFICIAL GO-LIVE', 'desc' => 'Pendampingan penuh operasional.', 'progress' => 0, 'status' => 'todo'],
                     ['name' => 'First Week Performance Audit', 'desc' => 'Audit akurasi data & stok.', 'progress' => 0, 'status' => 'todo'],
                 ]

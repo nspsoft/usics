@@ -307,7 +307,7 @@
 
     <!-- Footer -->
     <div class="doc-footer">
-        Dokumen ini dicetak otomatis oleh sistem ERP JICOS pada {{ $printDate }} — PT JIDOKA RESULT INDONESIA — Confidential
+        Dokumen ini dicetak otomatis oleh sistem ERP USICS pada {{ $printDate }} — PT JIDOKA RESULT INDONESIA — Confidential
     </div>
 </body>
 </html>

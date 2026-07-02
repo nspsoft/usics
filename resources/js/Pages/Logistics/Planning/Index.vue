@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatNumber, formatDate } from '@/helpers';
 import { 
@@ -14,7 +14,8 @@ import {
     XCircleIcon,
     ChevronDownIcon,
     ChevronUpIcon,
-    Square3Stack3DIcon
+    Square3Stack3DIcon,
+    SparklesIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -91,8 +92,18 @@ const getStatusColor = (status) => {
     <Head title="Delivery Planning" />
 
     <AppLayout title="Delivery Planning">
-        <div class="mb-8">
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest leading-none">Perencanaan Pengiriman Barang</p>
+        <div class="flex items-center justify-between mb-8 gap-4 flex-wrap">
+            <div>
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white leading-none">Delivery Planning</h2>
+                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest leading-none">Perencanaan Pengiriman Barang</p>
+            </div>
+            <Link
+                href="/logistics/planning/optimize"
+                class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-500 active:scale-95"
+            >
+                <SparklesIcon class="h-4 w-4 text-indigo-200 animate-pulse" />
+                <span>AI VRP Optimizer</span>
+            </Link>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

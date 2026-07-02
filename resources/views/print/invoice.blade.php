@@ -187,7 +187,7 @@
                         Jl. Jababeka II Blok C No. 19 L<br>
                         Pasir Gombong, Cikarang Utara, Bekasi 17530 Jawa Barat<br>
                         Telp : +62 21 89383915, Fax. : +62 21 89383915<br>
-                        e_mail : accounting@jidoka.co.id
+                        e_mail : accounting@usc-indonesia.co.id
                     </div>
                 </td>
                 <td width="40%" style="text-align: right; vertical-align: top;">

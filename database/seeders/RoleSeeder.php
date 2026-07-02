@@ -29,13 +29,13 @@ class RoleSeeder extends Seeder
                 'Suppliers', 'Purchase Requests', 'Purchase Orders', 'Goods Receipts', 'Purchase Invoices', 'Purchase Returns'
             ],
             'Inventory' => [
-                'Categories', 'Products', 'Current Stock', 'Warehouses', 'Stock Movements', 'Stock Opname'
+                'Categories', 'Products', 'Current Stock', 'Warehouses', 'Stock Movements', 'Stock Opname', 'RFID Simulator', 'Crane Control'
             ],
             'Manufacturing' => [
                 'Bill of Materials', 'Work Orders', 'Production', 'Input Output', 'Shift Management', 'Machine Management', 'Subcontract Orders'
             ],
             'Maintenance' => [
-                'Schedule', 'Breakdown', 'Spareparts'
+                'Schedule', 'Breakdown', 'Spareparts', 'Predictive Advisor'
             ],
             'QC' => [
                 'Incoming Inspection', 'In-Process QC', 'Quality Checklists'
@@ -174,8 +174,38 @@ class RoleSeeder extends Seeder
             }
         }
 
+        // Specifically assign new permissions to existing roles if they already exist
+        $maintenanceManager = Role::where('name', 'Maintenance Manager')->first();
+        if ($maintenanceManager) {
+            $maintenanceManager->givePermissionTo(
+                Permission::where('name', 'like', 'maintenance.predictive_advisor.%')->get()
+            );
+        }
+        $warehouseManager = Role::where('name', 'Warehouse Manager')->first();
+        if ($warehouseManager) {
+            $warehouseManager->givePermissionTo([
+                'inventory.rfid_simulator.view',
+                'inventory.rfid_simulator.create',
+                'inventory.rfid_simulator.edit',
+                'inventory.rfid_simulator.delete',
+                'inventory.crane_control.view',
+                'inventory.crane_control.create',
+                'inventory.crane_control.edit',
+                'inventory.crane_control.delete',
+            ]);
+        }
+        $logisticsManager = Role::where('name', 'Logistics Manager')->first();
+        if ($logisticsManager) {
+            $logisticsManager->givePermissionTo([
+                'inventory.rfid_simulator.view',
+                'inventory.rfid_simulator.create',
+                'inventory.rfid_simulator.edit',
+                'inventory.rfid_simulator.delete',
+            ]);
+        }
+
         // Assign Super Admin to potential admins
-        $users = User::whereIn('email', ['test@example.com', 'admin@jicos.com', 'admin@jidoka.co.id'])->get();
+        $users = User::whereIn('email', ['test@example.com', 'admin@usics.com', 'admin@usc-indonesia.co.id'])->get();
         foreach ($users as $user) {
             if (!$user->hasRole('Super Admin')) {
                 $user->assignRole('Super Admin');

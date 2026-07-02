@@ -321,7 +321,7 @@ const close = () => {
                                     </div>
                                     <div class="flex items-center gap-3">
                                         <div class="h-5 w-5 rounded-full border-2 border-slate-200 dark:border-slate-800"></div>
-                                        <span class="text-xs font-semibold text-slate-400">Synchronizing with JICOS Catalog</span>
+                                        <span class="text-xs font-semibold text-slate-400">Synchronizing with USICS Catalog</span>
                                     </div>
                                 </div>
                             </div>
@@ -355,7 +355,7 @@ const close = () => {
                                         <tr>
                                             <th class="px-3 py-3 font-bold text-slate-500 uppercase text-[10px]">Description</th>
                                             <th class="px-3 py-3 font-bold text-slate-500 uppercase text-[10px]">Qty</th>
-                                            <th class="px-3 py-3 font-bold text-slate-500 uppercase text-[10px]">JICOS Match</th>
+                                            <th class="px-3 py-3 font-bold text-slate-500 uppercase text-[10px]">USICS Match</th>
                                             <th class="px-3 py-3 font-bold text-slate-500 uppercase text-[10px]">Price Comparison</th>
                                         </tr>
                                     </thead>

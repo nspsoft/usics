@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ManualSectionContent from './Partials/ManualSectionContent.vue';
 import SalesFlowGuide from './Partials/SalesFlowGuide.vue';
@@ -94,6 +94,8 @@ const manualSections = [
     { id: 'sales-returns', num: '10', title: 'Sales Returns (Retur)', icon: RotateCcwIcon, color: 'red', desc: 'Mencatat pengembalian barang dari pelanggan.' },
     { id: 'po-tracking', num: '11', title: 'PO Tracking', icon: SearchIcon, color: 'orange', desc: 'Melacak status seluruh PO customer dari awal hingga selesai.' },
     { id: 'ai-extractor', num: '12', title: 'AI PO Extractor', icon: BotIcon, color: 'slate', desc: 'Fitur otomatisasi input order dari dokumen PO Customer.' },
+    { id: 'whatsapp-orchestrator', num: '13', title: 'Smart AI WhatsApp Orchestrator', icon: BotIcon, color: 'emerald', desc: 'Unggah PO, konfirmasi SO via WA, otomatis audit stok, WIP, BOM, & PR/WO.' },
+    { id: 'pricing-intelligence', num: '14', title: 'AI Pricing Intelligence', icon: SparklesIcon, color: 'violet', desc: 'Simulasi margin dinamis berbasis LME, kurs, scrap, & saran harga AI.' },
 ];
 
 const stepsData = {
@@ -117,7 +119,26 @@ const animateProcess = async () => {
     simulationRunning.value = false;
 };
 
-onMounted(() => { activeStep.value = 1; });
+onMounted(() => { 
+    activeStep.value = 1; 
+    
+    // Check if query params or hash points to manual
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam) {
+        activeTab.value = tabParam;
+    }
+    
+    if (window.location.hash) {
+        const targetId = window.location.hash.replace('#manual-', '');
+        if (targetId) {
+            activeTab.value = 'manual';
+            setTimeout(() => {
+                scrollToSection(targetId);
+            }, 300);
+        }
+    }
+});
 
 const getProgressWidth = () => ((activeStep.value - 1) / 5) * 100 + '%';
 

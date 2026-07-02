@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Validasi GRN - JICOS ERP</title>
+    <title>Validasi GRN - USICS ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0b0c15; color: #fff; font-family: 'Inter', sans-serif; }

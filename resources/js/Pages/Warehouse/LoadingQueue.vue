@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Swal from 'sweetalert2';
 import {
     CubeIcon,
     TruckIcon,
@@ -10,6 +11,9 @@ import {
     ClockIcon,
     ArrowPathIcon,
     FunnelIcon,
+    TvIcon,
+    MegaphoneIcon,
+    CpuChipIcon,
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -94,6 +98,60 @@ const startLoading = (order) => {
     });
 };
 
+const callDriver = (order) => {
+    Swal.fire({
+        title: '📞 Panggil Supir ke Loading Bay',
+        html: `
+            <div class="text-left space-y-3 font-sans">
+                <p class="text-xs text-slate-500 dark:text-slate-400">Tentukan lokasi Bay / Dock pemuatan untuk DO: <strong>${order.do_number}</strong></p>
+                <div class="mt-2">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Pilih Loading Bay</label>
+                    <select id="swal-loading-bay" class="w-full px-3 py-2 border dark:border-slate-750 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Bay 1 Slitting" ${order.loading_bay === 'Bay 1 Slitting' ? 'selected' : ''}>Bay 1 Slitting</option>
+                        <option value="Bay 2 Slitting" ${order.loading_bay === 'Bay 2 Slitting' ? 'selected' : ''}>Bay 2 Slitting</option>
+                        <option value="Bay 3 Pipe" ${order.loading_bay === 'Bay 3 Pipe' ? 'selected' : ''}>Bay 3 Pipe</option>
+                        <option value="Bay 4 Packing" ${order.loading_bay === 'Bay 4 Packing' ? 'selected' : ''}>Bay 4 Packing</option>
+                        <option value="Jembatan Timbang" ${order.loading_bay === 'Jembatan Timbang' ? 'selected' : ''}>Jembatan Timbang</option>
+                    </select>
+                </div>
+                <div class="mt-2">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Custom Bay (Opsional)</label>
+                    <input type="text" id="swal-custom-bay" placeholder="Contoh: Bay Darurat / Dok Utara" class="w-full px-3 py-2 border dark:border-slate-750 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+            </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: '⚡ Panggil Supir',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#2563eb',
+        preConfirm: () => {
+            const selectVal = document.getElementById('swal-loading-bay').value;
+            const customVal = document.getElementById('swal-custom-bay').value;
+            return { loading_bay: customVal.trim() || selectVal };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            processingId.value = order.id;
+            router.post(route('warehouse.loading.call', order.id), {
+                loading_bay: result.value.loading_bay
+            }, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Supir Dipanggil!',
+                        text: `Supir untuk DO ${order.do_number} berhasil dipanggil menuju ${result.value.loading_bay}.`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                },
+                onFinish: () => processingId.value = null,
+            });
+        }
+    });
+};
+
 const finishLoading = (order) => {
     if (!confirm('✅ FINISH LOADING\n\nAll items for DO ' + order.do_number + ' have been loaded into the truck.\nPlease ensure all items are checked.\n\nContinue?')) return;
     processingId.value = order.id;
@@ -152,7 +210,16 @@ const getLoadedCount = (order) => {
                     <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">📦 Loading Queue</h1>
                     <p class="text-sm text-slate-500 mt-1">Antrian barang yang siap dimuat ke truk. Klik tombol untuk update status.</p>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <a
+                        :href="route('warehouse.loading.display')"
+                        target="_blank"
+                        class="flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20 border border-cyan-400/20 transition-all hover:scale-[1.02] active:scale-95"
+                    >
+                        <TvIcon class="h-4 w-4" />
+                        BUKA MONITOR DISPLAY TV
+                    </a>
+
                     <div class="flex items-center gap-2 bg-amber-500/10 text-amber-600 px-3 py-1.5 rounded-xl text-xs font-bold border border-amber-500/20">
                         <ClockIcon class="h-4 w-4" />
                         {{ draftOrders.length }} Antri
@@ -228,15 +295,15 @@ const getLoadedCount = (order) => {
                             </div>
                             <div class="flex flex-col gap-2">
                                 <button
-                                    @click="startLoading(order)"
+                                    @click="callDriver(order)"
                                     :disabled="processingId === order.id"
-                                    class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-white text-sm font-black uppercase tracking-wide shadow-lg shadow-amber-500/30 hover:from-amber-500 hover:to-amber-400 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                                    class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-black uppercase tracking-wide shadow-lg shadow-blue-500/30 hover:from-blue-500 hover:to-indigo-500 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                                 >
                                     <span v-if="processingId === order.id" class="flex items-center justify-center gap-2">
                                         <ArrowPathIcon class="h-4 w-4 animate-spin" /> Processing...
                                     </span>
                                     <span v-else class="flex items-center justify-center gap-2">
-                                        <CubeIcon class="h-4 w-4" /> START LOADING
+                                        <MegaphoneIcon class="h-4 w-4" /> PANGGIL SUPIR
                                     </span>
                                 </button>
                                 <button
@@ -284,6 +351,9 @@ const getLoadedCount = (order) => {
                                     🚛 {{ order.vehicle_number }} <span v-if="order.driver_name">• {{ order.driver_name }}</span>
                                 </div>
                                 <div v-if="order.warehouse" class="text-[10px] text-slate-500">🏭 {{ order.warehouse.name }}</div>
+                                <div v-if="order.loading_bay" class="text-[10.5px] text-blue-600 dark:text-blue-400 font-extrabold flex items-center gap-1 mt-1 bg-blue-500/5 px-2 py-1 rounded-lg border border-blue-500/10">
+                                    <span>📢 {{ order.loading_bay }}</span>
+                                </div>
 
                                 <!-- Progress Bar -->
                                 <div v-if="order.status === 'picking'" class="mt-4 pt-4 border-t border-blue-200/50 dark:border-blue-800/50">
@@ -317,6 +387,13 @@ const getLoadedCount = (order) => {
                                     <span v-else class="flex items-center justify-center gap-2">
                                         <CheckCircleIcon class="h-4 w-4" /> FINISH LOADING
                                     </span>
+                                </button>
+                                <button
+                                    @click="callDriver(order)"
+                                    :disabled="processingId === order.id"
+                                    class="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider transition-all border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1.5"
+                                >
+                                    <MegaphoneIcon class="h-3.5 w-3.5" /> RE-CALL DRIVER
                                 </button>
                                 <button
                                     @click="openManageItems(order)"

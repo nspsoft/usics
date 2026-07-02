@@ -140,7 +140,7 @@ const chartOptions = {
                                 <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
                                 Live System
                             </span>
-                            <span class="text-xs font-mono text-slate-500 dark:text-slate-400">JICOS-AI-V2.0</span>
+                            <span class="text-xs font-mono text-slate-500 dark:text-slate-400">USICS-AI-V2.0</span>
                         </div>
                         <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 mb-2 tracking-tight">
                             Good {{ new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening' }}, {{ $page.props.auth.user.name }}! 🚀

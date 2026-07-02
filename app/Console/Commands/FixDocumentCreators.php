@@ -29,9 +29,9 @@ class FixDocumentCreators extends Command
     public function handle()
     {
         // Define emails for safer identification across environments
-        $adminEmail = 'admin@jidoka.co.id';
-        $santiEmail = 'santi@jidoka.co.id';
-        $targetEmail = 'agus@jidoka.co.id';
+        $adminEmail = 'admin@usc-indonesia.co.id';
+        $santiEmail = 'santi@usc-indonesia.co.id';
+        $targetEmail = 'agus@usc-indonesia.co.id';
 
         $admin = User::where('email', $adminEmail)->first();
         $santi = User::where('email', $santiEmail)->first();

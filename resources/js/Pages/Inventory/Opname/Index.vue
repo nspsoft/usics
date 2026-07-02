@@ -405,6 +405,15 @@ const deleteOpname = (opname) => {
                             <td class="px-4 py-2 whitespace-nowrap text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <Link
+                                        v-slot="{ href }"
+                                        v-if="opname.status === 'in_progress' || opname.status === 'draft'"
+                                        :href="`/inventory/opname/${opname.id}/hud`"
+                                        title="Buka Monitor & Simulasi Scan HUD"
+                                        class="p-2 rounded-lg text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+                                    >
+                                        <ClipboardDocumentCheckIcon class="h-4 w-4" />
+                                    </Link>
+                                    <Link
                                         :href="`/inventory/opname/${opname.id}`"
                                         class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800 transition-colors"
                                     >

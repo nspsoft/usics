@@ -89,7 +89,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Head :title="isRegister ? 'Sign Up - JICOS ERP' : 'Sign In - JICOS ERP'" />
+    <Head :title="isRegister ? 'Sign Up - USICS ERP' : 'Sign In - USICS ERP'" />
     
     <div class="min-h-screen relative overflow-hidden bg-slate-950 flex items-center justify-center p-4 selection:bg-cyan-500/30">
         <!-- Futuristic Background -->
@@ -122,7 +122,7 @@ onUnmounted(() => {
                 <div class="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-slate-900 transition-all">
                     <ArrowDownTrayIcon class="h-4 w-4" />
                 </div>
-                <span class="text-xs font-bold uppercase tracking-widest">Install JICOS App</span>
+                <span class="text-xs font-bold uppercase tracking-widest">Install USICS App</span>
             </button>
 
             <!-- Flip Container -->
@@ -131,13 +131,13 @@ onUnmounted(() => {
                 <div class="flip-card-front w-full">
                     <div class="text-center mb-10">
                         <div class="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-slate-950 border border-white/20 shadow-2xl shadow-blue-500/20 mb-6 relative group overflow-hidden">
-                            <img :src="$page.props.company?.logo || '/images/jicos.png'" alt="Logo" class="w-full h-full object-contain p-3 relative z-10" />
+                            <img :src="$page.props.company?.logo || '/images/usics.png'" alt="Logo" class="w-full h-full object-contain p-3 relative z-10" />
                             <div class="absolute -inset-1 rounded-3xl bg-gradient-to-br from-cyan-500/30 to-blue-500/30 blur-xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
                         </div>
                         <h1 class="text-4xl font-black text-white mb-2 tracking-tight">
-                            Welcome to <span class="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">JICOS</span>
+                            Welcome to <span class="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">USICS</span>
                         </h1>
-                        <p class="text-slate-400 text-sm font-medium tracking-wide">JIDOKA INTEGRATED CONTROL SYSTEM</p>
+                        <p class="text-slate-400 text-sm font-medium tracking-wide">UNITED STEEL INTELLIGENCE CONTROL SYSTEM</p>
                     </div>
 
                     <div class="glass-card rounded-[2.5rem] py-10 px-10 border border-white/20 relative overflow-hidden backdrop-blur-3xl bg-slate-950/90 shadow-2xl">
@@ -150,7 +150,7 @@ onUnmounted(() => {
                                     <div class="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 group-focus-within:text-cyan-400 group-focus-within:border-cyan-500/50 transition-all z-20">
                                         <EnvelopeIcon class="h-5 w-5" />
                                     </div>
-                                    <input v-model="loginForm.email" type="email" class="auth-input" placeholder="admin@jidoka.co.id" required />
+                                    <input v-model="loginForm.email" type="email" class="auth-input" placeholder="admin@usc-indonesia.co.id" required />
                                 </div>
                                 <p v-if="loginForm.errors.email" class="text-xs text-red-400 mt-1.5 ml-1">{{ loginForm.errors.email }}</p>
                             </div>
@@ -240,7 +240,7 @@ onUnmounted(() => {
                                     <div class="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 group-focus-within:text-emerald-400 group-focus-within:border-emerald-500/50 transition-all z-20">
                                         <EnvelopeIcon class="h-5 w-5" />
                                     </div>
-                                    <input v-model="registerForm.email" type="email" class="auth-input" placeholder="email@jidoka.co.id" required />
+                                    <input v-model="registerForm.email" type="email" class="auth-input" placeholder="email@usc-indonesia.co.id" required />
                                 </div>
                                 <p v-if="registerForm.errors.email" class="text-xs text-red-400 mt-1 ml-1">{{ registerForm.errors.email }}</p>
                             </div>
@@ -288,7 +288,7 @@ onUnmounted(() => {
             <!-- Global Footer -->
             <div class="text-center mt-12 space-y-3">
                 <p class="text-[12px] font-black text-slate-500 uppercase tracking-[0.4em]">
-                    Powered by <span class="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent font-black">JICOS ERP</span>
+                    Powered by <span class="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent font-black">USICS ERP</span>
                 </p>
                 <p class="text-[12px] font-bold text-slate-600 uppercase tracking-widest leading-relaxed">
                     © 2026 PT. JIDOKA RESULT INDONESIA. <br/> 

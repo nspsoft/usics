@@ -366,7 +366,7 @@ const aiDrivers = [
                                 </div>
                                 <div class="space-y-2">
                                     <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">From Address</label>
-                                    <input v-model="form.email_settings.from_address" type="email" class="form-input" placeholder="admin@jidoka.co.id" />
+                                    <input v-model="form.email_settings.from_address" type="email" class="form-input" placeholder="admin@usc-indonesia.co.id" />
                                 </div>
                                 <div class="space-y-2">
                                     <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">From Name</label>
@@ -480,7 +480,7 @@ const aiDrivers = [
                     <div class="space-y-2">
                         <h5 class="text-sm font-bold text-slate-900 dark:text-white">Why use Gemini AI?</h5>
                         <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            JICOS uses Gemini to automate repetitive tasks like Purchase Order extraction, document OCR, and intelligent data matching. 
+                            USICS uses Gemini to automate repetitive tasks like Purchase Order extraction, document OCR, and intelligent data matching. 
                             <strong class="text-blue-400">Gemini 2.0 Flash</strong> is highly recommended for its perfect balance of speed and visual understanding.
                         </p>
                     </div>

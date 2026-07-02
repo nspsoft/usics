@@ -30,7 +30,7 @@ class DatabaseOperationNotification extends Notification implements ShouldQueue
         $isError = str_contains(strtolower($this->title), 'failed');
         
         return (new MailMessage)
-            ->subject('[JICOS] ' . $this->title)
+            ->subject('[USICS] ' . $this->title)
             ->greeting($isError ? '⚠️ Database Operation Alert' : '✅ Database Operation Complete')
             ->line($this->message)
             ->line('Timestamp: ' . now()->format('Y-m-d H:i:s'))

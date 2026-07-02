@@ -324,6 +324,7 @@ const navigation = [
             { name: 'Information', href: '/sales/information', icon: InformationCircleIcon, permission: 'sales_crm.information.view' },
             { name: 'PO Tracking', href: '/sales/po-tracking', icon: MapPinIcon, permission: 'sales_crm.po_tracking.view' },
             { name: 'AI PO Extractor', href: '/sales/po-extractor', icon: SparklesIcon, permission: 'sales_crm.ai_po_extractor.view' },
+            { name: 'Pricing Intelligence', href: '/sales/pricing-intelligence', icon: PresentationChartBarIcon, permission: 'sales_crm.view' },
         ]
     },
     { 
@@ -382,6 +383,7 @@ const navigation = [
             { name: 'Current Stock', href: '/inventory/stocks', icon: ClipboardDocumentListIcon, permission: 'inventory.current_stock.view' },
             { name: 'Warehouses', href: '/inventory/warehouses', icon: BuildingStorefrontIcon, permission: 'inventory.warehouses.view' },
             { name: 'Warehouse Areas', href: '/inventory/warehouse-areas', icon: MapPinIcon, permission: 'inventory.warehouses.manage' },
+            { name: 'Crane RFID Control', href: '/warehouse/crane', icon: ArrowsRightLeftIcon, permission: 'inventory.warehouses.view' },
             { name: 'Stock Movements', href: '/inventory/movements', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Transfers', href: '/inventory/transfers', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Reclass', href: '/inventory/reclassifications', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
@@ -420,6 +422,7 @@ const navigation = [
             { name: 'Preventive Schedule', href: '/maintenance/schedule', icon: CalendarDaysIcon, permission: 'maintenance.schedule.view' },
             { name: 'Breakdown Logs', href: '/maintenance/breakdown', icon: WrenchIcon, permission: 'maintenance.breakdown.view' },
             { name: 'Spareparts Inventory', href: '/maintenance/spareparts', icon: Cog6ToothIcon, permission: 'maintenance.spareparts.view' },
+            { name: 'AI Predictive Advisor', href: '/maintenance/dashboard?tab=predictive', icon: SparklesIcon, permission: 'maintenance.predictive_advisor.view' },
         ]
     },
     { 
@@ -572,6 +575,7 @@ const navigation = [
             { name: 'Activity Logs', href: '/admin/activity-logs', icon: ClipboardDocumentListIcon, permission: 'settings.activity_logs.view' },
             { name: 'WhatsApp Bot', href: '/settings/whatsapp', icon: ChatBubbleLeftRightIcon, permission: 'settings.company_profile.view' },
             { name: 'Traccar Tracking', href: '/settings/traccar', icon: MapPinIcon, permission: 'settings.view' },
+            { name: 'RFID Gate Simulator', href: '/warehouse/rfid', icon: CpuChipIcon, permission: 'settings.view' },
         ]
     },
 ];
@@ -842,10 +846,10 @@ onUnmounted(() => {
                 <div class="flex h-16 shrink-0 items-center justify-between px-6 border-b border-white/5 bg-slate-950/40 backdrop-blur-sm sticky top-0 z-10">
                     <div class="flex items-center gap-3">
                         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 border border-white/10 shadow-lg shadow-cyan-500/20 overflow-hidden">
-                            <img :src="$page.props.company?.logo || '/images/jicos.png'" alt="Logo" class="w-full h-full object-cover" />
+                            <img :src="$page.props.company?.logo || '/images/usics.png'" alt="Logo" class="w-full h-full object-cover" />
                         </div>
                         <div class="flex flex-col">
-                            <span class="text-lg font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-400 uppercase">JICOS MENU</span>
+                            <span class="text-lg font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-400 uppercase">USICS MENU</span>
                             <span class="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] -mt-1">Manufacturing System</span>
                         </div>
                     </div>
@@ -982,10 +986,10 @@ onUnmounted(() => {
                     <div class="flex items-center gap-3 relative z-10">
                         <div class="group w-10 h-10 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.3)] shrink-0 transition-all duration-300 hover:shadow-[0_0_25px_rgba(6,182,212,0.6)] hover:border-cyan-500/50 overflow-hidden">
                              <!-- Logo Image will be placed here -->
-                             <img :src="$page.props.company?.logo || '/images/jicos.png'" alt="Logo" class="w-full h-full object-cover" />
+                             <img :src="$page.props.company?.logo || '/images/usics.png'" alt="Logo" class="w-full h-full object-cover" />
                         </div>
                         <div v-show="!collapsed" class="transition-opacity duration-200" :class="collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'">
-                            <span class="text-4xl font-black italic tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-white to-cyan-400 whitespace-nowrap drop-shadow-[0_0_10px_rgba(6,182,212,0.6)]" style="font-family: 'Segoe UI', sans-serif;">{{ $page.props.company?.name || 'JICOS' }}</span>
+                            <span class="text-4xl font-black italic tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-white to-cyan-400 whitespace-nowrap drop-shadow-[0_0_10px_rgba(6,182,212,0.6)]" style="font-family: 'Segoe UI', sans-serif;">{{ $page.props.company?.name || 'USICS' }}</span>
                         </div>
                     </div>
                 </div>

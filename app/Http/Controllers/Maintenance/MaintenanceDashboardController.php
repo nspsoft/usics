@@ -7,9 +7,17 @@ use App\Models\Machine;
 use App\Models\MaintenanceLog;
 use App\Models\MaintenanceSchedule;
 use App\Models\Sparepart;
+use App\Models\Product;
+use App\Models\Category;
+use App\Models\Unit;
+use App\Models\PurchaseRequest;
+use App\Models\PurchaseRequestItem;
+use App\Services\GeminiService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MaintenanceDashboardController extends Controller
 {
@@ -128,5 +136,142 @@ class MaintenanceDashboardController extends Controller
             'recent_breakdowns' => $recentBreakdowns,
             'upcoming_schedules' => $upcomingSchedules,
         ]);
+    }
+
+    /**
+     * Run AI diagnostics for Predictive Maintenance.
+     */
+    public function runAiAdvisor(Request $request)
+    {
+        $machines = Machine::all()->map(function ($machine) {
+            return [
+                'id' => $machine->id,
+                'name' => $machine->name,
+                'code' => $machine->code,
+                'runtime_hours' => (float)$machine->runtime_hours,
+                'health_score' => $machine->calculateHealthScore(),
+                'mtbf_days' => $machine->getMtbfInDays(),
+                'predicted_failure_date' => $machine->predictNextFailureDate() ? $machine->predictNextFailureDate()->format('Y-m-d') : '-',
+            ];
+        })->toArray();
+
+        $spareparts = Sparepart::where('is_active', true)
+            ->whereColumn('stock', '<=', 'min_stock')
+            ->get()
+            ->map(function ($part) {
+                return [
+                    'id' => $part->id,
+                    'name' => $part->name,
+                    'part_number' => $part->part_number,
+                    'stock' => $part->stock,
+                    'min_stock' => $part->min_stock,
+                    'unit_cost' => (float)$part->unit_cost,
+                ];
+            })->toArray();
+
+        $breakdowns = MaintenanceLog::with('machine')
+            ->where('type', 'breakdown')
+            ->where('started_at', '>=', Carbon::now()->subDays(60))
+            ->orderBy('started_at', 'desc')
+            ->limit(15)
+            ->get()
+            ->map(function ($log) {
+                $start = Carbon::parse($log->started_at);
+                $end = $log->finished_at ? Carbon::parse($log->finished_at) : null;
+                $duration = $end ? round($start->diffInMinutes($end) / 60, 1) : null;
+
+                return [
+                    'machine_name' => $log->machine->name ?? 'Unknown',
+                    'description' => $log->description,
+                    'duration_hours' => $duration,
+                    'date' => $start->format('Y-m-d'),
+                ];
+            })->toArray();
+
+        $gemini = app(GeminiService::class);
+        $result = $gemini->analyzePredictiveMaintenance($machines, $spareparts, $breakdowns);
+
+        if (!$result || !is_array($result)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AI gagal melakukan diagnosis dan peramalan saat ini. Coba lagi nanti.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
+    /**
+     * Create Consolidated Purchase Request from AI Recommendation.
+     */
+    public function createAiPr(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'items.*.part_number' => 'required|string',
+            'items.*.recommended_qty' => 'required|numeric|min:1',
+            'items.*.justification' => 'nullable|string',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $prNumber = PurchaseRequest::generatePrNumber();
+
+            $pr = PurchaseRequest::create([
+                'company_id' => session('company_id') ?? 1,
+                'pr_number' => $prNumber,
+                'department' => 'Maintenance',
+                'requester' => auth()->user()->name ?? 'System AI',
+                'request_date' => Carbon::today(),
+                'status' => 'draft',
+                'notes' => "Consolidated Auto-PR generated via AI Predictive Maintenance Advisor.",
+                'created_by' => auth()->id(),
+            ]);
+
+            foreach ($request->items as $item) {
+                $sparepart = Sparepart::where('part_number', $item['part_number'])->first();
+                if (!$sparepart) {
+                    throw new \Exception("Sparepart dengan part number {$item['part_number']} tidak ditemukan.");
+                }
+
+                // Find or create product mapping
+                $product = Product::where('sku', $sparepart->part_number)->first();
+                if (!$product) {
+                    $category = Category::where('code', 'SP')->first() ?? Category::first();
+                    $unit = Unit::where('code', 'PCS')->first() ?? Unit::first();
+                    
+                    $product = Product::create([
+                        'company_id' => session('company_id') ?? 1,
+                        'sku' => $sparepart->part_number,
+                        'name' => $sparepart->name,
+                        'category_id' => $category?->id,
+                        'unit_id' => $unit?->id,
+                        'product_type' => 'spare_part',
+                        'cost_price' => $sparepart->unit_cost,
+                        'is_purchased' => true,
+                        'is_active' => true,
+                    ]);
+                }
+
+                PurchaseRequestItem::create([
+                    'purchase_request_id' => $pr->id,
+                    'product_id' => $product->id,
+                    'qty' => (float)$item['recommended_qty'],
+                    'description' => "Rekomendasi AI Suku Cadang: {$sparepart->name}. Justifikasi: " . ($item['justification'] ?? 'Auto-procurement'),
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->back()->with('success', "Draft Purchase Request {$prNumber} berhasil dibuat di modul Purchasing.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Create AI PR Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal membuat Purchase Request: ' . $e->getMessage());
+        }
     }
 }

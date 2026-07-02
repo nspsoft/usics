@@ -245,7 +245,7 @@ const customerData = computed(() => ({
                                 </h3>
                             </div>
                             <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-fuchsia-500 w-[85%] shadow-[0_0_10px_#d946ef]"></div>
+                                <div class="h-full bg-fuchsia-500 shadow-[0_0_10px_#d946ef] transition-all duration-1000" :style="{ width: stats.monthly_revenue > 0 ? Math.max(Math.min((stats.monthly_revenue / 1000000000) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>
@@ -263,7 +263,7 @@ const customerData = computed(() => ({
                                 </h3>
                             </div>
                             <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-cyan-500 w-[60%] shadow-[0_0_10px_#22d3ee]"></div>
+                                <div class="h-full bg-cyan-500 shadow-[0_0_10px_#22d3ee] transition-all duration-1000" :style="{ width: stats.order_count > 0 ? Math.max(Math.min((stats.order_count / 100) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>
@@ -281,7 +281,7 @@ const customerData = computed(() => ({
                                 </h3>
                             </div>
                              <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-amber-500 w-[45%] shadow-[0_0_10px_#f59e0b]"></div>
+                                <div class="h-full bg-amber-500 shadow-[0_0_10px_#f59e0b] transition-all duration-1000" :style="{ width: stats.pending_quotations > 0 ? Math.max(Math.min((stats.pending_quotations / 50) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>
@@ -299,7 +299,7 @@ const customerData = computed(() => ({
                                 </h3>
                             </div>
                              <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-emerald-500 w-[78%] shadow-[0_0_10px_#10b981]"></div>
+                                <div class="h-full bg-emerald-500 shadow-[0_0_10px_#10b981] transition-all duration-1000" :style="{ width: stats.avg_order_value > 0 ? Math.max(Math.min((stats.avg_order_value / 10000000) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>

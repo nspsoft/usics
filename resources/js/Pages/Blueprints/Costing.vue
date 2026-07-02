@@ -235,7 +235,7 @@ const printReport = () => {
         'Jl. Jababeka II Blok C No. 19 L<br>' +
         'Pasir Gombong, Cikarang Utara, Bekasi 17530 Jawa Barat<br>' +
         'Telp : +62 21 89383915, Fax. : +62 21 89383915<br>' +
-        'e_mail : accounting@jidoka.co.id' +
+        'e_mail : accounting@usc-indonesia.co.id' +
         '</div>' +
         '</td>' +
         '</tr></table>' +
@@ -563,7 +563,7 @@ const printReport = () => {
                     <!-- Modal Footer -->
                     <div class="flex items-center justify-between p-6 border-t border-cyan-500/20 bg-cyan-950/20 shrink-0">
                         <div class="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
-                            AI DIAGNOSTICS &bull; VER 1.0.8 &bull; PT JICOS ERP
+                            AI DIAGNOSTICS &bull; VER 1.0.8 &bull; PT USICS ERP
                         </div>
                         <div class="flex items-center gap-3">
                             <button 

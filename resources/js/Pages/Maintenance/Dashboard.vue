@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ref, computed } from 'vue';
 import QrcodeVue from 'qrcode.vue';
@@ -14,7 +14,10 @@ import {
     XMarkIcon,
     BanknotesIcon,
     PresentationChartBarIcon,
-    ClockIcon
+    ClockIcon,
+    ArrowPathIcon,
+    SparklesIcon,
+    CheckCircleIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -24,7 +27,7 @@ const props = defineProps({
     upcoming_schedules: Array
 });
 
-const activeTab = ref('telemetry');
+const activeTab = ref(new URLSearchParams(window.location.search).get('tab') || 'telemetry');
 const search = ref('');
 const statusFilter = ref('all');
 
@@ -195,6 +198,80 @@ const getTcoRatioColor = (tco) => {
     if (pct >= 25) return 'bg-amber-500';
     return 'bg-cyan-500';
 };
+
+// AI Predictive Advisor state
+import axios from 'axios';
+const aiLoading = ref(false);
+const aiResult = ref(null);
+const aiError = ref(null);
+const selectedPartsForPr = ref([]);
+const prLoading = ref(false);
+
+const runAiDiagnostics = async () => {
+    aiLoading.value = true;
+    aiError.value = null;
+    aiResult.value = null;
+    selectedPartsForPr.value = [];
+    
+    try {
+        const response = await axios.post(route('maintenance.predictive.advisor'));
+        if (response.data?.success) {
+            aiResult.value = response.data.data;
+            // Pre-select all recommendations
+            selectedPartsForPr.value = (response.data.data?.sparepart_recommendations || [])
+                .map(item => item.part_number);
+        } else {
+            aiError.value = response.data?.message || 'Gagal memproses diagnosis AI.';
+        }
+    } catch (e) {
+        aiError.value = e.response?.data?.message || e.message;
+    } finally {
+        aiLoading.value = false;
+    }
+};
+
+const toggleSelectPart = (partNumber) => {
+    if (selectedPartsForPr.value.includes(partNumber)) {
+        selectedPartsForPr.value = selectedPartsForPr.value.filter(pn => pn !== partNumber);
+    } else {
+        selectedPartsForPr.value.push(partNumber);
+    }
+};
+
+const createPrFromAi = async () => {
+    if (selectedPartsForPr.value.length === 0) {
+        alert('Pilih minimal satu suku cadang untuk diajukan PR!');
+        return;
+    }
+    
+    prLoading.value = true;
+    
+    const itemsToSubmit = (aiResult.value?.sparepart_recommendations || [])
+        .filter(item => selectedPartsForPr.value.includes(item.part_number))
+        .map(item => ({
+            part_number: item.part_number,
+            recommended_qty: item.recommended_qty,
+            justification: item.justification
+        }));
+        
+    try {
+        await axios.post(route('maintenance.predictive.create-pr'), {
+            items: itemsToSubmit
+        });
+        
+        alert('Draft Purchase Request berhasil dibuat! Silakan periksa modul Purchasing.');
+        aiResult.value = null;
+        activeTab.value = 'telemetry';
+        
+        router.reload({
+            only: ['stats', 'machines']
+        });
+    } catch (e) {
+        alert('Gagal membuat PR: ' + (e.response?.data?.message || e.message));
+    } finally {
+        prLoading.value = false;
+    }
+};
 </script>
 
 <template>
@@ -227,7 +304,7 @@ const getTcoRatioColor = (tco) => {
                 </div>
 
                 <!-- Navigation Tabs -->
-                <div class="flex gap-2 border-b border-white/10 pb-1">
+                <div class="flex gap-2 border-b border-white/10 pb-1 flex-wrap">
                     <button 
                         @click="activeTab = 'telemetry'"
                         class="px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer"
@@ -241,6 +318,14 @@ const getTcoRatioColor = (tco) => {
                         :class="activeTab === 'tco' ? 'border-cyan-400 text-cyan-400 glow-text' : 'border-transparent text-slate-500 hover:text-slate-300'"
                     >
                         [02] Analisis Biaya (TCO)
+                    </button>
+                    <button 
+                        @click="activeTab = 'predictive'"
+                        class="px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer flex items-center gap-1.5"
+                        :class="activeTab === 'predictive' ? 'border-cyan-400 text-cyan-400 glow-text' : 'border-transparent text-slate-500 hover:text-slate-300'"
+                    >
+                        <span>[03] AI Predictive Advisor</span>
+                        <span class="px-1 text-[8px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded font-black tracking-normal uppercase animate-pulse">Smart</span>
                     </button>
                 </div>
 
@@ -574,6 +659,169 @@ const getTcoRatioColor = (tco) => {
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: AI Predictive Advisor -->
+                <div v-if="activeTab === 'predictive'" class="space-y-6 animate-fade-in">
+                    
+                    <!-- Run Advisor Panel -->
+                    <div v-if="!aiResult && !aiLoading" class="hud-panel p-8 text-center space-y-6 max-w-xl mx-auto my-12 border-2 border-dashed border-cyan-500/20">
+                        <div class="flex justify-center">
+                            <div class="p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-full animate-pulse text-indigo-400">
+                                <CpuChipIcon class="h-12 w-12" />
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <h3 class="text-lg font-black text-white uppercase tracking-widest">AI Predictive Maintenance Advisor</h3>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                Jalankan analisis prediktif berbasis kecerdasan buatan untuk mengidentifikasi risiko kerusakan mesin pipa baja, mendiagnosis anomali performa, dan merumuskan daftar pengadaan suku cadang kritis secara otomatis.
+                            </p>
+                        </div>
+                        
+                        <div v-if="aiError" class="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-400 font-bold">
+                            {{ aiError }}
+                        </div>
+                        
+                        <button
+                            type="button"
+                            @click="runAiDiagnostics"
+                            :disabled="aiLoading"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 px-6 py-3.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                        >
+                            <ArrowPathIcon v-if="aiLoading" class="h-4 w-4 animate-spin" />
+                            <SparklesIcon v-else class="h-4 w-4" />
+                            <span>{{ aiLoading ? 'Menganalisis Data Telemetri & MTBF...' : 'Mulai AI Diagnostik Pabrik' }}</span>
+                        </button>
+                    </div>
+
+                    <!-- Loading State Custom HUD -->
+                    <div v-if="aiLoading" class="hud-panel p-8 max-w-md mx-auto my-12 text-center space-y-4">
+                        <div class="flex justify-center">
+                            <div class="relative w-16 h-16">
+                                <div class="absolute inset-0 rounded-full border-4 border-cyan-500/20 border-t-cyan-400 animate-spin"></div>
+                                <div class="absolute inset-2 rounded-full border-4 border-indigo-500/20 border-b-indigo-400 animate-spin-reverse"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-1 font-mono text-xs">
+                            <div class="text-cyan-400 font-black animate-pulse uppercase">[SYSTEM_SCANNING_TELEMETRY]</div>
+                            <div class="text-[9px] text-slate-500">Membaca data jam jalan operasional mesin...</div>
+                            <div class="text-[9px] text-slate-500">Mengkorelasi parameter kerusakan log terakhir...</div>
+                            <div class="text-[9px] text-slate-500">Memeriksa level minimum stok suku cadang...</div>
+                            <div class="text-indigo-400 font-bold">Menghubungi Gemini AI Engine...</div>
+                        </div>
+                    </div>
+
+                    <!-- Result Panel -->
+                    <div v-if="aiResult && !aiLoading" class="grid grid-cols-1 xl:grid-cols-3 gap-6 animate-fade-in-up">
+                        <!-- Left & Center: Diagnoses & General Insights -->
+                        <div class="xl:col-span-2 space-y-6">
+                            
+                            <!-- General Insights -->
+                            <div class="hud-panel p-5 border-l-4 border-l-cyan-500 space-y-2">
+                                <h4 class="text-xs font-black uppercase tracking-widest text-cyan-400 flex items-center gap-1.5">
+                                    <SparklesIcon class="h-4 w-4 animate-pulse" /> Rangkuman Rekomendasi & Insights
+                                </h4>
+                                <p class="text-xs text-slate-300 leading-relaxed font-mono">
+                                    {{ aiResult.general_insights }}
+                                </p>
+                            </div>
+
+                            <!-- Diagnosed Machine Health Cards -->
+                            <div class="space-y-4">
+                                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                                    <ExclamationTriangleIcon class="h-4 w-4 text-rose-500" /> Hasil Diagnosis Mesin Kritis & Berisiko
+                                </h3>
+                                
+                                <div v-if="!aiResult.critical_machines || aiResult.critical_machines.length === 0" class="hud-panel p-6 text-center text-xs text-slate-500">
+                                    Tidak ada mesin dengan kondisi kritis yang memerlukan tindakan segera.
+                                </div>
+                                
+                                <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div v-for="m in aiResult.critical_machines" :key="m.machine_code" 
+                                        class="hud-panel p-5 border border-white/5 space-y-3 relative overflow-hidden">
+                                        <div class="absolute top-0 right-0 px-3 py-1 text-[9px] font-black uppercase rounded-bl border-l border-b border-white/5 bg-rose-500/10 text-rose-400">
+                                            Skor: {{ m.health_score }}%
+                                        </div>
+                                        
+                                        <div>
+                                            <h4 class="text-sm font-black text-white uppercase tracking-wider">{{ m.machine_name }}</h4>
+                                            <span class="text-[9px] text-slate-500 font-mono">CODE: {{ m.machine_code }}</span>
+                                        </div>
+                                        
+                                        <div class="text-xs space-y-2 pt-2 border-t border-white/5 text-slate-300 font-mono leading-relaxed">
+                                            <div>
+                                                <span class="text-rose-400 font-bold block uppercase text-[9px] tracking-wider mb-0.5">Diagnosis Kerusakan:</span>
+                                                {{ m.diagnosis }}
+                                            </div>
+                                            <div>
+                                                <span class="text-cyan-400 font-bold block uppercase text-[9px] tracking-wider mb-0.5">Rekomendasi Tindakan:</span>
+                                                {{ m.recommended_actions }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Spareparts Purchase Recommendation (PR) -->
+                        <div class="hud-panel p-5 space-y-4">
+                            <div class="border-b border-white/10 pb-3 flex items-center justify-between">
+                                <h4 class="text-xs font-black uppercase tracking-widest text-cyan-400 flex items-center gap-1.5">
+                                    <CogIcon class="h-4 w-4" /> Pengadaan Suku Cadang AI
+                                </h4>
+                                <span class="text-[10px] text-slate-500 uppercase font-black">
+                                    {{ selectedPartsForPr.length }} Terpilih
+                                </span>
+                            </div>
+                            
+                            <p class="text-[10px] text-slate-400 leading-normal">
+                                Centang suku cadang di bawah untuk diajukan otomatis sebagai draf *Purchase Request* (PR) konsolidasian di modul Purchasing.
+                            </p>
+
+                            <!-- Parts Recommendations List -->
+                            <div class="space-y-3 max-h-[360px] overflow-y-auto pr-1 divide-y divide-white/5">
+                                <div v-if="!aiResult.sparepart_recommendations || aiResult.sparepart_recommendations.length === 0" class="p-4 text-center text-xs text-slate-500 italic">
+                                    Tidak ada rekomendasi suku cadang baru.
+                                </div>
+                                <div v-for="sp in aiResult.sparepart_recommendations" :key="sp.part_number" class="pt-3 first:pt-0 space-y-2">
+                                    <div class="flex items-start gap-2.5">
+                                        <input
+                                            type="checkbox"
+                                            :value="sp.part_number"
+                                            :checked="selectedPartsForPr.includes(sp.part_number)"
+                                            @change="toggleSelectPart(sp.part_number)"
+                                            class="mt-0.5 rounded border-white/10 bg-black/40 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                        />
+                                        <div class="text-xs flex-1">
+                                            <div class="font-black text-white uppercase">{{ sp.name }}</div>
+                                            <div class="text-[9px] text-slate-500 font-mono">PN: {{ sp.part_number }}</div>
+                                        </div>
+                                        <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border"
+                                            :class="sp.priority === 'High' ? 'text-rose-400 border-rose-500/20 bg-rose-500/10' : 'text-amber-400 border-amber-500/20 bg-amber-500/10'">
+                                            {{ sp.recommended_qty }} PCS
+                                        </span>
+                                    </div>
+                                    <div class="text-[10px] text-slate-400 pl-6 leading-relaxed font-mono">
+                                        {{ sp.justification }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PR Generate Button -->
+                            <div class="pt-3 border-t border-white/10">
+                                <button
+                                    type="button"
+                                    @click="createPrFromAi"
+                                    :disabled="prLoading || selectedPartsForPr.length === 0"
+                                    class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-3.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                                >
+                                    <CheckCircleIcon v-if="!prLoading" class="h-4 w-4" />
+                                    <ArrowPathIcon v-else class="h-4 w-4 animate-spin" />
+                                    <span>{{ prLoading ? 'Membuat Draft PR...' : 'Generate Purchase Request' }}</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

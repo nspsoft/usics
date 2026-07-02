@@ -20,22 +20,24 @@ class DemoDataSeeder extends Seeder
     public function run(): void
     {
         // Create Company
-        $company = Company::create([
-            'code' => 'MFG-001',
-            'name' => 'PT Manufacturing Indonesia',
-            'legal_name' => 'PT Manufacturing Indonesia Tbk',
-            'address' => 'Jl. Industri Raya No. 123',
-            'city' => 'Jakarta',
-            'state' => 'DKI Jakarta',
-            'postal_code' => '12345',
-            'country' => 'ID',
-            'phone' => '021-12345678',
-            'email' => 'info@manufacturing.id',
-            'tax_id' => '01.234.567.8-012.000',
-            'currency' => 'IDR',
-            'timezone' => 'Asia/Jakarta',
-            'is_active' => true,
-        ]);
+        $company = Company::firstOrCreate(
+            ['code' => 'MFG-001'],
+            [
+                'name' => 'PT Manufacturing Indonesia',
+                'legal_name' => 'PT Manufacturing Indonesia Tbk',
+                'address' => 'Jl. Industri Raya No. 123',
+                'city' => 'Jakarta',
+                'state' => 'DKI Jakarta',
+                'postal_code' => '12345',
+                'country' => 'ID',
+                'phone' => '021-12345678',
+                'email' => 'info@manufacturing.id',
+                'tax_id' => '01.234.567.8-012.000',
+                'currency' => 'IDR',
+                'timezone' => 'Asia/Jakarta',
+                'is_active' => true,
+            ]
+        );
 
         // Create Admin User
         $admin = User::first();

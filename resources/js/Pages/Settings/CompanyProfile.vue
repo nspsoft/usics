@@ -22,7 +22,7 @@ const props = defineProps({
     helpdesk_settings: Object
 });
 
-const logoPreview = ref(props.company?.logo || '/images/jicos.png');
+const logoPreview = ref(props.company?.logo || '/images/usics.png');
 
 const form = useForm({
     name: props.company?.name || '',
@@ -123,7 +123,7 @@ const submit = () => {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="space-y-1.5">
                                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Trading Name</label>
-                                <input v-model="form.name" type="text" class="form-input" placeholder="e.g. JICOS MFG" required />
+                                <input v-model="form.name" type="text" class="form-input" placeholder="e.g. USICS MFG" required />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Legal Entity Name</label>

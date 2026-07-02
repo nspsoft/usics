@@ -21,7 +21,7 @@ class FaviconController extends Controller
         }
 
         if (!$sourcePath || !is_file($sourcePath)) {
-            $fallback = public_path('images/jicos.png');
+            $fallback = public_path('images/usics.png');
             $sourcePath = is_file($fallback) ? $fallback : public_path('favicon.ico');
         }
 

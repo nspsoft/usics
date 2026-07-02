@@ -1,9 +1,10 @@
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import axios from 'axios';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
-import { ArrowLeftIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, TrashIcon, PlusIcon, SparklesIcon, XMarkIcon, ArrowPathIcon } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 
 const props = defineProps({
@@ -84,6 +85,51 @@ const totalAmount = computed(() => {
     return form.items.reduce((sum, item) => sum + (item.qty * item.unit_price), 0);
 });
 
+const showAiModal = ref(false);
+const aiModalLoading = ref(false);
+const aiModalProduct = ref(null);
+const aiModalResult = ref(null);
+const aiModalIndex = ref(null);
+
+const openAiSuggest = async (item, index) => {
+    if (!item.product_id) return;
+    const product = props.products.find(p => p.id === item.product_id);
+    if (!product) return;
+    
+    aiModalProduct.value = product;
+    aiModalIndex.value = index;
+    aiModalResult.value = null;
+    showAiModal.value = true;
+    aiModalLoading.value = true;
+    
+    try {
+        const response = await axios.post(route('sales.pricing-intelligence.analyze'), {
+            products: [product],
+            params: {
+                lme_price: 580,
+                exchange_rate: 16000,
+                target_margin: 15,
+                processing_fee: 350,
+                scrap_recovery: 5
+            }
+        });
+        if (response.data.success && response.data.data.pricing_suggestions) {
+            aiModalResult.value = response.data.data.pricing_suggestions[0];
+        }
+    } catch (e) {
+        console.error(e);
+    } finally {
+        aiModalLoading.value = false;
+    }
+};
+
+const applyAiPrice = (price) => {
+    if (aiModalIndex.value !== null) {
+        form.items[aiModalIndex.value].unit_price = price;
+    }
+    showAiModal.value = false;
+};
+
 const submit = () => {
     form.put(`/sales/quotations/${props.quotation.id}`);
 };
@@ -158,8 +204,13 @@ const submit = () => {
                                 </div>
                                 <div class="col-span-4 sm:col-span-2">
                                     <label class="sm:hidden block text-[10px] font-bold text-slate-500 uppercase mb-1 text-right">Price</label>
-                                    <input type="number" v-model="item.unit_price" step="any" class="w-full rounded-lg border-0 bg-slate-50 dark:bg-slate-800 py-2.5 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 text-right" required />
-                                    <div v-if="getPriceDeviation(item)" class="mt-1 flex items-center gap-1">
+                                    <div class="relative flex items-center">
+                                        <input type="number" v-model="item.unit_price" step="any" class="w-full rounded-lg border-0 bg-slate-50 dark:bg-slate-800 py-2.5 pr-8 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 text-right font-semibold" required />
+                                        <button type="button" @click="openAiSuggest(item, index)" :disabled="!item.product_id" class="absolute right-2 text-slate-400 hover:text-amber-400 disabled:opacity-30 transition-colors" title="AI Price Suggestion">
+                                            <SparklesIcon class="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                    <div v-if="getPriceDeviation(item)" class="mt-1 flex items-center gap-1 justify-end">
                                         <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold" :class="[getPriceDeviation(item).color, getPriceDeviation(item).bg]">
                                             {{ getPriceDeviation(item).label }}
                                         </span>
@@ -203,6 +254,71 @@ const submit = () => {
                     </button>
                 </div>
             </form>
+        </div>
+
+        <!-- AI Pricing Suggestion Modal -->
+        <div v-if="showAiModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4">
+             <div class="glass-card rounded-2xl p-6 max-w-md w-full border border-white/10 shadow-2xl relative">
+                  <button type="button" @click="showAiModal = false" class="absolute right-4 top-4 text-slate-400 hover:text-white">
+                      <XMarkIcon class="h-5 w-5" />
+                  </button>
+                  <div class="flex items-center gap-3 text-amber-500 mb-4 border-b border-white/5 pb-3">
+                      <SparklesIcon class="h-6 w-6 animate-pulse" />
+                      <h4 class="text-sm font-bold uppercase tracking-wider">AI Price Suggestion</h4>
+                  </div>
+                  <p class="text-xs text-slate-400 mb-4">Analisis harga untuk: <span class="text-white font-bold">{{ aiModalProduct?.name }}</span></p>
+
+                  <div v-if="aiModalLoading" class="flex flex-col items-center justify-center p-8 space-y-3">
+                       <ArrowPathIcon class="h-8 w-8 animate-spin text-amber-500" />
+                       <span class="text-xs text-slate-400">Menghitung HPP & Margin...</span>
+                  </div>
+                  <div v-else-if="aiModalResult" class="space-y-4">
+                       <div class="grid grid-cols-2 gap-3 bg-slate-900/50 p-4 rounded-xl text-xs border border-white/5">
+                            <div>
+                                <span class="text-slate-400 block mb-0.5">Saran HPP Baru:</span>
+                                <span class="text-blue-400 font-bold">{{ formatCurrency(aiModalResult.suggested_cost_price) }}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block mb-0.5">Margin Target:</span>
+                                <span class="text-purple-400 font-bold">{{ aiModalResult.margin_percentage }}%</span>
+                            </div>
+                       </div>
+                       
+                       <div class="space-y-2">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Opsi Harga Jual</span>
+                            <div class="grid grid-cols-1 gap-2">
+                                <button type="button" @click="applyAiPrice(aiModalResult.min_selling_price)" class="flex justify-between items-center p-3 rounded-xl bg-slate-800/40 hover:bg-slate-700/50 text-xs text-left border border-white/5 transition-colors">
+                                     <div>
+                                         <span class="font-semibold block">Harga Minimum</span>
+                                         <span class="text-[10px] text-slate-400">Margin Terendah</span>
+                                     </div>
+                                     <span class="font-bold text-slate-200">{{ formatCurrency(aiModalResult.min_selling_price) }}</span>
+                                </button>
+                                <button type="button" @click="applyAiPrice(aiModalResult.recommended_selling_price)" class="flex justify-between items-center p-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs text-left border border-emerald-500/20 transition-colors">
+                                     <div>
+                                         <span class="font-bold text-emerald-400 block">Rekomendasi AI</span>
+                                         <span class="text-[10px] text-emerald-500/75">Margin Optimal</span>
+                                     </div>
+                                     <span class="font-black text-emerald-400">{{ formatCurrency(aiModalResult.recommended_selling_price) }}</span>
+                                </button>
+                                <button type="button" @click="applyAiPrice(aiModalResult.max_selling_price)" class="flex justify-between items-center p-3 rounded-xl bg-slate-800/40 hover:bg-slate-700/50 text-xs text-left border border-white/5 transition-colors">
+                                     <div>
+                                         <span class="font-semibold block">Harga Maksimum</span>
+                                         <span class="text-[10px] text-slate-400">Margin Maksimal</span>
+                                     </div>
+                                     <span class="font-bold text-slate-200">{{ formatCurrency(aiModalResult.max_selling_price) }}</span>
+                                </button>
+                            </div>
+                       </div>
+
+                       <div class="bg-amber-500/5 p-3 rounded-xl border border-amber-500/10 text-[10px] text-amber-500 leading-normal">
+                            <strong>Penjelasan AI:</strong> {{ aiModalResult.rationale }}
+                       </div>
+                  </div>
+                  <div v-else class="text-center py-6 text-xs text-red-400">
+                       Gagal mendapatkan saran harga. Silakan coba beberapa saat lagi.
+                  </div>
+             </div>
         </div>
     </AppLayout>
 </template>

@@ -102,7 +102,7 @@ const totalGrand = computed(() => {
                             <p class="text-xs text-slate-500 dark:text-slate-400 italic">Generated on {{ date }}</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-xl font-bold text-slate-900 dark:text-white">JICOS</p>
+                            <p class="text-xl font-bold text-slate-900 dark:text-white">USICS</p>
                             <p class="text-sm text-slate-500 dark:text-slate-400">Procurement Report</p>
                             <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Supplier: {{ suppliers.find(s => s.id == selectedSupplier)?.name || 'All Suppliers' }}</p>
                         </div>
@@ -165,7 +165,7 @@ const totalGrand = computed(() => {
 
                 <!-- Footer -->
                 <div class="mt-12 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-between text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-widest">
-                    <p>Internal Procurement Log - ERP JICOS</p>
+                    <p>Internal Procurement Log - ERP USICS</p>
                     <p>Page 1 OF 1</p>
                 </div>
             </div>

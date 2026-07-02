@@ -86,7 +86,7 @@ const settingsSections = [
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                         <Cog6ToothIcon class="h-5 w-5 text-slate-900 dark:text-white" />
                     </div>
-                    <span class="text-xl font-bold text-slate-900 dark:text-white">JICOS ERP</span>
+                    <span class="text-xl font-bold text-slate-900 dark:text-white">USICS ERP</span>
                 </div>
                 <p class="text-sm text-slate-500">Version 1.0.0</p>
                 <p class="text-xs text-slate-600 mt-2">© 2026 PT JIDOKA. All rights reserved.</p>

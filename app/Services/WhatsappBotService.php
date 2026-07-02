@@ -37,8 +37,122 @@ class WhatsappBotService
     /**
      * Handle incoming WhatsApp message
      */
-    public function handleIncomingMessage(string $phone, string $message, ?string $pushName = null): string
+    public function handleIncomingMessage(string $phone, string $message, ?string $pushName = null, ?string $mediaUrl = null): string
     {
+        // 1. Check if the sender is an internal employee (Sales Representative)
+        $employee = \App\Models\Employee::where('phone', 'like', "%{$phone}%")->first();
+        
+        if ($employee) {
+            Log::info("WhatsApp message from Employee: {$employee->full_name} ({$phone})");
+            
+            // Check for CONFIRM command
+            if (strtoupper(trim($message)) === 'CONFIRM') {
+                $draftSoId = \Illuminate\Support\Facades\Cache::get("whatsapp_draft_so_{$phone}");
+                if ($draftSoId) {
+                    $so = \App\Models\SalesOrder::find($draftSoId);
+                    if ($so && $so->status === 'draft') {
+                        $so->update([
+                            'status' => 'confirmed',
+                            'confirmed_at' => now(),
+                            'confirmed_by' => $employee->user_id ?? 1
+                        ]);
+                        
+                        // Trigger supply chain audit
+                        $response = $this->runSupplyChainAudit($so, $employee);
+                        
+                        // Clear cache
+                        \Illuminate\Support\Facades\Cache::forget("whatsapp_draft_so_{$phone}");
+                        
+                        $this->logMessage($phone, $response, 'outgoing', $so->customer_id, 'confirm_so');
+                        $this->gateway->sendMessage($phone, $response);
+                        return $response;
+                    }
+                }
+                
+                $response = "Tidak ada draf Sales Order aktif yang perlu dikonfirmasi saat ini.";
+                $this->logMessage($phone, $response, 'outgoing', null, 'confirm_so_failed');
+                $this->gateway->sendMessage($phone, $response);
+                return $response;
+            }
+
+            // Check if there is an incoming PO document attachment OR a command to process PO
+            if ($mediaUrl || str_contains(strtolower($message), 'input po') || str_contains(strtolower($message), 'proses po')) {
+                if ($mediaUrl) {
+                    $response = "Memproses file PO Anda menggunakan USICS AI Extractor...";
+                    $this->gateway->sendMessage($phone, $response);
+                    
+                    try {
+                        $filename = 'wa_po_' . time() . '.pdf';
+                        $tempPath = storage_path('app/public/' . $filename);
+                        
+                        // Ensure public directory exists
+                        if (!file_exists(storage_path('app/public'))) {
+                            mkdir(storage_path('app/public'), 0755, true);
+                        }
+                        
+                        // Download file
+                        $fileContents = file_get_contents($mediaUrl);
+                        if ($fileContents) {
+                            file_put_contents($tempPath, $fileContents);
+                            
+                            // Extract PO data
+                            $extractedData = $this->gemini->extractPOData($tempPath, 'application/pdf');
+                            
+                            if (file_exists($tempPath)) {
+                                unlink($tempPath);
+                            }
+                            
+                            if ($extractedData) {
+                                if (array_key_exists(0, $extractedData) && is_array($extractedData[0])) {
+                                    $extractedData = $extractedData[0];
+                                }
+                                
+                                // Auto-match
+                                $matched = $this->autoMatchPoData($extractedData);
+                                
+                                // Create Draft SO
+                                $so = $this->createDraftSalesOrder($matched, $employee);
+                                
+                                if ($so) {
+                                    \Illuminate\Support\Facades\Cache::put("whatsapp_draft_so_{$phone}", $so->id, now()->addHours(2));
+                                    
+                                    $response = "*USICS AI - Draft SO Created*\n\n";
+                                    $response .= "• *No. PO:* " . ($so->customer_po_number ?? 'N/A') . "\n";
+                                    $response .= "• *Customer:* " . ($so->customer->name ?? 'N/A') . "\n";
+                                    $response .= "• *Gudang:* " . ($so->warehouse->name ?? 'N/A') . "\n";
+                                    $response .= "• *Tanggal Kirim:* " . ($so->delivery_date ? $so->delivery_date->format('d M Y') : 'Segera') . "\n\n";
+                                    $response .= "📦 *Item Pesanan:*\n";
+                                    foreach ($so->items as $item) {
+                                        $response .= "- " . ($item->product->name ?? 'N/A') . " (Qty: " . floatval($item->qty) . " Pcs) @ Rp " . number_format($item->unit_price, 0, ',', '.') . "\n";
+                                    }
+                                    $response .= "\n*Total Nilai:* Rp " . number_format($so->total_amount, 0, ',', '.') . "\n\n";
+                                    $response .= "Balas *CONFIRM* untuk mengonfirmasi Sales Order ini secara otomatis.";
+                                } else {
+                                    $response = "Gagal membuat draf Sales Order. Silakan periksa kembali kecocokan produk/customer.";
+                                }
+                            } else {
+                                $response = "AI gagal mengekstrak data dari file PO PDF Anda. Pastikan file PDF dapat terbaca.";
+                            }
+                        } else {
+                            $response = "Gagal mengunduh file PO dari WhatsApp server.";
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('WA PO Process Error: ' . $e->getMessage());
+                        $response = "Terjadi kesalahan sistem saat mengekstrak PO: " . $e->getMessage();
+                    }
+                    
+                    $this->logMessage($phone, $response, 'outgoing');
+                    $this->gateway->sendMessage($phone, $response);
+                    return $response;
+                } else {
+                    $response = "Silakan lampirkan/kirimkan file PO PDF Anda bersama pesan ini untuk diproses otomatis.";
+                    $this->logMessage($phone, $response, 'outgoing');
+                    $this->gateway->sendMessage($phone, $response);
+                    return $response;
+                }
+            }
+        }
+
         // Find customer by phone
         $customer = $this->findCustomerByPhone($phone);
         
@@ -439,5 +553,269 @@ class WhatsappBotService
         } catch (\Exception $e) {
             Log::error('Failed to log WhatsApp message: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Auto-match PO customer and products.
+     */
+    private function autoMatchPoData(array $data): array
+    {
+        $customerName = $data['customer_name'] ?? '';
+        $customer = \App\Models\Customer::where('name', 'like', "%{$customerName}%")
+            ->orWhere('code', 'like', "%{$customerName}%")
+            ->first();
+
+        $data['matched_customer_id'] = $customer?->id;
+        $data['matched_customer_name'] = $customer?->name;
+
+        if (isset($data['items']) && is_array($data['items'])) {
+            foreach ($data['items'] as &$item) {
+                $description = $item['description'] ?? '';
+                $materialNumber = $item['material_number'] ?? '';
+                
+                $matchedProduct = null;
+
+                if (!empty($materialNumber)) {
+                    $matchedProduct = \App\Models\Product::where('sku', trim($materialNumber))
+                        ->where('product_type', 'finished_good')
+                        ->active()
+                        ->first();
+                }
+
+                if (!$matchedProduct && !empty($description)) {
+                    $normalizedInput = strtolower(preg_replace('/\s+/', '', trim($description)));
+                    $matchedProduct = \App\Models\Product::whereRaw("LOWER(REPLACE(REPLACE(REPLACE(name, ' ', ''), '\t', ''), '\r', '')) = ?", [$normalizedInput])
+                        ->where('product_type', 'finished_good')
+                        ->active()
+                        ->first();
+                }
+                
+                if (!$matchedProduct && !empty($description)) {
+                    $matchedProduct = \App\Models\Product::where('name', 'like', "%{$description}%")
+                        ->where('product_type', 'finished_good')
+                        ->active()
+                        ->first();
+                }
+
+                if ($matchedProduct) {
+                    $item['matched_product_id'] = $matchedProduct->id;
+                    $item['matched_product_name'] = $matchedProduct->name;
+                    $item['matched_sku'] = $matchedProduct->sku;
+                    
+                    $aiPrice = isset($item['unit_price']) ? floatval($item['unit_price']) : 0;
+                    $dbPrice = floatval($matchedProduct->selling_price ?? $matchedProduct->price ?? 0);
+
+                    if ($aiPrice > 0 && $dbPrice > 1000) {
+                        if (abs(($aiPrice * 1000) - $dbPrice) < 0.05 * $dbPrice) {
+                            $aiPrice = $aiPrice * 1000;
+                        }
+                    }
+                    $item['unit_price'] = $aiPrice > 0 ? $aiPrice : $dbPrice;
+                } else {
+                    $item['matched_product_id'] = null;
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Create Draft Sales Order.
+     */
+    private function createDraftSalesOrder(array $matched, $employee): ?\App\Models\SalesOrder
+    {
+        $customerId = $matched['matched_customer_id'] ?? null;
+        if (!$customerId) {
+            $customer = \App\Models\Customer::first();
+            $customerId = $customer ? $customer->id : 1;
+        }
+
+        $warehouse = \App\Models\Warehouse::active()->first() ?: \App\Models\Warehouse::first();
+        $warehouseId = $warehouse ? $warehouse->id : 1;
+
+        $userId = $employee->user_id ?? 1;
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($matched, $customerId, $warehouseId, $userId) {
+            $so = \App\Models\SalesOrder::create([
+                'so_number' => \App\Models\SalesOrder::generateSoNumber(),
+                'customer_po_number' => $matched['po_number'] ?? null,
+                'customer_id' => $customerId,
+                'warehouse_id' => $warehouseId,
+                'order_date' => now(),
+                'delivery_date' => isset($matched['po_date']) ? now()->parse($matched['po_date']) : now()->addDays(7),
+                'status' => 'draft',
+                'discount_percent' => 0,
+                'tax_percent' => 11,
+                'notes' => 'Generated via WhatsApp AI Orchestrator',
+                'created_by' => $userId,
+            ]);
+
+            if (isset($matched['items']) && is_array($matched['items'])) {
+                foreach ($matched['items'] as $item) {
+                    $productId = $item['matched_product_id'] ?? null;
+                    if ($productId) {
+                        $so->items()->create([
+                            'product_id' => $productId,
+                            'qty' => $item['quantity'] ?? $item['qty'] ?? 1,
+                            'unit_price' => $item['unit_price'] ?? 0,
+                            'discount_percent' => 0,
+                        ]);
+                    }
+                }
+            }
+
+            $so->refresh();
+            $so->calculateTotals();
+
+            return $so;
+        });
+    }
+
+    /**
+     * Run Supply Chain Audit and generate Recommendations.
+     */
+    private function runSupplyChainAudit($so, $employee): string
+    {
+        $userId = $employee->user_id ?? 1;
+        $userName = $employee->full_name ?? 'Sales Assistant';
+
+        $report = "*USICS Supply Chain Audit - SO #{$so->so_number}*\n\n";
+        
+        $woCreatedCount = 0;
+        $prCreatedCount = 0;
+        $woSummary = [];
+        $prSummary = [];
+
+        foreach ($so->items as $item) {
+            $product = $item->product;
+            if (!$product) continue;
+
+            $qtyRequired = floatval($item->qty);
+
+            $fgStock = \App\Models\ProductStock::where('product_id', $product->id)->sum('qty_on_hand');
+            $fgReserved = \App\Models\ProductStock::where('product_id', $product->id)->sum('qty_reserved');
+            $fgFree = max(0, $fgStock - $fgReserved);
+
+            $report .= "📦 *FG ({$product->sku}):*\n";
+            $report .= "- Kebutuhan: {$qtyRequired} Pcs\n";
+            $report .= "- Stok Free: {$fgFree} Pcs\n";
+
+            if ($fgFree >= $qtyRequired) {
+                $report .= "✅ Stok mencukupi.\n\n";
+                continue;
+            }
+
+            $deficit = $qtyRequired - $fgFree;
+            $report .= "⚠️ Defisit: {$deficit} Pcs\n";
+
+            $wipQty = \App\Models\WorkOrder::where('product_id', $product->id)
+                ->whereIn('status', [\App\Models\WorkOrder::STATUS_CONFIRMED, \App\Models\WorkOrder::STATUS_IN_PROGRESS])
+                ->sum(\Illuminate\Support\Facades\DB::raw('qty_planned - qty_produced'));
+            
+            $report .= "🏭 *WIP (WO Aktif):* {$wipQty} Pcs\n";
+            
+            $netDeficit = max(0, $deficit - $wipQty);
+            if ($netDeficit <= 0) {
+                $report .= "✅ Defisit tercover antrean produksi aktif.\n\n";
+                continue;
+            }
+
+            $report .= "🛑 Defisit Bersih: {$netDeficit} Pcs\n";
+
+            $bom = \App\Models\Bom::where('product_id', $product->id)->where('is_active', true)->first() 
+                ?: \App\Models\Bom::where('product_id', $product->id)->first();
+
+            $rmDeficits = [];
+            if ($bom) {
+                foreach ($bom->components as $component) {
+                    $rmProduct = $component->product;
+                    if (!$rmProduct) continue;
+
+                    $requiredRm = $component->qty * $netDeficit;
+                    
+                    $rmStock = \App\Models\ProductStock::where('product_id', $rmProduct->id)->sum('qty_on_hand');
+                    $rmReserved = \App\Models\ProductStock::where('product_id', $rmProduct->id)->sum('qty_reserved');
+                    $rmFree = max(0, $rmStock - $rmReserved);
+
+                    if ($rmFree < $requiredRm) {
+                        $rmDeficit = $requiredRm - $rmFree;
+                        $rmDeficits[] = [
+                            'product' => $rmProduct,
+                            'required_qty' => $requiredRm,
+                            'free_stock' => $rmFree,
+                            'deficit' => $rmDeficit
+                        ];
+                    }
+                }
+            }
+
+            try {
+                $woNumber = \App\Models\WorkOrder::generateWoNumber();
+                $wo = \App\Models\WorkOrder::create([
+                    'company_id' => $so->company_id ?: 1,
+                    'wo_number' => $woNumber,
+                    'bom_id' => $bom ? $bom->id : null,
+                    'product_id' => $product->id,
+                    'sales_order_id' => $so->id,
+                    'warehouse_id' => $so->warehouse_id,
+                    'material_warehouse_id' => $so->warehouse_id,
+                    'qty_planned' => $netDeficit,
+                    'qty_produced' => 0,
+                    'qty_rejected' => 0,
+                    'planned_start' => now(),
+                    'planned_end' => now()->addDays($bom ? $bom->lead_time_days : 3),
+                    'status' => 'draft',
+                    'priority' => 'normal',
+                    'notes' => 'Dibuat otomatis oleh AI Orchestrator untuk SO #' . $so->so_number,
+                    'created_by' => $userId,
+                    'approval_status' => 'pending',
+                ]);
+                $woCreatedCount++;
+                $woSummary[] = "- *{$woNumber}* ({$product->name}) sebanyak *{$netDeficit} Pcs*";
+            } catch (\Exception $e) {
+                Log::error('AI WO Generation error: ' . $e->getMessage());
+            }
+
+            if (!empty($rmDeficits)) {
+                try {
+                    $prNumber = \App\Models\PurchaseRequest::generatePrNumber();
+                    $pr = \App\Models\PurchaseRequest::create([
+                        'company_id' => $so->company_id ?: 1,
+                        'pr_number' => $prNumber,
+                        'department' => 'PPIC',
+                        'requester' => $userName,
+                        'request_date' => now(),
+                        'status' => 'draft',
+                        'notes' => 'Dibuat otomatis oleh AI Orchestrator untuk SO #' . $so->so_number,
+                        'created_by' => $userId,
+                    ]);
+
+                    foreach ($rmDeficits as $def) {
+                        $pr->items()->create([
+                            'product_id' => $def['product']->id,
+                            'qty' => $def['deficit'],
+                            'description' => 'Bahan baku kurang untuk memproduksi ' . $product->name,
+                        ]);
+                        $prSummary[] = "- *{$prNumber}* ({$def['product']->name}) sebanyak *{$def['deficit']}*";
+                    }
+                    $prCreatedCount++;
+                } catch (\Exception $e) {
+                    Log::error('AI PR Generation error: ' . $e->getMessage());
+                }
+            }
+            $report .= "\n";
+        }
+
+        if ($woCreatedCount > 0) {
+            $report .= "🛠️ *Draf WO Produksi Dibuat:*\n" . implode("\n", $woSummary) . "\n\n";
+        }
+        if ($prCreatedCount > 0) {
+            $report .= "🛒 *Draf PR Bahan Baku Dibuat:*\n" . implode("\n", $prSummary) . "\n\n";
+        }
+
+        $report .= "_Draf dokumen produksi & pembelian siap ditinjau di sistem USICS._";
+
+        return $report;
     }
 }

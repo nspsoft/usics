@@ -31,6 +31,8 @@ class Machine extends Model
     protected $fillable = [
         'name',
         'code',
+        'maker',
+        'capacity',
         'qr_code_uuid',
         'purchase_date',
         'purchase_price',

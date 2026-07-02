@@ -162,7 +162,7 @@ class BomController extends Controller
         return Inertia::render('Manufacturing/Boms/Form', [
             'bom' => null,
             'products' => Product::active()->where('is_manufactured', true)->select('id','sku','name','unit_id')->orderBy('name')->get()->each->setAppends([]),
-            'materials' => Product::active()->whereIn('product_type', ['raw_material', 'wip', 'spare_part'])->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
+            'materials' => Product::active()->whereIn('product_type', ['raw_material', 'wip', 'spare_part', 'finished_good'])->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
@@ -183,6 +183,11 @@ class BomController extends Controller
             'components.*.qty' => 'required|numeric|min:0.0001',
             'components.*.unit_id' => 'nullable|exists:units,id',
             'components.*.scrap_rate' => 'nullable|numeric|min:0|max:100',
+            'outputs' => 'nullable|array',
+            'outputs.*.product_id' => 'required|exists:products,id',
+            'outputs.*.qty_ratio' => 'required|numeric|min:0.0001',
+            'outputs.*.unit_id' => 'required|exists:units,id',
+            'outputs.*.notes' => 'nullable|string',
             'operations' => 'nullable|array',
             'operations.*.name' => 'required|string|max:255',
             'operations.*.setup_time_mins' => 'nullable|integer|min:0',
@@ -215,6 +220,17 @@ class BomController extends Controller
                 ]);
             }
 
+            if (isset($validated['outputs']) && is_array($validated['outputs'])) {
+                foreach ($validated['outputs'] as $out) {
+                    $bom->outputs()->create([
+                        'product_id' => $out['product_id'],
+                        'qty_ratio' => $out['qty_ratio'],
+                        'unit_id' => $out['unit_id'],
+                        'notes' => $out['notes'] ?? null,
+                    ]);
+                }
+            }
+
             if (isset($validated['operations'])) {
                 foreach ($validated['operations'] as $index => $op) {
                     $bom->operations()->create([
@@ -236,7 +252,7 @@ class BomController extends Controller
 
     public function show(Bom $bom): Response
     {
-        $bom->load(['product', 'unit', 'components.product', 'components.unit', 'operations']);
+        $bom->load(['product', 'unit', 'components.product', 'components.unit', 'outputs.product', 'outputs.unit', 'operations']);
 
         return Inertia::render('Manufacturing/Boms/Show', [
             'bom' => $bom,
@@ -245,12 +261,12 @@ class BomController extends Controller
 
     public function edit(Bom $bom): Response
     {
-        $bom->load(['components.product', 'components.unit', 'operations']);
+        $bom->load(['components.product', 'components.unit', 'outputs.product', 'outputs.unit', 'operations']);
 
         return Inertia::render('Manufacturing/Boms/Form', [
             'bom' => $bom,
             'products' => Product::active()->where('is_manufactured', true)->select('id','sku','name','unit_id')->orderBy('name')->get()->each->setAppends([]),
-            'materials' => Product::active()->whereIn('product_type', ['raw_material', 'wip', 'spare_part'])->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
+            'materials' => Product::active()->whereIn('product_type', ['raw_material', 'wip', 'spare_part', 'finished_good'])->select('id','sku','name','unit_id','cost_price')->with('unit:id,name,symbol')->orderBy('name')->get()->each->setAppends([]),
             'units' => Unit::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
@@ -272,6 +288,12 @@ class BomController extends Controller
             'components.*.qty' => 'required|numeric|min:0.0001',
             'components.*.unit_id' => 'nullable|exists:units,id',
             'components.*.scrap_rate' => 'nullable|numeric|min:0|max:100',
+            'outputs' => 'nullable|array',
+            'outputs.*.id' => 'nullable|exists:bom_outputs,id',
+            'outputs.*.product_id' => 'required|exists:products,id',
+            'outputs.*.qty_ratio' => 'required|numeric|min:0.0001',
+            'outputs.*.unit_id' => 'required|exists:units,id',
+            'outputs.*.notes' => 'nullable|string',
             'operations' => 'nullable|array',
             'operations.*.id' => 'nullable|exists:bom_operations,id',
             'operations.*.name' => 'required|string|max:255',
@@ -314,6 +336,29 @@ class BomController extends Controller
                         'scrap_rate' => $comp['scrap_rate'] ?? 0,
                         'sequence' => $index + 1,
                     ]);
+                }
+            }
+
+            $existingOutputIds = collect($validated['outputs'] ?? [])->pluck('id')->filter()->all();
+            $bom->outputs()->whereNotIn('id', $existingOutputIds)->delete();
+
+            if (isset($validated['outputs']) && is_array($validated['outputs'])) {
+                foreach ($validated['outputs'] as $out) {
+                    if (isset($out['id'])) {
+                        $bom->outputs()->where('id', $out['id'])->update([
+                            'product_id' => $out['product_id'],
+                            'qty_ratio' => $out['qty_ratio'],
+                            'unit_id' => $out['unit_id'],
+                            'notes' => $out['notes'] ?? null,
+                        ]);
+                    } else {
+                        $bom->outputs()->create([
+                            'product_id' => $out['product_id'],
+                            'qty_ratio' => $out['qty_ratio'],
+                            'unit_id' => $out['unit_id'],
+                            'notes' => $out['notes'] ?? null,
+                        ]);
+                    }
                 }
             }
 

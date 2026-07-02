@@ -94,6 +94,37 @@ const closeTutorial = () => {
     currentStep.value = 0;
 };
 
+
+
+const wasteCalculation = computed(() => {
+    if (!form.product_id) return null;
+    const motherCoil = props.materials.find(m => m.id === form.product_id);
+    if (!motherCoil || !motherCoil.width || motherCoil.width <= 0) return null;
+
+    let totalWidth = 0;
+    form.outputs.forEach(out => {
+        if (out.product_id) {
+            const outProduct = props.materials.find(m => m.id === out.product_id);
+            if (outProduct && outProduct.width && outProduct.width > 0) {
+                totalWidth += (outProduct.width * (parseInt(out.slit_count) || 1));
+            }
+        }
+    });
+    
+    if (totalWidth === 0) return null;
+
+    const waste = motherCoil.width - totalWidth;
+    const percentage = (waste / motherCoil.width) * 100;
+    
+    return {
+        motherWidth: motherCoil.width,
+        totalOutputWidth: totalWidth,
+        waste: waste,
+        percentage: percentage.toFixed(2),
+        isInvalid: percentage > 1.0 || waste < 0
+    };
+});
+
 const form = useForm({
     code: props.bom?.code || '',
     name: props.bom?.name || '',
@@ -110,6 +141,14 @@ const form = useForm({
         unit_id: c.unit_id,
         scrap_rate: parseFloat(c.scrap_rate),
     })) || [{ product_id: '', qty: 1, unit_id: '', scrap_rate: 0 }],
+    outputs: props.bom?.outputs?.map(o => ({
+        id: o.id,
+        product_id: o.product_id,
+        qty_ratio: parseFloat(o.qty_ratio),
+        slit_count: o.slit_count || 1,
+        unit_id: o.unit_id,
+        notes: o.notes,
+    })) || [],
     operations: props.bom?.operations?.map(o => ({
         id: o.id,
         name: o.name,
@@ -134,6 +173,33 @@ const addOperation = () => {
 
 const removeOperation = (index) => {
     form.operations.splice(index, 1);
+};
+
+const addOutput = () => {
+    form.outputs.push({
+        product_id: '',
+        qty_ratio: 1,
+        slit_count: 1,
+        unit_id: '',
+        notes: '',
+    });
+};
+
+const removeOutput = (index) => {
+    form.outputs.splice(index, 1);
+};
+
+const syncOutputUnitFromProduct = (index) => {
+    const out = form.outputs[index];
+    if (!out) return;
+
+    if (!out.product_id) {
+        out.unit_id = '';
+        return;
+    }
+
+    const product = props.products.find(p => p.id == out.product_id) || props.materials.find(m => m.id == out.product_id);
+    out.unit_id = product?.unit_id || '';
 };
 
 const addComponent = () => {
@@ -180,6 +246,12 @@ onMounted(() => {
     form.components.forEach((_, index) => {
         if (form.components[index]?.product_id && !form.components[index]?.unit_id) {
             syncComponentUnitFromMaterial(index);
+        }
+    });
+
+    form.outputs.forEach((_, index) => {
+        if (form.outputs[index]?.product_id && !form.outputs[index]?.unit_id) {
+            syncOutputUnitFromProduct(index);
         }
     });
 });
@@ -403,6 +475,116 @@ onMounted(() => {
                             </div>
                         </div>
 
+                        <!-- Multiple Outputs Section -->
+                        <div class="glass-card rounded-3xl shadow-sm overflow-hidden relative z-10" id="outputs-section">
+                            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-950/50">
+                                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                    <CubeIcon class="h-4 w-4" />
+                                    MULTIPLE_OUTPUTS_&_BYPRODUCTS
+                                </h3>
+                                <button 
+                                    type="button"
+                                    @click="addOutput"
+                                    class="inline-flex items-center gap-2 rounded-xl bg-indigo-600/10 px-3 py-1.5 text-xs font-bold text-indigo-400 hover:bg-indigo-600/20 transition-all border border-indigo-500/20"
+                                >
+                                    <PlusIcon class="h-4 w-4" />
+                                    Add Output
+                                </button>
+                            </div>
+
+                            <div class="p-6 space-y-4">
+                                <div v-for="(out, index) in form.outputs" :key="index" class="group/out relative glass-card rounded-2xl p-5 hover:border-slate-200 dark:border-slate-700 transition-all">
+                                    <div class="flex flex-col md:flex-row gap-6">
+                                        <!-- Index -->
+                                        <div class="flex-shrink-0">
+                                            <div class="h-10 w-10 rounded-xl glass-card flex items-center justify-center text-xs font-black text-slate-500 group-hover/out:text-indigo-400 group-hover/out:border-indigo-500/30 transition-all">
+                                                {{ index + 1 }}
+                                            </div>
+                                        </div>
+
+                                        <!-- Core Fields -->
+                                        <div class="flex-grow grid grid-cols-1 md:grid-cols-12 gap-4">
+                                            <!-- Product -->
+                                            <div class="md:col-span-5">
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Output Product</label>
+                                                <SearchableSelect
+                                                    v-model="out.product_id"
+                                                    :options="[...products, ...materials]"
+                                                    labelKey="name"
+                                                    valueKey="id"
+                                                    placeholder="Select Product/By-Product"
+                                                    @update:modelValue="syncOutputUnitFromProduct(index)"
+                                                    class="w-full"
+                                                />
+                                            </div>
+
+                                            <!-- Qty Ratio -->
+                                            <div class="md:col-span-2">
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Qty Ratio</label>
+                                                <input 
+                                                    v-model.number="out.qty_ratio"
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    class="w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-2 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50"
+                                                    placeholder="1.00"
+                                                />
+                                            </div>
+
+                                            <!-- Unit -->
+                                            <div class="md:col-span-2">
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Unit</label>
+                                                <select 
+                                                    v-model="out.unit_id"
+                                                    class="w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-2 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50"
+                                                >
+                                                    <option value="" disabled>Unit</option>
+                                                    <option v-for="unit in units" :key="unit.id" :value="unit.id">
+                                                        {{ unit.symbol }} - {{ unit.name }}
+                                                    </option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Notes -->
+                                            <div class="md:col-span-3">
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Notes</label>
+                                                <input 
+                                                    v-model="out.notes"
+                                                    type="text"
+                                                    class="w-full rounded-xl border-0 bg-white dark:bg-slate-950 py-2 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/50"
+                                                    placeholder="e.g. Baby Coil / Scrap"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Delete Button -->
+                                    <button 
+                                        type="button"
+                                        @click="removeOutput(index)"
+                                        class="absolute -top-3 -right-3 h-8 w-8 rounded-full bg-red-500 text-white shadow-lg flex items-center justify-center hover:bg-red-600 transition-all hover:scale-110 opacity-0 group-hover/out:opacity-100"
+                                    >
+                                        <TrashIcon class="h-4 w-4" />
+                                    </button>
+                                </div>
+                                
+                                <div v-if="!form.outputs.length" class="text-center py-8">
+                                    <div class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-slate-100 dark:bg-slate-800 mb-3">
+                                        <CubeIcon class="h-6 w-6 text-slate-400" />
+                                    </div>
+                                    <p class="text-sm font-bold text-slate-500">No extra outputs defined.</p>
+                                    <p class="text-xs text-slate-400 mt-1">If this process only has one main product, leave this empty.</p>
+                                </div>
+                            </div>
+
+                            <div v-if="form.errors.outputs" class="p-6 bg-red-500/5 text-red-400 text-xs border-t border-red-500/20">
+                                <div class="flex items-center gap-2">
+                                    <ExclamationTriangleIcon class="h-4 w-4" />
+                                    {{ form.errors.outputs }}
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Routing Section -->
                         <div class="glass-card rounded-3xl shadow-sm overflow-hidden relative z-10" id="operations-section" :class="{'ring-2 ring-blue-500 shadow-2xl shadow-blue-500/20 z-10': showTutorial && tutorialSteps[currentStep].target === 'operations-section'}">
                             <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-950/50">
@@ -511,7 +693,7 @@ onMounted(() => {
                             </Link>
                             <button 
                                 type="submit"
-                                :disabled="form.processing"
+                                :disabled="form.processing || (wasteCalculation && wasteCalculation.isInvalid)"
                                 class="px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white dark:text-white font-semibold shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all disabled:opacity-50 flex items-center gap-2"
                                 :class="{'ring-4 ring-white': showTutorial && tutorialSteps[currentStep].target === 'submit-section'}"
                             >

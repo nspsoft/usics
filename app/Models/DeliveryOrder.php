@@ -36,6 +36,8 @@ class DeliveryOrder extends Model
         'warehouse_id',
         'delivery_date',
         'status',
+        'loading_bay',
+        'called_at',
         'invoice_status',
         'shipping_name',
         'shipping_address',
@@ -83,6 +85,7 @@ class DeliveryOrder extends Model
     protected $casts = [
         'delivery_date' => 'date:Y-m-d',
         'delivered_at' => 'datetime',
+        'called_at' => 'datetime',
     ];
 
     protected static function booted(): void

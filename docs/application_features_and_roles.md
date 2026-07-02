@@ -12,18 +12,19 @@ Digunakan untuk mengelola siklus penjualan, mulai dari prospek hingga pengiriman
 
 *   **Sales Hub, Planning, Forecast, Schedule:** Dasbor dan perencanaan target/jadwal pengiriman penjualan (PIC: Sales Manager / Supervisor).
 *   **Customers:** Database pelanggan / pembeli (PIC: Sales Admin).
-*   **Quotations:** Pembuatan Surat Penawaran Harga kepada pelanggan (PIC: Sales Admin / Sales Rep).
+*   **Quotations:** Pembuatan Surat Penawaran Harga kepada pelanggan (PIC: Sales Admin / Sales Rep) terintegrasi dengan **AI Pricing Recommendation** instan pada form pembuatan.
+*   **Pricing Intelligence:** Dasbor analitis simulasi harga dinamis produk baja (Sheet, Hoop, Blank, TWB) berdasarkan harga LME baja, kurs USD, margin target, biaya pemrosesan, dan recovery scrap (PIC: Sales Manager / Representative).
 *   **Sales Orders (SO):** Input pesanan resmi dari pelanggan (PIC: Sales Admin).
 *   **Delivery Orders (DO):** Pembuatan Surat Jalan untuk pengiriman barang ke customer (PIC: Logistics Admin / Sales Admin).
 *   **Sales Invoices:** Pembuatan faktur/tagihan penjualan (PIC: Finance AR / Sales Admin).
 *   **Sales Returns:** Pencatatan retur barang dari pelanggan (PIC: Sales Admin).
-*   **Reports & Tracking (Items, PO Tracking, AI PO Extractor):** Pelacakan status dokumen dan ekstraksi PO dari file via AI.
+*   **Reports & Tracking (Items, PO Tracking, AI PO Extractor):** Pelacakan status dokumen dan ekstraksi PO dari file PDF/gambar secara otomatis menggunakan AI PO Extractor.
 
 ## 2. Modul CRM (Manajemen Hubungan Pelanggan)
 Digunakan untuk interaksi prospek, kampanye, dan komunikasi.
 **PIC / Role Utama:** _Marketing Admin_, _Sales Representative_, _CRM Staff_.
 
-*   **WhatsApp Center & AI Email Inbox:** Sentralisasi komunikasi chat dan email dengan pelanggan (PIC: Customer Service / Sales).
+*   **WhatsApp Center, AI Email Inbox & AI Orchestrator:** Sentralisasi komunikasi chat dan email pelanggan. Menyediakan fitur **Smart AI WhatsApp Orchestrator** bagi Sales Representative untuk mengunggah file PO PDF, mengonfirmasi SO secara stateful (`CONFIRM`), dan langsung mengeksekusi audit supply chain multi-tier (FG, WIP, BOM, RM) dengan penerbitan draft WO dan PR otomatis.
 *   **Leads Management & Opportunity Tracking:** Rekap calon pelanggan berpotensi (Leads) untuk dipantau status pendekatannya (PIC: Sales / Marketing).
 *   **Marketing Campaigns:** Penyiapan dan jadwal peluncuran promosi massal (PIC: Marketing Admin).
 
@@ -45,9 +46,10 @@ Sistem tracking barang mentah, setengah jadi, hingga barang jadi.
 
 *   **Command Center & Current Stock:** Pemantauan indikator *Live Stock* seluruh produk.
 *   **Categories, Products, Units:** Registrasi jenis kategori, satuan ukur, dan master produk baru (PIC: Master Data / Inventory Admin).
-*   **Warehouses:** Pengaturan fisik lokasi gudang dan rak (PIC: Warehouse Manager).
+*   **Warehouses & Locations:** Pengaturan fisik lokasi gudang dan lokasi spesifik/rak (PIC: Warehouse Manager) terintegrasi dengan peta tata letak visual 2D.
+*   **Crane RFID & Auto-Putaway:** Sistem pelacakan pemindahan kumparan baja (*steel coils*) secara otomatis oleh *Overhead Crane* menggunakan RFID tag. Dilengkapi visual kemudi cockpit simulator 2D untuk memosisikan *Inventory Lot* langsung ke rak penyimpanan fisik dan memperbarui jumlah kartu stok (*stock card*) secara langsung.
 *   **Stock Movements & Transfers:** Pemindahan barang antar lokasi/gudang (PIC: Warehouse Admin).
-*   **Stock Opname:** Input *adjustment* hasil hitung fisik gudang vs sistem (PIC: Inventory Controller / QC Auditor).
+*   **Stock Opname & Live HUD:** Input *adjustment* hasil hitung fisik gudang vs sistem (PIC: Inventory Controller / QC Auditor). Dilengkapi **Stock Opname HUD** dan **AI Discrepancy Advisor** untuk visualisasi kemajuan audit lokasi 2D, entri data buta (blind count), serta asisten rekomendasi pencarian barang hilang akibat tertukar tempat.
 
 ## 5. Modul Manufacturing (Produksi)
 Mengendalikan proses pabrikasi dan pelacakan material ke mesin.
@@ -82,8 +84,10 @@ Verifikasi kualitas bahan dan produk yang meliputi pengetesan dan penyitaan (kar
 Koordinasi kesiapan armada transport dan distribusi.
 **PIC / Role Utama:** _Logistics Planner_, _Dispatcher_, _Driver_.
 
-*   **Loading Queue:** Penjadwalan kapan armada bersandar *docking* untuk muat barang (PIC: Warehouse Logistik).
-*   **Delivery Planning & Dispatch:** Alokasi supir, kendaraan, dan rute perjalanan berdasarkan Delivery Order (PIC: Logistics Dispatcher).
+*   **Loading Queue:** Penjadwalan kapan armada bersandar *docking* untuk muat barang (PIC: Warehouse Logistik). Terintegrasi dengan tombol **Panggil Supir** dengan alokasi loading bay dan penyiapan **Surat Jalan / Delivery Order**.
+*   **Loading Display TV Monitor:** Halaman dashboard monitor TV real-time berdesain futuristik HUD gelap dengan suara panggilan pengumuman (*Voice Call Announcement / Text-to-Speech*) otomatis bahasa Indonesia saat supir dipanggil merapat ke loading bay.
+*   **RFID Checkpoint Simulator:** Cockpit pengujian simulator integrasi hardware RFID scanner di gerbang pabrik (*Check-In/Out* pos satpam) dan jembatan timbang (*Weighbridge Tare & Gross*) secara otomatis mengubah status antrean di sistem ERP.
+*   **Delivery Planning & Dispatch:** Alokasi supir, kendaraan, dan rute perjalanan berdasarkan Delivery Order (PIC: Logistics Dispatcher) terintegrasi dengan **AI VRP Route Optimization** untuk penentuan rute hemat bahan bakar.
 *   **Vehicle Fleet:** Pendataan izin jalan dan aset kendaraan perusahaan (PIC: Fleet Admin).
 
 ## 9. Modul Finance (Keuangan & Akuntansi)

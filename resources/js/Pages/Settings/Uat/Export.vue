@@ -46,7 +46,7 @@ const printReport = async (orientation) => {
 </script>
 
 <template>
-    <Head title="Laporan Dokumentasi UAT - JICOS ERP" />
+    <Head title="Laporan Dokumentasi UAT - USICS ERP" />
     
     <!-- Dynamic Print Styles -->
     <component :is="'style'">
@@ -64,7 +64,7 @@ const printReport = async (orientation) => {
             <div>
                 <h1 class="text-4xl font-black text-slate-900 tracking-tight mb-2 print:text-xl print:mb-0">LAPORAN UAT</h1>
                 <p class="text-slate-600 font-mono italic print:text-xs">User Acceptance Testing Documentation</p>
-                <p class="text-slate-900 font-mono text-xs uppercase tracking-widest mt-1 font-black print:text-[10px]">JICOS ERP SYSTEM v1.0</p>
+                <p class="text-slate-900 font-mono text-xs uppercase tracking-widest mt-1 font-black print:text-[10px]">USICS ERP SYSTEM v1.0</p>
             </div>
             <div class="text-right">
                 <div class="text-3xl font-black text-slate-900 tracking-tighter print:text-lg">PT JIDOKA</div>

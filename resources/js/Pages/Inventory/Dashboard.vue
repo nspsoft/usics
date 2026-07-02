@@ -221,7 +221,7 @@ const warehouseData = computed(() => ({
                                 </h3>
                             </div>
                             <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-cyan-500 w-[80%] shadow-[0_0_10px_#06b6d4]"></div>
+                                <div class="h-full bg-cyan-500 shadow-[0_0_10px_#06b6d4] transition-all duration-1000" :style="{ width: stats.total_valuation > 0 ? Math.max(Math.min((stats.total_valuation / 1000000000) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>
@@ -239,7 +239,7 @@ const warehouseData = computed(() => ({
                                 </h3>
                             </div>
                             <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-emerald-500 w-[65%] shadow-[0_0_10px_#10b981]"></div>
+                                <div class="h-full bg-emerald-500 shadow-[0_0_10px_#10b981] transition-all duration-1000" :style="{ width: stats.active_items > 0 ? Math.max(Math.min((stats.active_items / 1000) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>
@@ -257,7 +257,7 @@ const warehouseData = computed(() => ({
                                 </h3>
                             </div>
                              <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-violet-500 w-[50%] shadow-[0_0_10px_#8b5cf6]"></div>
+                                <div class="h-full bg-violet-500 shadow-[0_0_10px_#8b5cf6] transition-all duration-1000" :style="{ width: stats.turnover_rate > 0 ? Math.max(Math.min((stats.turnover_rate / 1000) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>
@@ -275,7 +275,7 @@ const warehouseData = computed(() => ({
                                 </h3>
                             </div>
                              <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-amber-500 w-[75%] shadow-[0_0_10px_#f59e0b]"></div>
+                                <div class="h-full bg-amber-500 shadow-[0_0_10px_#f59e0b] transition-all duration-1000" :style="{ width: stats.warehouse_usage > 0 ? Math.max(Math.min((stats.warehouse_usage / 10000) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
                     </div>

@@ -172,6 +172,8 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::post('/opname/{opname}/complete', [App\Http\Controllers\Inventory\StockOpnameController::class, 'complete'])->name('opname.complete');
     Route::post('/opname/{opname}/check', [App\Http\Controllers\Inventory\StockOpnameController::class, 'check'])->name('opname.check');
     Route::post('/opname/{opname}/approve', [App\Http\Controllers\Inventory\StockOpnameController::class, 'approve'])->name('opname.approve');
+    Route::get('/opname/{opname}/hud', [App\Http\Controllers\Inventory\StockOpnameController::class, 'hudIndex'])->name('opname.hud');
+    Route::post('/opname/{opname}/scan-item', [App\Http\Controllers\Inventory\StockOpnameController::class, 'scanItem'])->name('opname.scan-item');
     // Reports
     Route::get('/reports', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/inventory-balance', [App\Http\Controllers\ReportController::class, 'inventoryBalance'])->name('reports.inventory-balance');
@@ -362,6 +364,10 @@ Route::prefix('sales')->name('sales.')->middleware(['auth'])->group(function () 
     Route::post('/po-extractor/store-customer', [App\Http\Controllers\Sales\POExtractorController::class, 'storeCustomer'])->name('po-extractor.store-customer');
     Route::post('/po-extractor/store-unit', [App\Http\Controllers\Sales\POExtractorController::class, 'storeUnit'])->name('po-extractor.store-unit');
 
+    // Pricing Intelligence
+    Route::get('/pricing-intelligence', [App\Http\Controllers\Sales\PricingIntelligenceController::class, 'index'])->name('pricing-intelligence.index');
+    Route::post('/pricing-intelligence/analyze', [App\Http\Controllers\Sales\PricingIntelligenceController::class, 'analyze'])->name('pricing-intelligence.analyze');
+
     Route::get('/quotations/next-number', [App\Http\Controllers\Sales\QuotationController::class, 'generateNextNumber'])->name('quotations.next-number');
     Route::resource('quotations', App\Http\Controllers\Sales\QuotationController::class);
     Route::post('/quotations/{quotation}/submit-for-approval', [App\Http\Controllers\Sales\QuotationController::class, 'submitForApproval'])->name('quotations.submit-for-approval');
@@ -522,6 +528,8 @@ Route::middleware(['auth'])->prefix('qc')->name('qc.')->group(function () {
 Route::middleware(['auth'])->prefix('maintenance')->name('maintenance.')->group(function () {
     // Dashboard
     Route::get('/dashboard', [App\Http\Controllers\Maintenance\MaintenanceDashboardController::class, 'index'])->name('dashboard');
+    Route::post('/predictive/advisor', [App\Http\Controllers\Maintenance\MaintenanceDashboardController::class, 'runAiAdvisor'])->name('predictive.advisor');
+    Route::post('/predictive/create-pr', [App\Http\Controllers\Maintenance\MaintenanceDashboardController::class, 'createAiPr'])->name('predictive.create-pr');
 
     // Schedule
     Route::get('/schedule', [App\Http\Controllers\Maintenance\MaintenanceScheduleController::class, 'index'])->name('schedule');
@@ -641,9 +649,18 @@ Route::middleware(['auth'])->prefix('hr')->name('hr.')->group(function () {
 // Warehouse (Loading Queue for Warehouse Staff)
 Route::middleware(['auth'])->prefix('warehouse')->name('warehouse.')->group(function () {
     Route::get('/loading', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'index'])->name('loading.index');
+    Route::get('/loading/display', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'display'])->name('loading.display');
+    Route::post('/loading/{deliveryOrder}/call', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'call'])->name('loading.call');
     Route::patch('/loading/{deliveryOrder}/status', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'updateStatus'])->name('loading.update-status');
     Route::put('/loading/{deliveryOrder}/item-qty', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'updateItemQty'])->name('loading.update-item-qty');
     Route::patch('/loading/{deliveryOrder}/toggle-item-loaded', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'toggleItemLoaded'])->name('loading.toggle-item-loaded');
+    // RFID Simulation
+    Route::get('/rfid', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'rfidIndex'])->name('rfid.index');
+    Route::post('/rfid/simulate', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'rfidSimulate'])->name('rfid.simulate');
+
+    // Crane RFID Simulation
+    Route::get('/crane', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'craneIndex'])->name('crane.index');
+    Route::post('/crane/move', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'craneMove'])->name('crane.move');
 });
 
 // Logistics
@@ -651,6 +668,11 @@ Route::middleware(['auth'])->prefix('logistics')->name('logistics.')->group(func
     Route::get('/dashboard', [App\Http\Controllers\Logistics\LogisticsDashboardController::class, 'index'])->name('dashboard');
     Route::get('/planning', [App\Http\Controllers\Logistics\LogisticsController::class, 'index'])->name('planning');
     Route::post('/planning/assign', [App\Http\Controllers\Logistics\LogisticsController::class, 'assignVehicle'])->name('planning.assign');
+    
+    // AI VRP Route Optimization
+    Route::get('/planning/optimize', [App\Http\Controllers\Logistics\LogisticsVrpController::class, 'optimizeIndex'])->name('planning.optimize.index');
+    Route::post('/planning/optimize/run', [App\Http\Controllers\Logistics\LogisticsVrpController::class, 'runVrpOptimization'])->name('planning.optimize.run');
+    Route::post('/planning/optimize/apply', [App\Http\Controllers\Logistics\LogisticsVrpController::class, 'applyVrpOptimization'])->name('planning.optimize.apply');
 
     // Dispatch Panel
     Route::get('/dispatch', [App\Http\Controllers\Logistics\DispatchController::class, 'index'])->name('dispatch.index');

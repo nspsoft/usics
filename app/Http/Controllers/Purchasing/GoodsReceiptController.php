@@ -695,7 +695,7 @@ class GoodsReceiptController extends Controller
             }
             
             $message .= "\nTerima kasih atas kerjasamanya.\n\n";
-            $message .= "_Pesan otomatis dari JICOS ERP_";
+            $message .= "_Pesan otomatis dari USICS ERP_";
 
             // Send via Fonnte if configured
             $fonnteToken = config('services.fonnte.token');

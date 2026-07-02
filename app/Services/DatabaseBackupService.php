@@ -56,6 +56,9 @@ class DatabaseBackupService
             'inv_stock_transfers',
             'inv_stock_opname_items',
             'inv_stock_opnames',
+            'inv_product_reclass_mappings',
+            'inv_stock_reclassifications',
+            'inv_stock_reclassification_items',
         ],
         'manufacturing' => [
             'boms',
@@ -139,6 +142,7 @@ class DatabaseBackupService
             'inv_stock_adjustment_items', 'inv_stock_adjustments',
             'inv_stock_transfer_items', 'inv_stock_transfers',
             'inv_stock_opname_items', 'inv_stock_opnames',
+            'inv_stock_reclassification_items', 'inv_stock_reclassifications',
         ],
         'manufacturing' => [
             'work_order_items', 'work_orders',
@@ -153,6 +157,11 @@ class DatabaseBackupService
         ],
         'logistics' => [
             'delivery_schedules',
+        ],
+        'maintenance' => [
+            'maintenance_schedules',
+            'maintenance_logs',
+            'maintenance_sparepart_usage',
         ],
     ];
 
@@ -342,12 +351,18 @@ class DatabaseBackupService
                 'production_entries',
                 'subcontract_order_items', 'subcontract_orders',
                 // Inventory transactions
-                'stock_movements',
-                'stock_opname_items', 'stock_opnames',
+                'inv_stock_movements',
+                'inv_stock_adjustment_items', 'inv_stock_adjustments',
+                'inv_stock_transfer_items', 'inv_stock_transfers',
+                'inv_stock_opname_items', 'inv_stock_opnames',
+                'inv_stock_reclassification_items', 'inv_stock_reclassifications',
                 // Finance transactions
                 'journal_items', 'journals',
                 // HR transactions
                 'hr_attendances', 'hr_payroll_items', 'hr_payrolls',
+                // Logistics & Maintenance transactions
+                'delivery_schedules',
+                'maintenance_schedules', 'maintenance_logs', 'maintenance_sparepart_usage',
                 // Notifications & logs
                 'notifications', 'activity_log',
             ];
@@ -359,8 +374,14 @@ class DatabaseBackupService
             }
             
             // Reset stocks to 0
-            if ($this->tableExists('stocks')) {
-                DB::table('stocks')->update(['quantity' => 0]);
+            if ($this->tableExists('product_stocks')) {
+                DB::table('product_stocks')->update([
+                    'qty_on_hand' => 0,
+                    'qty_reserved' => 0,
+                    'qty_incoming' => 0,
+                    'qty_outgoing' => 0,
+                    'avg_cost' => 0,
+                ]);
             }
             
             DB::statement('SET FOREIGN_KEY_CHECKS=1');
@@ -691,7 +712,7 @@ class DatabaseBackupService
 
     protected function generateSqlDump(array $tables): string
     {
-        $sql = "-- JICOS Database Backup\n";
+        $sql = "-- USICS Database Backup\n";
         $sql .= "-- Generated: " . date('Y-m-d H:i:s') . "\n";
         $sql .= "-- Tables: " . implode(', ', $tables) . "\n\n";
         $sql .= "SET FOREIGN_KEY_CHECKS=0;\n\n";

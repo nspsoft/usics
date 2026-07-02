@@ -45,10 +45,10 @@ const print = () => {
                     <!-- Supplier Logo & Name -->
                     <div class="flex items-center gap-4">
                         <img 
-                            :src="supplier?.logo ? '/storage/' + supplier.logo : '/images/jicos.png'" 
+                            :src="supplier?.logo ? '/storage/' + supplier.logo : '/images/usics.png'" 
                             class="h-16 w-16 object-contain rounded-lg bg-white border border-slate-200"
                             alt="Supplier Logo"
-                            @error="$event.target.src = '/images/jicos.png'" 
+                            @error="$event.target.src = '/images/usics.png'" 
                         />
                         <div>
                             <h1 class="text-2xl font-black text-indigo-950 uppercase tracking-tighter">{{ supplier?.name || 'Supplier' }}</h1>

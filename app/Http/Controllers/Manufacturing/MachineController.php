@@ -21,6 +21,11 @@ class MachineController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:machines,name',
             'code' => 'nullable|string|max:50',
+            'maker' => 'nullable|string|max:255',
+            'capacity' => 'nullable|string|max:255',
+            'purchase_date' => 'nullable|date',
+            'purchase_price' => 'nullable|numeric|min:0',
+            'runtime_hours' => 'nullable|numeric|min:0',
             'is_active' => 'boolean',
         ]);
 
@@ -35,6 +40,11 @@ class MachineController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:machines,name,' . $machine->id,
             'code' => 'nullable|string|max:50',
+            'maker' => 'nullable|string|max:255',
+            'capacity' => 'nullable|string|max:255',
+            'purchase_date' => 'nullable|date',
+            'purchase_price' => 'nullable|numeric|min:0',
+            'runtime_hours' => 'nullable|numeric|min:0',
             'is_active' => 'boolean',
         ]);
 
@@ -46,7 +56,6 @@ class MachineController extends Controller
 
     public function destroy(Machine $machine)
     {
-        // For now, simple delete. In real scenarios, check for usage.
         $machine->delete();
 
         return redirect()->route('manufacturing.machines.index')

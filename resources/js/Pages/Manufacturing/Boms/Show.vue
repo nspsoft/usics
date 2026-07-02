@@ -228,6 +228,48 @@ const formatShortDate = (value) => {
                         </div>
                     </div>
 
+                    <!-- Multiple Outputs Table (If Any) -->
+                    <div v-if="bom.outputs?.length > 0" class="glass-card rounded-3xl shadow-sm overflow-hidden mb-8">
+                        <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 font-mono">
+                                <CubeIcon class="h-4 w-4" />
+                                MULTIPLE_OUTPUTS_LIST
+                            </h3>
+                            <span class="text-[10px] font-mono font-bold text-slate-500 bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-lg">
+                                {{ bom.outputs?.length }} OUTPUTS
+                            </span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
+                                <thead>
+                                    <tr class="bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50">
+                                        <th class="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Output Product</th>
+                                        <th class="px-6 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest" width="120">Qty Ratio</th>
+                                        <th class="px-6 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest" width="100">Unit</th>
+                                        <th class="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tr v-for="out in bom.outputs" :key="out.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm font-bold text-slate-900 dark:text-white">{{ out.product?.name }}</div>
+                                            <div class="text-[10px] text-slate-500 font-mono mt-0.5">{{ out.product?.sku }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-center">
+                                            <div class="text-sm font-bold text-slate-200 font-mono">{{ formatNumberFixed(out.qty_ratio, 2) }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-center">
+                                            <div class="text-[10px] text-slate-500 uppercase font-bold">{{ out.unit?.symbol || out.product?.unit?.symbol || 'pcs' }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-left">
+                                            <div class="text-xs text-slate-500">{{ out.notes || '-' }}</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- Production Routing Section -->
                     <div class="glass-card rounded-3xl shadow-sm overflow-hidden">
                         <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">

@@ -68,6 +68,11 @@ class Bom extends Model
         return $this->hasMany(BomComponent::class)->orderBy('sequence');
     }
 
+    public function outputs(): HasMany
+    {
+        return $this->hasMany(BomOutput::class);
+    }
+
     public function operations(): HasMany
     {
         return $this->hasMany(BomOperation::class)->orderBy('sequence');

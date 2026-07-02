@@ -170,7 +170,7 @@
 Jl. Jababeka II Blok C No. 19 L
 Pasirgombong, Cikarang Utara, Bekasi 17530 Jawa Barat
 Telp : +62 21 89383915, Fax. : +62 21 89383915
-e_mail : purchasing@jidoka.co.id'))) !!}
+e_mail : purchasing@usc-indonesia.co.id'))) !!}
                 </div>
             </td>
             <td width="45%" style="vertical-align: top; padding-top: 30px;">

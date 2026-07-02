@@ -59,7 +59,7 @@ class CrmDashboardController extends Controller
                     ->whereMonth('close_date', $date->month)
                     ->sum('amount') * 0.4; // 40% probability weight
                 $actuals[] = null;
-                $projected[] = $projectedVal > 0 ? $projectedVal : 500000000; // Fallback min 500jt
+                $projected[] = $projectedVal; // Removed fallback min 500jt
             }
         }
 
