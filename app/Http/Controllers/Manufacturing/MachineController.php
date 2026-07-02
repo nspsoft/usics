@@ -21,6 +21,7 @@ class MachineController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:machines,name',
             'code' => 'nullable|string|max:50',
+            'type' => 'nullable|string|max:255',
             'maker' => 'nullable|string|max:255',
             'capacity' => 'nullable|string|max:255',
             'purchase_date' => 'nullable|date',
@@ -40,6 +41,7 @@ class MachineController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:machines,name,' . $machine->id,
             'code' => 'nullable|string|max:50',
+            'type' => 'nullable|string|max:255',
             'maker' => 'nullable|string|max:255',
             'capacity' => 'nullable|string|max:255',
             'purchase_date' => 'nullable|date',

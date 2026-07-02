@@ -288,7 +288,7 @@ const getLocColorClass = (status) => {
           </button>
           
           <a
-            :href="route('opname.index')"
+            :href="route('inventory.opname.index')"
             class="text-xs font-mono border border-slate-700 hover:border-emerald-500/50 text-slate-300 px-4 py-1.5 rounded-lg transition-all"
           >
             KEMBALI KE DAFTAR

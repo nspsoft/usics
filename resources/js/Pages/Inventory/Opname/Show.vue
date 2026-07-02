@@ -19,6 +19,7 @@ import {
     FunnelIcon,
     QrCodeIcon,
     CameraIcon,
+    TvIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber } from '@/helpers';
 
@@ -386,6 +387,14 @@ const getDiffBg = (diff) => {
                     <span class="hidden sm:inline">Back to List</span>
                 </Link>
                 <div class="flex items-center gap-2">
+                    <a
+                        v-if="opname.status === 'in_progress' || opname.status === 'draft'"
+                        :href="`/inventory/opname/${opname.id}/hud`"
+                        class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-3 py-2 text-sm font-semibold shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95"
+                    >
+                        <TvIcon class="h-4 w-4" />
+                        <span>BUKA DISPLAY HUD</span>
+                    </a>
                     <button
                         v-if="opname.status !== 'completed' && items.length > 0"
                         @click="openScan('location')"

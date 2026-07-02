@@ -11,7 +11,8 @@ import {
     ArrowTrendingUpIcon,
     ArrowTrendingDownIcon,
     MinusIcon,
-    InformationCircleIcon
+    InformationCircleIcon,
+    EyeIcon
 } from '@heroicons/vue/24/outline';
 import { formatCurrency, formatNumber } from '@/helpers';
 import axios from 'axios';
@@ -79,6 +80,53 @@ const getProductSuggestion = (sku) => {
     return analysisResult.value.pricing_suggestions.find(s => s.sku === sku) || null;
 };
 
+// Machine Details Mapping
+const getMachineDetails = (sku) => {
+    const s = (sku || '').toUpperCase();
+    if (s.startsWith('SC-')) {
+        return { name: 'Slitting Machine', image: '/images/slitting_machine.png', desc: 'Memotong mother coil lebar menjadi slit coil dengan lebar kustom.' };
+    } else if (s.startsWith('FG-BLNK-') || s.startsWith('FG-COMP-')) {
+        return { name: 'Blanking Press Machine', image: '/images/blanking_press.png', desc: 'Mencetak plat lembaran menjadi bentuk disc brake blank atau komponen khusus.' };
+    } else if (s.startsWith('FG-TWB-')) {
+        return { name: 'Laser Welding Machine', image: '/images/laser_welder.png', desc: 'Penyambungan dua plat dengan ketebalan/spesifikasi berbeda menggunakan laser.' };
+    } else {
+        return { name: 'Shearing Machine', image: '/images/shearing_machine.png', desc: 'Memotong plat gulungan (mother coil) menjadi lembaran persegi panjang (sheared sheets).' };
+    }
+};
+
+const selectedProductModal = ref(null);
+const viewProductDetails = (product) => {
+    selectedProductModal.value = product;
+};
+const closeModal = () => {
+    selectedProductModal.value = null;
+};
+
+// Real-time calculation helper
+const calculateCostDetails = (p) => {
+    if (!p) return null;
+    const rawCost = (params.value.lme_price * params.value.exchange_rate) / 1000;
+    const scrapDiscount = rawCost * (p.scrap_recovery / 100) * 0.4;
+    const suggestedCost = rawCost + p.processing_fee - scrapDiscount;
+    const recommendedPrice = suggestedCost / (1 - (params.value.target_margin / 100));
+    const minPrice = suggestedCost / (1 - ((params.value.target_margin - 3) / 100));
+    const maxPrice = suggestedCost / (1 - ((params.value.target_margin + 4) / 100));
+    
+    return {
+        rawCost,
+        scrapDiscount,
+        suggestedCost,
+        recommendedPrice,
+        minPrice,
+        maxPrice
+    };
+};
+
+// Copy price to clipboard helper
+const copyToClipboard = (value) => {
+    navigator.clipboard.writeText(value);
+    alert('Harga berhasil disalin ke papan klip!');
+};
 </script>
 
 <template>
@@ -220,6 +268,7 @@ const getProductSuggestion = (sku) => {
                             <tr class="bg-slate-50 dark:bg-slate-900/50">
                                 <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">SKU</th>
                                 <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Produk</th>
+                                <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Mesin Produksi</th>
                                 <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Ongkos Proses</th>
                                 <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Faktor Scrap</th>
                                 <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">HPP Saat Ini</th>
@@ -227,12 +276,23 @@ const getProductSuggestion = (sku) => {
                                 <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right text-blue-400">Saran HPP Baru</th>
                                 <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right text-emerald-400">Saran Harga Jual</th>
                                 <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Deviasi Jual</th>
+                                <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-200 dark:divide-slate-800/50">
                             <tr v-for="p in productsList" :key="p.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
                                 <td class="px-4 py-3 text-xs font-mono text-slate-900 dark:text-white">{{ p.sku }}</td>
-                                <td class="px-4 py-3 text-xs text-slate-900 dark:text-white">{{ p.name }}</td>
+                                <td class="px-4 py-3 text-xs text-slate-900 dark:text-white font-medium">{{ p.name }}</td>
+                                <td class="px-4 py-3 text-xs">
+                                    <div class="flex items-center gap-2">
+                                        <img 
+                                            :src="getMachineDetails(p.sku).image" 
+                                            class="w-10 h-7 rounded object-cover border border-slate-200 dark:border-slate-800 shadow-sm shrink-0"
+                                            :alt="getMachineDetails(p.sku).name"
+                                        />
+                                        <span class="text-[11px] text-slate-600 dark:text-slate-400 font-semibold truncate max-w-[120px]">{{ getMachineDetails(p.sku).name }}</span>
+                                    </div>
+                                </td>
                                 <td class="px-4 py-3 text-xs text-center">
                                     <div class="inline-flex items-center gap-1">
                                         <input 
@@ -269,7 +329,7 @@ const getProductSuggestion = (sku) => {
                                 <td class="px-4 py-3 text-xs text-emerald-400 text-right font-black">
                                     <div v-if="getProductSuggestion(p.sku)">
                                         <p>{{ formatCurrency(getProductSuggestion(p.sku).recommended_selling_price) }}</p>
-                                        <p class="text-[10px] text-slate-500 font-normal">Min: {{ formatCurrency(getProductSuggestion(p.sku).min_selling_price) }} | Max: {{ formatCurrency(getProductSuggestion(p.sku).max_selling_price) }}</p>
+                                        <p class="text-[10px] text-slate-500 font-normal text-right">Min: {{ formatCurrency(getProductSuggestion(p.sku).min_selling_price) }} | Max: {{ formatCurrency(getProductSuggestion(p.sku).max_selling_price) }}</p>
                                     </div>
                                     <span v-else class="text-slate-400">-</span>
                                 </td>
@@ -285,9 +345,144 @@ const getProductSuggestion = (sku) => {
                                     </div>
                                     <span v-else class="text-slate-400">-</span>
                                 </td>
+                                
+                                <td class="px-4 py-3 text-xs text-center">
+                                    <button 
+                                        @click="viewProductDetails(p)"
+                                        class="p-1.5 text-indigo-500 hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors inline-flex items-center"
+                                        title="Lihat Detail Cara Kerja AI & Kalkulasi"
+                                    >
+                                        <EyeIcon class="h-4 w-4" />
+                                    </button>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Interactive Detail Modal -->
+            <div v-if="selectedProductModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-lg transition-all animate-in fade-in duration-300">
+                <div class="relative max-w-4xl w-full glass-card border border-white/10 rounded-[32px] overflow-hidden bg-slate-900/95 text-slate-100 shadow-2xl p-6 md:p-8 flex flex-col md:flex-row gap-6 md:gap-8 animate-in zoom-in-95 duration-300">
+                    
+                    <!-- Close button -->
+                    <button @click="closeModal" class="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors text-slate-400 hover:text-white">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+
+                    <!-- Left Column: Production Machine Information -->
+                    <div class="md:w-1/2 flex flex-col justify-between border-b md:border-b-0 md:border-r border-white/10 pb-6 md:pb-0 md:pr-6">
+                        <div class="space-y-4">
+                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase tracking-wider">
+                                Lini Produksi & Mesin
+                            </div>
+                            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                                {{ getMachineDetails(selectedProductModal.sku).name }}
+                            </h3>
+                            <div class="relative group overflow-hidden rounded-2xl border border-white/10">
+                                <img 
+                                    :src="getMachineDetails(selectedProductModal.sku).image" 
+                                    class="w-full h-48 md:h-56 object-cover transform group-hover:scale-105 transition-transform duration-500" 
+                                    :alt="getMachineDetails(selectedProductModal.sku).name"
+                                />
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
+                            </div>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                {{ getMachineDetails(selectedProductModal.sku).desc }} Mesin ini dikonfigurasi khusus dengan ongkos kerja (shearing/slitting fee) dan faktor pemulihan scrap optimal sesuai spesifikasi pelat baja.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-white/5 flex gap-2">
+                            <span class="text-xs text-slate-500">SKU:</span>
+                            <span class="text-xs font-mono text-slate-300 font-bold">{{ selectedProductModal.sku }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Cost Formula & AI Analysis -->
+                    <div class="md:w-1/2 flex flex-col justify-between">
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Nama Produk</h4>
+                                <h3 class="text-lg font-bold text-white leading-snug">{{ selectedProductModal.name }}</h3>
+                            </div>
+
+                            <!-- Cost Calculations Breakdown -->
+                            <div class="bg-slate-950/50 rounded-2xl p-4 border border-white/5 space-y-3">
+                                <h5 class="text-xs font-bold text-indigo-400 uppercase tracking-wider border-b border-white/5 pb-2">Rincian Kalkulasi Harga Pokok (HPP)</h5>
+                                
+                                <div class="space-y-2 text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">1. Raw Material LME Cost/Kg</span>
+                                        <span class="font-mono text-slate-200">
+                                            {{ formatCurrency(calculateCostDetails(selectedProductModal).rawCost) }}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">2. Processing/Slitting Fee</span>
+                                        <span class="font-mono text-emerald-400">
+                                            + {{ formatCurrency(selectedProductModal.processing_fee) }}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">3. Scrap Recovery Discount (40%)</span>
+                                        <span class="font-mono text-red-400">
+                                            - {{ formatCurrency(calculateCostDetails(selectedProductModal).scrapDiscount) }}
+                                        </span>
+                                    </div>
+                                    <div class="border-t border-white/5 pt-2 flex justify-between font-bold">
+                                        <span class="text-white">Estimasi HPP Sugerisasi</span>
+                                        <span class="font-mono text-blue-400">
+                                            {{ formatCurrency(calculateCostDetails(selectedProductModal).suggestedCost) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Selling Price Recommendations -->
+                            <div class="bg-indigo-600/10 rounded-2xl p-4 border border-indigo-500/20 space-y-3">
+                                <h5 class="text-xs font-bold text-indigo-400 uppercase tracking-wider border-b border-indigo-500/5 pb-2">Rekomendasi Harga Jual (Margin {{ params.target_margin }}%)</h5>
+                                
+                                <div class="space-y-2 text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Minimum Selling Price (-3%)</span>
+                                        <span class="font-mono text-slate-300">
+                                            {{ formatCurrency(calculateCostDetails(selectedProductModal).minPrice) }}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Maximum Selling Price (+4%)</span>
+                                        <span class="font-mono text-slate-300">
+                                            {{ formatCurrency(calculateCostDetails(selectedProductModal).maxPrice) }}
+                                        </span>
+                                    </div>
+                                    <div class="border-t border-white/10 pt-2 flex justify-between font-black text-sm">
+                                        <span class="text-white">Harga Rekomendasi Jual</span>
+                                        <span class="font-mono text-emerald-400">
+                                            {{ formatCurrency(calculateCostDetails(selectedProductModal).recommendedPrice) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-6 flex gap-3">
+                            <button 
+                                @click="copyToClipboard(Math.round(calculateCostDetails(selectedProductModal).recommendedPrice))"
+                                class="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-indigo-600/20"
+                            >
+                                Salin Harga
+                            </button>
+                            <button 
+                                @click="closeModal"
+                                class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

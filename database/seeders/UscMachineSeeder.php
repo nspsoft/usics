@@ -24,6 +24,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Slitter Machine SA',
                 'code' => 'SLITTER-SA',
+                'type' => 'Slitting',
                 'maker' => 'TOTO',
                 'capacity' => '4,757 MT/Month',
                 'purchase_date' => '2002-02-15',
@@ -33,6 +34,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Slitter Machine S2',
                 'code' => 'SLITTER-S2',
+                'type' => 'Slitting',
                 'maker' => 'YONEMORI',
                 'capacity' => '6,300 MT/Month',
                 'purchase_date' => '2005-06-10',
@@ -42,6 +44,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Slitter Machine S4',
                 'code' => 'SLITTER-S4',
+                'type' => 'Slitting',
                 'maker' => 'HONDA MF758',
                 'capacity' => '5,250 MT/Month',
                 'purchase_date' => '2012-08-20',
@@ -51,6 +54,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Slitter Machine S5',
                 'code' => 'SLITTER-S5',
+                'type' => 'Slitting',
                 'maker' => 'SONODA',
                 'capacity' => '7,949 MT/Month',
                 'purchase_date' => '2018-11-05',
@@ -64,6 +68,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Mini Slitter SB',
                 'code' => 'MINI-SLITTER-SB',
+                'type' => 'Mini Slitting',
                 'maker' => 'TOTO',
                 'capacity' => '268 MT/Month',
                 'purchase_date' => '2003-05-14',
@@ -73,6 +78,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Mini Slitter S3',
                 'code' => 'MINI-SLITTER-S3',
+                'type' => 'Mini Slitting',
                 'maker' => 'HAKUSAN',
                 'capacity' => '131 MT/Month',
                 'purchase_date' => '2008-04-18',
@@ -86,6 +92,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Leveller LA',
                 'code' => 'LEVELLER-LA',
+                'type' => 'Levelling',
                 'maker' => 'SUMIKURA',
                 'capacity' => '3,502 MT/Month',
                 'purchase_date' => '2002-02-20',
@@ -95,6 +102,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Leveller LC',
                 'code' => 'LEVELLER-LC',
+                'type' => 'Levelling',
                 'maker' => 'KYOWA',
                 'capacity' => '583 MT/Month',
                 'purchase_date' => '2006-09-12',
@@ -104,6 +112,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Leveller LD',
                 'code' => 'LEVELLER-LD',
+                'type' => 'Levelling',
                 'maker' => 'SONODA',
                 'capacity' => '1,087 MT/Month',
                 'purchase_date' => '2014-10-30',
@@ -117,6 +126,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Mini Leveller L5',
                 'code' => 'MINI-LEVELLER-L5',
+                'type' => 'Mini Levelling',
                 'maker' => 'FUMIRA',
                 'capacity' => '630 MT/Month',
                 'purchase_date' => '2007-03-22',
@@ -126,6 +136,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Mini Leveller L6',
                 'code' => 'MINI-LEVELLER-L6',
+                'type' => 'Mini Levelling',
                 'maker' => 'SONODA',
                 'capacity' => '1,155 MT/Month',
                 'purchase_date' => '2016-05-15',
@@ -139,6 +150,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Shearing Machine SS-GF',
                 'code' => 'SHEARING-SS-GF',
+                'type' => 'Shearing',
                 'maker' => 'YAMATSU',
                 'capacity' => '144 MT/Month',
                 'purchase_date' => '2004-11-18',
@@ -152,6 +164,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear GA',
                 'code' => 'GUILLOTINE-GA',
+                'type' => 'Guillotine Shear',
                 'maker' => 'AMADA',
                 'capacity' => '158 MT/Month',
                 'purchase_date' => '2002-03-01',
@@ -161,6 +174,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear GC',
                 'code' => 'GUILLOTINE-GC',
+                'type' => 'Guillotine Shear',
                 'maker' => 'AIZAWA',
                 'capacity' => '215 MT/Month',
                 'purchase_date' => '2005-02-14',
@@ -170,6 +184,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear GD',
                 'code' => 'GUILLOTINE-GD',
+                'type' => 'Guillotine Shear',
                 'maker' => 'AMADA',
                 'capacity' => '252 MT/Month',
                 'purchase_date' => '2008-07-19',
@@ -179,6 +194,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear GE',
                 'code' => 'GUILLOTINE-GE',
+                'type' => 'Guillotine Shear',
                 'maker' => 'YSD',
                 'capacity' => '273 MT/Month',
                 'purchase_date' => '2010-09-05',
@@ -188,6 +204,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear GG',
                 'code' => 'GUILLOTINE-GG',
+                'type' => 'Guillotine Shear',
                 'maker' => 'AIZAWA',
                 'capacity' => '184 MT/Month',
                 'purchase_date' => '2003-12-10',
@@ -197,6 +214,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear GN',
                 'code' => 'GUILLOTINE-GN',
+                'type' => 'Guillotine Shear',
                 'maker' => 'AIZAWA',
                 'capacity' => '221 MT/Month',
                 'purchase_date' => '2006-04-28',
@@ -206,6 +224,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear GO',
                 'code' => 'GUILLOTINE-GO',
+                'type' => 'Guillotine Shear',
                 'maker' => 'AMADA',
                 'capacity' => '305 MT/Month',
                 'purchase_date' => '2015-08-11',
@@ -215,6 +234,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear GI',
                 'code' => 'GUILLOTINE-GI',
+                'type' => 'Guillotine Shear',
                 'maker' => 'AMADA',
                 'capacity' => '76,125 Pcs/Month',
                 'purchase_date' => '2011-03-24',
@@ -224,6 +244,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear GJ',
                 'code' => 'GUILLOTINE-GJ',
+                'type' => 'Guillotine Shear',
                 'maker' => 'AIZAWA',
                 'capacity' => '65,625 Pcs/Month',
                 'purchase_date' => '2007-10-15',
@@ -233,6 +254,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear GL',
                 'code' => 'GUILLOTINE-GL',
+                'type' => 'Guillotine Shear',
                 'maker' => 'YSD',
                 'capacity' => '77,175 Pcs/Month',
                 'purchase_date' => '2013-05-09',
@@ -242,6 +264,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear GM',
                 'code' => 'GUILLOTINE-GM',
+                'type' => 'Guillotine Shear',
                 'maker' => 'YSD',
                 'capacity' => '8,400 Pcs/Month',
                 'purchase_date' => '2017-02-18',
@@ -251,6 +274,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear G4',
                 'code' => 'GUILLOTINE-G4',
+                'type' => 'Guillotine Shear',
                 'maker' => 'AMADA',
                 'capacity' => '420 MT/Month',
                 'purchase_date' => '2014-06-30',
@@ -260,6 +284,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear G5',
                 'code' => 'GUILLOTINE-G5',
+                'type' => 'Guillotine Shear',
                 'maker' => 'KOWA',
                 'capacity' => '315 MT/Month',
                 'purchase_date' => '2009-11-12',
@@ -269,6 +294,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear G6',
                 'code' => 'GUILLOTINE-G6',
+                'type' => 'Guillotine Shear',
                 'maker' => 'AMADA',
                 'capacity' => '158 MT/Month',
                 'purchase_date' => '2019-01-25',
@@ -278,6 +304,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Guillotine Shear G7',
                 'code' => 'GUILLOTINE-G7',
+                'type' => 'Guillotine Shear',
                 'maker' => 'AMADA',
                 'capacity' => '158 MT/Month',
                 'purchase_date' => '2021-04-18',
@@ -291,6 +318,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Blanking Press BA',
                 'code' => 'BLANKING-BA',
+                'type' => 'Blanking',
                 'maker' => 'AIDA',
                 'capacity' => '349,928 Pcs/Month',
                 'purchase_date' => '2002-03-15',
@@ -300,6 +328,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Blanking Press BB',
                 'code' => 'BLANKING-BB',
+                'type' => 'Blanking',
                 'maker' => 'AIDA',
                 'capacity' => '666,288 Pcs/Month',
                 'purchase_date' => '2015-10-12',
@@ -313,6 +342,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Laser Welder WA',
                 'code' => 'WELDING-WA',
+                'type' => 'Welding',
                 'maker' => 'OYABE SEIKI',
                 'capacity' => '94,169 Pcs/Month',
                 'purchase_date' => '2003-04-20',
@@ -322,6 +352,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Laser Welder WB',
                 'code' => 'WELDING-WB',
+                'type' => 'Welding',
                 'maker' => 'OYABE SEIKI',
                 'capacity' => '68,849 Pcs/Month',
                 'purchase_date' => '2010-11-25',
@@ -331,6 +362,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Laser Welder WD',
                 'code' => 'WELDING-WD',
+                'type' => 'Welding',
                 'maker' => 'OYABE SEIKI',
                 'capacity' => '63,000 Pcs/Month',
                 'purchase_date' => '2018-07-02',
@@ -344,6 +376,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Washing Machine',
                 'code' => 'SUPPORT-WASHING',
+                'type' => 'Supporting',
                 'maker' => 'ECHO Co., Ltd.',
                 'capacity' => 'Width 300-1850 / L=300-4000',
                 'purchase_date' => '2002-02-15',
@@ -353,6 +386,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Main Piller',
                 'code' => 'SUPPORT-MAIN-PILLER',
+                'type' => 'Supporting',
                 'maker' => 'ECHO Co., Ltd.',
                 'capacity' => 'Width 300-1850 / L=300-4000',
                 'purchase_date' => '2002-02-15',
@@ -362,6 +396,7 @@ class UscMachineSeeder extends Seeder
             [
                 'name' => 'Turn Over Machine',
                 'code' => 'SUPPORT-TURNOVER',
+                'type' => 'Supporting',
                 'maker' => 'ECHO Co., Ltd.',
                 'capacity' => '7 Ton',
                 'purchase_date' => '2005-08-30',
@@ -374,6 +409,7 @@ class UscMachineSeeder extends Seeder
             Machine::create([
                 'name' => $m['name'],
                 'code' => $m['code'],
+                'type' => $m['type'],
                 'maker' => $m['maker'],
                 'capacity' => $m['capacity'],
                 'qr_code_uuid' => (string) Str::uuid(),
