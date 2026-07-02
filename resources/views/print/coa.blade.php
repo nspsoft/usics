@@ -107,7 +107,7 @@
             <tr>
                 <td>{{ $item->product->name }}</td>
                 <td>{{ $item->product->code }}</td>
-                <td>-</td> <!-- Needs Batch tracking linking -->
+                <td>{{ $coa->batch_number }}</td> <!-- Dynamic Batch tracking linking -->
                 <td>{{ $item->qty }} {{ $item->unit }}</td>
                 <td><strong>PASSED</strong></td>
             </tr>

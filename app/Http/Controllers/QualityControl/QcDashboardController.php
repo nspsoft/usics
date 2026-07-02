@@ -71,6 +71,50 @@ class QcDashboardController extends Controller
         $defectLabels = $defectsRaw->pluck('defect_type');
         $defectCounts = $defectsRaw->pluck('count');
 
+        // 7. Chart Data: Statistical Process Control (SPC) Chart for Thickness
+        $spcItemsRaw = \App\Models\QcInspectionItem::select('qc_inspection_items.actual_value', 'qc_master_points.standard_min', 'qc_master_points.standard_max', 'qc_inspections.inspection_date')
+            ->join('qc_master_points', 'qc_inspection_items.qc_master_point_id', '=', 'qc_master_points.id')
+            ->join('qc_inspections', 'qc_inspection_items.qc_inspection_id', '=', 'qc_inspections.id')
+            ->where('qc_master_points.parameter_name', 'Thickness')
+            ->orderBy('qc_inspections.inspection_date', 'desc')
+            ->take(25)
+            ->get()
+            ->reverse()
+            ->values();
+
+        $spcValues = $spcItemsRaw->pluck('actual_value')->map(fn($v) => (float)$v)->toArray();
+        $count = count($spcValues);
+
+        $cl = 0;
+        $ucl = 0;
+        $lcl = 0;
+        $usl = 0;
+        $lsl = 0;
+
+        if ($count > 0) {
+            $sum = array_sum($spcValues);
+            $cl = round($sum / $count, 3);
+            
+            // Standard Deviation
+            $varianceSum = 0;
+            foreach ($spcValues as $val) {
+                $varianceSum += pow($val - $cl, 2);
+            }
+            $stdDev = sqrt($varianceSum / $count);
+            
+            $ucl = round($cl + 3 * $stdDev, 3);
+            $lcl = round($cl - 3 * $stdDev, 3);
+
+            // Spec Limits (USL / LSL) from first record
+            $usl = (float)$spcItemsRaw[0]->standard_max;
+            $lsl = (float)$spcItemsRaw[0]->standard_min;
+        }
+
+        $spcLabels = [];
+        for ($i = 1; $i <= $count; $i++) {
+            $spcLabels[] = '#' . $i;
+        }
+
         return inertia('QualityControl/Dashboard', [
             'stats' => [
                 'total_inspections' => $totalInspections,
@@ -103,6 +147,22 @@ class QcDashboardController extends Controller
                             'data' => $defectCounts,
                             'backgroundColor' => ['#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899'],
                         ],
+                    ],
+                ],
+                'spc' => [
+                    'labels' => $spcLabels,
+                    'values' => $spcValues,
+                    'cl' => array_fill(0, $count, $cl),
+                    'ucl' => array_fill(0, $count, $ucl),
+                    'lcl' => array_fill(0, $count, $lcl),
+                    'usl' => array_fill(0, $count, $usl),
+                    'lsl' => array_fill(0, $count, $lsl),
+                    'stats' => [
+                        'mean' => $cl,
+                        'ucl' => $ucl,
+                        'lcl' => $lcl,
+                        'usl' => $usl,
+                        'lsl' => $lsl,
                     ],
                 ],
             ],

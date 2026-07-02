@@ -21,6 +21,7 @@ import {
     ExclamationCircleIcon,
     ShieldExclamationIcon,
     InformationCircleIcon,
+    EyeIcon,
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 import {
@@ -231,6 +232,41 @@ const getAchievementTextColor = (pct) => {
     if (pct >= 70) return 'text-blue-600 dark:text-blue-400';
     if (pct >= 50) return 'text-amber-600 dark:text-amber-400';
     return 'text-red-600 dark:text-red-400';
+};
+
+// Machine Details Mapping
+const getMachineDetails = (sku) => {
+    const s = (sku || '').toUpperCase();
+    if (s.startsWith('SC-')) {
+        return { name: 'Slitting Machine', image: '/images/slitting_machine.png', desc: 'Memotong mother coil lebar menjadi slit coil dengan lebar kustom.' };
+    } else if (s.startsWith('FG-BLNK-') || s.startsWith('FG-COMP-')) {
+        return { name: 'Blanking Press Machine', image: '/images/blanking_press.png', desc: 'Mencetak plat lembaran menjadi bentuk disc brake blank atau komponen khusus.' };
+    } else if (s.startsWith('FG-TWB-')) {
+        return { name: 'Laser Welding Machine', image: '/images/laser_welder.png', desc: 'Penyambungan dua plat dengan ketebalan/spesifikasi berbeda menggunakan laser.' };
+    } else {
+        return { name: 'Shearing Machine', image: '/images/shearing_machine.png', desc: 'Memotong plat gulungan (mother coil) menjadi lembaran persegi panjang (sheared sheets).' };
+    }
+};
+
+const getSkuDefaults = (sku) => {
+    const s = (sku || '').toUpperCase();
+    if (s.startsWith('SC-')) {
+        return { processing_fee: 250, scrap_recovery: 3 };
+    } else if (s.startsWith('FG-BLNK-') || s.startsWith('FG-COMP-')) {
+        return { processing_fee: 550, scrap_recovery: 18 };
+    } else if (s.startsWith('FG-TWB-')) {
+        return { processing_fee: 1200, scrap_recovery: 8 };
+    } else {
+        return { processing_fee: 350, scrap_recovery: 5 };
+    }
+};
+
+const selectedProductDetail = ref(null);
+const openProductDetail = (item) => {
+    selectedProductDetail.value = item;
+};
+const closeProductDetail = () => {
+    selectedProductDetail.value = null;
 };
 </script>
 
@@ -628,13 +664,16 @@ const getAchievementTextColor = (pct) => {
                                         <th class="px-4 py-3 text-right">Delivery</th>
                                         <th class="px-4 py-3 text-right">Achievement %</th>
                                         <th class="px-4 py-3 text-right">Variance</th>
+                                        <th class="px-4 py-3 text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                                     <tr v-for="item in detailsData" :key="item.product_id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td class="px-4 py-3">
-                                            <div class="font-semibold text-slate-900 dark:text-white">{{ item.name }}</div>
-                                            <div class="text-[10px] text-slate-400 font-mono">{{ item.sku }}</div>
+                                            <div>
+                                                <div class="font-semibold text-slate-900 dark:text-white">{{ item.name }}</div>
+                                                <div class="text-[10px] text-slate-400 font-mono">{{ item.sku }}</div>
+                                            </div>
                                         </td>
                                         <td class="px-4 py-3 text-right font-mono font-semibold">{{ fmtNum(item.forecast) }} <span class="text-[10px] text-slate-400">{{ item.unit }}</span></td>
                                         <td class="px-4 py-3 text-right font-mono font-semibold text-blue-600 dark:text-blue-400">{{ fmtNum(item.actual) }} <span class="text-[10px] text-slate-400">{{ item.unit }}</span></td>
@@ -652,9 +691,19 @@ const getAchievementTextColor = (pct) => {
                                         <td class="px-4 py-3 text-right font-mono font-semibold" :class="item.variance >= 0 ? 'text-emerald-600' : 'text-red-600'">
                                             {{ item.variance > 0 ? '+' : '' }}{{ fmtNum(item.variance) }}
                                         </td>
+                                        <td class="px-4 py-3 text-center">
+                                            <button 
+                                                @click="openProductDetail(item)"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-455 text-xs font-bold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-all active:scale-95"
+                                                title="View Detail Proses & Estimasi Biaya"
+                                            >
+                                                <EyeIcon class="h-3.5 w-3.5" />
+                                                View
+                                            </button>
+                                        </td>
                                     </tr>
                                     <tr v-if="!detailsData.length">
-                                        <td colspan="5" class="px-4 py-8 text-center text-slate-400">No item data found</td>
+                                        <td colspan="7" class="px-4 py-8 text-center text-slate-400">No item data found</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -663,6 +712,101 @@ const getAchievementTextColor = (pct) => {
                 </div>
             </div>
         </div>
+        
+        <!-- ═══ PRODUCT & MACHINE DETAIL SUB-MODAL ═══ -->
+        <div v-if="selectedProductDetail" class="fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity" @click="closeProductDetail"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+
+                <div class="relative z-10 inline-block align-middle bg-white dark:bg-slate-900 rounded-[32px] text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-2xl sm:w-full border border-slate-200 dark:border-slate-800 p-6 md:p-8">
+                    <!-- Close Button -->
+                    <button @click="closeProductDetail" class="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                        <XMarkIcon class="h-6 w-6" />
+                    </button>
+
+                    <div class="flex flex-col gap-6">
+                        <!-- Top Info -->
+                        <div class="space-y-2">
+                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold uppercase tracking-wider">
+                                Detail Proses & Klasifikasi Produk
+                            </div>
+                            <h3 class="text-xl font-black text-slate-950 dark:text-white leading-snug">
+                                {{ selectedProductDetail.name }}
+                            </h3>
+                            <p class="text-xs font-mono text-slate-400 dark:text-slate-500">SKU: {{ selectedProductDetail.sku }}</p>
+                        </div>
+
+                        <!-- Main Layout (Single Column) -->
+                        <div class="space-y-6">
+                            <!-- Process & Costing Specs -->
+                            <div class="bg-indigo-500/5 dark:bg-indigo-500/10 rounded-2xl p-5 border border-indigo-500/10 space-y-3">
+                                <h4 class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider border-b border-indigo-500/10 pb-1.5">Preset & Estimasi Proses</h4>
+                                
+                                <div class="space-y-2 text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-500">Tipe Mesin Pengolah</span>
+                                        <span class="font-bold text-slate-900 dark:text-white">{{ getMachineDetails(selectedProductDetail.sku).name }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-500">Processing Fee</span>
+                                        <span class="font-bold text-slate-900 dark:text-white">Rp {{ getSkuDefaults(selectedProductDetail.sku).processing_fee }}/kg</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-500">Scrap Recovery</span>
+                                        <span class="font-bold text-slate-900 dark:text-white">{{ getSkuDefaults(selectedProductDetail.sku).scrap_recovery }}%</span>
+                                    </div>
+                                    <div class="flex justify-between border-t border-slate-200/50 dark:border-slate-800/80 pt-2 mt-1">
+                                        <span class="text-slate-500">Satuan</span>
+                                        <span class="font-bold text-slate-900 dark:text-white font-mono">{{ selectedProductDetail.unit }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Accuracy Performance -->
+                            <div class="bg-slate-50 dark:bg-slate-950/40 rounded-2xl p-5 border border-slate-200/50 dark:border-slate-800/80 space-y-3">
+                                <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 pb-1.5">Performa Akurasi Bulan Ini</h4>
+                                
+                                <div class="space-y-2 text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-500">Rencana Forecast</span>
+                                        <span class="font-semibold text-slate-900 dark:text-white font-mono">{{ fmtNum(selectedProductDetail.forecast) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-500">Realisasi Order</span>
+                                        <span class="font-semibold text-slate-900 dark:text-white font-mono">{{ fmtNum(selectedProductDetail.actual) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-500">Deviasi (Variance)</span>
+                                        <span class="font-bold font-mono" :class="selectedProductDetail.variance >= 0 ? 'text-emerald-600' : 'text-red-600'">
+                                            {{ selectedProductDetail.variance > 0 ? '+' : '' }}{{ fmtNum(selectedProductDetail.variance) }}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between items-center pt-1">
+                                        <span class="text-slate-500">Pencapaian</span>
+                                        <span class="font-bold text-sm" :class="getAchievementTextColor(selectedProductDetail.achievement)">
+                                            {{ selectedProductDetail.achievement.toFixed(1) }}%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions / Close -->
+                        <div class="flex gap-3 pt-2 border-t border-slate-100 dark:border-slate-850">
+                            <button 
+                                type="button"
+                                @click="closeProductDetail"
+                                class="w-full py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl text-xs uppercase tracking-wider transition-all"
+                            >
+                                Tutup Detail
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ═══ DELIVERY TIMELINE MODAL ═══ -->
         <div v-if="showDeliveryModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">

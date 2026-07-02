@@ -314,22 +314,29 @@ const navigation = [
         current: false,
         permission: 'sales_crm.view',
         children: [
+            { name: 'Dashboard & Analitik', isHeader: true },
             { name: 'Sales Hub', href: '/sales/dashboard', icon: PresentationChartBarIcon, permission: 'sales_crm.sales_hub.view' },
+            { name: 'Pricing Intelligence', href: '/sales/pricing-intelligence', icon: PresentationChartBarIcon, permission: 'sales_crm.view' },
+            
+            { name: 'Master Data', isHeader: true },
+            { name: 'Customers', href: '/sales/customers', icon: UserGroupIcon, permission: 'sales_crm.customers.view' },
+            
+            { name: 'Transaksi & Operasional', isHeader: true },
             { name: 'Planning', href: '/sales/planning/dashboard', icon: ChartBarSquareIcon, permission: 'sales_crm.planning.view' },
             { name: 'Forecast', href: '/sales/planning/forecast', icon: CalendarDaysIcon, permission: 'sales_crm.forecast.view' },
             { name: 'Schedule', href: '/sales/planning/schedule', icon: TruckIcon, permission: 'sales_crm.schedule.view' },
-            { name: 'Customers', href: '/sales/customers', icon: UserGroupIcon, permission: 'sales_crm.customers.view' },
             { name: 'Quotations', href: '/sales/quotations', icon: DocumentTextIcon, permission: 'sales_crm.quotations.view' },
             { name: 'Sales Orders', href: '/sales/orders', icon: ShoppingCartIcon, permission: 'sales_crm.sales_orders.view' },
             { name: 'Delivery Orders', href: '/sales/deliveries', icon: ClipboardDocumentCheckIcon, permission: 'sales_crm.delivery_orders.view' },
             { name: 'Sales Invoices', href: '/sales/invoices', icon: BanknotesIcon, permission: 'sales_crm.invoices.view' },
             { name: 'Sales Returns', href: '/sales/returns', icon: ArrowUturnLeftIcon, permission: 'sales_crm.sales_returns.view' },
+            { name: 'PO Tracking', href: '/sales/po-tracking', icon: MapPinIcon, permission: 'sales_crm.po_tracking.view' },
+            { name: 'AI PO Extractor', href: '/sales/po-extractor', icon: SparklesIcon, permission: 'sales_crm.ai_po_extractor.view' },
+            
+            { name: 'Laporan & Informasi', isHeader: true },
             { name: 'SO Items Report', href: '/sales/orders/items', icon: ClipboardDocumentListIcon, permission: 'sales_crm.items_report.view' },
             { name: 'DO Items Report', href: '/sales/deliveries/items', icon: QueueListIcon, permission: 'sales_crm.items_report.view' },
             { name: 'Information', href: '/sales/information', icon: InformationCircleIcon, permission: 'sales_crm.information.view' },
-            { name: 'PO Tracking', href: '/sales/po-tracking', icon: MapPinIcon, permission: 'sales_crm.po_tracking.view' },
-            { name: 'AI PO Extractor', href: '/sales/po-extractor', icon: SparklesIcon, permission: 'sales_crm.ai_po_extractor.view' },
-            { name: 'Pricing Intelligence', href: '/sales/pricing-intelligence', icon: PresentationChartBarIcon, permission: 'sales_crm.view' },
         ]
     },
     { 
@@ -339,9 +346,14 @@ const navigation = [
         current: false,
         permission: 'sales_crm.view',
         children: [
+            { name: 'Dashboard & Analitik', isHeader: true },
+            { name: 'CRM Intelligence', href: '/crm/dashboard', icon: ChartBarIcon, permission: 'sales_crm.crm_intelligence.view' },
+            
+            { name: 'Komunikasi & Inbox', isHeader: true },
             { name: 'WhatsApp Center', href: '/sales/whatsapp', icon: ChatBubbleLeftRightIcon, permission: 'sales_crm.whatsapp_center.view', badgeKey: 'waUnread' },
             { name: 'AI Email Inbox', href: '/sales/emails', icon: InboxIcon, permission: 'sales_crm.ai_email_inbox.view' },
-            { name: 'CRM Intelligence', href: '/crm/dashboard', icon: ChartBarIcon, permission: 'sales_crm.crm_intelligence.view' },
+            
+            { name: 'Transaksi & Operasional', isHeader: true },
             { name: 'Leads Management', href: '/crm/leads', icon: FunnelIcon, permission: 'sales_crm.leads_management.view' },
             { name: 'Opportunity Tracking', href: '/crm/opportunities', icon: FlagIcon, permission: 'sales_crm.opportunity_tracking.view' },
             { name: 'Marketing Campaigns', href: '/crm/campaigns', icon: MegaphoneIcon, permission: 'sales_crm.marketing_campaigns.view' },
@@ -356,21 +368,28 @@ const navigation = [
         current: false,
         permission: 'purchasing.view',
         children: [
+            { name: 'Dashboard & Analitik', isHeader: true },
             { name: 'Procurement Ops', href: '/purchasing/dashboard', icon: PresentationChartBarIcon, permission: 'purchasing.view' },
+            { name: 'Supplier Scorecard', href: '/purchasing/supplier-scorecard', icon: TrophyIcon, permission: 'purchasing.view' },
+            
+            { name: 'Master Data', isHeader: true },
+            { name: 'Suppliers', href: '/purchasing/suppliers', icon: BuildingOfficeIcon, permission: 'purchasing.suppliers.view' },
+            
+            { name: 'Transaksi & Operasional', isHeader: true },
             { name: 'Delivery Schedule', href: '/purchasing/delivery-schedule', icon: CalendarDaysIcon, permission: 'purchasing.view' },
             { name: 'Procurement Forecast', href: '/purchasing/procurement-forecast', icon: ChartBarSquareIcon, permission: 'purchasing.view' },
-            { name: 'Supplier Scorecard', href: '/purchasing/supplier-scorecard', icon: TrophyIcon, permission: 'purchasing.view' },
-            { name: 'WhatsApp Center', href: '/purchasing/whatsapp', icon: ChatBubbleLeftRightIcon, permission: 'purchasing.view', badgeKey: 'waPurchasingUnread' },
-            { name: 'Information', href: '/purchasing/information', icon: InformationCircleIcon, permission: 'purchasing.view' },
-            { name: 'Suppliers', href: '/purchasing/suppliers', icon: BuildingOfficeIcon, permission: 'purchasing.suppliers.view' },
             { name: 'Purchase Requests', href: '/purchasing/requests', icon: DocumentPlusIcon, permission: 'purchasing.purchase_requests.view' },
             { name: 'Purchase Orders', href: '/purchasing/orders', icon: ShoppingCartIcon, permission: 'purchasing.purchase_orders.view' },
             { name: 'Goods Receipts', href: '/purchasing/receipts', icon: ArchiveBoxArrowDownIcon, permission: 'purchasing.goods_receipts.view' },
             { name: 'AI Gen. Receipt', href: '/purchasing/dn-extractor', icon: SparklesIcon, permission: 'purchasing.goods_receipts.view' },
             { name: 'Purchase Invoices', href: '/purchasing/invoices', icon: BanknotesIcon, permission: 'purchasing.purchase_invoices.view' },
             { name: 'Purchase Returns', href: '/purchasing/returns', icon: ArrowUturnLeftIcon, permission: 'purchasing.purchase_returns.view' },
+            
+            { name: 'Laporan & Informasi', isHeader: true },
             { name: 'PO Items Report', href: '/purchasing/orders/items', icon: ClipboardDocumentListIcon, permission: 'purchasing.view' },
             { name: 'GR Items Report', href: '/purchasing/receipts/items', icon: QueueListIcon, permission: 'purchasing.view' },
+            { name: 'WhatsApp Center', href: '/purchasing/whatsapp', icon: ChatBubbleLeftRightIcon, permission: 'purchasing.view', badgeKey: 'waPurchasingUnread' },
+            { name: 'Information', href: '/purchasing/information', icon: InformationCircleIcon, permission: 'purchasing.view' },
         ]
     },
     { 
@@ -380,14 +399,18 @@ const navigation = [
         current: false,
         permission: 'inventory.view',
         children: [
+            { name: 'Dashboard & Analitik', isHeader: true },
             { name: 'Command Center', href: '/inventory/dashboard', icon: PresentationChartBarIcon, permission: 'inventory.view' },
-            { name: 'Information', href: '/inventory/information', icon: InformationCircleIcon, permission: 'inventory.view' },
+            
+            { name: 'Master Data', isHeader: true },
             { name: 'Categories', href: '/inventory/categories', icon: TagIcon, permission: 'inventory.categories.view' },
             { name: 'Products', href: '/inventory/products', icon: CubeIcon, permission: 'inventory.products.view' },
             { name: 'Unit Management', href: '/inventory/units', icon: ScaleIcon, permission: 'inventory.products.view' },
-            { name: 'Current Stock', href: '/inventory/stocks', icon: ClipboardDocumentListIcon, permission: 'inventory.current_stock.view' },
             { name: 'Warehouses', href: '/inventory/warehouses', icon: BuildingStorefrontIcon, permission: 'inventory.warehouses.view' },
             { name: 'Storage Locations (SLoc)', href: '/inventory/warehouse-areas', icon: MapPinIcon, permission: 'inventory.warehouses.manage' },
+            
+            { name: 'Transaksi & Operasional', isHeader: true },
+            { name: 'Current Stock', href: '/inventory/stocks', icon: ClipboardDocumentListIcon, permission: 'inventory.current_stock.view' },
             { name: 'Crane RFID Control', href: '/warehouse/crane', icon: ArrowsRightLeftIcon, permission: 'inventory.warehouses.view' },
             { name: 'Stock Movements', href: '/inventory/movements', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Transfers', href: '/inventory/transfers', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
@@ -395,7 +418,10 @@ const navigation = [
             { name: 'Reclass Mapping', href: '/inventory/reclass-mappings', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Adjustments', href: '/inventory/adjustments', icon: WrenchScrewdriverIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Opname', href: '/inventory/opname', icon: ClipboardDocumentCheckIcon, permission: 'inventory.stock_opname.view' },
+            
+            { name: 'Laporan & Informasi', isHeader: true },
             { name: 'Inventory Aging', href: '/inventory/reports/inventory-aging', icon: ClockIcon, permission: 'inventory.view' },
+            { name: 'Information', href: '/inventory/information', icon: InformationCircleIcon, permission: 'inventory.view' },
         ]
     },
     { 
@@ -405,15 +431,22 @@ const navigation = [
         current: false,
         permission: 'manufacturing.view',
         children: [
+            { name: 'Dashboard & Analitik', isHeader: true },
             { name: 'Intelligence Hub', href: '/manufacturing/dashboard', icon: PresentationChartBarIcon, permission: 'manufacturing.view' },
-            { name: 'Information', href: '/manufacturing/information', icon: InformationCircleIcon, permission: 'manufacturing.view' },
+            
+            { name: 'Master Data', isHeader: true },
             { name: 'Bill of Materials', href: '/manufacturing/boms', icon: ListBulletIcon, permission: 'manufacturing.bill_of_materials.view' },
             { name: 'Production Routing', href: '/manufacturing/routing', icon: ArrowsRightLeftIcon, permission: 'manufacturing.production_routing.view' },
-            { name: 'Work Orders', href: '/manufacturing/work-orders', icon: ClipboardDocumentListIcon, permission: 'manufacturing.work_orders.view' },
-            { name: 'Input Output', href: '/manufacturing/production-entry', icon: ArrowDownOnSquareIcon, permission: 'manufacturing.input_output.view' },
             { name: 'Shift Management', href: '/manufacturing/shifts', icon: ClockIcon, permission: 'manufacturing.shift_management.view' },
             { name: 'Machine Management', href: '/manufacturing/machines', icon: Cog6ToothIcon, permission: 'manufacturing.machine_management.view' },
+            
+            { name: 'Transaksi & Operasional', isHeader: true },
+            { name: 'Work Orders', href: '/manufacturing/work-orders', icon: ClipboardDocumentListIcon, permission: 'manufacturing.work_orders.view' },
+            { name: 'Input Output', href: '/manufacturing/production-entry', icon: ArrowDownOnSquareIcon, permission: 'manufacturing.input_output.view' },
             { name: 'Subcontract Orders', href: '/manufacturing/subcontract-orders', icon: ShareIcon, permission: 'manufacturing.subcontract_orders.view' },
+            
+            { name: 'Laporan & Informasi', isHeader: true },
+            { name: 'Information', href: '/manufacturing/information', icon: InformationCircleIcon, permission: 'manufacturing.view' },
         ]
     },
     { 
@@ -423,11 +456,16 @@ const navigation = [
         current: false,
         permission: 'maintenance.view',
         children: [
+            { name: 'Dashboard & Analitik', isHeader: true },
             { name: 'Maintenance Dashboard', href: '/maintenance/dashboard', icon: PresentationChartBarIcon, permission: 'maintenance.view' },
+            { name: 'AI Predictive Advisor', href: '/maintenance/dashboard?tab=predictive', icon: SparklesIcon, permission: 'maintenance.predictive_advisor.view' },
+            
+            { name: 'Master Data', isHeader: true },
+            { name: 'Spareparts Inventory', href: '/maintenance/spareparts', icon: Cog6ToothIcon, permission: 'maintenance.spareparts.view' },
+            
+            { name: 'Transaksi & Operasional', isHeader: true },
             { name: 'Preventive Schedule', href: '/maintenance/schedule', icon: CalendarDaysIcon, permission: 'maintenance.schedule.view' },
             { name: 'Breakdown Logs', href: '/maintenance/breakdown', icon: WrenchIcon, permission: 'maintenance.breakdown.view' },
-            { name: 'Spareparts Inventory', href: '/maintenance/spareparts', icon: Cog6ToothIcon, permission: 'maintenance.spareparts.view' },
-            { name: 'AI Predictive Advisor', href: '/maintenance/dashboard?tab=predictive', icon: SparklesIcon, permission: 'maintenance.predictive_advisor.view' },
         ]
     },
     { 
@@ -437,13 +475,18 @@ const navigation = [
         current: false,
         permission: 'qc.view',
         children: [
+            { name: 'Dashboard & Analitik', isHeader: true },
             { name: 'QC Dashboard', href: '/qc/dashboard', icon: PresentationChartBarIcon, permission: 'qc.view' },
+            
+            { name: 'Master Data', isHeader: true },
+            { name: 'Master Data', href: '/qc/master-points', icon: TagIcon, permission: 'qc.master_data.view' },
+            
+            { name: 'Transaksi & Operasional', isHeader: true },
             { name: 'Incoming Inspection', href: '/qc/incoming', icon: ArrowDownOnSquareIcon, permission: 'qc.incoming_inspection.view' },
             { name: 'In-Process QC', href: '/qc/in-process', icon: ArrowPathIcon, permission: 'qc.in-process_qc.view' },
             { name: 'Defect Management (NCR)', href: '/qc/ncr', icon: ShieldExclamationIcon, permission: 'qc.ncr.view' },
             { name: 'COA Generator', href: '/qc/coa/create', icon: DocumentTextIcon, permission: 'qc.coa.view' },
             { name: 'MTC Documents (AI)', href: '/qc/mtc', icon: SparklesIcon, permission: 'qc.view' },
-            { name: 'Master Data', href: '/qc/master-points', icon: TagIcon, permission: 'qc.master_data.view' },
         ]
     },
     { 
@@ -453,7 +496,10 @@ const navigation = [
         current: false,
         permission: 'logistics.view',
         children: [
+            { name: 'Dashboard & Analitik', isHeader: true },
             { name: 'Logistics Hub', href: '/logistics/dashboard', icon: PresentationChartBarIcon, permission: 'logistics.view' },
+            
+            { name: 'Transaksi & Operasional', isHeader: true },
             { name: 'Loading Queue', href: '/warehouse/loading', icon: CubeIcon, permission: 'logistics.view' },
             { name: 'Delivery Planning', href: '/logistics/planning', icon: MapIcon, permission: 'logistics.delivery_planning.view' },
             { name: 'Dispatch', href: '/logistics/dispatch', icon: TruckIcon, permission: 'logistics.view' },
@@ -468,15 +514,17 @@ const navigation = [
         current: false,
         permission: 'finance.view',
         children: [
+            { name: 'Dashboard & Analitik', isHeader: true },
             { name: 'Financial Command', href: '/finance/dashboard', icon: PresentationChartBarIcon, permission: 'finance.general_ledger.view' },
-            { name: 'General Ledger', href: '/finance/ledger', icon: BookOpenIcon, permission: 'finance.general_ledger.view' },
             { name: 'Profit & Loss', href: '/finance/reports', icon: ChartBarSquareIcon, permission: 'finance.profit_&_loss.view' },
+            { name: 'Profitability Analytic', href: '/costing/profitability', icon: PresentationChartLineIcon, permission: 'finance.profitability_analytic.view' },
+            
+            { name: 'Transaksi & Operasional', isHeader: true },
+            { name: 'General Ledger', href: '/finance/ledger', icon: BookOpenIcon, permission: 'finance.general_ledger.view' },
             { name: 'AP & AR Monitoring', href: '/finance/payment-monitoring', icon: ArrowsRightLeftIcon, permission: 'finance.ap_&_ar_monitoring.view' },
             { name: 'Bank Reconciliation', href: '/finance/reconciliation', icon: ArrowPathIcon, permission: 'finance.general_ledger.view' },
-            // Costing Modules merged here
             { name: 'Production Costing', href: '/costing/production', icon: CalculatorIcon, permission: 'finance.production_costing.view' },
             { name: 'Overhead Allocation', href: '/costing/overhead', icon: TableCellsIcon, permission: 'finance.overhead_allocation.view' },
-            { name: 'Profitability Analytic', href: '/costing/profitability', icon: PresentationChartLineIcon, permission: 'finance.profitability_analytic.view' },
         ]
     },
     { 
@@ -512,13 +560,18 @@ const navigation = [
         current: false,
         permission: 'general_affair.view',
         children: [
+            { name: 'Dashboard & Analitik', isHeader: true },
             { name: 'Dashboard', href: '/general-affair?section=dashboard', icon: PresentationChartBarIcon, permission: 'general_affair.dashboard.view' },
-            { name: 'Tickets', href: '/general-affair/tickets', icon: ClipboardDocumentListIcon, permission: 'general_affair.tickets.view' },
+            
+            { name: 'Master Data', isHeader: true },
             { name: 'Assets', href: '/general-affair/assets', icon: CubeIcon, permission: 'general_affair.assets.view' },
-            { name: 'Preventive Maintenance', href: '/general-affair/pm-schedules', icon: CalendarDaysIcon, permission: 'general_affair.preventive_maintenance.view' },
             { name: 'Armada Operasional', href: '/general-affair/fleet', icon: TruckIcon, permission: 'general_affair.armada_operasional.view' },
-            { name: 'Peminjaman Kendaraan', href: '/general-affair/vehicle-bookings', icon: ClipboardDocumentCheckIcon, permission: 'general_affair.peminjaman_kendaraan.view' },
             { name: 'Locations', href: '/general-affair/locations', icon: MapPinIcon, permission: 'general_affair.locations.view' },
+            
+            { name: 'Transaksi & Operasional', isHeader: true },
+            { name: 'Tickets', href: '/general-affair/tickets', icon: ClipboardDocumentListIcon, permission: 'general_affair.tickets.view' },
+            { name: 'Preventive Maintenance', href: '/general-affair/pm-schedules', icon: CalendarDaysIcon, permission: 'general_affair.preventive_maintenance.view' },
+            { name: 'Peminjaman Kendaraan', href: '/general-affair/vehicle-bookings', icon: ClipboardDocumentCheckIcon, permission: 'general_affair.peminjaman_kendaraan.view' },
             { name: 'Requests (PR)', href: '/general-affair/requests', icon: DocumentPlusIcon, permission: 'general_affair.requests_pr.view' },
         ]
     },
@@ -567,18 +620,23 @@ const navigation = [
         current: false,
         permission: 'settings.view',
         children: [
+            { name: 'Akses & Pengguna', isHeader: true },
             { name: 'User Management', href: '/settings/users', icon: UsersIcon, permission: 'settings.user_management.view' },
             { name: 'Roles & Permissions', href: '/settings/roles', icon: ShieldCheckIcon, permission: 'settings.roles_&_permissions.view' },
             { name: 'Mobile Navbar', href: '/settings/mobile-navbar', icon: DevicePhoneMobileIcon, permission: 'settings.mobile_navbar.view' },
+            { name: 'Activity Logs', href: '/admin/activity-logs', icon: ClipboardDocumentListIcon, permission: 'settings.activity_logs.view' },
+            
+            { name: 'Profil & Struktur', isHeader: true },
             { name: 'Company Profile', href: '/settings/company', icon: BuildingOfficeIcon, permission: 'settings.company_profile.view' },
             { name: 'Departments', href: '/settings/departments', icon: BuildingOfficeIcon, permission: 'settings.view' },
+            
+            { name: 'Sistem & Integrasi', isHeader: true },
             { name: 'AI Configuration', href: '/settings/ai', icon: CpuChipIcon, permission: 'settings.company_profile.view' },
             { name: 'Document Numbering', href: '/settings/numbering', icon: QueueListIcon, permission: 'settings.document_numbering.view' },
             { name: 'Regional & Tax', href: '/settings/regional', icon: GlobeAltIcon, permission: 'settings.regional_&_tax.view' },
             { name: 'System Preferences', href: '/settings/preferences', icon: AdjustmentsHorizontalIcon, permission: 'settings.system_preferences.view' },
             { name: 'Workflow Approval', href: '/settings/workflow', icon: CheckBadgeIcon, permission: 'settings.workflow_approval.view' },
             { name: 'Database Management', href: '/settings/database', icon: CircleStackIcon, permission: 'settings.database_management.view' },
-            { name: 'Activity Logs', href: '/admin/activity-logs', icon: ClipboardDocumentListIcon, permission: 'settings.activity_logs.view' },
             { name: 'WhatsApp Bot', href: '/settings/whatsapp', icon: ChatBubbleLeftRightIcon, permission: 'settings.company_profile.view' },
             { name: 'Traccar Tracking', href: '/settings/traccar', icon: MapPinIcon, permission: 'settings.view' },
             { name: 'RFID Gate Simulator', href: '/warehouse/rfid', icon: CpuChipIcon, permission: 'settings.view' },
@@ -586,8 +644,10 @@ const navigation = [
     },
 ];
 
+const menuSearchQuery = ref('');
+
 const filteredNavigation = computed(() => {
-    return navigation
+    let result = navigation
         .filter(item => hasPermission(item.permission))
         .map(item => {
             if (item.children) {
@@ -620,6 +680,65 @@ const filteredNavigation = computed(() => {
             return item;
         })
         .filter(item => !item.children || item.children.length > 0);
+
+    const query = menuSearchQuery.value.trim().toLowerCase();
+    if (query) {
+        result = result.map(item => {
+            if (item.children) {
+                const cleanedChildren = [];
+                item.children.forEach((child, index) => {
+                    if (child.isHeader) {
+                        // Check if any subsequent non-header child matches the query
+                        let hasMatchingChild = false;
+                        for (let i = index + 1; i < item.children.length; i++) {
+                            const nextChild = item.children[i];
+                            if (nextChild.isHeader) break;
+                            if (nextChild.name.toLowerCase().includes(query)) {
+                                hasMatchingChild = true;
+                                break;
+                            }
+                        }
+                        if (hasMatchingChild) {
+                            cleanedChildren.push(child);
+                        }
+                    } else if (child.name.toLowerCase().includes(query)) {
+                        cleanedChildren.push(child);
+                    }
+                });
+
+                return {
+                    ...item,
+                    children: cleanedChildren
+                };
+            }
+            return item;
+        }).filter(item => {
+            const itemMatches = item.name.toLowerCase().includes(query);
+            const childrenMatch = item.children && item.children.length > 0;
+            return itemMatches || childrenMatch;
+        });
+    }
+
+    return result;
+});
+
+// Auto-expand menus when searching
+watch(menuSearchQuery, (newVal) => {
+    const query = newVal.trim().toLowerCase();
+    if (query) {
+        navigation.forEach(item => {
+            if (item.children) {
+                const hasMatchingChild = item.children.some(child => 
+                    !child.isHeader && child.name.toLowerCase().includes(query)
+                );
+                if (hasMatchingChild) {
+                    expandedMenus.value[item.name] = true;
+                }
+            }
+        });
+    } else {
+        initExpandedMenus();
+    }
 });
 
 const expandedMenus = ref({});
@@ -1000,6 +1119,28 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <nav class="flex flex-1 flex-col px-4">
+                    <!-- Sidebar Menu Search (Desktop Mode) -->
+                    <div v-show="!collapsed" class="px-1 mb-4">
+                        <div class="relative rounded-xl bg-slate-950/40 border border-white/10 focus-within:border-cyan-500/50 focus-within:shadow-[0_0_15px_rgba(6,182,212,0.2)] focus-within:bg-slate-950/80 transition-all duration-300">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <MagnifyingGlassIcon class="h-4 w-4 text-slate-500" aria-hidden="true" />
+                            </div>
+                            <input
+                                v-model="menuSearchQuery"
+                                type="text"
+                                class="block w-full rounded-xl border-0 bg-transparent py-2.5 pl-9 pr-8 text-xs text-slate-100 placeholder:text-slate-500 focus:ring-0 focus:outline-none"
+                                placeholder="Cari menu..."
+                            />
+                            <button 
+                                v-if="menuSearchQuery" 
+                                @click="menuSearchQuery = ''" 
+                                class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 hover:text-slate-300 transition-colors"
+                            >
+                                <XMarkIcon class="h-4 w-4" />
+                            </button>
+                        </div>
+                    </div>
+
                     <ul class="space-y-1">
                         <li v-for="item in filteredNavigation" :key="item.name">
                             <template v-if="item.children">

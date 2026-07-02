@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             UatManufacturingSeeder::class,
             UatCrmSeeder::class,
             UatLogisticsSeeder::class,
+            QcDummyDataSeeder::class,
         ]);
     }
 }

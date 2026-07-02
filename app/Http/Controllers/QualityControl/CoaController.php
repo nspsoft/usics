@@ -31,6 +31,8 @@ class CoaController extends Controller
             // Add dynamic batch/results if needed
         ]);
         
+        $validated['batch_number'] = 'BCH-' . strtoupper(\Illuminate\Support\Str::random(6));
+        
         $coa = \App\Models\CoaDocument::create($validated);
 
         return redirect()->route('qc.coa.show', $coa->id)->with('success', 'COA generated successfully.');

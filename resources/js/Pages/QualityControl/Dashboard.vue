@@ -92,6 +92,94 @@ const commonOptions = computed(() => ({
     },
 }));
 
+const activeTab = ref('trend');
+
+const spcChartData = computed(() => {
+    if (!props.charts || !props.charts.spc) return { labels: [], datasets: [] };
+    const spc = props.charts.spc;
+    return {
+        labels: spc.labels,
+        datasets: [
+            {
+                label: 'Actual Value',
+                data: spc.values,
+                borderColor: '#22d3ee', // Cyan
+                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: false,
+                tension: 0.1,
+            },
+            {
+                label: 'CL (Mean)',
+                data: spc.cl,
+                borderColor: 'rgba(16, 185, 129, 0.8)', // Emerald
+                borderWidth: 1.5,
+                pointRadius: 0,
+                fill: false,
+            },
+            {
+                label: 'UCL (Control Max)',
+                data: spc.ucl,
+                borderColor: 'rgba(244, 63, 94, 0.8)', // Rose
+                borderWidth: 1.5,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false,
+            },
+            {
+                label: 'LCL (Control Min)',
+                data: spc.lcl,
+                borderColor: 'rgba(244, 63, 94, 0.8)', // Rose
+                borderWidth: 1.5,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false,
+            },
+            {
+                label: 'USL (Spec Max)',
+                data: spc.usl,
+                borderColor: 'rgba(245, 158, 11, 0.8)', // Amber
+                borderWidth: 1.5,
+                borderDash: [2, 4],
+                pointRadius: 0,
+                fill: false,
+            },
+            {
+                label: 'LSL (Spec Min)',
+                data: spc.lsl,
+                borderColor: 'rgba(245, 158, 11, 0.8)', // Amber
+                borderWidth: 1.5,
+                borderDash: [2, 4],
+                pointRadius: 0,
+                fill: false,
+            }
+        ]
+    };
+});
+
+const spcChartOptions = computed(() => ({
+    ...commonOptions.value,
+    plugins: {
+        ...commonOptions.value.plugins,
+        legend: {
+            position: 'top',
+            labels: { color: '#94a3b8', font: { family: 'Space Mono', size: 9 } }
+        }
+    },
+    scales: {
+        ...commonOptions.value.scales,
+        y: {
+            ...commonOptions.value.scales.y,
+            ticks: {
+                ...commonOptions.value.scales.y.ticks,
+                callback: (value) => value.toFixed(2) + ' mm'
+            }
+        }
+    }
+}));
+
 // Map QC Chart Data to Theme
 const trendChartData = computed(() => {
     if (!props.charts || !props.charts.trend) return { labels: [], datasets: [] };
@@ -250,11 +338,28 @@ const getStatusColor = (status) => {
                     <div class="lg:col-span-2 hud-panel flex flex-col h-[400px]">
                         <div class="panel-header p-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
                             <h3 class="flex items-center gap-2 text-sm font-bold text-cyan-300 tracking-widest uppercase">
-                                <DocumentChartBarIcon class="h-4 w-4" /> INSPECTION TREND (14 DAYS)
+                                <DocumentChartBarIcon class="h-4 w-4" /> {{ activeTab === 'trend' ? 'INSPECTION TREND (14 DAYS)' : 'SPC CONTROL CHART (THICKNESS)' }}
                             </h3>
+                            <div class="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/10">
+                                <button 
+                                    @click="activeTab = 'trend'" 
+                                    class="px-3 py-1 text-[10px] font-bold rounded transition-all"
+                                    :class="activeTab === 'trend' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-400 hover:text-white'"
+                                >
+                                    TREND
+                                </button>
+                                <button 
+                                    @click="activeTab = 'spc'" 
+                                    class="px-3 py-1 text-[10px] font-bold rounded transition-all"
+                                    :class="activeTab === 'spc' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-400 hover:text-white'"
+                                >
+                                    SPC CHART
+                                </button>
+                            </div>
                         </div>
                         <div class="panel-body p-6 flex-1">
-                            <Bar :data="trendChartData" :options="commonOptions" />
+                            <Bar v-if="activeTab === 'trend'" :data="trendChartData" :options="commonOptions" />
+                            <Line v-else :data="spcChartData" :options="spcChartOptions" />
                         </div>
                     </div>
 

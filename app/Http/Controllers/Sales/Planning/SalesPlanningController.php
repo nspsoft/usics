@@ -67,7 +67,7 @@ class SalesPlanningController extends Controller
             $achievement = $forecast > 0 ? round(($actual / $forecast) * 100, 1) : 0;
             return [
                 'id' => $f->customer_id,
-                'customer' => $f->customer->name ?? 'Unknown',
+                'customer' => $f->customer->code ?? $f->customer->name ?? 'Unknown',
                 'forecast' => $forecast,
                 'actual' => $actual,
                 'delivery' => $delivery,
@@ -114,7 +114,7 @@ class SalesPlanningController extends Controller
 
         // Upcoming 7-day timeline (grouped by date)
         $deliveryTimeline = DeliverySchedule::whereBetween('delivery_date', [Carbon::today(), Carbon::today()->addDays(6)])
-            ->with(['customer:id,name', 'product:id,name,sku'])
+            ->with(['customer:id,name,code', 'product:id,name,sku'])
             ->orderBy('delivery_date')
             ->get()
             ->groupBy(function($item) {
@@ -129,7 +129,7 @@ class SalesPlanningController extends Controller
                     'count' => $group->count(),
                     'total_qty' => $group->sum('qty_scheduled'),
                     'items' => $group->map(fn($s) => [
-                        'customer' => $s->customer->name ?? '-',
+                        'customer' => $s->customer->code ?? $s->customer->name ?? '-',
                         'product' => $s->product->name ?? '-',
                         'sku' => $s->product->sku ?? '-',
                         'unit' => $s->product->unit->name ?? 'Unit',

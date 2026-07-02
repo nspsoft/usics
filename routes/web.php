@@ -534,6 +534,7 @@ Route::middleware(['auth'])->prefix('qc')->name('qc.')->group(function () {
     Route::delete('/mtc/{document}', [App\Http\Controllers\QualityControl\MtcController::class, 'destroy'])->name('mtc.destroy');
     Route::get('/mtc/{document}/file', [App\Http\Controllers\QualityControl\MtcController::class, 'viewFile'])->name('mtc.file');
     Route::post('/mtc/{document}/re-extract', [App\Http\Controllers\QualityControl\MtcController::class, 'reExtract'])->name('mtc.re-extract');
+    Route::post('/mtc/suppliers/quick-create', [App\Http\Controllers\QualityControl\MtcController::class, 'quickCreateSupplier'])->name('mtc.suppliers.quick-create');
 
     // Master Data
     Route::resource('master-points', App\Http\Controllers\QualityControl\QcMasterPointController::class);

@@ -197,20 +197,41 @@ class MtcController extends Controller
 
                     // If chemical_composition is returned as an array (e.g. from OpenRouter/Vision models)
                     if (isset($itemData['chemical_composition']) && is_array($itemData['chemical_composition'])) {
-                        foreach ($itemData['chemical_composition'] as $comp) {
-                            $div = strtoupper($comp['division'] ?? '');
+                        // Check if it's a list of division arrays (e.g. [['division' => 'L', 'C' => 0.1], ...])
+                        $isList = true;
+                        foreach ($itemData['chemical_composition'] as $k => $v) {
+                            if (!is_int($k) || !is_array($v)) {
+                                $isList = false;
+                                break;
+                            }
+                        }
+
+                        if ($isList) {
+                            foreach ($itemData['chemical_composition'] as $comp) {
+                                if (is_array($comp)) {
+                                    $div = strtoupper($comp['division'] ?? '');
+                                    $cleanedComp = [];
+                                    foreach ($comp as $key => $val) {
+                                        if ($key === 'division') continue;
+                                        $elemName = str_replace('_percent', '', $key);
+                                        $cleanedComp[$elemName] = $val;
+                                    }
+                                    
+                                    if ($div === 'L' || $div === 'LADLE') {
+                                        $chemLadle = array_merge($chemLadle ?? [], $cleanedComp);
+                                    } elseif ($div === 'P' || $div === 'PRODUCT') {
+                                        $chemProduct = array_merge($chemProduct ?? [], $cleanedComp);
+                                    }
+                                }
+                            }
+                        } else {
+                            // Flat associative array (e.g. ['C' => 0.1, 'Si' => 0.2])
                             $cleanedComp = [];
-                            foreach ($comp as $key => $val) {
-                                if ($key === 'division') continue;
+                            foreach ($itemData['chemical_composition'] as $key => $val) {
                                 $elemName = str_replace('_percent', '', $key);
                                 $cleanedComp[$elemName] = $val;
                             }
-                            
-                            if ($div === 'L' || $div === 'LADLE') {
-                                $chemLadle = array_merge($chemLadle ?? [], $cleanedComp);
-                            } elseif ($div === 'P' || $div === 'PRODUCT') {
-                                $chemProduct = array_merge($chemProduct ?? [], $cleanedComp);
-                            }
+                            $chemLadle = array_merge($chemLadle ?? [], $cleanedComp);
                         }
                     }
 
@@ -519,20 +540,41 @@ class MtcController extends Controller
 
                     // If chemical_composition is returned as an array (e.g. from OpenRouter/Vision models)
                     if (isset($itemData['chemical_composition']) && is_array($itemData['chemical_composition'])) {
-                        foreach ($itemData['chemical_composition'] as $comp) {
-                            $div = strtoupper($comp['division'] ?? '');
+                        // Check if it's a list of division arrays (e.g. [['division' => 'L', 'C' => 0.1], ...])
+                        $isList = true;
+                        foreach ($itemData['chemical_composition'] as $k => $v) {
+                            if (!is_int($k) || !is_array($v)) {
+                                $isList = false;
+                                break;
+                            }
+                        }
+
+                        if ($isList) {
+                            foreach ($itemData['chemical_composition'] as $comp) {
+                                if (is_array($comp)) {
+                                    $div = strtoupper($comp['division'] ?? '');
+                                    $cleanedComp = [];
+                                    foreach ($comp as $key => $val) {
+                                        if ($key === 'division') continue;
+                                        $elemName = str_replace('_percent', '', $key);
+                                        $cleanedComp[$elemName] = $val;
+                                    }
+                                    
+                                    if ($div === 'L' || $div === 'LADLE') {
+                                        $chemLadle = array_merge($chemLadle ?? [], $cleanedComp);
+                                    } elseif ($div === 'P' || $div === 'PRODUCT') {
+                                        $chemProduct = array_merge($chemProduct ?? [], $cleanedComp);
+                                    }
+                                }
+                            }
+                        } else {
+                            // Flat associative array (e.g. ['C' => 0.1, 'Si' => 0.2])
                             $cleanedComp = [];
-                            foreach ($comp as $key => $val) {
-                                if ($key === 'division') continue;
+                            foreach ($itemData['chemical_composition'] as $key => $val) {
                                 $elemName = str_replace('_percent', '', $key);
                                 $cleanedComp[$elemName] = $val;
                             }
-                            
-                            if ($div === 'L' || $div === 'LADLE') {
-                                $chemLadle = array_merge($chemLadle ?? [], $cleanedComp);
-                            } elseif ($div === 'P' || $div === 'PRODUCT') {
-                                $chemProduct = array_merge($chemProduct ?? [], $cleanedComp);
-                            }
+                            $chemLadle = array_merge($chemLadle ?? [], $cleanedComp);
                         }
                     }
 
@@ -594,5 +636,42 @@ class MtcController extends Controller
         } catch (\Exception $e) {
             return null;
         }
+    }
+
+    /**
+     * Quick register a new supplier from MTC console.
+     */
+    public function quickCreateSupplier(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $name = $request->input('name');
+        
+        // Generate unique code based on prefix and initials
+        $cleanName = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', $name));
+        $prefix = 'SPL-' . substr($cleanName, 0, 8);
+        
+        $code = $prefix;
+        $counter = 1;
+        while (\App\Models\Supplier::where('code', $code)->exists()) {
+            $code = $prefix . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+            $counter++;
+        }
+
+        $supplier = \App\Models\Supplier::create([
+            'company_id' => \App\Models\Company::first()?->id ?? 1,
+            'code' => $code,
+            'name' => $name,
+            'payment_terms' => 'COD',
+            'payment_days' => 0,
+            'is_active' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'supplier' => $supplier,
+        ]);
     }
 }

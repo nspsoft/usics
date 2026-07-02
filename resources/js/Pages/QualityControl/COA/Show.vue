@@ -43,6 +43,7 @@ const printCoa = (id) => {
                             <h4 class="font-bold text-gray-700 dark:text-gray-300">Reference</h4>
                             <p>Sales Order: {{ coa.sales_order?.so_number }}</p>
                             <p>Customer PO: {{ coa.sales_order?.customer_po_number }}</p>
+                            <p>Batch Number: {{ coa.batch_number }}</p>
                         </div>
                     </div>
 

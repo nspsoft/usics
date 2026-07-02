@@ -24,6 +24,8 @@ const props = defineProps({
     locations: Array,
 });
 
+const localSuppliers = ref([...props.suppliers]);
+
 // Staging Form states
 const supplierId = ref(props.document.supplier_id || '');
 const supplierName = ref(props.document.supplier_name || '');
@@ -122,6 +124,61 @@ const autoMapSupplier = () => {
             color: '#f8fafc',
         });
     }
+};
+
+const registerQuickSupplier = () => {
+    if (!supplierName.value) {
+        Swal.fire({
+            title: 'Nama Supplier Kosong',
+            text: 'Harap masukkan nama supplier (AI) terlebih dahulu.',
+            icon: 'warning',
+            background: '#0f172a',
+            color: '#f8fafc',
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Daftarkan Supplier Baru?',
+        text: `Apakah Anda ingin mendaftarkan "${supplierName.value}" sebagai Supplier baru di database USICS?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#1e293b',
+        confirmButtonText: 'Ya, Daftarkan!',
+        cancelButtonText: 'Batal',
+        background: '#0f172a',
+        color: '#f8fafc',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            axios.post(route('qc.mtc.suppliers.quick-create'), {
+                name: supplierName.value,
+            })
+            .then(res => {
+                if (res.data.success) {
+                    const newSupplier = res.data.supplier;
+                    localSuppliers.value.unshift(newSupplier);
+                    supplierId.value = newSupplier.id;
+                    Swal.fire({
+                        title: 'Sukses!',
+                        text: `Supplier "${newSupplier.name}" berhasil didaftarkan dengan kode ${newSupplier.code}.`,
+                        icon: 'success',
+                        background: '#0f172a',
+                        color: '#f8fafc',
+                    });
+                }
+            })
+            .catch(err => {
+                Swal.fire({
+                    title: 'Gagal!',
+                    text: err.response?.data?.message || 'Gagal mendaftarkan supplier baru.',
+                    icon: 'error',
+                    background: '#0f172a',
+                    color: '#f8fafc',
+                });
+            });
+        }
+    });
 };
 
 // Save draft
@@ -464,14 +521,25 @@ const triggerReExtract = () => {
                             </div>
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1">Pemetaan Supplier Database (USICS) *</label>
-                                <select
-                                    v-model="supplierId"
-                                    :disabled="document.status !== 'draft'"
-                                    class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500 transition"
-                                >
-                                    <option value="">Pilih Supplier Database...</option>
-                                    <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
-                                </select>
+                                <div class="flex gap-2">
+                                    <select
+                                        v-model="supplierId"
+                                        :disabled="document.status !== 'draft'"
+                                        class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500 transition"
+                                    >
+                                        <option value="">Pilih Supplier Database...</option>
+                                        <option v-for="s in localSuppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
+                                    </select>
+                                    <button
+                                        v-if="document.status === 'draft' && !supplierId && supplierName"
+                                        @click="registerQuickSupplier"
+                                        type="button"
+                                        class="px-3 bg-gradient-to-r from-emerald-500/80 to-emerald-600/85 hover:from-emerald-500 hover:to-emerald-600 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider font-mono rounded-lg transition text-slate-100 flex items-center gap-1 shrink-0"
+                                        title="Daftarkan supplier baru secara cepat"
+                                    >
+                                        + Daftar
+                                    </button>
+                                </div>
                             </div>
                         </div>
 

@@ -314,79 +314,79 @@ const deleteAttendance = (logId) => {
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50 dark:bg-slate-950/30">
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Employee</th>
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Department</th>
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Clock In</th>
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Clock Out</th>
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Status</th>
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Employee</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Department</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Clock In</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Clock Out</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Status</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="log in attendances.data" :key="log.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors group">
-                                <td class="px-8 py-5">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                <td class="px-4 py-2">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                                             {{ log.employee.full_name.charAt(0) }}
                                         </div>
                                         <div>
-                                            <div class="text-sm font-bold text-slate-900 dark:text-white">{{ log.employee.full_name }}</div>
+                                            <div class="text-xs font-bold text-slate-900 dark:text-white">{{ log.employee.full_name }}</div>
                                             <div class="text-[10px] text-slate-500 font-mono font-bold">{{ log.employee.nik }}</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-8 py-5">
+                                <td class="px-4 py-2">
                                     <span class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ log.employee.department?.name }}</span>
                                 </td>
-                                <td class="px-8 py-5">
-                                    <div class="flex items-center gap-2">
-                                        <ClockIcon class="h-4 w-4 text-emerald-500/50" />
-                                        <span class="text-sm font-mono font-bold text-emerald-400">{{ formatTime(log.clock_in) }}</span>
+                                <td class="px-4 py-2">
+                                    <div class="flex items-center gap-1.5">
+                                        <ClockIcon class="h-3.5 w-3.5 text-emerald-500/50" />
+                                        <span class="text-xs font-mono font-bold text-emerald-400">{{ formatTime(log.clock_in) }}</span>
                                     </div>
                                 </td>
-                                <td class="px-8 py-5">
-                                    <div class="flex items-center gap-2" :class="log.clock_out ? '' : 'opacity-30'">
-                                        <ClockIcon class="h-4 w-4 text-blue-500/50" />
-                                        <span class="text-sm font-mono font-bold text-blue-400">{{ formatTime(log.clock_out) }}</span>
+                                <td class="px-4 py-2">
+                                    <div class="flex items-center gap-1.5" :class="log.clock_out ? '' : 'opacity-30'">
+                                        <ClockIcon class="h-3.5 w-3.5 text-blue-500/50" />
+                                        <span class="text-xs font-mono font-bold text-blue-400">{{ formatTime(log.clock_out) }}</span>
                                     </div>
                                 </td>
-                                <td class="px-8 py-5">
-                                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm" :class="getStatusColor(log.status)">
+                                <td class="px-4 py-2">
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border shadow-sm" :class="getStatusColor(log.status)">
                                         {{ log.status }}
                                     </span>
                                 </td>
-                                <td class="px-8 py-5 text-right">
-                                    <div class="flex items-center justify-end gap-2">
+                                <td class="px-4 py-2 text-right">
+                                    <div class="flex items-center justify-end gap-1.5">
                                         <button 
                                             v-if="!log.clock_out"
                                             @click="performClockOut(log.id)"
-                                            class="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-400/10 rounded-xl transition-all border border-slate-200 dark:border-slate-700 hover:border-blue-500/30"
+                                            class="p-1.5 text-slate-500 dark:text-slate-400 hover:text-blue-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-400/10 rounded-lg transition-all border border-slate-200 dark:border-slate-700 hover:border-blue-500/30"
                                             title="Force Clock Out"
                                         >
-                                            <ArrowLeftOnRectangleIcon class="h-5 w-5" />
+                                            <ArrowLeftOnRectangleIcon class="h-4 w-4" />
                                         </button>
                                         <button 
                                             v-if="can('hr_payroll.attendance.edit')"
                                             @click="openEditModal(log)"
-                                            class="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-400 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-400/10 rounded-xl transition-all border border-slate-200 dark:border-slate-700 hover:border-indigo-500/30"
+                                            class="p-1.5 text-slate-500 dark:text-slate-400 hover:text-indigo-400 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-400/10 rounded-lg transition-all border border-slate-200 dark:border-slate-700 hover:border-indigo-500/30"
                                             title="Edit Attendance"
                                         >
-                                            <PencilSquareIcon class="h-5 w-5" />
+                                            <PencilSquareIcon class="h-4 w-4" />
                                         </button>
                                         <button 
                                             v-if="can('hr_payroll.attendance.delete')"
                                             @click="deleteAttendance(log.id)"
-                                            class="p-2 text-slate-500 dark:text-slate-400 hover:text-red-400 bg-slate-50 dark:bg-slate-800 hover:bg-red-400/10 rounded-xl transition-all border border-slate-200 dark:border-slate-700 hover:border-red-500/30"
+                                            class="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-400 bg-slate-50 dark:bg-slate-800 hover:bg-red-400/10 rounded-lg transition-all border border-slate-200 dark:border-slate-700 hover:border-red-500/30"
                                             title="Delete Attendance"
                                         >
-                                            <TrashIcon class="h-5 w-5" />
+                                            <TrashIcon class="h-4 w-4" />
                                         </button>
                                     </div>
                                 </td>
                             </tr>
                             <tr v-if="!attendances.data.length">
-                                <td colspan="6" class="px-8 py-16 text-center">
-                                    <div class="text-slate-500 text-sm italic">No attendance records found for selected criteria.</div>
+                                <td colspan="6" class="px-4 py-10 text-center">
+                                    <div class="text-slate-500 text-xs italic">No attendance records found for selected criteria.</div>
                                 </td>
                             </tr>
                         </tbody>
@@ -398,52 +398,52 @@ const deleteAttendance = (logId) => {
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50 dark:bg-slate-950/30">
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Employee</th>
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Date & Type</th>
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Reason</th>
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-center">Status</th>
-                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-8 py-4 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Employee</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Date & Type</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Reason</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-center">Status</th>
+                                <th class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-4 py-2.5 text-[10px] font-bold text-slate-900 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="req in attendanceRequests.data" :key="req.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-slate-800/30 transition-colors">
-                                <td class="px-8 py-5">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-500 border border-orange-200 dark:border-orange-800/30">
-                                            <ExclamationCircleIcon class="w-5 h-5" />
+                                <td class="px-4 py-2">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-500 border border-orange-200 dark:border-orange-800/30">
+                                            <ExclamationCircleIcon class="w-4 h-4" />
                                         </div>
                                         <div>
-                                            <div class="text-sm font-bold text-slate-900 dark:text-white">{{ req.employee?.full_name }}</div>
+                                            <div class="text-xs font-bold text-slate-900 dark:text-white">{{ req.employee?.full_name }}</div>
                                             <div class="text-[10px] text-slate-500 font-mono font-bold">{{ req.employee?.department?.name }}</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-8 py-5">
-                                    <div class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ req.request_date }} ({{ req.request_time.substring(0,5) }})</div>
+                                <td class="px-4 py-2">
+                                    <div class="text-xs font-bold text-slate-800 dark:text-slate-200">{{ req.request_date }} ({{ req.request_time.substring(0,5) }})</div>
                                     <div class="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">{{ req.type.replace('_', ' ') }}</div>
                                 </td>
-                                <td class="px-8 py-5">
+                                <td class="px-4 py-2">
                                     <div class="text-xs text-slate-600 dark:text-slate-400 max-w-xs truncate" :title="req.reason">{{ req.reason }}</div>
                                     <a v-if="req.attachment_path" :href="`/storage/${req.attachment_path}`" target="_blank" class="text-[10px] text-indigo-500 hover:underline mt-1 inline-block">View Attachment</a>
                                 </td>
-                                <td class="px-8 py-5 text-center">
-                                    <span :class="['px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider', 
+                                <td class="px-4 py-2 text-center">
+                                    <span :class="['px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider', 
                                         req.status === 'approved' ? 'text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-400' : 
                                         req.status === 'rejected' ? 'text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-400' : 
                                         'text-orange-700 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400']">
                                         {{ req.status }}
                                     </span>
                                 </td>
-                                <td class="px-8 py-5 text-right space-x-2">
+                                <td class="px-4 py-2 text-right space-x-1.5">
                                     <template v-if="req.status === 'pending'">
-                                        <button @click="approveRequest(req.id)" class="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-500 rounded-lg transition-colors">Approve</button>
-                                        <button @click="rejectRequest(req.id)" class="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors">Reject</button>
+                                        <button @click="approveRequest(req.id)" class="px-2.5 py-1 text-[11px] font-medium text-white bg-green-600 hover:bg-green-500 rounded-md transition-colors">Approve</button>
+                                        <button @click="rejectRequest(req.id)" class="px-2.5 py-1 text-[11px] font-medium text-white bg-red-600 hover:bg-red-500 rounded-md transition-colors">Reject</button>
                                     </template>
                                 </td>
                             </tr>
                             <tr v-if="!attendanceRequests.data.length">
-                                <td colspan="5" class="px-8 py-16 text-center">
-                                    <div class="text-slate-500 text-sm italic">No exception requests found.</div>
+                                <td colspan="5" class="px-4 py-10 text-center">
+                                    <div class="text-slate-500 text-xs italic">No exception requests found.</div>
                                 </td>
                             </tr>
                         </tbody>
