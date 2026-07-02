@@ -649,14 +649,27 @@ class MtcController extends Controller
 
         $name = $request->input('name');
         
-        // Generate unique code based on prefix and initials
-        $cleanName = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', $name));
-        $prefix = 'SPL-' . substr($cleanName, 0, 8);
+        // Generate unique code matching existing database standards (SUP-XXX format)
+        $cleanName = preg_replace('/\b(PT|CV|Tbk|Persero|Ltd|Co|Group|Corp|Corporation|Joint|Stock|Company|LLC|And|The)\b/i', '', $name);
+        $cleanName = strtoupper(preg_replace('/[^a-zA-Z0-9\s]/', '', $cleanName));
+        $words = array_filter(explode(' ', trim($cleanName)));
         
-        $code = $prefix;
+        $shortName = '';
+        if (count($words) >= 2) {
+            $shortName = $words[0] . $words[1];
+        } elseif (count($words) === 1) {
+            $shortName = $words[0];
+        } else {
+            $shortName = 'SUPPLIER';
+        }
+        
+        $shortName = substr($shortName, 0, 10);
+        $code = 'SUP-' . $shortName;
+        
         $counter = 1;
+        $baseCode = $code;
         while (\App\Models\Supplier::where('code', $code)->exists()) {
-            $code = $prefix . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+            $code = $baseCode . $counter;
             $counter++;
         }
 

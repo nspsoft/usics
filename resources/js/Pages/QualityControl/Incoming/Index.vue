@@ -5,6 +5,18 @@ import { Link } from '@inertiajs/vue3';
 defineProps({
     receipts: Object,
 });
+
+const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    
+    return date.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    });
+};
 </script>
 
 <template>
@@ -18,10 +30,18 @@ defineProps({
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
-                    <div class="mb-4">
-                        <p class="text-sm text-gray-600 dark:text-gray-400">
-                            Select a Goods Receipt to perform quality inspection.
-                        </p>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                Pilih Goods Receipt (Penerimaan Barang) di bawah untuk melakukan inspeksi kualitas (IQC).
+                            </p>
+                        </div>
+                        <Link 
+                            :href="route('purchasing.receipts.create')" 
+                            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-bold uppercase tracking-wider font-mono rounded-lg transition shadow-md hover:shadow-lg"
+                        >
+                            + Input Penerimaan Baru (GRN)
+                        </Link>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -41,7 +61,7 @@ defineProps({
                                         <div class="text-sm font-medium text-gray-900 dark:text-white">{{ receipt.grn_number }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {{ receipt.receipt_date }}
+                                        {{ formatDate(receipt.receipt_date) }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {{ receipt.supplier?.name }}
