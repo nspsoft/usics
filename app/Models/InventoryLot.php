@@ -16,6 +16,7 @@ class InventoryLot extends Model
         'coil_number',
         'heat_number',
         'mill_id',
+        'mtc_document_id',
         'thickness',
         'width',
         'length',
@@ -51,5 +52,10 @@ class InventoryLot extends Model
     public function mill()
     {
         return $this->belongsTo(Supplier::class, 'mill_id');
+    }
+
+    public function mtcDocument()
+    {
+        return $this->belongsTo(MtcDocument::class, 'mtc_document_id');
     }
 }

@@ -19,7 +19,7 @@ class LeaveController extends Controller
         $employee = auth()->user()->employee;
         
         if (!$employee) {
-            return redirect()->route('dashboard')->with('error', 'You are not registered as an employee.');
+            return redirect()->route('dashboard')->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
         }
 
         $year = Carbon::now()->year;
@@ -57,7 +57,7 @@ class LeaveController extends Controller
     {
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return redirect()->route('dashboard')->with('error', 'You are not registered as an employee.');
+            return redirect()->route('dashboard')->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
         }
 
         $leaveTypes = LeaveType::where('is_active', true)->get();
@@ -71,7 +71,7 @@ class LeaveController extends Controller
     {
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return redirect()->back()->with('error', 'Unauthorized.');
+            return redirect()->back()->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
         }
 
         $request->validate([

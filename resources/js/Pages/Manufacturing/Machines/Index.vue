@@ -45,6 +45,7 @@ const form = useForm({
     purchase_price: '',
     runtime_hours: '',
     is_active: true,
+    image: null,
 });
 
 const openCreateModal = () => {
@@ -76,7 +77,10 @@ const closeModal = () => {
 
 const submit = () => {
     if (editingMachine.value) {
-        form.put(route('manufacturing.machines.update', editingMachine.value.id), {
+        form.transform((data) => ({
+            ...data,
+            _method: 'PUT',
+        })).post(route('manufacturing.machines.update', editingMachine.value.id), {
             onSuccess: () => closeModal(),
         });
     } else {
@@ -118,9 +122,13 @@ const formatRuntime = (value) => {
 };
 
 // Machine Image Mapper
-const getMachineImage = (type, name) => {
-    const t = (type || '').toUpperCase();
-    const n = (name || '').toUpperCase();
+const getMachineImage = (machine) => {
+    if (!machine) return '/images/shearing_machine.png';
+    if (machine.image_path) {
+        return machine.image_path;
+    }
+    const t = (machine.type || '').toUpperCase();
+    const n = (machine.name || '').toUpperCase();
     
     if (t.includes('SLITTING') || n.includes('SLITTER')) {
         return '/images/slitting_machine.png';
@@ -169,25 +177,25 @@ const closeDetailModal = () => {
                     <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-sm">
                         <thead>
                             <tr class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
-                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Mesin</th>
-                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Kode</th>
-                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tipe</th>
-                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Maker</th>
-                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Kapasitas</th>
-                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Detail Pembelian</th>
-                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Runtime</th>
-                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
-                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aksi</th>
+                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest w-[22%]">Mesin</th>
+                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest w-[10%]">Kode</th>
+                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest w-[10%]">Tipe</th>
+                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest w-[10%]">Maker</th>
+                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest w-[12%]">Kapasitas</th>
+                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest w-[16%]">Detail Pembelian</th>
+                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest w-[10%]">Runtime</th>
+                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest w-[5%]">Status</th>
+                                <th class="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest w-[5%]">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="machine in machines" :key="machine.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                                 <!-- Machine Info -->
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 min-w-[220px]">
                                     <div class="flex items-center gap-3">
                                         <img 
-                                            :src="getMachineImage(machine.type, machine.name)" 
-                                            class="h-10 w-10 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shadow-sm shrink-0" 
+                                            :src="getMachineImage(machine)" 
+                                            class="h-10 w-16 rounded-xl object-cover border border-slate-200 dark:border-slate-850 shadow-sm shrink-0" 
                                             :alt="machine.name"
                                         />
                                         <div>
@@ -198,34 +206,34 @@ const closeDetailModal = () => {
                                 </td>
                                 
                                 <!-- Code -->
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg w-max border border-slate-200 dark:border-slate-700/50">
                                         <TagIcon class="h-3.5 w-3.5 text-slate-500" />
                                         {{ machine.code || '-' }}
                                     </div>
                                 </td>
-
+ 
                                 <!-- Type -->
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-900/20 px-2 py-1 text-xs font-bold text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800/30">
                                         {{ machine.type || '-' }}
                                     </span>
                                 </td>
                                 
                                 <!-- Maker -->
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-slate-900 dark:text-slate-200 font-medium">{{ machine.maker || '-' }}</div>
                                 </td>
                                 
                                 <!-- Capacity -->
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-slate-900 dark:text-slate-200 font-bold text-xs bg-emerald-500/5 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10 px-2 py-1 rounded-lg w-max">
                                         {{ machine.capacity || '-' }}
                                     </div>
                                 </td>
                                 
                                 <!-- Purchase Details -->
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="space-y-1">
                                         <div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 text-xs">
                                             <CalendarIcon class="h-3.5 w-3.5 text-slate-400 shrink-0" />
@@ -239,7 +247,7 @@ const closeDetailModal = () => {
                                 </td>
                                 
                                 <!-- Runtime -->
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-mono text-xs">
                                         <ClockIcon class="h-3.5 w-3.5 text-slate-400" />
                                         {{ formatRuntime(machine.runtime_hours) }}
@@ -247,7 +255,7 @@ const closeDetailModal = () => {
                                 </td>
                                 
                                 <!-- Status -->
-                                <td class="px-6 py-4 text-center">
+                                <td class="px-6 py-4 text-center whitespace-nowrap">
                                     <span 
                                         class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
                                         :class="machine.is_active ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-500/20 text-slate-500 dark:text-slate-400 border border-slate-500/30'"
@@ -257,7 +265,7 @@ const closeDetailModal = () => {
                                 </td>
                                 
                                 <!-- Actions -->
-                                <td class="px-6 py-4 text-right">
+                                <td class="px-6 py-4 text-right whitespace-nowrap min-w-[140px]">
                                     <div class="flex justify-end gap-2">
                                         <button 
                                             @click="viewMachineDetails(machine)"
@@ -330,6 +338,34 @@ const closeDetailModal = () => {
                                     required
                                 />
                                 <div v-if="form.errors.name" class="text-red-400 text-xs mt-1.5 ml-1 font-medium">{{ form.errors.name }}</div>
+                            </div>
+
+                            <!-- Upload Gambar Mesin -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 px-1">Foto / Gambar Mesin (Opsional)</label>
+                                <div class="flex items-center gap-4">
+                                    <!-- Thumbnail Preview -->
+                                    <div class="h-16 w-24 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                                        <img 
+                                            v-if="form.image || (editingMachine && editingMachine.image_path)"
+                                            :src="form.image ? URL.createObjectURL(form.image) : editingMachine.image_path"
+                                            class="w-full h-full object-cover"
+                                        />
+                                        <CpuChipIcon v-else class="h-6 w-6 text-slate-400" />
+                                    </div>
+                                    <input 
+                                        type="file"
+                                        accept="image/*"
+                                        @input="form.image = $event.target.files[0]"
+                                        class="flex-1 text-xs text-slate-500 dark:text-slate-400
+                                               file:mr-4 file:py-2.5 file:px-4
+                                               file:rounded-xl file:border-0
+                                               file:text-xs file:font-bold
+                                               file:bg-emerald-500/10 file:text-emerald-600 dark:file:text-emerald-400
+                                               hover:file:bg-emerald-500/20 file:cursor-pointer"
+                                    />
+                                </div>
+                                <div v-if="form.errors.image" class="text-red-400 text-xs mt-1.5 ml-1 font-medium">{{ form.errors.image }}</div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -483,7 +519,7 @@ const closeDetailModal = () => {
                                 </h3>
                                 <div class="relative group overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-850 shadow-sm">
                                     <img 
-                                        :src="getMachineImage(selectedMachine.type, selectedMachine.name)" 
+                                        :src="getMachineImage(selectedMachine)" 
                                         class="w-full h-48 md:h-56 object-cover" 
                                         :alt="selectedMachine.name"
                                     />

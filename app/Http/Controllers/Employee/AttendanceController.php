@@ -14,7 +14,9 @@ class AttendanceController extends Controller
     public function index()
     {
         $employee = auth()->user()->employee;
-        if (!$employee) abort(403);
+        if (!$employee) {
+            return redirect()->route('dashboard')->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
+        }
 
         $attendances = Attendance::where('employee_id', $employee->id)
             ->latest('date')
@@ -29,7 +31,7 @@ class AttendanceController extends Controller
     {
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return redirect()->route('dashboard')->with('error', 'You are not registered as an employee.');
+            return redirect()->route('dashboard')->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
         }
 
         $appSettings = AppSetting::first();
@@ -50,7 +52,7 @@ class AttendanceController extends Controller
     {
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return redirect()->back()->with('error', 'Unauthorized.');
+            return redirect()->back()->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
         }
 
         $request->validate([

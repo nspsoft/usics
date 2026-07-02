@@ -335,9 +335,9 @@ const summaryChartData = computed(() => {
                 backgroundColor: 'rgba(59,130,246,0.7)', 
                 borderRadius: 4, 
                 yAxisID: 'y',
-                barPercentage: 0.8, 
+                barPercentage: 0.9, 
                 categoryPercentage: 0.85, 
-                maxBarThickness: 20 
+                maxBarThickness: 45 
             },
             { 
                 type: 'bar',
@@ -346,9 +346,9 @@ const summaryChartData = computed(() => {
                 backgroundColor: 'rgba(16,185,129,0.8)', 
                 borderRadius: 4, 
                 yAxisID: 'y',
-                barPercentage: 0.8, 
+                barPercentage: 0.9, 
                 categoryPercentage: 0.85, 
-                maxBarThickness: 20 
+                maxBarThickness: 45 
             },
             {
                 type: 'line',
@@ -396,9 +396,9 @@ const customerChartData = computed(() => {
                 backgroundColor: 'rgba(59,130,246,0.7)',
                 borderRadius: 4,
                 yAxisID: 'y',
-                barPercentage: 0.8,
+                barPercentage: 0.9,
                 categoryPercentage: 0.85,
-                maxBarThickness: 20
+                maxBarThickness: 45
             },
             {
                 type: 'bar',
@@ -407,9 +407,9 @@ const customerChartData = computed(() => {
                 backgroundColor: 'rgba(16,185,129,0.8)',
                 borderRadius: 4,
                 yAxisID: 'y',
-                barPercentage: 0.8,
+                barPercentage: 0.9,
                 categoryPercentage: 0.85,
-                maxBarThickness: 20
+                maxBarThickness: 45
             },
             {
                 type: 'line',
@@ -434,8 +434,28 @@ const itemChartData = computed(() => {
     return {
         labels: d.map(t => t.label),
         datasets: [
-            { type: 'bar', label: 'Schedule', data: d.map(t => t.schedule), backgroundColor: 'rgba(148,163,184,0.4)', borderRadius: 3, order: 2 },
-            { type: 'bar', label: 'Delivery', data: d.map(t => t.delivery), backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 3, order: 2 },
+            { 
+                type: 'bar', 
+                label: 'Schedule', 
+                data: d.map(t => t.schedule), 
+                backgroundColor: 'rgba(148,163,184,0.4)', 
+                borderRadius: 3, 
+                order: 2,
+                barPercentage: 0.9,
+                categoryPercentage: 0.85,
+                maxBarThickness: 45
+            },
+            { 
+                type: 'bar', 
+                label: 'Delivery', 
+                data: d.map(t => t.delivery), 
+                backgroundColor: 'rgba(16,185,129,0.7)', 
+                borderRadius: 3, 
+                order: 2,
+                barPercentage: 0.9,
+                categoryPercentage: 0.85,
+                maxBarThickness: 45
+            },
             {
                 type: 'line', label: 'Cum. Target',
                 data: d.map(t => t.cum_schedule),

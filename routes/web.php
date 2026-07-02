@@ -118,6 +118,9 @@ Route::prefix('inventory')->name('inventory.')->middleware(['auth'])->group(func
     Route::post('/warehouses/{warehouse}/map-background', [WarehouseController::class, 'uploadBackgroundLayout'])->name('warehouses.map-background.upload');
     Route::delete('/warehouses/{warehouse}/map-background', [WarehouseController::class, 'removeBackgroundLayout'])->name('warehouses.map-background.destroy');
     Route::get('/locations/{location}/detail', [WarehouseController::class, 'locationDetail'])->name('locations.detail');
+    Route::post('/warehouses/{warehouse}/locations', [WarehouseController::class, 'storeLocation'])->name('warehouses.locations.store');
+    Route::put('/locations/{location}', [WarehouseController::class, 'updateLocation'])->name('locations.update');
+    Route::delete('/locations/{location}', [WarehouseController::class, 'destroyLocation'])->name('locations.destroy');
     Route::get('/warehouse-areas/lookup', [App\Http\Controllers\Inventory\WarehouseAreaController::class, 'lookup'])->name('warehouse-areas.lookup');
     Route::resource('warehouse-areas', App\Http\Controllers\Inventory\WarehouseAreaController::class)->except(['create', 'edit', 'show']);
 
@@ -519,6 +522,18 @@ Route::middleware(['auth'])->prefix('qc')->name('qc.')->group(function () {
     Route::get('/ncr', [App\Http\Controllers\QualityControl\NcrController::class, 'index'])->name('ncr.index');
     Route::get('/ncr/{id}', [App\Http\Controllers\QualityControl\NcrController::class, 'show'])->name('ncr.show');
     Route::put('/ncr/{id}', [App\Http\Controllers\QualityControl\NcrController::class, 'update'])->name('ncr.update');
+
+    // MTC AI Extraction
+    Route::get('/mtc', [App\Http\Controllers\QualityControl\MtcController::class, 'index'])->name('mtc.index');
+    Route::get('/mtc/create', [App\Http\Controllers\QualityControl\MtcController::class, 'create'])->name('mtc.create');
+    Route::post('/mtc/upload', [App\Http\Controllers\QualityControl\MtcController::class, 'upload'])->name('mtc.upload');
+    Route::get('/mtc/{document}', [App\Http\Controllers\QualityControl\MtcController::class, 'show'])->name('mtc.show');
+    Route::put('/mtc/{document}', [App\Http\Controllers\QualityControl\MtcController::class, 'update'])->name('mtc.update');
+    Route::post('/mtc/{document}/verify', [App\Http\Controllers\QualityControl\MtcController::class, 'verify'])->name('mtc.verify');
+    Route::post('/mtc/{document}/reject', [App\Http\Controllers\QualityControl\MtcController::class, 'reject'])->name('mtc.reject');
+    Route::delete('/mtc/{document}', [App\Http\Controllers\QualityControl\MtcController::class, 'destroy'])->name('mtc.destroy');
+    Route::get('/mtc/{document}/file', [App\Http\Controllers\QualityControl\MtcController::class, 'viewFile'])->name('mtc.file');
+    Route::post('/mtc/{document}/re-extract', [App\Http\Controllers\QualityControl\MtcController::class, 'reExtract'])->name('mtc.re-extract');
 
     // Master Data
     Route::resource('master-points', App\Http\Controllers\QualityControl\QcMasterPointController::class);

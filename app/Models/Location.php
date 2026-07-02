@@ -59,6 +59,11 @@ class Location extends Model
         return $this->belongsTo(Warehouse::class);
     }
 
+    public function warehouseArea(): BelongsTo
+    {
+        return $this->belongsTo(WarehouseArea::class, 'warehouse_area_id');
+    }
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Location::class, 'parent_id');

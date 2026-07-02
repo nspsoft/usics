@@ -16,7 +16,7 @@ class OvertimeController extends Controller
     {
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return redirect()->route('dashboard')->with('error', 'Anda tidak terdaftar sebagai karyawan.');
+            return redirect()->route('dashboard')->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
         }
 
         $overtimes = OvertimeRequest::where('employee_id', $employee->id)
@@ -32,7 +32,7 @@ class OvertimeController extends Controller
     {
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return redirect()->back()->with('error', 'Unauthorized.');
+            return redirect()->back()->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
         }
 
         $validated = $request->validate([

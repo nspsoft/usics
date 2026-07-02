@@ -495,6 +495,24 @@ Daftar variabel rahasia yang tidak di-*commit* ke GitHub tapi harus ada di Serve
 | `GEMINI_API_KEY` | Kunci Berbayar / Gratis agar kemampuan Kecerdasan Buatan Bot (Pengekstrak Dokumen) bisa berjalan. |
 | `MAIL_PASSWORD` | Kata sandi server Mail SMTP untuk mengirim konfirmasi tagihan ke pelanggan |
 
+## 5.3 Spesifikasi Perangkat Keras RFID (Hardware Specifications)
+
+Untuk memastikan kehandalan pembacaan sinyal pada material baja dan integrasi dengan sistem backend USICS, berikut adalah standar spesifikasi perangkat keras yang direkomendasikan:
+
+### 1. RFID Tag / Label
+- **Tipe**: UHF Anti-Metal RFID Tag (Passive). Lapisan isolator ferrite/foam wajib ada untuk mencegah penyerapan gelombang radio oleh massa logam baja (*steel coils*).
+- **Protokol / Frekuensi**: UHF 860-960 MHz (EPC Class 1 Gen 2 / ISO 18000-6C). Jarak baca optimal 5-10 meter.
+- **Durabilitas**: Sertifikasi IP68 tahan air, debu industri, paparan oli/grease, dan ketahanan suhu tinggi (-20°C s/d 85°C).
+- **Pemasangan**: Dipasang dengan perekat industrial berkekuatan tinggi (3M) pada sisi diameter luar coil, atau berupa hanging tags (kartu gantung) yang diikat logam kawat di tengah eye of coil.
+
+### 2. RFID Reader
+- **Stock Opname (Auditor Genggam)**: Handheld RFID Reader UHF PDA (Zebra, Chainway, dll.) bersistem operasi Android, daya pancar minimal 30 dBm (dapat dikonfigurasi radius jangkauan lorongnya), serta koneksi Wi-Fi/4G.
+- **Overhead Crane / Checkpoint Gate**: Fixed RFID Reader (4-Port/8-Port) dengan Ethernet LAN RJ45, mendukung polarisasi melingkar (*Circularly Polarized Antenna* 9 dBi) agar pembacaan tag dari crane tidak bergantung pada orientasi gulungan baja.
+
+### 3. Middleware & Skema Pemetaan EPC
+- Alat pembaca mengirimkan kode heksadesimal EPC (Electronic Product Code) via protokol TCP/IP.
+- Database USICS memetakan kode unik EPC tersebut ke dalam tabel database `inventory_lots` (pada kolom tag RFID) yang kemudian diterjemahkan ke nomor lot dan SKU produk yang sesuai.
+
 ---
 
 > **Dokumen disusun oleh**: Development Team (Antigravity & User)  

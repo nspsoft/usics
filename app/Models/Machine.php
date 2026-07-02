@@ -39,6 +39,7 @@ class Machine extends Model
         'purchase_price',
         'runtime_hours',
         'is_active',
+        'image_path',
     ];
 
     protected $casts = [

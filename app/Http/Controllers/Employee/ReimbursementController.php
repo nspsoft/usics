@@ -14,7 +14,7 @@ class ReimbursementController extends Controller
     {
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return redirect()->route('dashboard')->with('error', 'You are not registered as an employee.');
+            return redirect()->route('dashboard')->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
         }
 
         $reimbursements = Reimbursement::where('employee_id', $employee->id)
@@ -28,6 +28,10 @@ class ReimbursementController extends Controller
 
     public function create()
     {
+        $employee = auth()->user()->employee;
+        if (!$employee) {
+            return redirect()->route('dashboard')->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
+        }
         return Inertia::render('Employee/Reimbursements/Create');
     }
 
@@ -35,7 +39,7 @@ class ReimbursementController extends Controller
     {
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return redirect()->back()->with('error', 'Unauthorized.');
+            return redirect()->back()->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
         }
 
         $request->validate([

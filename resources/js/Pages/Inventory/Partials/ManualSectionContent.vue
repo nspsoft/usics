@@ -111,11 +111,11 @@ defineProps({ sectionId: String });
 
     <div v-else-if="sectionId === 'warehouse-areas'" class="space-y-4">
         <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-            <h4 class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Pengaturan Lokasi</h4>
+            <h4 class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Pengaturan Storage Location (SLoc)</h4>
             <ol class="list-decimal list-inside space-y-1 text-sm text-slate-600 dark:text-slate-400">
-                <li>Create Area → pilih Warehouse, isi code & name.</li>
-                <li>Gunakan kode lokasi yang mudah dibaca (mis. A-01-01).</li>
-                <li>Lokasi dipakai untuk stock opname dan detail stok per area.</li>
+                <li>Buat SLoc Baru → pilih Gudang (Warehouse), lalu isi SLoc Code (mis. RM01, FG01) dan Nama SLoc.</li>
+                <li>Gunakan kode SLoc standar yang sesuai dengan pembagian area fisik PT USC.</li>
+                <li>SLoc ini digunakan untuk pelacakan persediaan rinci, pemindahan stok, dan stock opname.</li>
             </ol>
         </div>
         <div class="p-3 bg-cyan-50 dark:bg-cyan-900/10 border border-cyan-200 dark:border-cyan-800 rounded-xl text-sm text-cyan-700 dark:text-cyan-300">

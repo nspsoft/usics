@@ -31,7 +31,7 @@ const manualSections = [
     { id: 'units', num: '4', title: 'Unit Management', icon: ClipboardListIcon, desc: 'Kelola satuan yang dipakai produk.' },
     { id: 'current-stock', num: '5', title: 'Current Stock', icon: BarChart3Icon, desc: 'Monitoring stok on-hand per gudang/lokasi.' },
     { id: 'warehouses', num: '6', title: 'Warehouses', icon: MapIcon, desc: 'Master gudang dan pengaturan layout/map.' },
-    { id: 'warehouse-areas', num: '7', title: 'Warehouse Areas', icon: MapIcon, desc: 'Area/lokasi gudang untuk penempatan stok & opname.' },
+    { id: 'warehouse-areas', num: '7', title: 'Storage Locations (SLoc)', icon: MapIcon, desc: 'Lokasi penyimpanan (SLoc) dalam gudang untuk menaruh stok.' },
     { id: 'stock-movements', num: '8', title: 'Stock Movements', icon: RotateCcwIcon, desc: 'Riwayat mutasi stok (audit trail).' },
     { id: 'stock-transfers', num: '9', title: 'Stock Transfers', icon: RotateCcwIcon, desc: 'Transfer stok antar gudang / lokasi.' },
     { id: 'stock-adjustments', num: '10', title: 'Stock Adjustments', icon: AlertTriangleIcon, desc: 'Koreksi stok karena selisih fisik/kerusakan/penyesuaian.' },

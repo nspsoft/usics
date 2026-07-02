@@ -105,6 +105,11 @@ const userMenuOpen = ref(false);
 const isFullscreen = ref(false);
 const isInstalled = ref(false);
 const isDark = ref(false);
+const accentColor = ref(localStorage.getItem('usics-accent-color') || 'cyan');
+const setAccentColor = (color) => {
+    accentColor.value = color;
+    localStorage.setItem('usics-accent-color', color);
+};
 const waUnreadCount = ref(0);
 let waUnreadInterval = null;
 const waPurchasingUnreadCount = ref(0);
@@ -124,7 +129,7 @@ watch([flashSuccess, flashError, flashWarning, flashInfo], ([newSuccess, newErro
             showFlash.value = false;
         }, 5000);
     }
-});
+}, { immediate: true });
 
 // PWA Install Prompt
 const deferredPrompt = ref(null);
@@ -382,7 +387,7 @@ const navigation = [
             { name: 'Unit Management', href: '/inventory/units', icon: ScaleIcon, permission: 'inventory.products.view' },
             { name: 'Current Stock', href: '/inventory/stocks', icon: ClipboardDocumentListIcon, permission: 'inventory.current_stock.view' },
             { name: 'Warehouses', href: '/inventory/warehouses', icon: BuildingStorefrontIcon, permission: 'inventory.warehouses.view' },
-            { name: 'Warehouse Areas', href: '/inventory/warehouse-areas', icon: MapPinIcon, permission: 'inventory.warehouses.manage' },
+            { name: 'Storage Locations (SLoc)', href: '/inventory/warehouse-areas', icon: MapPinIcon, permission: 'inventory.warehouses.manage' },
             { name: 'Crane RFID Control', href: '/warehouse/crane', icon: ArrowsRightLeftIcon, permission: 'inventory.warehouses.view' },
             { name: 'Stock Movements', href: '/inventory/movements', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
             { name: 'Stock Transfers', href: '/inventory/transfers', icon: ArrowsRightLeftIcon, permission: 'inventory.stock_movements.view' },
@@ -437,6 +442,7 @@ const navigation = [
             { name: 'In-Process QC', href: '/qc/in-process', icon: ArrowPathIcon, permission: 'qc.in-process_qc.view' },
             { name: 'Defect Management (NCR)', href: '/qc/ncr', icon: ShieldExclamationIcon, permission: 'qc.ncr.view' },
             { name: 'COA Generator', href: '/qc/coa/create', icon: DocumentTextIcon, permission: 'qc.coa.view' },
+            { name: 'MTC Documents (AI)', href: '/qc/mtc', icon: SparklesIcon, permission: 'qc.view' },
             { name: 'Master Data', href: '/qc/master-points', icon: TagIcon, permission: 'qc.master_data.view' },
         ]
     },
@@ -817,7 +823,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <div class="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300" :class="'theme-' + accentColor">
         <!-- Mobile sidebar backdrop -->
         <div 
             v-if="sidebarOpen" 
@@ -1185,29 +1191,51 @@ onUnmounted(() => {
                             <ArrowDownOnSquareIcon class="h-6 w-6 relative z-10" />
                         </button>
 
-                        <!-- Notifications -->
+                        <!-- Fullscreen Toggle -->
+                        <button 
+                            type="button" 
+                            @click="toggleFullscreen"
+                            class="relative -m-2.5 p-2.5 text-slate-300 hover:text-white transition-colors"
+                            title="Toggle Fullscreen"
+                        >
+                            <component :is="isFullscreen ? ArrowsPointingInIcon : ArrowsPointingOutIcon" class="h-6 w-6" />
+                        </button>
+
+                        <!-- Dynamic Color Palette Toggle -->
+                        <div class="flex items-center gap-2 px-3 border-r border-slate-800">
+                            <button 
+                                @click="setAccentColor('cyan')" 
+                                class="h-3.5 w-3.5 rounded-full bg-cyan-400 border border-white/20 transition-all cursor-pointer hover:scale-125 focus:outline-none"
+                                :class="accentColor === 'cyan' ? 'ring-2 ring-white scale-110 shadow-[0_0_8px_#06b6d4]' : 'opacity-40'"
+                                title="Cyan Theme"
+                            ></button>
+                            <button 
+                                @click="setAccentColor('lime')" 
+                                class="h-3.5 w-3.5 rounded-full bg-lime-400 border border-white/20 transition-all cursor-pointer hover:scale-125 focus:outline-none"
+                                :class="accentColor === 'lime' ? 'ring-2 ring-white scale-110 shadow-[0_0_8px_#a3e635]' : 'opacity-40'"
+                                title="Neon Green Theme"
+                            ></button>
+                            <button 
+                                @click="setAccentColor('orange')" 
+                                class="h-3.5 w-3.5 rounded-full bg-orange-500 border border-white/20 transition-all cursor-pointer hover:scale-125 focus:outline-none"
+                                :class="accentColor === 'orange' ? 'ring-2 ring-white scale-110 shadow-[0_0_8px_#f97316]' : 'opacity-40'"
+                                title="Cyber Orange Theme"
+                            ></button>
+                        </div>
+
+                        <!-- Theme Toggle -->
+                        <button 
+                            type="button" 
+                            @click="toggleTheme"
+                            class="relative -m-2.5 p-2.5 text-slate-300 hover:text-white transition-all"
+                            :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+                        >
+                            <SunIcon v-if="isDark" class="h-6 w-6" />
+                            <MoonIcon v-else class="h-6 w-6" />
+                        </button>
+
+                        <!-- Notifications Dropdown -->
                         <div class="relative">
-                            <!-- Fullscreen Toggle -->
-                            <button 
-                                type="button" 
-                                @click="toggleFullscreen"
-                                class="relative -m-2.5 p-2.5 text-slate-300 hover:text-white transition-colors mr-2"
-                                title="Toggle Fullscreen"
-                            >
-                                <component :is="isFullscreen ? ArrowsPointingInIcon : ArrowsPointingOutIcon" class="h-6 w-6" />
-                            </button>
-
-                            <!-- Theme Toggle -->
-                            <button 
-                                type="button" 
-                                @click="toggleTheme"
-                                class="relative -m-2.5 p-2.5 text-slate-300 hover:text-white transition-all mr-2"
-                                :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-                            >
-                                <SunIcon v-if="isDark" class="h-6 w-6" />
-                                <MoonIcon v-else class="h-6 w-6" />
-                            </button>
-
                             <button 
                                 type="button" 
                                 @click="toggleNotifications"
@@ -1474,3 +1502,187 @@ onUnmounted(() => {
     </div>
 </div>
 </template>
+
+<style>
+/* CSS Accent Theme Overrides */
+.theme-lime .text-cyan-400 {
+    color: rgb(163, 230, 53) !important; /* lime-400 */
+}
+.theme-lime .text-cyan-500 {
+    color: rgb(132, 204, 22) !important; /* lime-500 */
+}
+.theme-lime .hover\:text-cyan-300:hover {
+    color: rgb(190, 242, 100) !important; /* lime-300 */
+}
+.theme-lime .bg-cyan-500\/10 {
+    background-color: rgba(163, 230, 53, 0.1) !important;
+}
+.theme-lime .bg-cyan-950\/30 {
+    background-color: rgba(63, 98, 18, 0.3) !important;
+}
+.theme-lime .bg-gradient-to-r.from-cyan-500\/10 {
+    --tw-gradient-from: rgba(163, 230, 53, 0.1) !important;
+    --tw-gradient-to: rgba(163, 230, 53, 0) !important;
+}
+.theme-lime .bg-cyan-500 {
+    background-color: rgb(163, 230, 53) !important;
+}
+.theme-lime .bg-cyan-500\/50 {
+    background-color: rgba(163, 230, 53, 0.5) !important;
+}
+.theme-lime .border-cyan-500 {
+    border-color: rgb(163, 230, 53) !important;
+}
+.theme-lime .border-cyan-500\/20 {
+    border-color: rgba(163, 230, 53, 0.2) !important;
+}
+.theme-lime .border-cyan-500\/30 {
+    border-color: rgba(163, 230, 53, 0.3) !important;
+}
+.theme-lime .shadow-cyan-500\/20 {
+    --tw-shadow-color: rgba(163, 230, 53, 0.2) !important;
+}
+.theme-lime [class*="shadow"] {
+    --tw-shadow-color: rgba(163, 230, 53, 0.3) !important;
+}
+.theme-lime .hover\:border-cyan-500\/50:hover {
+    border-color: rgba(163, 230, 53, 0.5) !important;
+}
+.theme-lime .to-cyan-400 {
+    --tw-gradient-to: rgb(163, 230, 53) !important;
+}
+.theme-lime [class*="drop-shadow"] {
+    filter: drop-shadow(0 0 10px rgba(163, 230, 53, 0.6)) !important;
+}
+.theme-lime .group-hover\:text-cyan-400:hover, 
+.theme-lime .group:hover .group-hover\:text-cyan-400,
+.theme-lime .group:hover .text-cyan-400 {
+    color: rgb(163, 230, 53) !important;
+}
+.theme-lime .group-hover\:drop-shadow-\[0_0_5px_rgba\(34\,211\,238\,0\.5\)\]:hover, 
+.theme-lime .group:hover .group-hover\:drop-shadow-\[0_0_5px_rgba\(34\,211\,238\,0\.5\)\] {
+    filter: drop-shadow(0 0 5px rgba(163, 230, 53, 0.5)) !important;
+}
+.theme-lime .bg-gradient-to-b.from-cyan-400 {
+    --tw-gradient-from: rgb(163, 230, 53) !important;
+}
+.theme-lime .bg-gradient-to-r.from-cyan-500\/50 {
+    --tw-gradient-from: rgba(163, 230, 53, 0.5) !important;
+}
+.theme-lime [style*="text-shadow"] {
+    text-shadow: 0 0 10px rgba(163, 230, 53, 0.6) !important;
+}
+
+/* Background gradient, glowing blurs, and header SVG adaptations for Lime Theme */
+.theme-lime .to-indigo-950 {
+    --tw-gradient-to: #052e16 !important; /* Deep forest green to replace blue-indigo background */
+}
+.theme-lime .bg-cyan-500\/5, 
+.theme-lime .bg-blue-500\/5 {
+    background-color: rgba(163, 230, 53, 0.04) !important; /* Lime ambient glow */
+}
+.theme-lime .bg-cyan-500\/10, 
+.theme-lime .bg-indigo-500\/10 {
+    background-color: rgba(163, 230, 53, 0.08) !important; /* Lime branding glow */
+}
+.theme-lime #flow-blue stop {
+    stop-color: #84cc16 !important; /* Lime glow for SVG header animated flow lines */
+}
+.theme-lime .via-cyan-500\/50 {
+    background-image: linear-gradient(to right, transparent, rgba(163, 230, 53, 0.4), transparent) !important; /* Neon bottom border */
+}
+.theme-lime .via-cyan-500 {
+    background-image: linear-gradient(to right, transparent, rgba(163, 230, 53, 0.5), transparent) !important;
+}
+
+/* Orange/Cyberpunk theme */
+.theme-orange .text-cyan-400 {
+    color: rgb(249, 115, 22) !important; /* orange-500 */
+}
+.theme-orange .text-cyan-500 {
+    color: rgb(234, 88, 12) !important; /* orange-600 */
+}
+.theme-orange .hover\:text-cyan-300:hover {
+    color: rgb(253, 186, 116) !important; /* orange-300 */
+}
+.theme-orange .bg-cyan-500\/10 {
+    background-color: rgba(249, 115, 22, 0.1) !important;
+}
+.theme-orange .bg-cyan-950\/30 {
+    background-color: rgba(124, 45, 18, 0.3) !important;
+}
+.theme-orange .bg-gradient-to-r.from-cyan-500\/10 {
+    --tw-gradient-from: rgba(249, 115, 22, 0.1) !important;
+    --tw-gradient-to: rgba(249, 115, 22, 0) !important;
+}
+.theme-orange .bg-cyan-500 {
+    background-color: rgb(249, 115, 22) !important;
+}
+.theme-orange .bg-cyan-500\/50 {
+    background-color: rgba(249, 115, 22, 0.5) !important;
+}
+.theme-orange .border-cyan-500 {
+    border-color: rgb(249, 115, 22) !important;
+}
+.theme-orange .border-cyan-500\/20 {
+    border-color: rgba(249, 115, 22, 0.2) !important;
+}
+.theme-orange .border-cyan-500\/30 {
+    border-color: rgba(249, 115, 22, 0.3) !important;
+}
+.theme-orange .shadow-cyan-500\/20 {
+    --tw-shadow-color: rgba(249, 115, 22, 0.2) !important;
+}
+.theme-orange [class*="shadow"] {
+    --tw-shadow-color: rgba(249, 115, 22, 0.3) !important;
+}
+.theme-orange .hover\:border-cyan-500\/50:hover {
+    border-color: rgba(249, 115, 22, 0.5) !important;
+}
+.theme-orange .to-cyan-400 {
+    --tw-gradient-to: rgb(249, 115, 22) !important;
+}
+.theme-orange [class*="drop-shadow"] {
+    filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.6)) !important;
+}
+.theme-orange .group-hover\:text-cyan-400:hover, 
+.theme-orange .group:hover .group-hover\:text-cyan-400,
+.theme-orange .group:hover .text-cyan-400 {
+    color: rgb(249, 115, 22) !important;
+}
+.theme-orange .group-hover\:drop-shadow-\[0_0_5px_rgba\(34\,211\,238\,0\.5\)\]:hover, 
+.theme-orange .group:hover .group-hover\:drop-shadow-\[0_0_5px_rgba\(34\,211\,238\,0\.5\)\] {
+    filter: drop-shadow(0 0 5px rgba(249, 115, 22, 0.5)) !important;
+}
+.theme-orange .bg-gradient-to-b.from-cyan-400 {
+    --tw-gradient-from: rgb(249, 115, 22) !important;
+}
+.theme-orange .bg-gradient-to-r.from-cyan-500\/50 {
+    --tw-gradient-from: rgba(249, 115, 22, 0.5) !important;
+}
+.theme-orange [style*="text-shadow"] {
+    text-shadow: 0 0 10px rgba(249, 115, 22, 0.6) !important;
+}
+
+/* Background gradient, glowing blurs, and header SVG adaptations for Orange Theme */
+.theme-orange .to-indigo-950 {
+    --tw-gradient-to: #2a0800 !important; /* Deep rust orange to replace blue-indigo background */
+}
+.theme-orange .bg-cyan-500\/5, 
+.theme-orange .bg-blue-500\/5 {
+    background-color: rgba(249, 115, 22, 0.04) !important; /* Orange ambient glow */
+}
+.theme-orange .bg-cyan-500\/10, 
+.theme-orange .bg-indigo-500\/10 {
+    background-color: rgba(249, 115, 22, 0.08) !important; /* Orange branding glow */
+}
+.theme-orange #flow-blue stop {
+    stop-color: #f97316 !important; /* Orange glow for SVG header animated flow lines */
+}
+.theme-orange .via-cyan-500\/50 {
+    background-image: linear-gradient(to right, transparent, rgba(249, 115, 22, 0.4), transparent) !important; /* Neon bottom border */
+}
+.theme-orange .via-cyan-500 {
+    background-image: linear-gradient(to right, transparent, rgba(249, 115, 22, 0.5), transparent) !important;
+}
+</style>

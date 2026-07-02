@@ -15,6 +15,7 @@ class WarehouseArea extends Model
 
     protected $fillable = [
         'warehouse_id',
+        'code',
         'name',
         'name_key',
         'is_active',

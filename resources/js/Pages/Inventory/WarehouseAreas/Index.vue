@@ -26,7 +26,7 @@ const props = defineProps({
 
 const search = ref(props.filters.search || '');
 const selectedWarehouse = ref(props.filters.warehouse_id || '');
-const sortField = ref(props.filters.sort || 'name');
+const sortField = ref(props.filters.sort || 'code');
 const sortDirection = ref(props.filters.direction || 'asc');
 
 const showModal = ref(false);
@@ -34,6 +34,7 @@ const editingArea = ref(null);
 
 const form = useForm({
     warehouse_id: '',
+    code: '',
     name: '',
     is_active: true,
 });
@@ -66,6 +67,7 @@ const openModal = (area = null) => {
     editingArea.value = area;
     if (area) {
         form.warehouse_id = area.warehouse_id;
+        form.code = area.code;
         form.name = area.name;
         form.is_active = Boolean(area.is_active);
     } else {
@@ -96,16 +98,16 @@ const submit = () => {
 };
 
 const deleteArea = (area) => {
-    if (confirm(`Are you sure you want to delete area "${area.name}"?`)) {
+    if (confirm(`Are you sure you want to delete Storage Location "${area.code}"?`)) {
         router.delete(`/inventory/warehouse-areas/${area.id}`);
     }
 };
 </script>
 
 <template>
-    <Head title="Warehouse Areas" />
+    <Head title="Storage Locations (SLoc)" />
 
-    <AppLayout title="Warehouse Areas">
+    <AppLayout title="Storage Locations (SLoc)">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div class="flex items-center gap-3 w-full">
                 <div class="relative flex-1 sm:w-80">
@@ -113,7 +115,7 @@ const deleteArea = (area) => {
                     <input
                         v-model="search"
                         type="search"
-                        placeholder="Search area..."
+                        placeholder="Search SLoc or name..."
                         class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-900 dark:bg-slate-800/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus:bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500/50 transition-all"
                     />
                 </div>
@@ -131,10 +133,10 @@ const deleteArea = (area) => {
             <button
                 type="button"
                 @click="openModal()"
-                class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all"
+                class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-blue-400 transition-all shrink-0"
             >
                 <PlusIcon class="h-5 w-5" />
-                New Area
+                New SLoc
             </button>
         </div>
 
@@ -144,11 +146,26 @@ const deleteArea = (area) => {
                     <thead>
                         <tr class="border-b border-slate-200 dark:border-slate-700">
                             <th
+                                @click="sort('code')"
+                                class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
+                            >
+                                <div class="flex items-center gap-2">
+                                    SLoc
+                                    <span v-if="sortField === 'code'" class="text-blue-500">
+                                        <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
+                                        <ChevronDownIcon v-else class="h-3 w-3" />
+                                    </span>
+                                    <span v-else class="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <ChevronUpIcon class="h-3 w-3" />
+                                    </span>
+                                </div>
+                            </th>
+                            <th
                                 @click="sort('name')"
                                 class="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 shadow-sm px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
                             >
                                 <div class="flex items-center gap-2">
-                                    Area
+                                    Description / SLoc Name
                                     <span v-if="sortField === 'name'" class="text-blue-500">
                                         <ChevronUpIcon v-if="sortDirection === 'asc'" class="h-3 w-3" />
                                         <ChevronDownIcon v-else class="h-3 w-3" />
@@ -193,9 +210,12 @@ const deleteArea = (area) => {
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="area in areas.data" :key="area.id" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap font-mono text-sm font-bold text-blue-500 dark:text-cyan-400">
+                                {{ area.code }}
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center gap-3">
-                                    <div class="p-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                                    <div class="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
                                         <MapPinIcon class="h-5 w-5" />
                                     </div>
                                     <span class="font-medium text-slate-900 dark:text-white">{{ area.name }}</span>
@@ -232,8 +252,8 @@ const deleteArea = (area) => {
                             </td>
                         </tr>
                         <tr v-if="areas.data.length === 0">
-                            <td colspan="4" class="px-6 py-12 text-center text-sm text-slate-500">
-                                No areas found.
+                            <td colspan="5" class="px-6 py-12 text-center text-sm text-slate-500">
+                                No Storage Locations (SLoc) found.
                             </td>
                         </tr>
                     </tbody>
@@ -249,7 +269,7 @@ const deleteArea = (area) => {
             <div class="px-6 py-4">
                 <div class="flex items-center justify-between">
                     <div class="text-lg font-semibold text-slate-900 dark:text-white">
-                        {{ editingArea ? 'Edit Area' : 'New Area' }}
+                        {{ editingArea ? 'Edit Storage Location (SLoc)' : 'New Storage Location (SLoc)' }}
                     </div>
                     <button class="text-slate-500 hover:text-slate-300" @click="closeModal">
                         <XMarkIcon class="h-5 w-5" />
@@ -272,12 +292,24 @@ const deleteArea = (area) => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Area Name</label>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">SLoc Code</label>
+                        <input
+                            v-model="form.code"
+                            type="text"
+                            maxlength="10"
+                            class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 font-mono"
+                            placeholder="e.g. RM01, FG01"
+                        />
+                        <div v-if="form.errors.code" class="mt-1 text-xs text-red-400">{{ form.errors.code }}</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">SLoc Name / Description</label>
                         <input
                             v-model="form.name"
                             type="text"
                             class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
-                            placeholder="e.g. FG, RM, Rack A1"
+                            placeholder="e.g. HRC Coil Yard, Slitted Coils"
                         />
                         <div v-if="form.errors.name" class="mt-1 text-xs text-red-400">{{ form.errors.name }}</div>
                     </div>

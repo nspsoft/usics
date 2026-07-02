@@ -291,7 +291,7 @@ const getLocColorClass = (status) => {
             :href="route('inventory.opname.index')"
             class="text-xs font-mono border border-slate-700 hover:border-emerald-500/50 text-slate-300 px-4 py-1.5 rounded-lg transition-all"
           >
-            KEMBALI KE DAFTAR
+            BACK TO LIST
           </a>
         </div>
       </div>
@@ -329,7 +329,7 @@ const getLocColorClass = (status) => {
         >
           <Cpu class="w-4 h-4 animate-spin" v-if="processing" />
           <RefreshCw class="w-4 h-4" v-else />
-          <span>⚡ SAPU RFID MASSAL</span>
+          <span>⚡ MASS RFID SWEEP</span>
         </button>
       </div>
 
@@ -409,7 +409,7 @@ const getLocColorClass = (status) => {
               class="w-full mt-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg active:scale-95 flex items-center justify-center gap-2"
             >
               <Cpu class="w-4 h-4 animate-ping" v-slot="processing" />
-              <span>{{ processing ? 'AUDITING...' : '⚡ KIRIM PEMINDAIAN AUDIT' }}</span>
+              <span>{{ processing ? 'AUDITING...' : '⚡ SUBMIT AUDIT SCAN' }}</span>
             </button>
           </div>
 
@@ -430,6 +430,39 @@ const getLocColorClass = (status) => {
               >
                 <Sparkles class="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
                 <p>{{ rec }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Operational Guide / Cara Pakai -->
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-xl flex flex-col">
+            <div class="border-b border-slate-800 pb-3 mb-3">
+              <h3 class="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase flex items-center gap-2">
+                <Map class="w-4 h-4 text-emerald-400" />
+                OPERATIONAL GUIDE / CARA PAKAI
+              </h3>
+            </div>
+            
+            <div class="space-y-3.5 text-xs text-slate-400 font-sans leading-relaxed">
+              <div class="flex gap-2.5">
+                <span class="w-5 h-5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-mono font-bold text-[10px] shrink-0">1</span>
+                <p>**Pilih Produk (Scan Barcode)**: Pilih barang/SKU dari dropdown untuk menyimulasikan pemindaian tag barcode fisik.</p>
+              </div>
+              <div class="flex gap-2.5">
+                <span class="w-5 h-5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-mono font-bold text-[10px] shrink-0">2</span>
+                <p>**Input Jumlah Fisik**: Masukkan angka kuantitas asli yang dihitung auditor di lapangan gudang.</p>
+              </div>
+              <div class="flex gap-2.5">
+                <span class="w-5 h-5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-mono font-bold text-[10px] shrink-0">3</span>
+                <p>**Kirim Audit**: Tekan tombol **SUBMIT AUDIT SCAN** untuk mencatat data fisik dan memperbarui selisih.</p>
+              </div>
+              <div class="flex gap-2.5">
+                <span class="w-5 h-5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-mono font-bold text-[10px] shrink-0">4</span>
+                <p>**Sapu RFID Massal**: Gunakan tombol **MASS RFID SWEEP** di kanan atas untuk menyimulasikan pemindaian gelombang nirkabel secara instan.</p>
+              </div>
+              <div class="flex gap-2.5">
+                <span class="w-5 h-5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-mono font-bold text-[10px] shrink-0">5</span>
+                <p>**Periksa AI & Grid 2D**: Amati visualisasi status rak (Kuning/Merah) dan baca petunjuk AI Advisor untuk menelusuri barang yang tertukar.</p>
               </div>
             </div>
           </div>

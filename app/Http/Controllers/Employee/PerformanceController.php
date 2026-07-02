@@ -14,7 +14,7 @@ class PerformanceController extends Controller
     {
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return redirect()->back()->with('error', 'You are not registered as an employee.');
+            return redirect()->route('dashboard')->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
         }
 
         $period = $request->query('period', date('Y') . '-Q' . ceil(date('n') / 3));
@@ -34,6 +34,9 @@ class PerformanceController extends Controller
     public function storeObjective(Request $request)
     {
         $employee = auth()->user()->employee;
+        if (!$employee) {
+            return redirect()->back()->with('error', 'Akun Anda tidak terdaftar sebagai Karyawan (Employee). Silakan hubungi HR atau Administrator untuk mendaftarkan NIK dan menautkan akun Anda.');
+        }
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'period' => 'required|string',

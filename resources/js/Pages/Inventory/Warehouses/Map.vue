@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import axios from 'axios';
 import {
     ArrowLeftIcon,
@@ -14,6 +15,8 @@ import {
     ChevronRightIcon,
     PhotoIcon,
     TrashIcon,
+    PlusIcon,
+    PencilSquareIcon,
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -30,19 +33,37 @@ const dragging = ref(null);
 const dragOffset = ref({ x: 0, y: 0 });
 const showHelp = ref(false);
 
+// SLoc filter
+const selectedSlocFilter = ref('');
+
+// CRUD Location Modal
+const showLocationModal = ref(false);
+const editingLocation = ref(null);
+
+const locationForm = useForm({
+    warehouse_area_id: '',
+    code: '',
+    name: '',
+    type: 'rack',
+    capacity: 100,
+    color: '#3b82f6',
+    width: 2,
+    height: 2,
+});
+
 // Sidebar detail
 const selectedLocation = ref(null);
 const sidebarOpen = ref(false);
 const sidebarLoading = ref(false);
 const sidebarStocks = ref([]);
 
-// Heatmap color based on utilization
+// Heatmap color based on utilization (suitable for dark-themed glass cards)
 const getHeatColor = (percent) => {
-    if (percent <= 0) return { bg: 'bg-slate-100 dark:bg-slate-800', border: 'border-slate-300 dark:border-slate-700', text: 'text-slate-500 dark:text-slate-400', glow: '' };
-    if (percent < 40) return { bg: 'bg-emerald-100 dark:bg-emerald-950/60', border: 'border-emerald-400 dark:border-emerald-600', text: 'text-emerald-700 dark:text-emerald-400', glow: 'shadow-emerald-500/20' };
-    if (percent < 70) return { bg: 'bg-amber-100 dark:bg-amber-950/60', border: 'border-amber-400 dark:border-amber-600', text: 'text-amber-700 dark:text-amber-400', glow: 'shadow-amber-500/20' };
-    if (percent < 90) return { bg: 'bg-orange-100 dark:bg-orange-950/60', border: 'border-orange-400 dark:border-orange-600', text: 'text-orange-700 dark:text-orange-400', glow: 'shadow-orange-500/20' };
-    return { bg: 'bg-rose-100 dark:bg-rose-950/60', border: 'border-rose-400 dark:border-rose-600', text: 'text-rose-700 dark:text-rose-400', glow: 'shadow-rose-500/20' };
+    if (percent <= 0) return { border: 'border-slate-800/80', text: 'text-slate-400', bar: 'bg-slate-700', glow: '' };
+    if (percent < 40) return { border: 'border-emerald-500/40', text: 'text-emerald-400', bar: 'bg-emerald-500', glow: 'shadow-emerald-500/10' };
+    if (percent < 70) return { border: 'border-amber-500/40', text: 'text-amber-400', bar: 'bg-amber-500', glow: 'shadow-amber-500/10' };
+    if (percent < 90) return { border: 'border-orange-500/40', text: 'text-orange-400', bar: 'bg-orange-500', glow: 'shadow-orange-500/10' };
+    return { border: 'border-rose-500/60', text: 'text-rose-400', bar: 'bg-rose-500', glow: 'shadow-rose-500/20' };
 };
 
 // Auto-assign positions if locations have no position
@@ -170,12 +191,117 @@ const removeBackground = () => {
     }
 };
 
+const openLocationModal = (loc = null) => {
+    editingLocation.value = loc;
+    if (loc) {
+        locationForm.warehouse_area_id = loc.warehouse_area_id || '';
+        locationForm.code = loc.code;
+        locationForm.name = loc.name;
+        locationForm.type = loc.type || 'rack';
+        locationForm.capacity = loc.capacity || 100;
+        locationForm.color = loc.color || '#3b82f6';
+        locationForm.width = loc.width || 2;
+        locationForm.height = loc.height || 2;
+    } else {
+        locationForm.reset();
+        locationForm.color = '#3b82f6';
+        locationForm.capacity = 100;
+        locationForm.type = 'rack';
+        locationForm.width = 2;
+        locationForm.height = 2;
+    }
+    showLocationModal.value = true;
+};
+
+const closeLocationModal = () => {
+    showLocationModal.value = false;
+    locationForm.reset();
+    editingLocation.value = null;
+};
+
+const submitLocation = () => {
+    if (editingLocation.value) {
+        locationForm.put(`/inventory/locations/${editingLocation.value.id}`, {
+            preserveState: true,
+            onSuccess: () => {
+                const updatedLoc = locations.value.find(l => l.id === editingLocation.value.id);
+                if (updatedLoc) {
+                    updatedLoc.warehouse_area_id = locationForm.warehouse_area_id;
+                    updatedLoc.code = locationForm.code;
+                    updatedLoc.name = locationForm.name;
+                    updatedLoc.type = locationForm.type;
+                    updatedLoc.capacity = locationForm.capacity;
+                    updatedLoc.color = locationForm.color;
+                    updatedLoc.width = parseInt(locationForm.width || 2);
+                    updatedLoc.height = parseInt(locationForm.height || 2);
+                    
+                    // Keep bounds in grid
+                    updatedLoc.pos_x = Math.max(0, Math.min(updatedLoc.pos_x, gridCols.value - updatedLoc.width));
+                    updatedLoc.pos_y = Math.max(0, Math.min(updatedLoc.pos_y, gridRows.value - updatedLoc.height));
+                }
+                closeLocationModal();
+                router.reload({ only: ['warehouse'] });
+            },
+        });
+    } else {
+        locationForm.post(`/inventory/warehouses/${props.warehouse.id}/locations`, {
+            preserveState: true,
+            onSuccess: () => {
+                closeLocationModal();
+                router.reload({ only: ['warehouse'] });
+            },
+        });
+    }
+};
+
+const deleteLocation = (loc) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus lokasi "${loc.code}"?`)) {
+        router.delete(`/inventory/locations/${loc.id}`, {
+            preserveState: true,
+            onSuccess: () => {
+                if (selectedLocation.value?.id === loc.id) {
+                    closeSidebar();
+                }
+                router.reload({ only: ['warehouse'] });
+            },
+        });
+    }
+};
+
+const getAreaColor = (code) => {
+    const colors = {
+        'SP01': '#3b82f6',
+        'PKG1': '#10b981',
+        'TOOL': '#8b5cf6',
+        'RM01': '#3b82f6',
+        'RM02': '#10b981',
+        'RM03': '#8b5cf6',
+        'WIP1': '#3b82f6',
+        'WIP2': '#10b981',
+        'WIP3': '#eab308',
+        'WIP4': '#ec4899',
+        'FG01': '#3b82f6',
+        'FG02': '#eab308',
+        'FG03': '#ec4899',
+        'LDB1': '#f97316',
+        'LDB2': '#f97316',
+    };
+    return colors[code] || '#94a3b8';
+};
+
 const formatNumber = (num) => {
     return Number(num || 0).toLocaleString('id-ID');
 };
 
 const typeLabel = (type) => {
-    const labels = { storage: 'Storage', receiving: 'Receiving', shipping: 'Shipping', production: 'Production' };
+    const labels = { 
+        storage: 'Storage', 
+        receiving: 'Receiving', 
+        shipping: 'Shipping', 
+        production: 'Production',
+        rack: 'Rack / Bay',
+        transit: 'Transit Area'
+    };
     return labels[type] || type;
 };
 </script>
@@ -214,6 +340,9 @@ const typeLabel = (type) => {
                     </button>
 
                     <template v-if="editMode">
+                        <button @click="openLocationModal()" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20 mr-2 shrink-0">
+                            <PlusIcon class="h-4 w-4" /> Add Location
+                        </button>
                         <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mr-2">
                             <button @click="triggerBgUpload" :disabled="uploadingBg" class="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm transition-all disabled:opacity-50" title="Upload Blueprint Background">
                                 <PhotoIcon class="h-4 w-4" :class="uploadingBg ? 'animate-pulse' : ''" /> {{ uploadingBg ? 'Uploading...' : 'Set Background' }}
@@ -222,15 +351,28 @@ const typeLabel = (type) => {
                                 <TrashIcon class="h-4 w-4" />
                             </button>
                         </div>
-                        <button @click="editMode = false" class="inline-flex items-center gap-2 rounded-xl bg-slate-200 dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
+                        <button @click="editMode = false" class="inline-flex items-center gap-2 rounded-xl bg-slate-200 dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
                             <XMarkIcon class="h-4 w-4" /> Cancel
                         </button>
-                        <button @click="saveLayout" :disabled="saving" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-500/20 disabled:opacity-50">
+                        <button @click="saveLayout" :disabled="saving" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-500/20 disabled:opacity-50">
                             <CheckIcon class="h-4 w-4" /> {{ saving ? 'Saving...' : 'Save Layout' }}
                         </button>
                     </template>
                     <template v-else>
-                        <button @click="editMode = true" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20">
+                        <!-- SLoc Filter Dropdown -->
+                        <div class="flex items-center gap-2 mr-2">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">SLoc:</label>
+                            <select
+                                v-model="selectedSlocFilter"
+                                class="rounded-xl border-0 bg-slate-100 dark:bg-slate-800 py-2 px-4 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            >
+                                <option value="">All SLocs</option>
+                                <option v-for="area in warehouse.areas" :key="area.id" :value="area.id">
+                                    [{{ area.code }}] {{ area.name }}
+                                </option>
+                            </select>
+                        </div>
+                        <button @click="editMode = true" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20">
                             <ArrowsPointingOutIcon class="h-4 w-4" /> Edit Layout
                         </button>
                     </template>
@@ -262,29 +404,44 @@ const typeLabel = (type) => {
                 <!-- Map Canvas -->
                 <div class="flex-1 min-w-0">
                     <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-xl overflow-hidden">
-                        <!-- Legend -->
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Floor Plan</h3>
-                            <div class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider">
-                                <div class="flex items-center gap-1.5">
-                                    <div class="w-3 h-3 rounded-sm bg-slate-200 dark:bg-slate-700 border border-slate-400"></div>
-                                    <span class="text-slate-500">Empty</span>
+                        <!-- Legends -->
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                            <div>
+                                <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Floor Plan Layout</h3>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-6 text-[10px] font-bold uppercase tracking-wider">
+                                <!-- SLoc Legend -->
+                                <div class="flex flex-wrap items-center gap-3 pr-4 border-r border-slate-200 dark:border-slate-800" v-if="warehouse.areas?.length > 0">
+                                    <span class="text-slate-400">SLocs:</span>
+                                    <div v-for="area in warehouse.areas" :key="area.id" class="flex items-center gap-1.5">
+                                        <span class="w-2.5 h-2.5 rounded-full inline-block" :style="{ backgroundColor: getAreaColor(area.code) }"></span>
+                                        <span class="text-slate-700 dark:text-slate-300 font-mono">{{ area.code }}</span>
+                                    </div>
                                 </div>
-                                <div class="flex items-center gap-1.5">
-                                    <div class="w-3 h-3 rounded-sm bg-emerald-200 border border-emerald-400"></div>
-                                    <span class="text-emerald-600">Low</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <div class="w-3 h-3 rounded-sm bg-amber-200 border border-amber-400"></div>
-                                    <span class="text-amber-600">Medium</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <div class="w-3 h-3 rounded-sm bg-orange-200 border border-orange-400"></div>
-                                    <span class="text-orange-600">High</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <div class="w-3 h-3 rounded-sm bg-rose-200 border border-rose-400"></div>
-                                    <span class="text-rose-600">Full</span>
+
+                                <!-- Heatmap Legend -->
+                                <div class="flex items-center gap-3">
+                                    <span class="text-slate-400">Utilization:</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="w-3 h-3 rounded-sm bg-slate-800 border border-slate-700"></div>
+                                        <span class="text-slate-500">Empty</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="w-3 h-3 rounded-sm bg-emerald-500/20 border border-emerald-500/40"></div>
+                                        <span class="text-emerald-500">Low</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="w-3 h-3 rounded-sm bg-amber-500/20 border border-amber-500/40"></div>
+                                        <span class="text-amber-500 font-bold">Med</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="w-3 h-3 rounded-sm bg-orange-500/20 border border-orange-500/40"></div>
+                                        <span class="text-orange-500 font-bold">High</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="w-3 h-3 rounded-sm bg-rose-500/20 border border-rose-500/60"></div>
+                                        <span class="text-rose-500 font-bold">Full</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -322,43 +479,48 @@ const typeLabel = (type) => {
                             <div
                                 v-for="loc in locations"
                                 :key="loc.id"
-                                :draggable="editMode"
+                                :draggable="editMode ? 'true' : 'false'"
                                 @dragstart="(e) => onDragStart(loc, e)"
-                                @click="inspectLocation(loc)"
-                                class="absolute rounded-xl border-2 p-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:z-10"
+                                @click="editMode ? openLocationModal(loc) : inspectLocation(loc)"
+                                class="absolute rounded-xl border-2 p-3 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:z-10 bg-slate-950/85 backdrop-blur-sm shadow-xl"
                                 :class="[
-                                    getHeatColor(loc.utilization_percent).bg,
                                     getHeatColor(loc.utilization_percent).border,
                                     getHeatColor(loc.utilization_percent).glow ? 'shadow-lg ' + getHeatColor(loc.utilization_percent).glow : '',
-                                    editMode ? 'cursor-grab active:cursor-grabbing ring-2 ring-blue-400/50 ring-offset-1' : '',
+                                    editMode ? 'cursor-grab active:cursor-grabbing ring-2 ring-blue-500/50 ring-offset-1 border-blue-400 border-dashed' : '',
                                     selectedLocation?.id === loc.id ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-950 scale-[1.03] z-20' : '',
+                                    selectedSlocFilter && loc.warehouse_area_id != selectedSlocFilter ? 'opacity-10 dark:opacity-20 scale-95 border-dashed pointer-events-none' : '',
                                 ]"
                                 :style="{
                                     left: `${((loc.pos_x ?? 0) / gridCols) * 100}%`,
                                     top: `${((loc.pos_y ?? 0) / gridRows) * 100}%`,
                                     width: `${((loc.width || 1) / gridCols) * 100}%`,
                                     height: `${((loc.height || 1) / gridRows) * 100}%`,
+                                    borderColor: loc.color ? `${loc.color}aa` : undefined
                                 }"
                             >
-                                <span class="text-[11px] font-black uppercase tracking-wider leading-none" :class="getHeatColor(loc.utilization_percent).text">
+                                <!-- Sloc pill and color dot -->
+                                <div class="flex items-center gap-1 mb-1" v-if="loc.warehouse_area">
+                                    <span class="w-1.5 h-1.5 rounded-full inline-block shrink-0" :style="{ backgroundColor: getAreaColor(loc.warehouse_area.code) }"></span>
+                                    <span class="text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-bold font-mono">
+                                        {{ loc.warehouse_area.code }}
+                                    </span>
+                                </div>
+
+                                <span class="text-[11px] font-black uppercase tracking-wider leading-none text-white">
                                     {{ loc.code }}
                                 </span>
-                                <span class="text-[9px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-full">
+                                <span class="text-[9px] font-medium text-slate-400 mt-1 truncate max-w-full">
                                     {{ loc.name }}
                                 </span>
                                 <!-- Utilization bar -->
-                                <div class="w-full mt-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                                <div class="w-full mt-2 h-1 rounded-full bg-slate-800 overflow-hidden">
                                     <div
                                         class="h-full rounded-full transition-all duration-500"
-                                        :class="[
-                                            loc.utilization_percent < 40 ? 'bg-emerald-500' :
-                                            loc.utilization_percent < 70 ? 'bg-amber-500' :
-                                            loc.utilization_percent < 90 ? 'bg-orange-500' : 'bg-rose-500'
-                                        ]"
+                                        :class="getHeatColor(loc.utilization_percent).bar"
                                         :style="{ width: `${loc.utilization_percent}%` }"
                                     ></div>
                                 </div>
-                                <span class="text-[8px] font-bold mt-0.5" :class="getHeatColor(loc.utilization_percent).text">
+                                <span class="text-[8px] font-bold mt-1" :class="getHeatColor(loc.utilization_percent).text">
                                     {{ loc.utilization_percent }}%
                                 </span>
                             </div>
@@ -366,7 +528,7 @@ const typeLabel = (type) => {
 
                         <!-- Edit Mode Hint -->
                         <p v-if="editMode" class="mt-3 text-xs text-blue-500 dark:text-blue-400 font-semibold text-center animate-pulse">
-                            🖱️ Drag the blocks to rearrange rack positions, then click "Save Layout"
+                            🖱️ Drag block untuk mengatur posisi tata letak rak, klik rak untuk mengubah ukuran (lebar/tinggi) & detail, lalu klik "Save Layout"
                         </p>
                     </div>
                 </div>
@@ -385,7 +547,12 @@ const typeLabel = (type) => {
                             <!-- Sidebar Header -->
                             <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                                 <div>
-                                    <h3 class="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">{{ selectedLocation.code }}</h3>
+                                    <h3 class="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                                        {{ selectedLocation.code }}
+                                        <button @click="openLocationModal(selectedLocation)" class="p-1 rounded text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Edit Detail">
+                                            <PencilSquareIcon class="h-4 w-4" />
+                                        </button>
+                                    </h3>
                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ selectedLocation.name }}</p>
                                 </div>
                                 <button @click="closeSidebar" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
@@ -395,6 +562,12 @@ const typeLabel = (type) => {
 
                             <!-- Location Info -->
                             <div class="p-5 border-b border-slate-200 dark:border-slate-800 space-y-3">
+                                <div class="flex justify-between items-start text-sm" v-if="selectedLocation.warehouse_area">
+                                    <span class="text-slate-500 dark:text-slate-400 font-medium">SLoc</span>
+                                    <span class="font-bold text-slate-900 dark:text-white font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs text-right max-w-[200px]">
+                                        [{{ selectedLocation.warehouse_area.code }}] {{ selectedLocation.warehouse_area.name }}
+                                    </span>
+                                </div>
                                 <div class="flex justify-between text-sm">
                                     <span class="text-slate-500 dark:text-slate-400 font-medium">Type</span>
                                     <span class="font-bold text-slate-900 dark:text-white uppercase text-xs tracking-wider bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">{{ typeLabel(selectedLocation.type) }}</span>
@@ -407,6 +580,12 @@ const typeLabel = (type) => {
                                     <span class="text-slate-700 dark:text-slate-400 font-medium">Current Stock</span>
                                     <span class="font-bold text-slate-900 dark:text-white">{{ formatNumber(selectedLocation.total_stock_qty) }}</span>
                                 </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-500 dark:text-slate-400 font-medium">Grid Dimension</span>
+                                    <span class="font-bold text-slate-900 dark:text-white font-mono text-xs">
+                                        L: {{ selectedLocation.width || 1 }} x T: {{ selectedLocation.height || 1 }} (Grid Units)
+                                    </span>
+                                </div>
                                 <div>
                                     <div class="flex justify-between text-xs mb-1">
                                         <span class="text-slate-500 dark:text-slate-400 font-medium">Utilization</span>
@@ -415,11 +594,7 @@ const typeLabel = (type) => {
                                     <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                                         <div
                                             class="h-full rounded-full transition-all duration-500"
-                                            :class="[
-                                                selectedLocation.utilization_percent < 40 ? 'bg-emerald-500' :
-                                                selectedLocation.utilization_percent < 70 ? 'bg-amber-500' :
-                                                selectedLocation.utilization_percent < 90 ? 'bg-orange-500' : 'bg-rose-500'
-                                            ]"
+                                            :class="getHeatColor(selectedLocation.utilization_percent).bar"
                                             :style="{ width: `${selectedLocation.utilization_percent}%` }"
                                         ></div>
                                     </div>
@@ -527,6 +702,181 @@ const typeLabel = (type) => {
                     </div>
                 </div>
             </Transition>
+
+            <!-- Location CRUD Modal -->
+            <Modal :show="showLocationModal" @close="closeLocationModal">
+                <div class="p-6">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                        <h3 class="text-lg font-black text-slate-900 dark:text-white">
+                            {{ editingLocation ? 'Edit Detail Lokasi' : 'Tambah Lokasi Baru' }}
+                        </h3>
+                        <button @click="closeLocationModal" class="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <XMarkIcon class="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    <div class="mt-4 space-y-4">
+                        <!-- SLoc Dropdown -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Storage Location (SLoc)</label>
+                            <select
+                                v-model="locationForm.warehouse_area_id"
+                                class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                            >
+                                <option value="">Pilih SLoc...</option>
+                                <option v-for="area in warehouse.areas" :key="area.id" :value="area.id">
+                                    [{{ area.code }}] {{ area.name }}
+                                </option>
+                            </select>
+                            <div v-if="locationForm.errors.warehouse_area_id" class="mt-1 text-xs text-red-400">{{ locationForm.errors.warehouse_area_id }}</div>
+                        </div>
+
+                        <!-- Code -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Kode Lokasi (RACK/BIN)</label>
+                            <input
+                                v-model="locationForm.code"
+                                type="text"
+                                required
+                                class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 font-mono"
+                                placeholder="e.g. FG01-A1, RM01-C3"
+                            />
+                            <div v-if="locationForm.errors.code" class="mt-1 text-xs text-red-400">{{ locationForm.errors.code }}</div>
+                        </div>
+
+                        <!-- Name -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Nama / Deskripsi Lokasi</label>
+                            <input
+                                v-model="locationForm.name"
+                                type="text"
+                                required
+                                class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                                placeholder="e.g. Row A1 - Slitted Coil Yard"
+                            />
+                            <div v-if="locationForm.errors.name" class="mt-1 text-xs text-red-400">{{ locationForm.errors.name }}</div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Type -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Tipe Lokasi</label>
+                                <select
+                                    v-model="locationForm.type"
+                                    required
+                                    class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                                >
+                                    <option value="rack">Rack / Bay</option>
+                                    <option value="storage">Storage</option>
+                                    <option value="transit">Transit Area</option>
+                                    <option value="receiving">Receiving</option>
+                                    <option value="shipping">Shipping</option>
+                                    <option value="production">Production</option>
+                                </select>
+                            </div>
+
+                            <!-- Capacity -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Kapasitas Maksimal</label>
+                                <input
+                                    v-model="locationForm.capacity"
+                                    type="number"
+                                    min="1"
+                                    required
+                                    class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50"
+                                />
+                                <div v-if="locationForm.errors.capacity" class="mt-1 text-xs text-red-400">{{ locationForm.errors.capacity }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Card Resizing Options (Lebar & Tinggi) -->
+                        <div class="grid grid-cols-2 gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">Lebar Lokasi (Grid)</label>
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        v-model="locationForm.width"
+                                        type="number"
+                                        min="1"
+                                        max="24"
+                                        required
+                                        class="block w-full rounded-xl border-0 bg-white dark:bg-slate-900 py-2 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 text-center font-bold"
+                                    />
+                                    <span class="text-xs text-slate-400 font-bold">Kolom</span>
+                                </div>
+                                <div v-if="locationForm.errors.width" class="mt-1 text-xs text-red-400">{{ locationForm.errors.width }}</div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">Tinggi Lokasi (Grid)</label>
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        v-model="locationForm.height"
+                                        type="number"
+                                        min="1"
+                                        max="24"
+                                        required
+                                        class="block w-full rounded-xl border-0 bg-white dark:bg-slate-900 py-2 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 text-center font-bold"
+                                    />
+                                    <span class="text-xs text-slate-400 font-bold">Baris</span>
+                                </div>
+                                <div v-if="locationForm.errors.height" class="mt-1 text-xs text-red-400">{{ locationForm.errors.height }}</div>
+                            </div>
+                            <p class="col-span-2 text-[10px] text-slate-400 dark:text-slate-500 font-semibold italic mt-1 text-center">
+                                * Semakin besar angkanya, semakin lebar/tinggi kotak lokasi digambarkan di peta.
+                            </p>
+                        </div>
+
+                        <!-- Color -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Warna Identifikasi Visual</label>
+                            <div class="flex items-center gap-3">
+                                <input
+                                    v-model="locationForm.color"
+                                    type="color"
+                                    class="w-12 h-10 border-0 rounded-xl bg-transparent cursor-pointer"
+                                />
+                                <input
+                                    v-model="locationForm.color"
+                                    type="text"
+                                    class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 font-mono"
+                                    placeholder="#3b82f6"
+                                />
+                            </div>
+                            <div v-if="locationForm.errors.color" class="mt-1 text-xs text-red-400">{{ locationForm.errors.color }}</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-4 -mx-6 -mb-6 border-t border-slate-200 dark:border-slate-800 rounded-b-3xl">
+                        <div>
+                            <button
+                                v-if="editingLocation"
+                                type="button"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 border border-red-200 hover:bg-red-50 text-red-600 rounded-xl text-xs font-bold transition-all"
+                                @click="deleteLocation(editingLocation)"
+                            >
+                                <TrashIcon class="h-4 w-4" /> Hapus Lokasi
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button
+                                type="button"
+                                class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition"
+                                @click="closeLocationModal"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-500/20 transition disabled:opacity-50"
+                                :disabled="locationForm.processing"
+                                @click="submitLocation"
+                            >
+                                {{ locationForm.processing ? 'Menyimpan...' : 'Simpan Detail' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
         </div>
     </AppLayout>
 </template>

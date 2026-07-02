@@ -25,7 +25,10 @@ class WarehouseAreaController extends Controller
         $query = WarehouseArea::query()
             ->with(['warehouse:id,name'])
             ->when($request->search, function ($q, $search) {
-                $q->where('name', 'like', "%{$search}%");
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%");
+                });
             })
             ->when($request->warehouse_id, function ($q, $warehouseId) {
                 $q->where('warehouse_id', $warehouseId);
@@ -38,7 +41,7 @@ class WarehouseAreaController extends Controller
             $query->join('warehouses', 'inv_warehouse_areas.warehouse_id', '=', 'warehouses.id')
                 ->orderBy('warehouses.name', $direction)
                 ->select('inv_warehouse_areas.*');
-        } elseif (in_array($sort, ['name', 'is_active', 'created_at'])) {
+        } elseif (in_array($sort, ['code', 'name', 'is_active', 'created_at'])) {
             $query->orderBy($sort, $direction);
         } else {
             $query->orderBy('name', 'asc');
@@ -62,8 +65,8 @@ class WarehouseAreaController extends Controller
         $areas = WarehouseArea::query()
             ->where('warehouse_id', $validated['warehouse_id'])
             ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+            ->orderBy('code')
+            ->get(['id', 'code', 'name']);
 
         return response()->json([
             'areas' => $areas,
@@ -74,6 +77,13 @@ class WarehouseAreaController extends Controller
     {
         $validated = $request->validate([
             'warehouse_id' => 'required|exists:warehouses,id',
+            'code' => [
+                'required',
+                'string',
+                'max:10',
+                Rule::unique('inv_warehouse_areas', 'code')
+                    ->where('warehouse_id', $request->input('warehouse_id'))
+            ],
             'name' => [
                 'required',
                 'string',
@@ -84,19 +94,28 @@ class WarehouseAreaController extends Controller
             'is_active' => 'boolean',
         ]);
 
+        $validated['code'] = strtoupper(trim($validated['code']));
         $validated['name'] = trim($validated['name']);
         $validated['name_key'] = $this->makeKey($validated['name']);
         $validated['is_active'] = $validated['is_active'] ?? true;
 
         WarehouseArea::create($validated);
 
-        return back()->with('success', 'Warehouse area created successfully.');
+        return back()->with('success', 'Storage Location (SLoc) created successfully.');
     }
 
     public function update(Request $request, WarehouseArea $warehouseArea)
     {
         $validated = $request->validate([
             'warehouse_id' => 'required|exists:warehouses,id',
+            'code' => [
+                'required',
+                'string',
+                'max:10',
+                Rule::unique('inv_warehouse_areas', 'code')
+                    ->where('warehouse_id', $request->input('warehouse_id'))
+                    ->ignore($warehouseArea->id)
+            ],
             'name' => [
                 'required',
                 'string',
@@ -108,19 +127,20 @@ class WarehouseAreaController extends Controller
             'is_active' => 'boolean',
         ]);
 
+        $validated['code'] = strtoupper(trim($validated['code']));
         $validated['name'] = trim($validated['name']);
         $validated['name_key'] = $this->makeKey($validated['name']);
 
         $warehouseArea->update($validated);
 
-        return back()->with('success', 'Warehouse area updated successfully.');
+        return back()->with('success', 'Storage Location (SLoc) updated successfully.');
     }
 
     public function destroy(WarehouseArea $warehouseArea)
     {
         $warehouseArea->delete();
 
-        return back()->with('success', 'Warehouse area deleted successfully.');
+        return back()->with('success', 'Storage Location (SLoc) deleted successfully.');
     }
 }
 

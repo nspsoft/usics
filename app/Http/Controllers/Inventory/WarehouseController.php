@@ -170,7 +170,7 @@ class WarehouseController extends Controller
      */
     public function map(Warehouse $warehouse): Response
     {
-        $warehouse->load(['manager', 'locations.productStocks.product']);
+        $warehouse->load(['manager', 'locations.warehouseArea', 'areas', 'locations.productStocks.product']);
 
         // Compute summary stats
         $locations = $warehouse->locations;
@@ -235,10 +235,12 @@ class WarehouseController extends Controller
      */
     public function locationDetail(Location $location)
     {
-        $location->load(['productStocks.product.unit', 'warehouse']);
+        $location->load(['productStocks.product.unit', 'warehouse', 'warehouseArea']);
 
         return response()->json([
             'location' => $location,
+            'sloc_code' => $location->warehouseArea->code ?? '-',
+            'sloc_name' => $location->warehouseArea->name ?? '-',
             'stocks' => $location->productStocks->map(function ($stock) {
                 return [
                     'id' => $stock->id,
@@ -252,6 +254,71 @@ class WarehouseController extends Controller
                 ];
             }),
         ]);
+    }
+
+    /**
+     * Create a new location on the map.
+     */
+    public function storeLocation(Request $request, Warehouse $warehouse)
+    {
+        $validated = $request->validate([
+            'warehouse_area_id' => 'nullable|exists:inv_warehouse_areas,id',
+            'code' => 'required|string|max:50',
+            'name' => 'required|string|max:100',
+            'type' => 'required|in:storage,receiving,shipping,production,rack,transit',
+            'capacity' => 'required|integer|min:1',
+            'color' => 'nullable|string|max:20',
+            'width' => 'nullable|integer|min:1|max:24',
+            'height' => 'nullable|integer|min:1|max:24',
+        ]);
+
+        $validated['warehouse_id'] = $warehouse->id;
+        $validated['pos_x'] = 0;
+        $validated['pos_y'] = 0;
+        $validated['width'] = $validated['width'] ?? 2;
+        $validated['height'] = $validated['height'] ?? 2;
+        $validated['is_active'] = true;
+        $validated['path'] = $validated['code'];
+
+        Location::create($validated);
+
+        return back()->with('success', 'Location created successfully.');
+    }
+
+    /**
+     * Update location details from the map.
+     */
+    public function updateLocation(Request $request, Location $location)
+    {
+        $validated = $request->validate([
+            'warehouse_area_id' => 'nullable|exists:inv_warehouse_areas,id',
+            'code' => 'required|string|max:50',
+            'name' => 'required|string|max:100',
+            'type' => 'required|in:storage,receiving,shipping,production,rack,transit',
+            'capacity' => 'required|integer|min:1',
+            'color' => 'nullable|string|max:20',
+            'width' => 'required|integer|min:1|max:24',
+            'height' => 'required|integer|min:1|max:24',
+        ]);
+
+        $location->update($validated);
+
+        return back()->with('success', 'Location details updated.');
+    }
+
+    /**
+     * Delete a location from the map.
+     */
+    public function destroyLocation(Location $location)
+    {
+        // Check if location has stock
+        if ($location->productStocks()->where('qty_on_hand', '>', 0)->exists()) {
+            return back()->with('error', 'Cannot delete location with existing stock.');
+        }
+
+        $location->delete();
+
+        return back()->with('success', 'Location deleted successfully.');
     }
 
     /**

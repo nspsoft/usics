@@ -203,5 +203,13 @@ Area restriksi tinggi (*Role: Super Admin Only*). Digunakan untuk setelan jantun
 *   **Activity Logs**: Penelusuran jejak rekam historis siapa admin yang mengeklik, men-delete, dan meng-approve nomor nota di setiap modul untuk audit sekuritas tanpa bisa dihapus perorangan.
 *   **WhatsApp Bot**: Sambungan URL layanan Notifikasi Gateway *Whatsapp Business Multi-device Server*. Berguna bagi tembakan *Blast Message* Modul CRM dan interaksi pelanggan robot.
 
+## 14. SYARAT & SPESIFIKASI PERANGKAT KERAS (HARDWARE) RFID
+
+Untuk kelancaran operasional modul **Crane RFID & Auto-Putaway** serta **Stock Opname RFID HUD**, pastikan perangkat fisik memenuhi kriteria berikut:
+
+*   **UHF Anti-Metal RFID Tag (Passive)**: Wajib digunakan untuk penempelan pada produk besi/baja. Tag RFID biasa tidak akan terbaca karena sifat logam mementahkan gelombang. Pasang stiker dengan lem kuat di diameter luar coil atau gunakan hanging card di lubang tengah coil.
+*   **Handheld Reader UHF (PDA Gun)**: Alat scanner genggam (Android) untuk petugas stock opname lapangan dengan kemampuan pengaturan daya pancar (*attenuation*) agar pembacaan tidak bertabrakan dengan rak lain.
+*   **Fixed Reader UHF (Antena Sirkuler)**: Pembaca statis di gerbang penimbangan dan Overhead Crane. Antena dengan polarisasi melingkar (*circularly polarized*) 9 dBi direkomendasikan agar tag terbaca dari sudut mana pun saat crane mengangkat koil.
+
 ---
 > Buku Panduan ini bersifat dinamis. Pastikan karyawan tetap merujuk pada fitur yang tersedia dan *role permission* pada level otorisasinya masing-masing demi kerahasiaan kebijakan perusahaan.
