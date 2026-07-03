@@ -40,12 +40,29 @@ class DemoDataSeeder extends Seeder
         );
 
         // Create Admin User
-        $admin = User::first();
+        $admin = User::where('email', 'admin@usc-indonesia.co.id')->first()
+            ?? User::where('email', 'admin@usics.com')->first()
+            ?? User::first();
+            
         if ($admin) {
             $admin->update([
                 'company_id' => $company->id,
                 'name' => 'Administrator',
             ]);
+        } else {
+            $admin = User::create([
+                'company_id' => $company->id,
+                'name' => 'Administrator',
+                'email' => 'admin@usc-indonesia.co.id',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        if (class_exists(\Spatie\Permission\Models\Role::class) && \Spatie\Permission\Models\Role::where('name', 'Super Admin')->exists()) {
+            if (!$admin->hasRole('Super Admin')) {
+                $admin->assignRole('Super Admin');
+            }
         }
 
         // Create Units

@@ -147,8 +147,36 @@ class LinkUsersToEmployeesSeeder extends Seeder
         foreach ($mappings as $map) {
             $user = User::where('email', $map['email'])->first();
             if (!$user) {
-                $this->command->warn("User with email {$map['email']} not found. Skipping.");
-                continue;
+                $nameParts = explode('@', $map['email']);
+                $name = ucwords(str_replace('.', ' ', $nameParts[0]));
+                if ($map['email'] === 'admin@usc-indonesia.co.id') {
+                    $name = 'Administrator';
+                }
+
+                $user = User::create([
+                    'company_id' => 1,
+                    'name' => $name,
+                    'email' => $map['email'],
+                    'password' => bcrypt('password'),
+                    'email_verified_at' => now(),
+                ]);
+                $this->command->info("Created missing user '{$name}' with email '{$map['email']}'.");
+            }
+
+            // Assign corresponding Spatie Role if it exists
+            if (class_exists(\Spatie\Permission\Models\Role::class)) {
+                $roleName = $map['pos_name'];
+                if ($map['pos_name'] === 'IT Manager') {
+                    $roleName = 'Super Admin';
+                }
+                
+                $role = \Spatie\Permission\Models\Role::where('name', $roleName)->first();
+                if ($role) {
+                    if (!$user->hasRole($role->name)) {
+                        $user->assignRole($role->name);
+                        $this->command->info("Assigned role '{$role->name}' to user '{$user->name}'.");
+                    }
+                }
             }
 
             if (!$map['dept']) {

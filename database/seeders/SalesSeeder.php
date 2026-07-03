@@ -78,25 +78,25 @@ class SalesSeeder extends Seeder
             ]);
         }
 
-        // 2. Truncate Sales & related tables to avoid duplicate keys / constraints issues
+        // 2. Delete Sales & related tables to avoid duplicate keys / constraints issues
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        SalesReturnItem::truncate();
-        SalesReturn::truncate();
-        SalesPayment::truncate();
-        SalesInvoiceItem::truncate();
-        SalesInvoice::truncate();
-        DeliveryOrderItem::truncate();
-        DeliveryOrder::truncate();
-        DeliverySchedule::truncate();
-        SalesForecast::truncate();
-        SalesOrderItem::truncate();
-        SalesOrder::truncate();
-        QuotationItem::truncate();
-        Quotation::truncate();
-        DB::table('coa_documents')->truncate();
-        SalesVisit::truncate();
-        CustomerContact::truncate();
-        Customer::truncate();
+        SalesReturnItem::query()->delete();
+        SalesReturn::query()->delete();
+        SalesPayment::query()->delete();
+        SalesInvoiceItem::query()->delete();
+        SalesInvoice::query()->delete();
+        DeliveryOrderItem::query()->delete();
+        DeliveryOrder::query()->delete();
+        DeliverySchedule::query()->delete();
+        SalesForecast::query()->delete();
+        SalesOrderItem::query()->delete();
+        SalesOrder::query()->delete();
+        QuotationItem::query()->delete();
+        Quotation::query()->delete();
+        DB::table('coa_documents')->delete();
+        SalesVisit::query()->delete();
+        CustomerContact::query()->delete();
+        Customer::query()->delete();
 
         // Clear approval request records for sales docs
         DB::table('approval_histories')->whereIn('approval_request_id', function ($query) {
@@ -896,6 +896,15 @@ class SalesSeeder extends Seeder
             $schDate = Carbon::parse($data['sch_date']);
             $orderDate = $schDate->copy()->subDays(rand(5, 7));
 
+            // If the delivery is scheduled in the future (after July 3rd, 2026),
+            // it cannot be already delivered. Change status to confirmed and actual qty to 0.
+            $status = $data['status'];
+            $actQty = $data['act_qty'];
+            if ($schDate->gt(Carbon::create(2026, 7, 3))) {
+                $status = 'confirmed';
+                $actQty = 0;
+            }
+
             // Create Sales Order
             $poNumber = 'PO-' . strtoupper($customer->code) . '-' . $orderDate->format('ymd') . '-JUL' . rand(10, 99);
             $so = SalesOrder::create([
@@ -906,7 +915,7 @@ class SalesSeeder extends Seeder
                 'warehouse_id' => $warehouse->id,
                 'order_date' => $orderDate,
                 'delivery_date' => $schDate,
-                'status' => $data['status'],
+                'status' => $status,
                 'currency' => 'IDR',
                 'exchange_rate' => 1.000000,
                 'subtotal' => 0,
@@ -933,7 +942,7 @@ class SalesSeeder extends Seeder
                 'unit_id' => $product->unit_id,
                 'unit_price' => $price,
                 'subtotal' => $rowTotal,
-                'qty_delivered' => $data['act_qty'],
+                'qty_delivered' => $actQty,
                 'qty_returned' => 0,
                 'qty_invoiced' => 0,
             ]);
@@ -946,7 +955,7 @@ class SalesSeeder extends Seeder
             ]);
 
             // Create Delivery Schedule
-            DeliverySchedule::create([
+            $ds = DeliverySchedule::create([
                 'customer_id' => $customer->id,
                 'product_id' => $product->id,
                 'delivery_date' => $schDate,
@@ -957,7 +966,7 @@ class SalesSeeder extends Seeder
             ]);
 
             // Create DO if delivered/shipped
-            if ($data['act_qty'] > 0) {
+            if ($actQty > 0) {
                 $doNumber = $doPrefix . 'JUL' . str_pad($doSeq++, 4, '0', STR_PAD_LEFT);
                 $do = DeliveryOrder::create([
                     'company_id' => $company->id,
@@ -980,7 +989,7 @@ class SalesSeeder extends Seeder
                     'sales_order_item_id' => $soItem->id,
                     'product_id' => $product->id,
                     'qty_ordered' => $data['sch_qty'],
-                    'qty_delivered' => $data['act_qty'],
+                    'qty_delivered' => $actQty,
                     'unit_id' => $product->unit_id,
                 ]);
 

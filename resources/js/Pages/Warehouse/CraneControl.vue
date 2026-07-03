@@ -13,7 +13,8 @@ import {
   RefreshCw, 
   ArrowRight,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  HelpCircle
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -110,6 +111,7 @@ const playCraneSound = (phase = 'move') => {
 const selectedWarehouseId = ref('');
 const hookedLotId = ref('');
 const processing = ref(false);
+const showHelpModal = ref(false);
 const logs = ref([
   { time: new Date().toLocaleTimeString(), text: 'SYSTEM: Crane RFID positioning telemetry initialized.' },
   { time: new Date().toLocaleTimeString(), text: 'SYSTEM: Waiting for pilot input or Lot docking.' }
@@ -218,6 +220,14 @@ const getLotInLocation = (locationId) => {
         </div>
 
         <div class="flex items-center gap-4">
+          <button 
+            @click="showHelpModal = true"
+            class="flex items-center gap-2 text-xs font-mono font-medium border border-indigo-500/30 bg-indigo-950/20 text-indigo-400 hover:bg-indigo-900/30 transition-all px-3 py-1.5 rounded-lg"
+          >
+            <HelpCircle class="w-4 h-4" />
+            <span>PANDUAN SIMULASI</span>
+          </button>
+
           <button 
             @click="isMuted = !isMuted"
             class="flex items-center gap-2 text-xs font-mono font-medium transition-all px-3 py-1.5 rounded-lg border"
@@ -468,6 +478,61 @@ const getLotInLocation = (locationId) => {
     <footer class="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500 font-mono">
       <span>&copy; {{ new Date().getFullYear() }} USICS CRANE AUTONOMOUS AUTO-PUTAWAY SYSTEM.</span>
     </footer>
+
+    <!-- Modal Panduan Simulasi -->
+    <div v-if="showHelpModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" @click="showHelpModal = false"></div>
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl relative z-10 animate-fadeIn text-slate-200">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+          <div class="flex items-center gap-2">
+            <Compass class="w-5 h-5 text-indigo-400 animate-pulse" />
+            <h3 class="text-sm font-bold font-mono tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-indigo-450 via-indigo-300 to-indigo-200">
+              PANDUAN SIMULASI CRANE RFID
+            </h3>
+          </div>
+          <button @click="showHelpModal = false" class="text-slate-500 hover:text-slate-200 text-xs font-mono p-1 transition-colors">
+            [TUTUP]
+          </button>
+        </div>
+
+        <div class="space-y-4 text-xs leading-relaxed font-sans overflow-y-auto max-h-[360px] pr-2 custom-scrollbar">
+          <p class="text-slate-400">
+            Modul ini mensimulasikan pemindahan **Raw Material Coil** di dalam gudang secara otomatis (*Auto-Putaway*) menggunakan sensor deteksi RFID pada overhead crane.
+          </p>
+
+          <div class="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 space-y-3">
+            <h4 class="font-bold text-indigo-400 font-mono uppercase text-[10px] tracking-wider">Langkah-Langkah Simulasi:</h4>
+            <ol class="list-decimal list-inside space-y-2.5 text-slate-300">
+              <li>
+                <strong class="text-white">Kaitkan/Lock Crane ke Coil:</strong> Pilih salah satu Coil di panel kiri **"DOCKING BAY / LOTS"** yang berstatus <span class="text-emerald-400 font-bold font-mono text-[9px] px-1.5 py-0.5 rounded bg-emerald-950/50">AVAILABLE</span>, kemudian klik tombol <strong class="text-indigo-400">"HOOK COIL"</strong>.
+              </li>
+              <li>
+                <strong class="text-white">Dengar Efek Suara:</strong> Derek akan mengunci (<span class="text-amber-400 font-bold font-mono text-[9px] px-1.5 py-0.5 rounded bg-amber-950/50">COIL ENGAGED</span>) dan mengeluarkan suara dengung motor mekanis (*Hum Sound*) di browser Anda.
+              </li>
+              <li>
+                <strong class="text-white">Pindahkan ke Slot Rak 2D:</strong> Arahkan kursor Anda ke area pemetaan rak 2D di sebelah kanan, temukan slot yang bertanda <span class="text-slate-700 font-mono text-[9px]">VACANT</span>, kemudian layangkan kursor dan klik tombol <strong class="text-cyan-400">"DROP COIL HERE"</strong>.
+              </li>
+              <li>
+                <strong class="text-white">Deteksi Sensor RFID & Auto-Putaway:</strong> Derek akan bergerak, disusul suara benturan logam (*Metal Clank*) dan bunyi bip sukses (*RFID Beep*). Lokasi fisik Coil (`location_id`) di database langsung ter-update secara real-time.
+              </li>
+            </ol>
+          </div>
+
+          <div class="border-t border-slate-800 pt-3.5 space-y-2">
+            <h4 class="font-bold text-slate-400 font-mono uppercase text-[10px] tracking-wider">Hasil Sinkronisasi Database:</h4>
+            <ul class="list-disc list-inside space-y-2 text-slate-400 text-[11px]">
+              <li>
+                <strong class="text-slate-300">Log Mutasi Stok:</strong> Mengurangi stok di lokasi lama (`transfer_out`) dan menambah stok di lokasi baru (`transfer_in`) secara otomatis.
+              </li>
+              <li>
+                <strong class="text-slate-300">Reader Telemetry:</strong> Log scan direkam pada RFID Scan Logs oleh reader <code class="bg-slate-950 px-1.5 py-0.5 rounded font-mono text-emerald-400 text-[10px]">READER-CRANE-01</code>.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

@@ -29,8 +29,8 @@ class LogisticsSeeder extends Seeder
 
         // 1. Cleanup
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DeliveryOrder::truncate();
-        Vehicle::truncate();
+        DeliveryOrder::query()->delete();
+        Vehicle::query()->delete();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // 2. Create Vehicles
@@ -87,9 +87,26 @@ class LogisticsSeeder extends Seeder
             // Add items to the DO
             $itemsToDeliver = $so->items->take(rand(1, $so->items->count()));
             foreach ($itemsToDeliver as $soItem) {
-                $qtyToDeliver = $soItem->qty;
+                // Calculate remaining quantity that can be delivered
+                $alreadyDelivered = \App\Models\DeliveryOrderItem::where('sales_order_item_id', $soItem->id)
+                    ->whereHas('deliveryOrder', function ($q) {
+                        $q->where('status', '!=', 'cancelled');
+                    })
+                    ->sum('qty_delivered');
+
+                $remaining = $soItem->qty - $alreadyDelivered;
+
+                // Skip if this item has been fully delivered
+                if ($remaining <= 0.001) {
+                    continue;
+                }
+
+                $qtyToDeliver = $remaining;
                 if ($status !== 'delivered' && $status !== 'completed') {
-                    $qtyToDeliver = rand(1, $soItem->qty);
+                    $qtyToDeliver = rand(1, max(1, (int)$remaining));
+                    if ($qtyToDeliver > $remaining) {
+                        $qtyToDeliver = $remaining;
+                    }
                 }
 
                 \App\Models\DeliveryOrderItem::create([

@@ -50,16 +50,16 @@ class ProductionIntelligenceSeeder extends Seeder
         // 1. Cleanup existing manufacturing data
         $this->command->info("Cleaning up old manufacturing data...");
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        MaterialConsumption::truncate();
-        ProductionEntry::truncate();
-        WorkOrderOutput::truncate();
-        WorkOrderComponent::truncate();
-        WorkOrder::truncate();
-        BomOutput::truncate();
-        BomOperation::truncate();
-        BomComponent::truncate();
-        Bom::truncate();
-        Shift::truncate();
+        MaterialConsumption::query()->delete();
+        ProductionEntry::query()->delete();
+        WorkOrderOutput::query()->delete();
+        WorkOrderComponent::query()->delete();
+        WorkOrder::query()->delete();
+        BomOutput::query()->delete();
+        BomOperation::query()->delete();
+        BomComponent::query()->delete();
+        Bom::query()->delete();
+        Shift::query()->delete();
         // Clear stock movements that are related to manufacturing
         StockMovement::whereIn('type', ['production_in', 'production_out'])
             ->orWhere('reference_type', WorkOrder::class)
