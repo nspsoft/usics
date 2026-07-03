@@ -654,7 +654,7 @@ const handleSmartAction = () => {
     <Head :title="`Delivery Order ${deliveryOrder.do_number}`" />
     
     <AppLayout title="Delivery Order Details">
-        <div class="max-w-7xl mx-auto">
+        <div class="space-y-6">
             <!-- Header -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div class="flex items-center gap-4">
@@ -841,7 +841,7 @@ const handleSmartAction = () => {
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-12">
                 <!-- Info Block -->
-                <div class="lg:col-span-4 space-y-6">
+                <div class="lg:col-span-3 space-y-6">
                     <div class="rounded-2xl glass-card p-6 shadow-sm">
                         <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">Delivery Information</h3>
                         
@@ -1044,7 +1044,7 @@ const handleSmartAction = () => {
                 </div>
 
                 <!-- Items Block -->
-                <div class="lg:col-span-8 space-y-6">
+                <div class="lg:col-span-9 space-y-6">
                     <div class="rounded-2xl glass-card overflow-hidden shadow-sm">
                         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20 flex items-center justify-between">
                             <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-widest">Items to Deliver</h3>

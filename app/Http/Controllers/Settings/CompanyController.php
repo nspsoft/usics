@@ -19,13 +19,13 @@ class CompanyController extends Controller
         return Inertia::render('Settings/CompanyProfile', [
             'company' => $company,
             'print_settings' => [
-                'company_logo_text' => AppSetting::get('company_logo_text', 'jidoka'),
-                'company_full_name' => AppSetting::get('company_full_name', 'PT. JIDOKA RESULT INDONESIA'),
-                'company_address' => AppSetting::get('company_address', "Kawasan Industri JABABEKA I\nJl. Jababeka II Blok C No. 19 L, Pasir gombong, Cikarang Utara\nBekasi 17530 Jawa Barat. Telp : 021 8938 3915\ne_mail : jidoka.pt@yahoo.com"),
+                'company_logo_text' => AppSetting::get('company_logo_text', 'USC'),
+                'company_full_name' => AppSetting::get('company_full_name', 'PT United Steel Center Indonesia'),
+                'company_address' => AppSetting::get('company_address', "Jl. Mitra Raya Selatan II - Blok F No.1 parung Mulya,\nKarawang Ciampel Kab. Karawang Jawa Barat Indonesia\nEmail : bd@usc-indonesia.co.id"),
             ],
             'helpdesk_settings' => [
-                'helpdesk_wa_number' => AppSetting::get('helpdesk_wa_number', ''),
-                'helpdesk_email_address' => AppSetting::get('helpdesk_email_address', ''),
+                'helpdesk_wa_number' => AppSetting::get('helpdesk_wa_number', '+6285888883258'),
+                'helpdesk_email_address' => AppSetting::get('helpdesk_email_address', 'smd.support@usc-indonesia.co.id'),
             ]
         ]);
     }

@@ -616,6 +616,12 @@ class UscStorageLocationSeeder extends Seeder
             'total_cost' => 253000000.00,
             'notes' => 'Reclass coil utuh ke slitted strip'
         ]);
+        // 12. Seed Print Document Headers and Helpdesk Notifications defaults
+        \App\Models\AppSetting::set('company_logo_text', 'USC', 'company_profile', 'Company Logo Text');
+        \App\Models\AppSetting::set('company_full_name', 'PT United Steel Center Indonesia', 'company_profile', 'Company Full Name');
+        \App\Models\AppSetting::set('company_address', "Jl. Mitra Raya Selatan II - Blok F No.1 parung Mulya,\nKarawang Ciampel Kab. Karawang Jawa Barat Indonesia\nEmail : bd@usc-indonesia.co.id", 'company_profile', 'Company Address (Print Header)');
+        \App\Models\AppSetting::set('helpdesk_wa_number', '+6285888883258', 'helpdesk', 'Helpdesk WhatsApp Number');
+        \App\Models\AppSetting::set('helpdesk_email_address', 'smd.support@usc-indonesia.co.id', 'helpdesk', 'Helpdesk Email Address');
 
         $this->command->info('PT United Steel Center storage locations, SLocs, inventory lots, transfers, and reclassifications seeded successfully!');
     }
