@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, onBeforeUnmount, watch, nextTick } from 'vue';
+import { onMounted, ref, onBeforeUnmount, watch, nextTick, shallowRef } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { XMarkIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'; // Updated import
@@ -36,7 +36,7 @@ watch(() => props.show, (val) => {
 const emit = defineEmits(['close', 'confirm']);
 
 const mapContainer = ref(null);
-const map = ref(null);
+const map = shallowRef(null);
 const marker = ref(null);
 const searchQuery = ref('');
 const searchResults = ref([]);

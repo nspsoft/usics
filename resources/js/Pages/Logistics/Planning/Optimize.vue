@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, shallowRef } from 'vue';
 import { Head, router, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatNumber } from '@/helpers';
@@ -37,7 +37,7 @@ const result = ref(null);
 const showHelpModal = ref(false);
 
 const mapEl = ref(null);
-const map = ref(null);
+const map = shallowRef(null);
 const markers = ref(new Map());
 const polylines = ref([]);
 

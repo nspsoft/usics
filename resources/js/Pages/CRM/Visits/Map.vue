@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch, nextTick, shallowRef } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import L from 'leaflet';
@@ -26,7 +26,7 @@ const props = defineProps({
 });
 
 const mapContainer = ref(null);
-const map = ref(null);
+const map = shallowRef(null);
 const markersGroup = ref(null);
 const linesGroup = ref(null);
 const searchQuery = ref('');

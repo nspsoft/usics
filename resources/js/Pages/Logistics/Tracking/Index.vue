@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import L from 'leaflet';
@@ -13,7 +13,7 @@ const props = defineProps({
 });
 
 const mapEl = ref(null);
-const map = ref(null);
+const map = shallowRef(null);
 const markers = ref(new Map());
 
 const loading = ref(false);
