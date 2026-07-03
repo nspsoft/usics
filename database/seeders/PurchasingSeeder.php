@@ -56,18 +56,18 @@ class PurchasingSeeder extends Seeder
 
         $this->command->info("Cleaning up old purchasing data...");
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        PurchasePayment::query()->delete();
-        PurchaseInvoiceItem::query()->delete();
-        PurchaseInvoice::query()->delete();
-        PurchaseReturnItem::query()->delete();
-        PurchaseReturn::query()->delete();
-        GoodsReceiptItem::query()->delete();
-        GoodsReceipt::query()->delete();
-        PurchaseOrderItem::query()->delete();
-        PurchaseOrder::query()->delete();
-        PurchaseRequestItem::query()->delete();
-        PurchaseRequest::query()->delete();
-        SupplierContact::query()->delete();
+        PurchasePayment::truncate();
+        PurchaseInvoiceItem::truncate();
+        PurchaseInvoice::truncate();
+        PurchaseReturnItem::truncate();
+        PurchaseReturn::truncate();
+        GoodsReceiptItem::truncate();
+        GoodsReceipt::truncate();
+        PurchaseOrderItem::truncate();
+        PurchaseOrder::truncate();
+        PurchaseRequestItem::truncate();
+        PurchaseRequest::truncate();
+        SupplierContact::truncate();
         // Clear stock movements that are po_receive or related to goods receipts/returns
         StockMovement::whereIn('type', ['po_receive', 'purchase_return'])
             ->orWhere('reference_type', GoodsReceipt::class)

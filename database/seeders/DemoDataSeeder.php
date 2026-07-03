@@ -21,18 +21,18 @@ class DemoDataSeeder extends Seeder
     {
         // Create Company
         $company = Company::firstOrCreate(
-            ['code' => 'MFG-001'],
+            ['code' => 'USC-ID'],
             [
-                'name' => 'PT Manufacturing Indonesia',
-                'legal_name' => 'PT Manufacturing Indonesia Tbk',
-                'address' => 'Jl. Industri Raya No. 123',
-                'city' => 'Jakarta',
-                'state' => 'DKI Jakarta',
-                'postal_code' => '12345',
+                'name' => 'PT United Steel Center Indonesia',
+                'legal_name' => 'PT United Steel Center Indonesia',
+                'address' => 'Kawasan Industri KIIC Lot C-4, Jl. Tol Jakarta-Cikampek KM 47',
+                'city' => 'Karawang',
+                'state' => 'Jawa Barat',
+                'postal_code' => '41361',
                 'country' => 'ID',
-                'phone' => '021-12345678',
-                'email' => 'info@manufacturing.id',
-                'tax_id' => '01.234.567.8-012.000',
+                'phone' => '0267-640300',
+                'email' => 'info@usc-indonesia.co.id',
+                'tax_id' => '01.002.888.8-092.000',
                 'currency' => 'IDR',
                 'timezone' => 'Asia/Jakarta',
                 'is_active' => true,
@@ -40,29 +40,12 @@ class DemoDataSeeder extends Seeder
         );
 
         // Create Admin User
-        $admin = User::where('email', 'admin@usc-indonesia.co.id')->first()
-            ?? User::where('email', 'admin@usics.com')->first()
-            ?? User::first();
-            
+        $admin = User::first();
         if ($admin) {
             $admin->update([
                 'company_id' => $company->id,
                 'name' => 'Administrator',
             ]);
-        } else {
-            $admin = User::create([
-                'company_id' => $company->id,
-                'name' => 'Administrator',
-                'email' => 'admin@usc-indonesia.co.id',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]);
-        }
-
-        if (class_exists(\Spatie\Permission\Models\Role::class) && \Spatie\Permission\Models\Role::where('name', 'Super Admin')->exists()) {
-            if (!$admin->hasRole('Super Admin')) {
-                $admin->assignRole('Super Admin');
-            }
         }
 
         // Create Units
@@ -108,32 +91,32 @@ class DemoDataSeeder extends Seeder
             [
                 'code' => 'WH-MAIN',
                 'name' => 'Main Warehouse',
-                'address' => 'Jl. Industri Raya No. 123',
-                'city' => 'Jakarta',
+                'address' => 'Kawasan Industri KIIC Lot C-4, Jl. Tol Jakarta-Cikampek KM 47',
+                'city' => 'Karawang',
                 'type' => 'warehouse',
                 'is_default' => true,
             ],
             [
                 'code' => 'WH-RM',
                 'name' => 'Raw Material Warehouse',
-                'address' => 'Jl. Industri Raya No. 123-A',
-                'city' => 'Jakarta',
+                'address' => 'Kawasan Industri KIIC Lot C-4, Jl. Tol Jakarta-Cikampek KM 47',
+                'city' => 'Karawang',
                 'type' => 'warehouse',
                 'is_default' => false,
             ],
             [
                 'code' => 'WH-PROD',
                 'name' => 'Production Area',
-                'address' => 'Jl. Industri Raya No. 123',
-                'city' => 'Jakarta',
+                'address' => 'Kawasan Industri KIIC Lot C-4, Jl. Tol Jakarta-Cikampek KM 47',
+                'city' => 'Karawang',
                 'type' => 'production',
                 'is_default' => false,
             ],
             [
                 'code' => 'WH-FG',
                 'name' => 'Finished Goods Warehouse',
-                'address' => 'Jl. Industri Raya No. 123-B',
-                'city' => 'Jakarta',
+                'address' => 'Kawasan Industri KIIC Lot C-4, Jl. Tol Jakarta-Cikampek KM 47',
+                'city' => 'Karawang',
                 'type' => 'warehouse',
                 'is_default' => false,
             ],
@@ -148,163 +131,7 @@ class DemoDataSeeder extends Seeder
             ]);
         }
 
-        // Get units and categories for products
-        $pcsUnit = Unit::where('code', 'PCS')->first();
-        $kgUnit = Unit::where('code', 'KG')->first();
-        $mtrUnit = Unit::where('code', 'MTR')->first();
-        
-        $rmCategory = Category::where('code', 'RM')->first();
-        $fgCategory = Category::where('code', 'FG')->first();
-        $spCategory = Category::where('code', 'SP')->first();
-
-        // Create Products
-        $products = [
-            // Raw Materials
-            [
-                'sku' => 'RM-STEEL-001',
-                'name' => 'Steel Plate 2mm',
-                'category_id' => $rmCategory->id,
-                'product_type' => 'raw_material',
-                'unit_id' => $kgUnit->id,
-                'cost_price' => 15000,
-                'selling_price' => 0,
-                'min_stock' => 500,
-                'reorder_point' => 1000,
-                'reorder_qty' => 2000,
-                'is_purchased' => true,
-                'is_sold' => false,
-                'is_manufactured' => false,
-            ],
-            [
-                'sku' => 'RM-STEEL-002',
-                'name' => 'Steel Plate 4mm',
-                'category_id' => $rmCategory->id,
-                'product_type' => 'raw_material',
-                'unit_id' => $kgUnit->id,
-                'cost_price' => 16000,
-                'selling_price' => 0,
-                'min_stock' => 300,
-                'reorder_point' => 500,
-                'reorder_qty' => 1000,
-                'is_purchased' => true,
-                'is_sold' => false,
-                'is_manufactured' => false,
-            ],
-            [
-                'sku' => 'RM-PIPE-001',
-                'name' => 'Steel Pipe 2 inch',
-                'category_id' => $rmCategory->id,
-                'product_type' => 'raw_material',
-                'unit_id' => $mtrUnit->id,
-                'cost_price' => 85000,
-                'selling_price' => 0,
-                'min_stock' => 100,
-                'reorder_point' => 200,
-                'reorder_qty' => 500,
-                'is_purchased' => true,
-                'is_sold' => false,
-                'is_manufactured' => false,
-            ],
-            // Finished Goods
-            [
-                'sku' => 'FG-FRAME-001',
-                'name' => 'Steel Frame Assembly A',
-                'category_id' => $fgCategory->id,
-                'product_type' => 'finished_good',
-                'unit_id' => $pcsUnit->id,
-                'cost_price' => 250000,
-                'selling_price' => 350000,
-                'min_stock' => 20,
-                'reorder_point' => 50,
-                'reorder_qty' => 100,
-                'is_purchased' => false,
-                'is_sold' => true,
-                'is_manufactured' => true,
-            ],
-            [
-                'sku' => 'FG-FRAME-002',
-                'name' => 'Steel Frame Assembly B',
-                'category_id' => $fgCategory->id,
-                'product_type' => 'finished_good',
-                'unit_id' => $pcsUnit->id,
-                'cost_price' => 450000,
-                'selling_price' => 600000,
-                'min_stock' => 10,
-                'reorder_point' => 25,
-                'reorder_qty' => 50,
-                'is_purchased' => false,
-                'is_sold' => true,
-                'is_manufactured' => true,
-            ],
-            [
-                'sku' => 'FG-BRACKET-001',
-                'name' => 'Mounting Bracket Standard',
-                'category_id' => $fgCategory->id,
-                'product_type' => 'finished_good',
-                'unit_id' => $pcsUnit->id,
-                'cost_price' => 45000,
-                'selling_price' => 75000,
-                'min_stock' => 50,
-                'reorder_point' => 100,
-                'reorder_qty' => 200,
-                'is_purchased' => false,
-                'is_sold' => true,
-                'is_manufactured' => true,
-            ],
-            // Spare Parts
-            [
-                'sku' => 'SP-BOLT-001',
-                'name' => 'Hex Bolt M10x50',
-                'category_id' => $spCategory->id,
-                'product_type' => 'spare_part',
-                'unit_id' => $pcsUnit->id,
-                'cost_price' => 500,
-                'selling_price' => 1000,
-                'min_stock' => 500,
-                'reorder_point' => 1000,
-                'reorder_qty' => 5000,
-                'is_purchased' => true,
-                'is_sold' => true,
-                'is_manufactured' => false,
-            ],
-            [
-                'sku' => 'SP-NUT-001',
-                'name' => 'Hex Nut M10',
-                'category_id' => $spCategory->id,
-                'product_type' => 'spare_part',
-                'unit_id' => $pcsUnit->id,
-                'cost_price' => 200,
-                'selling_price' => 500,
-                'min_stock' => 500,
-                'reorder_point' => 1000,
-                'reorder_qty' => 5000,
-                'is_purchased' => true,
-                'is_sold' => true,
-                'is_manufactured' => false,
-            ],
-        ];
-
-        foreach ($products as $productData) {
-            $product = Product::create([
-                'company_id' => $company->id,
-                ...$productData,
-                'is_active' => true,
-            ]);
-
-            // Create initial stock in main warehouse
-            $initialQty = rand(50, 500);
-            ProductStock::create([
-                'product_id' => $product->id,
-                'warehouse_id' => $createdWarehouses[0]->id,
-                'qty_on_hand' => $initialQty,
-                'qty_reserved' => 0,
-                'qty_incoming' => 0,
-                'qty_outgoing' => 0,
-                'avg_cost' => $productData['cost_price'],
-            ]);
-        }
-
         $this->command->info('Demo data seeded successfully!');
-        $this->command->info('Created: 1 Company, ' . count($units) . ' Units, ' . count($categories) . ' Categories, ' . count($warehouses) . ' Warehouses, ' . count($products) . ' Products');
+        $this->command->info('Created: 1 Company (PT United Steel Center Indonesia), ' . count($units) . ' Units, ' . count($categories) . ' Categories, ' . count($warehouses) . ' Warehouses');
     }
 }

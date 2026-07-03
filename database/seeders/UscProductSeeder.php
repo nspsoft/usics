@@ -867,14 +867,28 @@ class UscProductSeeder extends Seeder
         ];
 
         // 5. Insert or Update into database
+        $warehouse = \App\Models\Warehouse::where('code', 'WH-FG')->first() ?? \App\Models\Warehouse::first();
         foreach ($products as $pData) {
-            Product::updateOrCreate(
+            $product = Product::updateOrCreate(
                 [
                     'company_id' => $companyId,
                     'sku' => $pData['sku']
                 ],
                 array_merge($pData, ['is_active' => true])
             );
+
+            // Seed initial stock if not present
+            if ($warehouse && \App\Models\ProductStock::where('product_id', $product->id)->where('warehouse_id', $warehouse->id)->doesntExist()) {
+                \App\Models\ProductStock::create([
+                    'product_id' => $product->id,
+                    'warehouse_id' => $warehouse->id,
+                    'qty_on_hand' => rand(100, 1000),
+                    'qty_reserved' => 0,
+                    'qty_incoming' => 0,
+                    'qty_outgoing' => 0,
+                    'avg_cost' => $product->cost_price > 0 ? $product->cost_price : rand(10000, 50000),
+                ]);
+            }
         }
     }
 }

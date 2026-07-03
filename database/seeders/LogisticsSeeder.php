@@ -29,8 +29,8 @@ class LogisticsSeeder extends Seeder
 
         // 1. Cleanup
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DeliveryOrder::query()->delete();
-        Vehicle::query()->delete();
+        DeliveryOrder::truncate();
+        Vehicle::truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // 2. Create Vehicles

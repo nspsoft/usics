@@ -26,15 +26,15 @@ class GaDummySeeder extends Seeder
     {
         // Disable foreign key constraints to safely clear tables
         Schema::disableForeignKeyConstraints();
-        GaVehicleTrip::query()->delete();
-        GaVehicleBooking::query()->delete();
-        GaTicketLog::query()->delete();
-        GaTicket::query()->delete();
-        GaPmLog::query()->delete();
-        GaPmSchedule::query()->delete();
-        GaAssetLog::query()->delete();
-        GaAsset::query()->delete();
-        GaLocation::query()->delete();
+        GaVehicleTrip::truncate();
+        GaVehicleBooking::truncate();
+        GaTicketLog::truncate();
+        GaTicket::truncate();
+        GaPmLog::truncate();
+        GaPmSchedule::truncate();
+        GaAssetLog::truncate();
+        GaAsset::truncate();
+        GaLocation::truncate();
         Schema::enableForeignKeyConstraints();
 
         // Get users for reporter and assignee seeding

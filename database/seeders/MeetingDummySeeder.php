@@ -15,6 +15,9 @@ class MeetingDummySeeder extends Seeder
      */
     public function run(): void
     {
+        $company = \App\Models\Company::first();
+        $companyId = $company ? $company->id : 1;
+
         $user1 = User::first();
         $user2 = User::skip(1)->first() ?? $user1;
         $user3 = User::skip(2)->first() ?? $user2;
@@ -52,13 +55,13 @@ class MeetingDummySeeder extends Seeder
         $ensureEmployee($user3, '3');
         $ensureEmployee($user4, '4');
 
-        DB::transaction(function () use ($user1, $user2, $user3, $user4) {
+        DB::transaction(function () use ($user1, $user2, $user3, $user4, $companyId) {
             // Clean existing meeting records
             Meeting::query()->delete();
 
             // 1. ERP review meeting
             $m1 = Meeting::create([
-                'company_id' => 1,
+                'company_id' => $companyId,
                 'title' => 'Review Implementasi ERP Logistik & Uang Jalan',
                 'meeting_date' => '2026-06-02',
                 'start_time' => '10:00:00',
@@ -91,7 +94,7 @@ class MeetingDummySeeder extends Seeder
 
             // 2. HRGA Pantry meeting
             $m2 = Meeting::create([
-                'company_id' => 1,
+                'company_id' => $companyId,
                 'title' => 'Koordinasi Penyediaan ATK & Pantry Kantor HRGA',
                 'meeting_date' => '2026-06-03',
                 'start_time' => '14:00:00',
@@ -117,7 +120,7 @@ class MeetingDummySeeder extends Seeder
 
             // 3. Cloud Server Migration kick-off meeting
             $m3 = Meeting::create([
-                'company_id' => 1,
+                'company_id' => $companyId,
                 'title' => 'Kick-off Project Migrasi Server Cloud ERP',
                 'meeting_date' => '2026-06-01',
                 'start_time' => '09:00:00',
@@ -157,7 +160,7 @@ class MeetingDummySeeder extends Seeder
 
             // 4. Sales & Marketing Weekly Sync
             $m4 = Meeting::create([
-                'company_id' => 1,
+                'company_id' => $companyId,
                 'title' => 'Weekly Sync Tim Sales & Marketing',
                 'meeting_date' => '2026-06-03',
                 'start_time' => '08:30:00',
@@ -190,7 +193,7 @@ class MeetingDummySeeder extends Seeder
 
             // 5. Vendor evaluation
             $m5 = Meeting::create([
-                'company_id' => 1,
+                'company_id' => $companyId,
                 'title' => 'Rapat Evaluasi Kinerja Vendor Transportasi & Logistik',
                 'meeting_date' => '2026-06-01',
                 'start_time' => '13:00:00',
@@ -226,7 +229,7 @@ class MeetingDummySeeder extends Seeder
 
             // 6. UI/UX Redesign
             $m6 = Meeting::create([
-                'company_id' => 1,
+                'company_id' => $companyId,
                 'title' => 'Brainstorming UI/UX Redesign Portal Pelanggan B2B',
                 'meeting_date' => '2026-06-04',
                 'start_time' => '10:00:00',
@@ -247,7 +250,7 @@ class MeetingDummySeeder extends Seeder
 
             // 7. Audit Internal ISO
             $m7 = Meeting::create([
-                'company_id' => 1,
+                'company_id' => $companyId,
                 'title' => 'Persiapan Audit Internal ISO 9001:2015',
                 'meeting_date' => '2026-06-02',
                 'start_time' => '15:00:00',

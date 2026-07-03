@@ -12,6 +12,9 @@ class LinkUsersToEmployeesSeeder extends Seeder
 {
     public function run(): void
     {
+        $company = \App\Models\Company::first();
+        $companyId = $company ? $company->id : 1;
+
         // 1. Run basic HrSeeder if no departments exist yet
         if (Department::count() === 0) {
             $this->call(HrSeeder::class);
@@ -154,7 +157,7 @@ class LinkUsersToEmployeesSeeder extends Seeder
                 }
 
                 $user = User::create([
-                    'company_id' => 1,
+                    'company_id' => $companyId,
                     'name' => $name,
                     'email' => $map['email'],
                     'password' => bcrypt('password'),

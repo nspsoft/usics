@@ -8,24 +8,35 @@ use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
+    use WithoutModelEvents;
+
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
         $this->call([
+            DemoDataSeeder::class,
+            TaxRateSeeder::class,
+            SystemPreferencesSeeder::class,
+            UscProductSeeder::class,
+            UscMachineSeeder::class,
+            LinkUsersToEmployeesSeeder::class,
             RoleSeeder::class,
             DocumentNumberingSeeder::class,
-            TaxRateSeeder::class,
-            DemoDataSeeder::class,
+            UsicsDetailedSeeder::class,
+            
+            // Transactional Seeders
             SalesSeeder::class,
             PurchasingSeeder::class,
+            ProductionIntelligenceSeeder::class,
             LogisticsSeeder::class,
-            HrSeeder::class,
-            LinkUsersToEmployeesSeeder::class,
-            SystemPreferencesSeeder::class,
-            UsicsDetailedSeeder::class,
+            MaintenanceDummySeeder::class,
+            MeetingDummySeeder::class,
+            FinanceDummySeeder::class,
+            HrJuneDummyDataSeeder::class,
 
+            // UAT Scenarios & Custom Seeders
             UatSalesSeeder::class,
             UatPurchasingSeeder::class,
             UatInventorySeeder::class,
@@ -37,6 +48,7 @@ class DatabaseSeeder extends Seeder
             UatLogisticsSeeder::class,
             QcDummyDataSeeder::class,
             GaDummySeeder::class,
+            ActivityLogDummySeeder::class,
             AssignActivityCauserSeeder::class,
         ]);
     }
