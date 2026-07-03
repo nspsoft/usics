@@ -9,6 +9,8 @@ import {
     ArrowTrendingUpIcon,
     StarIcon,
     ExclamationTriangleIcon,
+    SunIcon,
+    MoonIcon
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 import {
@@ -40,18 +42,42 @@ const props = defineProps({
 // --- Clock ---
 const time = ref('');
 let timer;
+
+// --- Theme Reactive Sync ---
+const isDark = ref(true);
+const toggleTheme = () => {
+    isDark.value = !isDark.value;
+    if (isDark.value) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+    }
+};
+
+let observer;
 onMounted(() => {
     const tick = () => { time.value = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); };
     tick(); timer = setInterval(tick, 1000);
+    
+    isDark.value = document.documentElement.classList.contains('dark');
+    observer = new MutationObserver(() => {
+        isDark.value = document.documentElement.classList.contains('dark');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 });
-onUnmounted(() => clearInterval(timer));
+onUnmounted(() => {
+    clearInterval(timer);
+    if (observer) observer.disconnect();
+});
 
 // --- Chart shared ---
 const chartOpts = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-        legend: { labels: { color: '#94a3b8', font: { family: 'Space Mono', size: 10 } } },
+        legend: { labels: { color: '#64748b', font: { family: 'Space Mono', size: 10 } } },
         tooltip: {
             backgroundColor: 'rgba(5,5,16,0.9)', titleColor: '#10b981', bodyColor: '#e2e8f0',
             borderColor: '#10b981', borderWidth: 1, padding: 12,
@@ -104,19 +130,19 @@ const gradeData = computed(() => ({
 
 // --- Helpers ---
 const gradeStyle = (grade) => ({
-    A: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
-    B: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40',
-    C: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
-    D: 'bg-orange-500/20 text-orange-400 border-orange-500/40',
-    F: 'bg-rose-500/20 text-rose-400 border-rose-500/40',
-}[grade] || 'bg-slate-500/20 text-slate-400');
+    A: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40',
+    B: 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500/40',
+    C: 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40',
+    D: 'bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/40',
+    F: 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40',
+}[grade] || 'bg-slate-500/20 text-slate-600 dark:text-slate-400');
 
 const scoreColor = (score) => {
-    if (score >= 90) return 'text-emerald-400';
-    if (score >= 80) return 'text-cyan-400';
-    if (score >= 70) return 'text-amber-400';
-    if (score >= 60) return 'text-orange-400';
-    return 'text-rose-400';
+    if (score >= 90) return 'text-emerald-600 dark:text-emerald-400';
+    if (score >= 80) return 'text-cyan-600 dark:text-cyan-400';
+    if (score >= 70) return 'text-amber-600 dark:text-amber-400';
+    if (score >= 60) return 'text-orange-600 dark:text-orange-400';
+    return 'text-rose-600 dark:text-rose-400';
 };
 
 const scoreBarWidth = (score) => Math.min(100, Math.max(0, score)) + '%';
@@ -133,77 +159,91 @@ const scoreBarColor = (score) => {
     <AppLayout :render-header="false">
         <Head title="Supplier Scorecard" />
 
-        <div class="min-h-screen bg-[#050510] text-white font-mono relative overflow-hidden">
+        <div class="min-h-screen bg-slate-50 dark:bg-[#050510] text-slate-800 dark:text-white font-mono relative overflow-hidden transition-colors duration-300">
             <div class="fixed inset-0 pointer-events-none z-0">
-                <div class="absolute inset-0 perspective-grid opacity-30"></div>
-                <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[200px] animate-float"></div>
-                <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[200px] animate-float-delayed"></div>
+                <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-slate-100 dark:from-emerald-950/20 dark:to-[#050510]"></div>
+                <div class="absolute inset-0 perspective-grid opacity-[0.15] dark:opacity-30"></div>
+                <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-[200px] animate-float"></div>
+                <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-cyan-500/5 dark:bg-cyan-500/10 rounded-full blur-[200px] animate-float-delayed"></div>
             </div>
 
             <div class="relative z-10 p-4 lg:p-6 max-w-[1600px] mx-auto space-y-6">
                 <!-- Header -->
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-2xl font-black tracking-wider text-emerald-400 uppercase flex items-center gap-3">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
+                    <div class="flex items-center gap-4">
+                        <h1 class="text-2xl font-black tracking-wider text-emerald-650 dark:text-emerald-400 uppercase flex items-center gap-3">
                             <TrophyIcon class="h-7 w-7" />
                             Supplier Scorecard
                         </h1>
-                        <p class="text-xs text-slate-500 tracking-[0.3em] uppercase mt-1">VENDOR PERFORMANCE ANALYTICS</p>
+                        <span class="text-xs text-slate-500 tracking-[0.3em] uppercase mt-1 hidden sm:inline-block">/ VENDOR PERFORMANCE ANALYTICS</span>
                     </div>
-                    <div class="text-right">
-                        <p class="text-3xl font-black text-white/10 tracking-widest">{{ time }}</p>
-                        <p class="text-[10px] text-slate-600 uppercase tracking-widest mt-1">Period: {{ period }} months</p>
+                    
+                    <div class="flex items-center gap-6">
+                        <!-- Theme Toggle Button -->
+                        <button 
+                            @click="toggleTheme"
+                            class="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-cyan-400 transition-all hover:scale-105 shadow-sm dark:shadow-none"
+                            :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+                        >
+                            <SunIcon v-if="isDark" class="h-5 w-5 text-amber-500" />
+                            <MoonIcon v-else class="h-5 w-5 text-indigo-600" />
+                        </button>
+
+                        <div class="text-right">
+                            <p class="text-3xl font-black text-slate-900 dark:text-white dark:glow-text leading-none">{{ time }}</p>
+                            <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Period: {{ period }} months</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- KPI Cards -->
                 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div class="hud-card bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4">
+                    <div class="hud-card bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-xl p-4 shadow-sm dark:shadow-none">
                         <div class="flex items-center gap-2 mb-2">
-                            <UserGroupIcon class="h-4 w-4 text-emerald-400" />
+                            <UserGroupIcon class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                             <span class="text-[10px] text-slate-500 tracking-[0.15em] uppercase">Active Suppliers</span>
                         </div>
-                        <p class="text-3xl font-black text-emerald-400 glow-text">{{ stats.total_suppliers }}</p>
+                        <p class="text-3xl font-black text-emerald-650 dark:text-emerald-400 dark:glow-text">{{ stats.total_suppliers }}</p>
                     </div>
-                    <div class="hud-card bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4">
+                    <div class="hud-card bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-xl p-4 shadow-sm dark:shadow-none">
                         <div class="flex items-center gap-2 mb-2">
-                            <ClockIcon class="h-4 w-4 text-cyan-400" />
+                            <ClockIcon class="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
                             <span class="text-[10px] text-slate-500 tracking-[0.15em] uppercase">Avg On-Time</span>
                         </div>
-                        <p class="text-3xl font-black" :class="stats.avg_on_time >= 80 ? 'text-cyan-400' : 'text-amber-400'">
+                        <p class="text-3xl font-black" :class="stats.avg_on_time >= 80 ? 'text-cyan-600 dark:text-cyan-400' : 'text-amber-600 dark:text-amber-400'">
                             {{ stats.avg_on_time }}%
                         </p>
                     </div>
-                    <div class="hud-card bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4">
+                    <div class="hud-card bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-xl p-4 shadow-sm dark:shadow-none">
                         <div class="flex items-center gap-2 mb-2">
-                            <StarIcon class="h-4 w-4 text-amber-400" />
+                            <StarIcon class="h-4 w-4 text-amber-650 dark:text-amber-400" />
                             <span class="text-[10px] text-slate-500 tracking-[0.15em] uppercase">Avg Score</span>
                         </div>
                         <p class="text-3xl font-black" :class="scoreColor(stats.avg_score)">{{ stats.avg_score }}</p>
                     </div>
-                    <div class="hud-card bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 lg:col-span-2">
+                    <div class="hud-card bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-xl p-4 lg:col-span-2 shadow-sm dark:shadow-none">
                         <div class="flex items-center gap-2 mb-2">
-                            <TrophyIcon class="h-4 w-4 text-yellow-400" />
+                            <TrophyIcon class="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                             <span class="text-[10px] text-slate-500 tracking-[0.15em] uppercase">Top Supplier</span>
                         </div>
-                        <p class="text-lg font-black text-yellow-400 truncate">{{ stats.top_supplier }}</p>
+                        <p class="text-lg font-black text-yellow-600 dark:text-yellow-400 truncate">{{ stats.top_supplier }}</p>
                         <p class="text-[10px] text-slate-500 mt-0.5">Score: {{ stats.top_score }}</p>
                     </div>
                 </div>
 
                 <!-- Scorecard Table -->
-                <div class="hud-panel">
-                    <div class="panel-header p-4 border-b border-white/5 bg-emerald-500/5 flex items-center justify-between">
-                        <h3 class="flex items-center gap-2 text-sm font-bold text-emerald-400 tracking-widest uppercase">
+                <div class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                    <div class="panel-header p-4 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-emerald-500/5 flex items-center justify-between">
+                        <h3 class="flex items-center gap-2 text-sm font-bold text-emerald-650 dark:text-emerald-400 tracking-widest uppercase">
                             <StarIcon class="h-4 w-4" />
                             Supplier Rankings
-                            <span class="ml-2 bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full text-[10px]">{{ suppliers.length }}</span>
+                            <span class="ml-2 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full text-[10px]">{{ suppliers.length }}</span>
                         </h3>
                     </div>
-                    <div class="panel-body p-0 overflow-auto max-h-[30vh]">
+                    <div class="panel-body p-0 overflow-auto max-h-[35vh]">
                         <table class="w-full text-left border-collapse">
                             <thead class="sticky top-0 z-10">
-                                <tr class="text-[10px] text-slate-500 font-bold uppercase tracking-wider border-b border-white/10 bg-[#0a0a16]">
+                                <tr class="text-[10px] text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0a0a16]">
                                     <th class="p-3 w-8">#</th>
                                     <th class="p-3">Supplier</th>
                                     <th class="p-3 text-center">Score</th>
@@ -216,24 +256,24 @@ const scoreBarColor = (score) => {
                                     <th class="p-3 text-center">Action</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-white/5">
+                            <tbody class="divide-y divide-slate-100 dark:divide-white/5">
                                 <tr
                                     v-for="(s, idx) in suppliers"
                                     :key="s.id"
-                                    class="hover:bg-white/5 transition-colors group"
+                                    class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
                                 >
                                     <td class="p-3 text-xs font-mono border-l-2 border-transparent group-hover:border-emerald-500 transition-colors"
-                                        :class="idx < 3 ? 'text-yellow-400 font-black' : 'text-slate-600'">
+                                        :class="idx < 3 ? 'text-yellow-600 dark:text-yellow-400 font-black' : 'text-slate-400 dark:text-slate-600'">
                                         {{ idx + 1 }}
                                     </td>
                                     <td class="p-3">
-                                        <p class="text-xs font-bold text-white truncate max-w-[200px]">{{ s.name }}</p>
-                                        <p class="text-[10px] text-slate-600 font-mono">{{ s.code }}</p>
+                                        <p class="text-xs font-bold text-slate-800 dark:text-white truncate max-w-[200px]">{{ s.name }}</p>
+                                        <p class="text-[10px] text-slate-500 dark:text-slate-650 font-mono">{{ s.code }}</p>
                                     </td>
                                     <td class="p-3">
                                         <div class="flex flex-col items-center gap-1">
                                             <span class="text-sm font-black" :class="scoreColor(s.overall_score)">{{ s.overall_score }}</span>
-                                            <div class="w-16 bg-white/5 rounded-full h-1.5 overflow-hidden">
+                                            <div class="w-16 bg-slate-100 dark:bg-white/5 rounded-full h-1.5 overflow-hidden">
                                                 <div class="h-full rounded-full transition-all" :class="scoreBarColor(s.overall_score)" :style="{ width: scoreBarWidth(s.overall_score) }"></div>
                                             </div>
                                         </div>
@@ -244,32 +284,32 @@ const scoreBarColor = (score) => {
                                         </span>
                                     </td>
                                     <td class="p-3 text-center">
-                                        <span class="text-xs font-mono" :class="s.on_time_rate !== null ? (s.on_time_rate >= 80 ? 'text-emerald-400' : s.on_time_rate >= 60 ? 'text-amber-400' : 'text-rose-400') : 'text-slate-600'">
+                                        <span class="text-xs font-mono animate-none" :class="s.on_time_rate !== null ? (s.on_time_rate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : s.on_time_rate >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400') : 'text-slate-400'">
                                             {{ s.on_time_rate !== null ? s.on_time_rate + '%' : '—' }}
                                         </span>
-                                        <p class="text-[9px] text-slate-600">{{ s.on_time_count }}✓ / {{ s.late_count }}✗</p>
+                                        <p class="text-[9px] text-slate-500 dark:text-slate-600">{{ s.on_time_count }}✓ / {{ s.late_count }}✗</p>
                                     </td>
                                     <td class="p-3 text-center">
-                                        <span class="text-xs font-mono" :class="s.return_rate <= 2 ? 'text-emerald-400' : s.return_rate <= 5 ? 'text-amber-400' : 'text-rose-400'">
+                                        <span class="text-xs font-mono" :class="s.return_rate <= 2 ? 'text-emerald-600 dark:text-emerald-400' : s.return_rate <= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'">
                                             {{ s.return_rate }}%
                                         </span>
                                     </td>
                                     <td class="p-3 text-center">
-                                        <span class="text-xs font-mono" :class="s.avg_fulfillment !== null ? (s.avg_fulfillment <= 7 ? 'text-emerald-400' : s.avg_fulfillment <= 14 ? 'text-amber-400' : 'text-rose-400') : 'text-slate-600'">
+                                        <span class="text-xs font-mono" :class="s.avg_fulfillment !== null ? (s.avg_fulfillment <= 7 ? 'text-emerald-600 dark:text-emerald-400' : s.avg_fulfillment <= 14 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400') : 'text-slate-400'">
                                             {{ s.avg_fulfillment !== null ? s.avg_fulfillment + 'd' : '—' }}
                                         </span>
                                     </td>
-                                    <td class="p-3 text-right text-xs text-slate-400 font-mono">{{ s.total_pos }}</td>
-                                    <td class="p-3 text-right text-xs text-slate-400 font-mono">{{ formatCurrency(s.total_spend) }}</td>
+                                    <td class="p-3 text-right text-xs text-slate-500 dark:text-slate-400 font-mono">{{ s.total_pos }}</td>
+                                    <td class="p-3 text-right text-xs text-slate-500 dark:text-slate-400 font-mono">{{ formatCurrency(s.total_spend) }}</td>
                                     <td class="p-3 text-center">
                                         <Link
                                             :href="route('purchasing.suppliers.show', s.id)"
-                                            class="px-3 py-1 text-[10px] bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-black transition-colors uppercase tracking-wider font-bold"
+                                            class="px-3 py-1 text-[10px] bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-white transition-colors uppercase tracking-wider font-bold shadow-sm dark:shadow-none"
                                         >Detail</Link>
                                     </td>
                                 </tr>
                                 <tr v-if="suppliers.length === 0">
-                                    <td colspan="10" class="p-8 text-center text-slate-500 text-xs uppercase tracking-wider">No supplier data available</td>
+                                    <td colspan="10" class="p-8 text-center text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wider">No supplier data available</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -279,9 +319,9 @@ const scoreBarColor = (score) => {
                 <!-- Charts Row -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- On-Time Trend -->
-                    <div class="hud-panel">
-                        <div class="panel-header p-4 border-b border-white/5 bg-white/5">
-                            <h3 class="flex items-center gap-2 text-sm font-bold text-emerald-300 tracking-widest uppercase">
+                    <div class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                        <div class="panel-header p-4 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
+                            <h3 class="flex items-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-300 tracking-widest uppercase">
                                 <ArrowTrendingUpIcon class="h-4 w-4" /> On-Time Trend
                             </h3>
                         </div>
@@ -291,9 +331,9 @@ const scoreBarColor = (score) => {
                     </div>
 
                     <!-- Spend Distribution -->
-                    <div class="hud-panel">
-                        <div class="panel-header p-4 border-b border-white/5 bg-white/5">
-                            <h3 class="flex items-center gap-2 text-sm font-bold text-amber-300 tracking-widest uppercase">
+                    <div class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                        <div class="panel-header p-4 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
+                            <h3 class="flex items-center gap-2 text-sm font-bold text-amber-600 dark:text-amber-300 tracking-widest uppercase">
                                 <StarIcon class="h-4 w-4" /> Top Spend
                             </h3>
                         </div>
@@ -303,9 +343,9 @@ const scoreBarColor = (score) => {
                     </div>
 
                     <!-- Grade Distribution -->
-                    <div class="hud-panel">
-                        <div class="panel-header p-4 border-b border-white/5 bg-white/5">
-                            <h3 class="flex items-center gap-2 text-sm font-bold text-cyan-300 tracking-widest uppercase">
+                    <div class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                        <div class="panel-header p-4 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
+                            <h3 class="flex items-center gap-2 text-sm font-bold text-cyan-600 dark:text-cyan-300 tracking-widest uppercase">
                                 <TrophyIcon class="h-4 w-4" /> Grade Distribution
                             </h3>
                         </div>
@@ -313,7 +353,7 @@ const scoreBarColor = (score) => {
                             <div class="relative w-56 h-56" v-if="Object.keys(gradeDistribution).length > 0">
                                 <Doughnut :data="gradeData" :options="{ responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Space Mono', size: 10 }, padding: 16 } } } }" />
                             </div>
-                            <p v-else class="text-slate-500 text-xs uppercase tracking-wider">No grade data</p>
+                            <p v-else class="text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wider">No grade data</p>
                         </div>
                     </div>
                 </div>
@@ -348,12 +388,8 @@ const scoreBarColor = (score) => {
 .hud-card:hover { transform: translateY(-5px); filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.2)); }
 
 .hud-panel {
-    background: rgba(10, 10, 22, 0.6);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    overflow: hidden;
 }
 
 .glow-text { text-shadow: 0 0 10px currentColor; }
