@@ -183,15 +183,15 @@ const deleteVisit = (visit) => {
 const getStatusBadgeClass = (status) => {
     switch (status) {
         case 'completed':
-            return 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/20';
+            return 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20';
         case 'checked_in':
-            return 'bg-amber-950/40 text-amber-400 border border-amber-500/20 animate-pulse';
+            return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 animate-pulse';
         case 'planned':
-            return 'bg-blue-950/40 text-blue-400 border border-blue-500/20';
+            return 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20';
         case 'cancelled':
-            return 'bg-slate-800 text-slate-400 border border-slate-700';
+            return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700';
         default:
-            return 'bg-slate-900 text-slate-300';
+            return 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300';
     }
 };
 
@@ -210,22 +210,22 @@ const getStatusLabel = (status) => {
     <Head :title="title" />
 
     <AppLayout>
-        <div class="py-6 px-4 sm:px-6 lg:px-8 bg-slate-950 min-h-screen text-slate-100">
+        <div class="py-6 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-300">
             <!-- Header Panel -->
             <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                         <MapPinIcon class="h-8 w-8 text-blue-500" />
                         Sales Visits Tracking
                     </h1>
-                    <p class="text-sm text-slate-400 mt-1">
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
                         Jadwalkan, lakukan check-in GPS real-time di lokasi pelanggan, dan buat laporan kunjungan sales Anda.
                     </p>
                 </div>
                 <div class="flex gap-3">
                     <Link 
                         :href="route('crm.visits.map')"
-                        class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-sm font-bold text-slate-200 transition-all shadow-md flex items-center gap-2"
+                        class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-200 transition-all shadow-md flex items-center gap-2"
                     >
                         <MapPinIcon class="h-4 w-4 text-emerald-400" />
                         Lihat Peta Kunjungan
@@ -241,12 +241,12 @@ const getStatusLabel = (status) => {
             </div>
 
             <!-- Filters -->
-            <div class="bg-slate-900/60 backdrop-blur border border-slate-800 rounded-2xl p-4 mb-6 flex flex-wrap items-end gap-4">
+            <div class="bg-white/60 dark:bg-slate-900/60 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-4 mb-6 flex flex-wrap items-end gap-4">
                 <div class="flex-1 min-w-[200px]">
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Status</label>
                     <select 
                         v-model="filterForm.status" 
-                        class="w-full bg-slate-950 border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:ring-blue-500/50"
+                        class="w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-white focus:ring-blue-500/50"
                     >
                         <option value="">Semua Status</option>
                         <option value="planned">Terencana</option>
@@ -257,10 +257,10 @@ const getStatusLabel = (status) => {
                 </div>
 
                 <div v-if="canViewAll" class="flex-1 min-w-[200px]">
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Salesperson</label>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Salesperson</label>
                     <select 
                         v-model="filterForm.sales_id" 
-                        class="w-full bg-slate-950 border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:ring-blue-500/50"
+                        class="w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-white focus:ring-blue-500/50"
                     >
                         <option value="">Semua Sales</option>
                         <option v-for="sales in salesList" :key="sales.id" :value="sales.id">
@@ -278,7 +278,7 @@ const getStatusLabel = (status) => {
                     </button>
                     <button 
                         @click="clearFilters"
-                        class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-bold transition-all border border-slate-700"
+                        class="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold transition-all border border-slate-200 dark:border-slate-700"
                     >
                         Reset
                     </button>
@@ -287,34 +287,34 @@ const getStatusLabel = (status) => {
 
             <!-- GPS Loading Overlay -->
             <div v-if="isLocating" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
-                <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center">
                     <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <h3 class="text-lg font-bold text-white mb-2">Mengakses GPS Perangkat</h3>
-                    <p class="text-sm text-slate-400">Harap izinkan akses lokasi jika browser meminta. Kami sedang mengambil titik koordinat GPS Anda secara akurat...</p>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Mengakses GPS Perangkat</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Harap izinkan akses lokasi jika browser meminta. Kami sedang mengambil titik koordinat GPS Anda secara akurat...</p>
                 </div>
             </div>
 
             <!-- Visits List -->
-            <div v-if="visits.length === 0" class="bg-slate-900/40 border border-slate-800 rounded-2xl p-12 text-center">
-                <CalendarIcon class="h-12 w-12 text-slate-600 mx-auto mb-4" />
-                <h3 class="text-lg font-medium text-white mb-1">Belum ada kunjungan sales</h3>
-                <p class="text-sm text-slate-400">Mulai dengan menjadwalkan kunjungan pertama ke customer atau lead Anda.</p>
+            <div v-if="visits.length === 0" class="bg-white/40 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center">
+                <CalendarIcon class="h-12 w-12 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
+                <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-1">Belum ada kunjungan sales</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Mulai dengan menjadwalkan kunjungan pertama ke customer atau lead Anda.</p>
             </div>
 
             <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                 <div 
                     v-for="visit in visits" 
                     :key="visit.id"
-                    class="bg-slate-900 border border-slate-800/80 rounded-2xl shadow-lg hover:border-slate-700/60 transition-all flex flex-col overflow-hidden"
+                    class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-lg hover:border-slate-300 dark:hover:border-slate-700/60 transition-all flex flex-col overflow-hidden"
                 >
                     <!-- Status Header -->
-                    <div class="px-5 py-3.5 bg-slate-950/50 border-b border-slate-800/60 flex items-center justify-between">
+                    <div class="px-5 py-3.5 bg-slate-50 dark:bg-slate-950/50 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
                         <span :class="['px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider', getStatusBadgeClass(visit.status)]">
                             {{ getStatusLabel(visit.status) }}
                         </span>
                         
-                        <div class="flex items-center gap-2 text-xs text-slate-500">
-                            <ClockIcon class="h-4 w-4 text-slate-400" />
+                        <div class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-500">
+                            <ClockIcon class="h-4 w-4 text-slate-500 dark:text-slate-400" />
                             {{ visit.planned_at }}
                         </div>
                     </div>
@@ -324,10 +324,10 @@ const getStatusLabel = (status) => {
                         <div>
                             <!-- Client Info -->
                             <div class="mb-4">
-                                <h3 class="text-lg font-bold text-white line-clamp-1 mb-1">
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 mb-1">
                                     {{ visit.customer_name || visit.lead_name }}
                                 </h3>
-                                <p class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <p class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
                                     <span v-if="visit.customer_id" class="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[10px]">Customer</span>
                                     <span v-else class="px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-[10px]">Lead ({{ visit.lead_company || 'Lead' }})</span>
                                 </p>
@@ -335,22 +335,22 @@ const getStatusLabel = (status) => {
 
                             <!-- Purpose / Notes -->
                             <div class="space-y-3 text-sm mb-4">
-                                <div class="bg-slate-950/40 border border-slate-800/40 rounded-xl p-3">
+                                <div class="bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/40 rounded-xl p-3">
                                     <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tujuan Kunjungan</span>
-                                    <p class="text-slate-200 font-semibold leading-relaxed">{{ visit.purpose }}</p>
+                                    <p class="text-slate-800 dark:text-slate-200 font-semibold leading-relaxed">{{ visit.purpose }}</p>
                                 </div>
 
-                                <div v-if="visit.notes" class="text-xs text-slate-400 bg-slate-950/20 p-2.5 rounded-lg border border-slate-800/20">
+                                <div v-if="visit.notes" class="text-xs text-slate-600 dark:text-slate-400 bg-slate-50/20 dark:bg-slate-950/20 p-2.5 rounded-lg border border-slate-200/20 dark:border-slate-800/20">
                                     <span class="font-bold text-slate-500 block mb-1">Catatan Internal:</span>
                                     {{ visit.notes }}
                                 </div>
                             </div>
 
                             <!-- Check-in & Check-out Data -->
-                            <div v-if="visit.check_in_at" class="border-t border-slate-800/60 pt-4 mt-4 space-y-3 text-xs">
+                            <div v-if="visit.check_in_at" class="border-t border-slate-200/60 dark:border-slate-800/60 pt-4 mt-4 space-y-3 text-xs">
                                 <div>
-                                    <span class="font-bold text-slate-400 flex items-center gap-1">
-                                        <CheckCircleIcon class="h-3.5 w-3.5 text-emerald-400" />
+                                    <span class="font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                        <CheckCircleIcon class="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />
                                         Check-In: {{ visit.check_in_at }}
                                     </span>
                                     <p class="text-[11px] text-slate-500 mt-1 line-clamp-2" :title="visit.check_in_address">
@@ -359,8 +359,8 @@ const getStatusLabel = (status) => {
                                 </div>
 
                                 <div v-if="visit.check_out_at">
-                                    <span class="font-bold text-slate-400 flex items-center gap-1">
-                                        <CheckCircleIcon class="h-3.5 w-3.5 text-blue-400" />
+                                    <span class="font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                        <CheckCircleIcon class="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
                                         Check-Out: {{ visit.check_out_at }}
                                     </span>
                                     <p class="text-[11px] text-slate-500 mt-1 line-clamp-2" :title="visit.check_out_address">
@@ -368,18 +368,18 @@ const getStatusLabel = (status) => {
                                     </p>
                                 </div>
 
-                                <div v-if="visit.summary" class="bg-emerald-950/20 border border-emerald-500/10 p-2.5 rounded-xl mt-2">
-                                    <span class="font-bold text-emerald-400 block mb-1">Laporan Hasil Kunjungan:</span>
-                                    <p class="text-slate-300 leading-relaxed italic">"{{ visit.summary }}"</p>
+                                <div v-if="visit.summary" class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/10 p-2.5 rounded-xl mt-2">
+                                    <span class="font-bold text-emerald-700 dark:text-emerald-400 block mb-1">Laporan Hasil Kunjungan:</span>
+                                    <p class="text-slate-800 dark:text-slate-300 leading-relaxed italic">"{{ visit.summary }}"</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Footer Details / Actions -->
-                        <div class="border-t border-slate-800/60 pt-4 mt-5 flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-xs text-slate-400">
-                                <UserIcon class="h-4 w-4 text-slate-500" />
-                                <span>Sales: <b>{{ visit.sales_name }}</b></span>
+                        <div class="border-t border-slate-200/60 dark:border-slate-800/60 pt-4 mt-5 flex items-center justify-between">
+                            <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                <UserIcon class="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                                <span>Sales: <b class="text-slate-700 dark:text-slate-300">{{ visit.sales_name }}</b></span>
                             </div>
 
                             <div class="flex gap-2">
@@ -407,7 +407,7 @@ const getStatusLabel = (status) => {
                                 <button 
                                     v-if="visit.status === 'planned' || visit.status === 'cancelled'"
                                     @click="deleteVisit(visit)"
-                                    class="p-1.5 bg-slate-800 hover:bg-red-950/50 hover:text-red-400 text-slate-400 rounded-lg transition-all border border-slate-700 hover:border-red-500/20"
+                                    class="p-1.5 bg-slate-100 hover:bg-red-50 hover:text-red-600 dark:bg-slate-800 dark:hover:bg-red-950/50 dark:hover:text-red-400 text-slate-500 dark:text-slate-400 rounded-lg transition-all border border-slate-200 dark:border-slate-700 dark:hover:border-red-500/20"
                                     title="Hapus Kunjungan"
                                 >
                                     <TrashIcon class="h-4 w-4" />
@@ -428,7 +428,7 @@ const getStatusLabel = (status) => {
                         v-html="link.label"
                         :class="[
                             'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
-                            link.active ? 'bg-blue-600 border-blue-600 text-white z-10' : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800',
+                            link.active ? 'bg-blue-600 border-blue-600 text-white z-10' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800',
                             !link.url ? 'opacity-50 cursor-not-allowed' : ''
                         ]"
                     />
@@ -442,28 +442,28 @@ const getStatusLabel = (status) => {
                 <div class="absolute inset-0 bg-slate-950/75 backdrop-blur-sm"></div>
             </div>
 
-            <div class="relative bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all p-6 text-slate-100">
-                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <CalendarIcon class="h-6 w-6 text-blue-400" />
+            <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all p-6 text-slate-850 dark:text-slate-100">
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                    <CalendarIcon class="h-6 w-6 text-blue-500" />
                     Jadwalkan Kunjungan Baru
                 </h3>
 
                 <form @submit.prevent="submitSchedule" class="space-y-4">
                     <!-- Client Type Selection -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tipe Target</label>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Tipe Target</label>
                         <div class="grid grid-cols-2 gap-3">
                             <button 
                                 type="button"
                                 @click="scheduleForm.client_type = 'customer'"
-                                :class="['py-2 px-4 rounded-xl border text-sm font-bold transition-all', scheduleForm.client_type === 'customer' ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800']"
+                                :class="['py-2 px-4 rounded-xl border text-sm font-bold transition-all', scheduleForm.client_type === 'customer' ? 'bg-blue-600 text-white border-blue-500' : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800']"
                             >
                                 Customer (Pelanggan)
                             </button>
                             <button 
                                 type="button"
                                 @click="scheduleForm.client_type = 'lead'"
-                                :class="['py-2 px-4 rounded-xl border text-sm font-bold transition-all', scheduleForm.client_type === 'lead' ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800']"
+                                :class="['py-2 px-4 rounded-xl border text-sm font-bold transition-all', scheduleForm.client_type === 'lead' ? 'bg-blue-600 text-white border-blue-500' : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800']"
                             >
                                 Lead (Calon Pelanggan)
                             </button>
@@ -472,28 +472,28 @@ const getStatusLabel = (status) => {
 
                     <!-- Client Select -->
                     <div v-if="scheduleForm.client_type === 'customer'">
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Pilih Customer</label>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Pilih Customer</label>
                         <select 
                             v-model="scheduleForm.customer_id"
-                            class="w-full bg-slate-950 border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:ring-blue-500/50"
+                            class="w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-white focus:ring-blue-500/50"
                             required
                         >
                             <option value="">-- Pilih Customer --</option>
-                            <option v-for="c in customers" :key="c.id" :value="c.id">
+                            <option v-for="c in customers" :key="c.id" :value="c.id" class="text-slate-800 dark:text-white">
                                 {{ c.name }} ({{ c.city || 'No City' }})
                             </option>
                         </select>
                     </div>
 
                     <div v-else>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Pilih Lead</label>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Pilih Lead</label>
                         <select 
                             v-model="scheduleForm.lead_id"
-                            class="w-full bg-slate-950 border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:ring-blue-500/50"
+                            class="w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-white focus:ring-blue-500/50"
                             required
                         >
                             <option value="">-- Pilih Lead --</option>
-                            <option v-for="l in leads" :key="l.id" :value="l.id">
+                            <option v-for="l in leads" :key="l.id" :value="l.id" class="text-slate-800 dark:text-white">
                                 {{ l.name }} {{ l.company ? `(${l.company})` : '' }}
                             </option>
                         </select>
@@ -501,44 +501,44 @@ const getStatusLabel = (status) => {
 
                     <!-- Purpose -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tujuan Kunjungan</label>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Tujuan Kunjungan</label>
                         <input 
                             v-model="scheduleForm.purpose" 
                             type="text" 
                             placeholder="Contoh: Demo Produk, Negosiasi Kontrak, dsb..." 
-                            class="w-full bg-slate-950 border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:ring-blue-500/50"
+                            class="w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-white focus:ring-blue-500/50"
                             required
                         />
                     </div>
 
                     <!-- Notes -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Catatan Internal / Agenda</label>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Catatan Internal / Agenda</label>
                         <textarea 
                             v-model="scheduleForm.notes" 
                             rows="3" 
                             placeholder="Tulis poin-poin bahasan atau detail rencana kunjungan..."
-                            class="w-full bg-slate-950 border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:ring-blue-500/50"
+                            class="w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-white focus:ring-blue-500/50"
                         ></textarea>
                     </div>
 
                     <!-- Date & Time -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Waktu Kunjungan</label>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Waktu Kunjungan</label>
                         <input 
                             v-model="scheduleForm.planned_at" 
                             type="datetime-local" 
-                            class="w-full bg-slate-950 border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:ring-blue-500/50"
+                            class="w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-white focus:ring-blue-500/50"
                             required
                         />
                     </div>
 
                     <!-- Footer actions -->
-                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                         <button 
                             type="button" 
                             @click="showScheduleModal = false"
-                            class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold transition-all"
+                            class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:text-white font-bold transition-all"
                         >
                             Batal
                         </button>
@@ -560,34 +560,34 @@ const getStatusLabel = (status) => {
                 <div class="absolute inset-0 bg-slate-950/75 backdrop-blur-sm"></div>
             </div>
 
-            <div class="relative bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all p-6 text-slate-100">
-                <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                    <ArrowRightOnRectangleIcon class="h-6 w-6 text-blue-400" />
+            <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all p-6 text-slate-850 dark:text-slate-100">
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                    <ArrowRightOnRectangleIcon class="h-6 w-6 text-blue-500" />
                     Check-Out Kunjungan Sales
                 </h3>
-                <p class="text-xs text-slate-400 mb-4">
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
                     Anda akan check-out secara GPS. Harap isi ringkasan laporan hasil pertemuan di bawah ini sebelum mengakhiri kunjungan.
                 </p>
 
                 <form @submit.prevent="submitCheckOut" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Laporan Pertemuan (Summary)</label>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Laporan Pertemuan (Summary)</label>
                         <textarea 
                             v-model="checkOutForm.summary" 
                             rows="5" 
                             placeholder="Tulis hasil pertemuan, kesepakatan, kendala lapangan, atau tindak lanjut berikutnya secara lengkap..."
-                            class="w-full bg-slate-950 border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:ring-blue-500/50"
+                            class="w-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-white focus:ring-blue-500/50"
                             required
                         ></textarea>
                         <p class="text-[10px] text-slate-500 mt-1">Minimal 5 karakter laporan.</p>
                     </div>
 
                     <!-- Footer actions -->
-                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                         <button 
                             type="button" 
                             @click="showCheckOutModal = false"
-                            class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold transition-all"
+                            class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:text-white font-bold transition-all"
                         >
                             Batal
                         </button>
