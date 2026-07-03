@@ -361,65 +361,211 @@ class UscStorageLocationSeeder extends Seeder
             'created_by' => $adminUserId
         ]);
 
-        // 10. Seed Stock Transfers
-        if ($whRm) {
-            // A. Draft Stock Transfer
-            $st1 = StockTransfer::create([
-                'transfer_number' => 'TRF-' . Carbon::now()->format('ym') . '-0001',
-                'source_warehouse_id' => $whRm->id,
-                'destination_warehouse_id' => $whFg->id,
-                'transfer_date' => Carbon::now()->toDateString(),
+        // 10. Seed Stock Transfers (15 records, varied statuses, products, dates)
+        $whProd = Warehouse::where('code', 'WH-PROD')->first();
+
+        $coilRm3 = Product::where('sku', 'COIL-GA-SGCC-0.8')->first() ?? Product::first();
+        $coilRm4 = Product::where('sku', 'COIL-HR-SPHC-3.0')->first() ?? Product::first();
+        $coilRm5 = Product::where('sku', 'COIL-HR-SPHC-4.0')->first() ?? Product::first();
+        $coilRm6 = Product::where('sku', 'COIL-CR-SPCC-0.8')->first() ?? Product::first();
+        $coilRm7 = Product::where('sku', 'COIL-CR-SPCC-1.0')->first() ?? Product::first();
+        $slitWip3 = Product::where('sku', 'SLIT-HR-SPHC-2.0-200')->first() ?? Product::first();
+        $slitWip4 = Product::where('sku', 'SLIT-GA-SGCC-0.8-250')->first() ?? Product::first();
+
+        $prefix = 'TRF-' . Carbon::now()->format('ym') . '-';
+        $seqNo = 1;
+
+        $transferData = [
+            // --- DRAFT transfers ---
+            [
+                'src' => $whRm, 'dst' => $whFg,
+                'date' => Carbon::now(),
                 'status' => 'draft',
-                'notes' => 'Permintaan pemindahan material coil Hot Rolled ke Gudang Finish Goods.',
-                'created_by' => $adminUserId
-            ]);
-            StockTransferItem::create([
-                'stock_transfer_id' => $st1->id,
-                'product_id' => $coilRm1->id,
-                'qty_requested' => 44000.00,
-                'qty_sent' => 0.00,
-                'qty_received' => 0.00
-            ]);
+                'notes' => 'Permintaan pemindahan coil HRC 2.0 ke Gudang FG untuk order Toyota.',
+                'items' => [
+                    ['product' => $coilRm1, 'requested' => 44000, 'sent' => 0, 'received' => 0],
+                ]
+            ],
+            [
+                'src' => $whRm, 'dst' => $whProd,
+                'date' => Carbon::now(),
+                'status' => 'draft',
+                'notes' => 'Permintaan material CRC 1.2 untuk proses slitting minggu ini.',
+                'items' => [
+                    ['product' => $coilRm2, 'requested' => 18000, 'sent' => 0, 'received' => 0],
+                    ['product' => $coilRm6, 'requested' => 12000, 'sent' => 0, 'received' => 0],
+                ]
+            ],
+            [
+                'src' => $whRm, 'dst' => $whFg,
+                'date' => Carbon::now()->subDay(),
+                'status' => 'draft',
+                'notes' => 'Draft transfer GA coil 0.8mm ke FG Bay untuk order Daihatsu.',
+                'items' => [
+                    ['product' => $coilRm3, 'requested' => 15000, 'sent' => 0, 'received' => 0],
+                ]
+            ],
 
-            // B. Shipped / In-Transit Stock Transfer
-            $st2 = StockTransfer::create([
-                'transfer_number' => 'TRF-' . Carbon::now()->format('ym') . '-0002',
-                'source_warehouse_id' => $whRm->id,
-                'destination_warehouse_id' => $whFg->id,
-                'transfer_date' => Carbon::now()->subDay()->toDateString(),
+            // --- IN-TRANSIT transfers ---
+            [
+                'src' => $whRm, 'dst' => $whFg,
+                'date' => Carbon::now()->subDay(),
                 'status' => 'in_transit',
-                'notes' => 'Pengiriman coil canai dingin ke Gudang FG untuk persiapan order Toyota.',
-                'created_by' => $adminUserId,
-                'shipped_at' => Carbon::now()->subDay()->toDateTimeString()
-            ]);
-            StockTransferItem::create([
-                'stock_transfer_id' => $st2->id,
-                'product_id' => $coilRm2->id,
-                'qty_requested' => 18000.00,
-                'qty_sent' => 18000.00,
-                'qty_received' => 0.00
-            ]);
+                'notes' => 'Pengiriman CRC 1.2 ke Gudang FG untuk persiapan order Toyota.',
+                'shipped_at' => Carbon::now()->subDay(),
+                'items' => [
+                    ['product' => $coilRm2, 'requested' => 18000, 'sent' => 18000, 'received' => 0],
+                ]
+            ],
+            [
+                'src' => $whRm, 'dst' => $whProd,
+                'date' => Carbon::now()->subDays(2),
+                'status' => 'in_transit',
+                'notes' => 'Pengiriman HRC 3.0 ke area produksi untuk proses shearing.',
+                'shipped_at' => Carbon::now()->subDays(2),
+                'items' => [
+                    ['product' => $coilRm4, 'requested' => 25000, 'sent' => 25000, 'received' => 0],
+                ]
+            ],
+            [
+                'src' => $whFg, 'dst' => $whMain,
+                'date' => Carbon::now()->subDays(1),
+                'status' => 'in_transit',
+                'notes' => 'Relokasi strip SPCC 1.2x300 ke gudang utama untuk dispatching.',
+                'shipped_at' => Carbon::now()->subDays(1),
+                'items' => [
+                    ['product' => $coilWip1, 'requested' => 8000, 'sent' => 8000, 'received' => 0],
+                    ['product' => $coilWip2, 'requested' => 5500, 'sent' => 5500, 'received' => 0],
+                ]
+            ],
+            [
+                'src' => $whRm, 'dst' => $whProd,
+                'date' => Carbon::now()->subDays(3),
+                'status' => 'in_transit',
+                'notes' => 'Pengiriman HRC 4.0 untuk proses blanking disc brake Suzuki.',
+                'shipped_at' => Carbon::now()->subDays(3),
+                'items' => [
+                    ['product' => $coilRm5, 'requested' => 30000, 'sent' => 30000, 'received' => 0],
+                ]
+            ],
 
-            // C. Received Stock Transfer
-            $st3 = StockTransfer::create([
-                'transfer_number' => 'TRF-' . Carbon::now()->format('ym') . '-0003',
-                'source_warehouse_id' => $whRm->id,
-                'destination_warehouse_id' => $whFg->id,
-                'transfer_date' => Carbon::now()->subDays(5)->toDateString(),
+            // --- RECEIVED transfers ---
+            [
+                'src' => $whRm, 'dst' => $whFg,
+                'date' => Carbon::now()->subDays(5),
                 'status' => 'received',
-                'notes' => 'Pemindahan coil canai panas selesai diterima oleh tim Gudang FG.',
-                'created_by' => $adminUserId,
-                'shipped_at' => Carbon::now()->subDays(5)->toDateTimeString(),
-                'received_at' => Carbon::now()->subDays(4)->toDateTimeString(),
-                'received_by' => $adminUserId
-            ]);
-            StockTransferItem::create([
-                'stock_transfer_id' => $st3->id,
-                'product_id' => $coilRm1->id,
-                'qty_requested' => 22000.00,
-                'qty_sent' => 22000.00,
-                'qty_received' => 22000.00
-            ]);
+                'notes' => 'Pemindahan HRC 2.0 selesai diterima oleh tim Gudang FG.',
+                'shipped_at' => Carbon::now()->subDays(5),
+                'received_at' => Carbon::now()->subDays(4),
+                'items' => [
+                    ['product' => $coilRm1, 'requested' => 22000, 'sent' => 22000, 'received' => 22000],
+                ]
+            ],
+            [
+                'src' => $whRm, 'dst' => $whProd,
+                'date' => Carbon::now()->subDays(7),
+                'status' => 'received',
+                'notes' => 'Transfer CRC 0.8 ke area produksi untuk blanking Hood Inner (Daihatsu).',
+                'shipped_at' => Carbon::now()->subDays(7),
+                'received_at' => Carbon::now()->subDays(6),
+                'items' => [
+                    ['product' => $coilRm6, 'requested' => 10000, 'sent' => 10000, 'received' => 10000],
+                ]
+            ],
+            [
+                'src' => $whRm, 'dst' => $whFg,
+                'date' => Carbon::now()->subDays(10),
+                'status' => 'received',
+                'notes' => 'Transfer GA coil 0.8mm sudah diterima dan disimpan di FG Bay C.',
+                'shipped_at' => Carbon::now()->subDays(10),
+                'received_at' => Carbon::now()->subDays(9),
+                'items' => [
+                    ['product' => $coilRm3, 'requested' => 14000, 'sent' => 14000, 'received' => 14000],
+                ]
+            ],
+            [
+                'src' => $whProd, 'dst' => $whFg,
+                'date' => Carbon::now()->subDays(8),
+                'status' => 'received',
+                'notes' => 'Hasil slitting strip SPHC 2.0x200 dipindahkan dari produksi ke FG.',
+                'shipped_at' => Carbon::now()->subDays(8),
+                'received_at' => Carbon::now()->subDays(7),
+                'items' => [
+                    ['product' => $slitWip3, 'requested' => 20000, 'sent' => 20000, 'received' => 20000],
+                ]
+            ],
+            [
+                'src' => $whRm, 'dst' => $whProd,
+                'date' => Carbon::now()->subDays(14),
+                'status' => 'received',
+                'notes' => 'Pengiriman CRC 1.0 ke area produksi untuk TWB Line.',
+                'shipped_at' => Carbon::now()->subDays(14),
+                'received_at' => Carbon::now()->subDays(13),
+                'items' => [
+                    ['product' => $coilRm7, 'requested' => 16000, 'sent' => 16000, 'received' => 16000],
+                    ['product' => $coilRm2, 'requested' => 12000, 'sent' => 12000, 'received' => 12000],
+                ]
+            ],
+
+            // --- CANCELLED transfers ---
+            [
+                'src' => $whRm, 'dst' => $whFg,
+                'date' => Carbon::now()->subDays(12),
+                'status' => 'cancelled',
+                'notes' => 'Dibatalkan: Order customer batal, material tidak jadi dipindahkan.',
+                'items' => [
+                    ['product' => $coilRm5, 'requested' => 35000, 'sent' => 0, 'received' => 0],
+                ]
+            ],
+            [
+                'src' => $whFg, 'dst' => $whMain,
+                'date' => Carbon::now()->subDays(20),
+                'status' => 'cancelled',
+                'notes' => 'Dibatalkan: Gudang utama penuh, relokasi strip GA ditunda.',
+                'items' => [
+                    ['product' => $slitWip4, 'requested' => 9000, 'sent' => 0, 'received' => 0],
+                ]
+            ],
+            [
+                'src' => $whRm, 'dst' => $whProd,
+                'date' => Carbon::now()->subDays(15),
+                'status' => 'cancelled',
+                'notes' => 'Dibatalkan: Jadwal produksi berubah, HRC 3.0 tidak diperlukan.',
+                'items' => [
+                    ['product' => $coilRm4, 'requested' => 20000, 'sent' => 0, 'received' => 0],
+                ]
+            ],
+        ];
+
+        foreach ($transferData as $td) {
+            if (!$td['src'] || !$td['dst']) continue;
+
+            $stData = [
+                'transfer_number' => $prefix . str_pad($seqNo++, 4, '0', STR_PAD_LEFT),
+                'source_warehouse_id' => $td['src']->id,
+                'destination_warehouse_id' => $td['dst']->id,
+                'transfer_date' => $td['date']->toDateString(),
+                'status' => $td['status'],
+                'notes' => $td['notes'],
+                'created_by' => $adminUserId
+            ];
+            if (isset($td['shipped_at'])) $stData['shipped_at'] = $td['shipped_at']->toDateTimeString();
+            if (isset($td['received_at'])) {
+                $stData['received_at'] = $td['received_at']->toDateTimeString();
+                $stData['received_by'] = $adminUserId;
+            }
+
+            $st = StockTransfer::create($stData);
+
+            foreach ($td['items'] as $item) {
+                StockTransferItem::create([
+                    'stock_transfer_id' => $st->id,
+                    'product_id' => $item['product']->id,
+                    'qty_requested' => $item['requested'],
+                    'qty_sent' => $item['sent'],
+                    'qty_received' => $item['received'],
+                ]);
+            }
         }
 
         // 11. Seed Stock Reclassifications

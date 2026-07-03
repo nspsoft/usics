@@ -63,6 +63,11 @@ class DeliveryOrderItem extends Model
                 return;
             }
 
+            // Skip validation if the record exists and qty_delivered has not changed
+            if ($deliveryOrderItem->exists && !$deliveryOrderItem->isDirty('qty_delivered')) {
+                return;
+            }
+
             // Ensure SO Item is loaded
             if (!$deliveryOrderItem->relationLoaded('salesOrderItem')) {
                 $deliveryOrderItem->load('salesOrderItem');
