@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Warehouse;
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryOrder;
 use App\Models\Warehouse;
+use App\Models\Location;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
