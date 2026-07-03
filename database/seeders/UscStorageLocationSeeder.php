@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Warehouse;
 use App\Models\Location;
+use App\Models\WarehouseArea;
 use App\Models\Product;
 use App\Models\InventoryLot;
 use App\Models\ProductStock;
@@ -39,6 +40,7 @@ class UscStorageLocationSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         InventoryLot::query()->delete();
         Location::query()->delete();
+        WarehouseArea::query()->delete();
         ProductReclassMapping::query()->delete();
         StockTransferItem::query()->delete();
         StockTransfer::query()->delete();
@@ -96,7 +98,84 @@ class UscStorageLocationSeeder extends Seeder
             }
         }
 
-        // 5. Fetch some Products for lots (fallback to first product if not found)
+        // 5. Seed Warehouse Areas (Storage Locations / SLoc)
+        $slocs = [
+            [
+                'warehouse_id' => $whFg->id,
+                'code' => 'FG-BAY-A',
+                'name' => 'Finished Goods Bay A',
+                'name_key' => 'finished goods bay a',
+                'is_active' => true
+            ],
+            [
+                'warehouse_id' => $whFg->id,
+                'code' => 'FG-BAY-B',
+                'name' => 'Finished Goods Bay B',
+                'name_key' => 'finished goods bay b',
+                'is_active' => true
+            ],
+            [
+                'warehouse_id' => $whFg->id,
+                'code' => 'FG-BAY-C',
+                'name' => 'Finished Goods Bay C',
+                'name_key' => 'finished goods bay c',
+                'is_active' => true
+            ],
+            [
+                'warehouse_id' => $whFg->id,
+                'code' => 'FG-BAY-D',
+                'name' => 'Finished Goods Bay D',
+                'name_key' => 'finished goods bay d',
+                'is_active' => true
+            ],
+        ];
+
+        if ($whRm) {
+            $slocs[] = [
+                'warehouse_id' => $whRm->id,
+                'code' => 'RM-BAY-A',
+                'name' => 'Raw Material Bay A',
+                'name_key' => 'raw material bay a',
+                'is_active' => true
+            ];
+            $slocs[] = [
+                'warehouse_id' => $whRm->id,
+                'code' => 'RM-BAY-B',
+                'name' => 'Raw Material Bay B',
+                'name_key' => 'raw material bay b',
+                'is_active' => true
+            ];
+            $slocs[] = [
+                'warehouse_id' => $whRm->id,
+                'code' => 'RM-BAY-C',
+                'name' => 'Raw Material Bay C',
+                'name_key' => 'raw material bay c',
+                'is_active' => true
+            ];
+        }
+
+        if ($whMain) {
+            $slocs[] = [
+                'warehouse_id' => $whMain->id,
+                'code' => 'MAIN-STK',
+                'name' => 'Main Storage Area',
+                'name_key' => 'main storage area',
+                'is_active' => true
+            ];
+            $slocs[] = [
+                'warehouse_id' => $whMain->id,
+                'code' => 'MAIN-SHF',
+                'name' => 'Main Shelf Area',
+                'name_key' => 'main shelf area',
+                'is_active' => true
+            ];
+        }
+
+        foreach ($slocs as $slocData) {
+            WarehouseArea::create($slocData);
+        }
+
+        // 6. Fetch some Products for lots (fallback to first product if not found)
         $coilRm1 = Product::where('sku', 'COIL-HR-SPHC-2.0')->first() ?? Product::first();
         $coilRm2 = Product::where('sku', 'COIL-CR-SPCC-1.2')->first() ?? Product::first();
         
@@ -104,7 +183,7 @@ class UscStorageLocationSeeder extends Seeder
         $coilWip2 = Product::where('sku', 'SLIT-HR-SPHC-2.0-150')->first() ?? Product::first();
         $coilWip3 = Product::where('sku', 'SLIT-CR-SPCC-1.2-120')->first() ?? Product::first();
 
-        // 6. Seed Inventory Lots for Finished Goods Warehouse (WH-FG)
+        // 7. Seed Inventory Lots for Finished Goods Warehouse (WH-FG)
         // Active coils in dock (location_id => null)
         $dockLotsFg = [
             [
@@ -194,7 +273,7 @@ class UscStorageLocationSeeder extends Seeder
             ]);
         }
 
-        // 7. Seed Inventory Lots for Raw Material Warehouse (WH-RM)
+        // 8. Seed Inventory Lots for Raw Material Warehouse (WH-RM)
         if ($whRm) {
             $dockLotsRm = [
                 [
@@ -263,7 +342,7 @@ class UscStorageLocationSeeder extends Seeder
             }
         }
 
-        // 8. Seed Product Reclass Mappings
+        // 9. Seed Product Reclass Mappings
         ProductReclassMapping::create([
             'source_product_id' => $coilRm1->id,
             'target_product_id' => $coilWip2->id,
@@ -282,7 +361,7 @@ class UscStorageLocationSeeder extends Seeder
             'created_by' => $adminUserId
         ]);
 
-        // 9. Seed Stock Transfers
+        // 10. Seed Stock Transfers
         if ($whRm) {
             // A. Draft Stock Transfer
             $st1 = StockTransfer::create([
@@ -343,7 +422,7 @@ class UscStorageLocationSeeder extends Seeder
             ]);
         }
 
-        // 10. Seed Stock Reclassifications
+        // 11. Seed Stock Reclassifications
         // A. Draft Stock Reclassification
         $sr1 = StockReclassification::create([
             'reclass_number' => 'REC-' . Carbon::now()->format('ym') . '-0001',
@@ -392,6 +471,6 @@ class UscStorageLocationSeeder extends Seeder
             'notes' => 'Reclass coil utuh ke slitted strip'
         ]);
 
-        $this->command->info('PT United Steel Center storage locations, inventory lots, transfers, and reclassifications seeded successfully!');
+        $this->command->info('PT United Steel Center storage locations, SLocs, inventory lots, transfers, and reclassifications seeded successfully!');
     }
 }

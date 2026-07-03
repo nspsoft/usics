@@ -11,12 +11,14 @@ return new class extends Migration
         Schema::create('inv_warehouse_areas', function (Blueprint $table) {
             $table->id();
             $table->foreignId('warehouse_id')->constrained()->cascadeOnDelete();
+            $table->string('code', 10);
             $table->string('name', 100);
             $table->string('name_key', 120);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
 
+            $table->unique(['warehouse_id', 'code']);
             $table->unique(['warehouse_id', 'name_key']);
             $table->index(['warehouse_id', 'is_active']);
         });
