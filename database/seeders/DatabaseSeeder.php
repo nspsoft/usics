@@ -21,9 +21,9 @@ class DatabaseSeeder extends Seeder
             SystemPreferencesSeeder::class,
             UscProductSeeder::class,
             UscMachineSeeder::class,
-            UscStorageLocationSeeder::class,
             LinkUsersToEmployeesSeeder::class,
             RoleSeeder::class,
+            UscStorageLocationSeeder::class,
             DocumentNumberingSeeder::class,
             UsicsDetailedSeeder::class,
             

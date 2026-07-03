@@ -7,8 +7,15 @@ use App\Models\Location;
 use App\Models\Product;
 use App\Models\InventoryLot;
 use App\Models\ProductStock;
+use App\Models\StockTransfer;
+use App\Models\StockTransferItem;
+use App\Models\StockReclassification;
+use App\Models\StockReclassificationItem;
+use App\Models\Inventory\ProductReclassMapping;
+use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class UscStorageLocationSeeder extends Seeder
 {
@@ -24,9 +31,20 @@ class UscStorageLocationSeeder extends Seeder
             return;
         }
 
-        // 2. Clean existing locations & lots to avoid duplication/constraint errors
+        // Get dynamic admin user ID
+        $adminUser = User::where('email', 'admin@usc-indonesia.co.id')->first() ?? User::first();
+        $adminUserId = $adminUser ? $adminUser->id : 1;
+
+        // 2. Clean existing locations, lots, transfers, and reclass records to avoid constraints errors
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         InventoryLot::query()->delete();
         Location::query()->delete();
+        ProductReclassMapping::query()->delete();
+        StockTransferItem::query()->delete();
+        StockTransfer::query()->delete();
+        StockReclassificationItem::query()->delete();
+        StockReclassification::query()->delete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // 3. Seed locations for Finished Goods Warehouse (WH-FG)
         // Create Row A, B, C with 4 slots each = 12 slots
@@ -84,6 +102,7 @@ class UscStorageLocationSeeder extends Seeder
         
         $coilWip1 = Product::where('sku', 'SLIT-CR-SPCC-1.2-300')->first() ?? Product::first();
         $coilWip2 = Product::where('sku', 'SLIT-HR-SPHC-2.0-150')->first() ?? Product::first();
+        $coilWip3 = Product::where('sku', 'SLIT-CR-SPCC-1.2-120')->first() ?? Product::first();
 
         // 6. Seed Inventory Lots for Finished Goods Warehouse (WH-FG)
         // Active coils in dock (location_id => null)
@@ -244,6 +263,135 @@ class UscStorageLocationSeeder extends Seeder
             }
         }
 
-        $this->command->info('PT United Steel Center storage locations and inventory lots seeded successfully!');
+        // 8. Seed Product Reclass Mappings
+        ProductReclassMapping::create([
+            'source_product_id' => $coilRm1->id,
+            'target_product_id' => $coilWip2->id,
+            'is_active' => true,
+            'is_default' => true,
+            'notes' => 'Mapping otomatis canai panas HRC ke Slitted Strip SPHC 2.0x150.',
+            'created_by' => $adminUserId
+        ]);
+
+        ProductReclassMapping::create([
+            'source_product_id' => $coilRm2->id,
+            'target_product_id' => $coilWip1->id,
+            'is_active' => true,
+            'is_default' => true,
+            'notes' => 'Mapping otomatis canai dingin CRC ke Slitted Strip SPCC 1.2x300.',
+            'created_by' => $adminUserId
+        ]);
+
+        // 9. Seed Stock Transfers
+        if ($whRm) {
+            // A. Draft Stock Transfer
+            $st1 = StockTransfer::create([
+                'transfer_number' => 'TRF-' . Carbon::now()->format('ym') . '-0001',
+                'source_warehouse_id' => $whRm->id,
+                'destination_warehouse_id' => $whFg->id,
+                'transfer_date' => Carbon::now()->toDateString(),
+                'status' => 'draft',
+                'notes' => 'Permintaan pemindahan material coil Hot Rolled ke Gudang Finish Goods.',
+                'created_by' => $adminUserId
+            ]);
+            StockTransferItem::create([
+                'stock_transfer_id' => $st1->id,
+                'product_id' => $coilRm1->id,
+                'qty_requested' => 44000.00,
+                'qty_sent' => 0.00,
+                'qty_received' => 0.00
+            ]);
+
+            // B. Shipped / In-Transit Stock Transfer
+            $st2 = StockTransfer::create([
+                'transfer_number' => 'TRF-' . Carbon::now()->format('ym') . '-0002',
+                'source_warehouse_id' => $whRm->id,
+                'destination_warehouse_id' => $whFg->id,
+                'transfer_date' => Carbon::now()->subDay()->toDateString(),
+                'status' => 'in_transit',
+                'notes' => 'Pengiriman coil canai dingin ke Gudang FG untuk persiapan order Toyota.',
+                'created_by' => $adminUserId,
+                'shipped_at' => Carbon::now()->subDay()->toDateTimeString()
+            ]);
+            StockTransferItem::create([
+                'stock_transfer_id' => $st2->id,
+                'product_id' => $coilRm2->id,
+                'qty_requested' => 18000.00,
+                'qty_sent' => 18000.00,
+                'qty_received' => 0.00
+            ]);
+
+            // C. Received Stock Transfer
+            $st3 = StockTransfer::create([
+                'transfer_number' => 'TRF-' . Carbon::now()->format('ym') . '-0003',
+                'source_warehouse_id' => $whRm->id,
+                'destination_warehouse_id' => $whFg->id,
+                'transfer_date' => Carbon::now()->subDays(5)->toDateString(),
+                'status' => 'received',
+                'notes' => 'Pemindahan coil canai panas selesai diterima oleh tim Gudang FG.',
+                'created_by' => $adminUserId,
+                'shipped_at' => Carbon::now()->subDays(5)->toDateTimeString(),
+                'received_at' => Carbon::now()->subDays(4)->toDateTimeString(),
+                'received_by' => $adminUserId
+            ]);
+            StockTransferItem::create([
+                'stock_transfer_id' => $st3->id,
+                'product_id' => $coilRm1->id,
+                'qty_requested' => 22000.00,
+                'qty_sent' => 22000.00,
+                'qty_received' => 22000.00
+            ]);
+        }
+
+        // 10. Seed Stock Reclassifications
+        // A. Draft Stock Reclassification
+        $sr1 = StockReclassification::create([
+            'reclass_number' => 'REC-' . Carbon::now()->format('ym') . '-0001',
+            'warehouse_id' => $whFg->id,
+            'reclass_date' => Carbon::now()->toDateString(),
+            'status' => 'draft',
+            'reason' => 'Penyesuaian grade slitting lebar 300 ke 120',
+            'notes' => 'Draft reclassification untuk kebutuhan pengerjaan bracket Honda.',
+            'total_qty' => 5000.00,
+            'total_value' => 69000000.00,
+            'created_by' => $adminUserId
+        ]);
+        StockReclassificationItem::create([
+            'stock_reclassification_id' => $sr1->id,
+            'source_product_id' => $coilWip1->id,
+            'target_product_id' => $coilWip3->id,
+            'unit_id' => $coilWip1->unit_id,
+            'qty' => 5000.00,
+            'cost_per_unit' => $coilWip1->cost_price ?? 13800.00,
+            'total_cost' => 69000000.00,
+            'notes' => 'Reclass untuk material pendukung'
+        ]);
+
+        // B. Posted Stock Reclassification
+        $sr2 = StockReclassification::create([
+            'reclass_number' => 'REC-' . Carbon::now()->format('ym') . '-0002',
+            'warehouse_id' => $whFg->id,
+            'reclass_date' => Carbon::now()->subDays(2)->toDateString(),
+            'status' => 'posted',
+            'reason' => 'Realisasi Hasil Slitting HRC ke Strip SPHC 150',
+            'notes' => 'Reclass selesai dilakukan setelah pengerjaan di Slitter SA.',
+            'total_qty' => 22000.00,
+            'total_value' => 253000000.00,
+            'created_by' => $adminUserId,
+            'posted_at' => Carbon::now()->subDays(2)->toDateTimeString(),
+            'posted_by' => $adminUserId
+        ]);
+        StockReclassificationItem::create([
+            'stock_reclassification_id' => $sr2->id,
+            'source_product_id' => $coilRm1->id,
+            'target_product_id' => $coilWip2->id,
+            'unit_id' => $coilRm1->unit_id,
+            'qty' => 22000.00,
+            'cost_per_unit' => $coilRm1->cost_price ?? 11500.00,
+            'total_cost' => 253000000.00,
+            'notes' => 'Reclass coil utuh ke slitted strip'
+        ]);
+
+        $this->command->info('PT United Steel Center storage locations, inventory lots, transfers, and reclassifications seeded successfully!');
     }
 }
