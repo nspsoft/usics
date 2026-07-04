@@ -254,39 +254,39 @@ const printReport = () => {
     <Head :title="title" />
     
     <AppLayout :title="title" :render-header="false">
-        <div class="min-h-screen bg-[#050510] relative overflow-hidden font-mono text-cyan-50 selection:bg-cyan-500/30">
+        <div class="min-h-screen bg-slate-50 dark:bg-[#050510] relative overflow-hidden font-mono text-slate-800 dark:text-cyan-50 selection:bg-cyan-500/30 transition-colors duration-300">
             
             <!-- Dynamic Background -->
             <div class="fixed inset-0 z-0 pointer-events-none">
-                <div class="absolute inset-0 bg-gradient-to-b from-indigo-950/20 to-[#050510]"></div>
-                <div class="perspective-grid absolute inset-0 opacity-20"></div>
-                <div class="absolute top-[-10%] right-[20%] w-[600px] h-[600px] bg-indigo-600/10 blur-[150px] rounded-full animate-float"></div>
-                <div class="stars"></div>
+                <div class="absolute inset-0 bg-gradient-to-b from-indigo-100/30 to-white dark:from-indigo-950/20 dark:to-[#050510]"></div>
+                <div class="perspective-grid absolute inset-0 opacity-5 dark:opacity-20"></div>
+                <div class="absolute top-[-10%] right-[20%] w-[600px] h-[600px] bg-indigo-300/10 dark:bg-indigo-600/10 blur-[150px] rounded-full animate-float"></div>
+                <div class="stars hidden dark:block"></div>
             </div>
 
             <div class="relative z-10 p-6 space-y-8">
                 
                 <!-- Header -->
-                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-4 backdrop-blur-sm">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4 backdrop-blur-sm transition-colors">
                     <div>
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="px-2 py-0.5 text-[10px] bg-white/5 border border-white/10 rounded text-slate-400 tracking-[0.2em]">CST.MNG.x64</span>
-                            <span class="flex items-center gap-1.5 px-2 py-0.5 text-[10px] bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-400 tracking-wider animate-pulse">
-                                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> ENGINE ONLINE
+                            <span class="px-2 py-0.5 text-[10px] bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded text-slate-500 dark:text-slate-400 tracking-[0.2em] transition-colors">CST.MNG.x64</span>
+                            <span class="flex items-center gap-1.5 px-2 py-0.5 text-[10px] bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 rounded text-cyan-600 dark:text-cyan-400 tracking-wider animate-pulse transition-colors">
+                                <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400"></span> ENGINE ONLINE
                             </span>
                         </div>
-                        <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-indigo-400 tracking-widest uppercase glow-text">
+                        <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-slate-800 to-indigo-600 dark:from-cyan-400 dark:via-white dark:to-indigo-400 tracking-widest uppercase glow-text">
                             {{ pageConfig.heading }}
                         </h1>
                     </div>
                     
                     <div class="flex items-center gap-6">
-                        <div class="text-right hidden md:block border-r border-white/10 pr-6">
-                            <p class="text-[10px] text-cyan-500/70 tracking-[0.2em] mb-1">NETWORK TIME</p>
-                            <p class="text-2xl font-bold font-mono text-white glow-text">{{ time }}</p>
+                        <div class="text-right hidden md:block border-r border-slate-200 dark:border-white/10 pr-6 transition-colors">
+                            <p class="text-[10px] text-cyan-600/70 dark:text-cyan-500/70 tracking-[0.2em] mb-1">NETWORK TIME</p>
+                            <p class="text-2xl font-bold font-mono text-slate-800 dark:text-white glow-text transition-colors">{{ time }}</p>
                         </div>
                         <div class="flex items-center gap-3">
-                            <button class="px-4 py-2 bg-white/5 border border-white/10 text-slate-400 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-white/10 transition-all uppercase tracking-widest">
+                            <button class="px-4 py-2 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-white/10 transition-all uppercase tracking-widest">
                                 <ArrowPathIcon class="h-4 w-4" /> Recalculate
                             </button>
                         </div>
@@ -294,15 +294,15 @@ const printReport = () => {
                 </div>
 
                 <!-- HUD Navigation Tabs -->
-                <div class="flex items-center gap-2 mb-8 bg-white/5 p-1 rounded-xl border border-white/5 overflow-x-auto no-scrollbar relative z-10">
+                <div class="flex items-center gap-2 mb-8 bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200 dark:border-white/5 overflow-x-auto no-scrollbar relative z-10 transition-colors">
                     <Link 
                         v-for="tab in navigationTabs" 
                         :key="tab.name"
                         :href="tab.href"
                         class="px-6 py-2 rounded-lg text-xs font-bold tracking-widest transition-all duration-300 whitespace-nowrap"
                         :class="tab.active 
-                            ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' 
-                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'"
+                            ? 'bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-500/30' 
+                            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/5'"
                     >
                         {{ tab.name }}
                     </Link>
@@ -311,12 +311,12 @@ const printReport = () => {
                 <!-- Alert/Context Banner -->
                 <div class="hud-panel p-6 overflow-hidden relative group">
                     <div class="relative z-10 flex flex-col md:flex-row items-center gap-6">
-                        <div class="h-16 w-16 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl flex items-center justify-center shrink-0">
-                            <CpuChipIcon class="h-8 w-8 text-cyan-400" />
+                        <div class="h-16 w-16 bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 rounded-2xl flex items-center justify-center shrink-0 transition-colors">
+                            <CpuChipIcon class="h-8 w-8 text-cyan-600 dark:text-cyan-400" />
                         </div>
                         <div>
-                            <h3 class="text-lg font-black tracking-tight uppercase text-white glow-text">{{ pageConfig.bannerTitle }}</h3>
-                            <p class="text-slate-400 max-w-4xl text-xs leading-relaxed mt-1 italic">
+                            <h3 class="text-lg font-black tracking-tight uppercase text-slate-800 dark:text-white glow-text transition-colors">{{ pageConfig.bannerTitle }}</h3>
+                            <p class="text-slate-500 dark:text-slate-400 max-w-4xl text-xs leading-relaxed mt-1 italic transition-colors">
                                 {{ pageConfig.bannerDescription }}
                             </p>
                         </div>
@@ -329,11 +329,11 @@ const printReport = () => {
                     <div class="lg:col-span-2 hud-panel p-8">
                         <div class="flex items-center justify-between mb-8">
                             <div>
-                                <h3 class="text-xl font-black text-white uppercase tracking-tighter glow-text">{{ pageConfig.breakdownTitle }}</h3>
-                                <p class="text-[10px] text-cyan-500 font-bold uppercase tracking-[0.2em] mt-1 pulse-opacity">Status: Calculation Running</p>
+                                <h3 class="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter glow-text transition-colors">{{ pageConfig.breakdownTitle }}</h3>
+                                <p class="text-[10px] text-cyan-600 dark:text-cyan-500 font-bold uppercase tracking-[0.2em] mt-1 pulse-opacity">Status: Calculation Running</p>
                             </div>
-                            <div class="p-3 bg-white/5 border border-white/10 rounded-2xl">
-                                <ChartPieIcon class="h-6 w-6 text-cyan-400" />
+                            <div class="p-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl transition-colors">
+                                <ChartPieIcon class="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
                             </div>
                         </div>
 
@@ -341,24 +341,24 @@ const printReport = () => {
                             <div v-for="cost in costElements" :key="cost.name" class="group">
                                 <div class="flex justify-between items-end mb-2">
                                     <div>
-                                        <span class="text-sm font-black text-white group-hover:text-cyan-400 transition-colors uppercase tracking-tight">{{ cost.name }}</span>
+                                        <span class="text-sm font-black text-slate-800 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors uppercase tracking-tight">{{ cost.name }}</span>
                                         <div class="text-[10px] text-slate-500 font-mono tracking-tighter uppercase">
                                             {{ cost.percentage }}% {{ mode === 'profitability' ? 'OF REVENUE' : (mode === 'overhead' ? 'OF TOTAL OVERHEAD' : 'OF TOTAL COGS') }}
                                         </div>
                                     </div>
                                     <div class="text-right">
-                                        <div class="text-sm font-black text-white font-mono glow-text transition-all group-hover:scale-110">{{ cost.value }}</div>
+                                        <div class="text-sm font-black text-slate-800 dark:text-white font-mono glow-text transition-all group-hover:scale-110">{{ cost.value }}</div>
                                     </div>
                                 </div>
-                                <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-white/5 p-[1px]">
-                                    <div class="h-full rounded-full transition-all duration-1000 delay-300 shadow-[0_0_10px_currentColor]" :style="{ width: `${cost.percentage}%`, backgroundColor: cost.color, color: cost.color }"></div>
+                                <div class="w-full bg-slate-200 dark:bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-300 dark:border-white/5 p-[1px] transition-colors">
+                                    <div class="h-full rounded-full transition-all duration-1000 delay-300 dark:shadow-[0_0_10px_currentColor]" :style="{ width: `${cost.percentage}%`, backgroundColor: cost.color, color: cost.color }"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mt-12 pt-8 border-t border-white/10 flex items-center justify-between">
+                        <div class="mt-12 pt-8 border-t border-slate-200 dark:border-white/10 flex items-center justify-between transition-colors">
                             <div class="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">{{ pageConfig.totalLabel }}</div>
-                            <div class="text-4xl font-black text-cyan-400 glow-text tracking-tighter">{{ pageConfig.totalValue }}</div>
+                            <div class="text-4xl font-black text-cyan-600 dark:text-cyan-400 glow-text tracking-tighter transition-colors">{{ pageConfig.totalValue }}</div>
                         </div>
                     </div>
 
@@ -366,22 +366,22 @@ const printReport = () => {
                     <div class="space-y-6">
                         <div class="hud-panel p-6 border-l-4 border-cyan-500 relative overflow-hidden group">
                             <div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <CalculatorIcon class="h-24 w-24 text-white" />
+                                <CalculatorIcon class="h-24 w-24 text-slate-400 dark:text-white" />
                             </div>
                             <div class="relative z-10 flex flex-col">
                                 <div class="flex items-center gap-4 mb-4">
-                                    <div class="p-3 bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 rounded-2xl">
+                                    <div class="p-3 bg-cyan-100 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-500 border border-cyan-200 dark:border-cyan-500/20 rounded-2xl transition-colors">
                                         <Square3Stack3DIcon class="h-6 w-6" />
                                     </div>
-                                    <h4 class="font-black text-white uppercase tracking-tighter">{{ pageConfig.panel1Title }}</h4>
+                                    <h4 class="font-black text-slate-800 dark:text-white uppercase tracking-tighter transition-colors">{{ pageConfig.panel1Title }}</h4>
                                 </div>
-                                <p class="text-[10px] text-slate-400 leading-relaxed mb-6 uppercase tracking-wider">
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed mb-6 uppercase tracking-wider transition-colors">
                                     {{ pageConfig.panel1Desc }}
                                 </p>
                                 <button 
                                     @click="runAiAudit"
                                     :disabled="isAnalyzing"
-                                    class="w-full py-4 bg-cyan-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-900/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    class="w-full py-4 bg-cyan-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-900/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                                 >
                                     <template v-if="isAnalyzing">
                                         <ArrowPathIcon class="h-4 w-4 animate-spin text-white" />
@@ -396,21 +396,21 @@ const printReport = () => {
 
                         <div class="hud-panel p-6 border-l-4 border-indigo-500 group relative overflow-hidden">
                              <div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <ArrowUpCircleIcon class="h-24 w-24 text-white" />
+                                <ArrowUpCircleIcon class="h-24 w-24 text-slate-400 dark:text-white" />
                             </div>
                             <div class="relative z-10">
                                 <div class="flex items-center gap-4 mb-4">
-                                    <div class="p-3 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-2xl">
+                                    <div class="p-3 bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 rounded-2xl transition-colors">
                                         <BeakerIcon class="h-6 w-6" />
                                     </div>
-                                    <h4 class="font-black text-white uppercase tracking-tighter">{{ pageConfig.panel2Title }}</h4>
+                                    <h4 class="font-black text-slate-800 dark:text-white uppercase tracking-tighter transition-colors">{{ pageConfig.panel2Title }}</h4>
                                 </div>
-                                <p class="text-[10px] text-slate-400 leading-relaxed mb-6 uppercase tracking-wider">
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed mb-6 uppercase tracking-wider transition-colors">
                                     {{ pageConfig.panel2Desc }}
                                 </p>
-                                <div class="p-4 bg-[#0a0a20] rounded-2xl border text-center shadow-inner" :class="mode === 'overhead' ? 'border-cyan-500/20 shadow-cyan-500/10' : 'border-emerald-500/20 shadow-emerald-500/10'">
-                                    <div class="text-[10px] font-bold uppercase mb-1 tracking-widest" :class="mode === 'overhead' ? 'text-cyan-500' : 'text-emerald-500'">{{ pageConfig.panel2BadgeLabel }}</div>
-                                    <div class="text-3xl font-black glow-text" :class="mode === 'overhead' ? 'text-cyan-400' : 'text-emerald-400'">{{ pageConfig.panel2BadgeValue }}</div>
+                                <div class="p-4 bg-slate-100 dark:bg-[#0a0a20] rounded-2xl border text-center shadow-inner transition-colors" :class="mode === 'overhead' ? 'border-cyan-300 dark:border-cyan-500/20 shadow-cyan-500/10' : 'border-emerald-300 dark:border-emerald-500/20 shadow-emerald-500/10'">
+                                    <div class="text-[10px] font-bold uppercase mb-1 tracking-widest" :class="mode === 'overhead' ? 'text-cyan-600 dark:text-cyan-500' : 'text-emerald-600 dark:text-emerald-500'">{{ pageConfig.panel2BadgeLabel }}</div>
+                                    <div class="text-3xl font-black glow-text" :class="mode === 'overhead' ? 'text-cyan-600 dark:text-cyan-400' : 'text-emerald-600 dark:text-emerald-400'">{{ pageConfig.panel2BadgeValue }}</div>
                                 </div>
                             </div>
                         </div>
@@ -419,9 +419,9 @@ const printReport = () => {
 
                 <!-- Technical Specs / Footer -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pb-12">
-                    <div v-for="i in 4" :key="i" class="p-4 bg-white/5 border border-white/10 rounded-xl">
+                    <div v-for="i in 4" :key="i" class="p-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl shadow-sm transition-colors">
                         <div class="text-[8px] text-slate-500 uppercase mb-1 tracking-[0.2em]">ENGINE.PARAM.0{{ i }}</div>
-                        <div class="text-xs font-bold text-slate-300 uppercase tracking-widest">ENABLED</div>
+                        <div class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest transition-colors">ENABLED</div>
                     </div>
                 </div>
             </div>
@@ -617,12 +617,17 @@ const printReport = () => {
 
 /* HUD Styling */
 .hud-panel {
-    background: rgba(10, 10, 22, 0.8);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(226, 232, 240, 1);
     border-radius: 12px;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
+}
+:root.dark .hud-panel {
+    background: rgba(10, 10, 22, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
 }
 .hud-panel:hover {
     border-color: rgba(34, 211, 238, 0.3);
@@ -630,6 +635,9 @@ const printReport = () => {
 
 /* Text Effects */
 .glow-text {
+    text-shadow: none;
+}
+:root.dark .glow-text {
     text-shadow: 0 0 10px currentColor;
 }
 
@@ -647,13 +655,22 @@ const printReport = () => {
     width: 6px;
 }
 ::-webkit-scrollbar-track {
-    background: #050510;
+    background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-    background: #1e293b;
+    background: #cbd5e1;
     border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+:root.dark ::-webkit-scrollbar-track {
+    background: #050510;
+}
+:root.dark ::-webkit-scrollbar-thumb {
+    background: #1e293b;
+}
+:root.dark ::-webkit-scrollbar-thumb:hover {
     background: #334155;
 }
 
