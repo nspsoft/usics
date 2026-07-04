@@ -11,7 +11,9 @@ import {
     BoltIcon,
     ClockIcon,
     ChartBarIcon,
-    TruckIcon
+    TruckIcon,
+    SunIcon,
+    MoonIcon
 } from '@heroicons/vue/24/outline';
 import { formatNumber, formatCurrency } from '@/helpers';
 import {
@@ -58,41 +60,72 @@ const updateTime = () => {
     time.value = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };
 let timer;
+
+// --- Theme Reactive Sync ---
+const isLightMode = ref(false);
+const toggleTheme = () => {
+    isLightMode.value = !isLightMode.value;
+    if (isLightMode.value) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+    }
+};
+
+let observer;
 onMounted(() => {
     updateTime();
     timer = setInterval(updateTime, 1000);
+
+    isLightMode.value = !document.documentElement.classList.contains('dark');
+    observer = new MutationObserver(() => {
+        isLightMode.value = !document.documentElement.classList.contains('dark');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 });
-onUnmounted(() => clearInterval(timer));
+
+onUnmounted(() => {
+    clearInterval(timer);
+    if (observer) observer.disconnect();
+});
 
 // --- Chart Options ---
-const commonOptions = computed(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: { labels: { color: '#94a3b8', font: { family: 'Space Mono' } } },
-        tooltip: {
-            backgroundColor: 'rgba(5, 5, 16, 0.9)',
-            titleColor: '#22d3ee',
-            bodyColor: '#e2e8f0',
-            borderColor: '#22d3ee',
-            borderWidth: 1,
-            padding: 12,
-            titleFont: { family: 'Space Mono', weight: 'bold' },
-            bodyFont: { family: 'Space Mono' },
-            displayColors: false,
+const commonOptions = computed(() => {
+    const gridColor = isLightMode.value ? 'rgba(0, 0, 0, 0.05)' : 'rgba(6, 182, 212, 0.1)';
+    const tickColor = isLightMode.value ? '#475569' : '#64748b';
+    const legendColor = isLightMode.value ? '#1e293b' : '#94a3b8';
+    
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: legendColor, font: { family: 'Space Mono' } } },
+            tooltip: {
+                backgroundColor: isLightMode.value ? 'rgba(255, 255, 255, 0.95)' : 'rgba(5, 5, 16, 0.9)',
+                titleColor: '#22d3ee',
+                bodyColor: isLightMode.value ? '#1e293b' : '#e2e8f0',
+                borderColor: '#22d3ee',
+                borderWidth: 1,
+                padding: 12,
+                titleFont: { family: 'Space Mono', weight: 'bold' },
+                bodyFont: { family: 'Space Mono' },
+                displayColors: false,
+            },
         },
-    },
-    scales: {
-        x: { 
-            grid: { color: 'rgba(6, 182, 212, 0.1)', drawBorder: false },
-            ticks: { color: '#64748b', font: { family: 'Space Mono', size: 10 } }
+        scales: {
+            x: { 
+                grid: { color: gridColor, drawBorder: false },
+                ticks: { color: tickColor, font: { family: 'Space Mono', size: 10 } }
+            },
+            y: { 
+                grid: { color: gridColor, drawBorder: false },
+                ticks: { color: tickColor, font: { family: 'Space Mono', size: 10 } }
+            },
         },
-        y: { 
-            grid: { color: 'rgba(6, 182, 212, 0.1)', drawBorder: false },
-            ticks: { color: '#64748b', font: { family: 'Space Mono', size: 10 } }
-        },
-    },
-}));
+    };
+});
 
 // -- Chart Data --
 
@@ -107,7 +140,7 @@ const trendData = computed(() => ({
             backgroundColor: (ctx) => {
                 const canvas = ctx.chart.ctx;
                 const gradient = canvas.createLinearGradient(0, 0, 0, 300);
-                gradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
+                gradient.addColorStop(0, isLightMode.value ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.4)');
                 gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
                 return gradient;
             },
@@ -124,7 +157,7 @@ const trendData = computed(() => ({
             backgroundColor: (ctx) => {
                 const canvas = ctx.chart.ctx;
                 const gradient = canvas.createLinearGradient(0, 0, 0, 300);
-                gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
+                gradient.addColorStop(0, isLightMode.value ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.4)');
                 gradient.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
                 return gradient;
             },
@@ -172,36 +205,46 @@ const warehouseData = computed(() => ({
     <Head title="Inventory Command" />
 
     <AppLayout title="Inventory Command" :render-header="false">
-        <div class="min-h-screen bg-[#050510] relative overflow-hidden font-mono text-cyan-50 selection:bg-cyan-500/30">
+        <div class="min-h-screen bg-slate-50 dark:bg-[#050510] text-slate-800 dark:text-cyan-50 relative overflow-hidden font-mono selection:bg-cyan-500/30 transition-colors duration-300">
             
             <!-- Dynamic Background -->
             <div class="fixed inset-0 z-0 pointer-events-none">
-                <div class="absolute inset-0 bg-gradient-to-b from-emerald-950/20 to-[#050510]"></div>
-                <div class="perspective-grid absolute inset-0 opacity-20"></div>
-                <div class="absolute top-[-10%] right-[20%] w-[600px] h-[600px] bg-emerald-600/10 blur-[150px] rounded-full animate-float"></div>
+                <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-slate-100 dark:from-emerald-950/20 dark:to-[#050510]"></div>
+                <div class="perspective-grid absolute inset-0 opacity-[0.1] dark:opacity-20"></div>
+                <div class="absolute top-[-10%] right-[20%] w-[600px] h-[600px] bg-emerald-600/5 dark:bg-emerald-600/10 blur-[150px] rounded-full animate-float"></div>
                 <div class="stars"></div>
             </div>
 
-            <div class="relative z-10 p-6 space-y-8">
+            <div class="relative z-10 p-6 space-y-8 max-w-[1600px] mx-auto">
                 
                 <!-- Header -->
-                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-4 backdrop-blur-sm">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4 backdrop-blur-sm">
                     <div>
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="px-2 py-0.5 text-[10px] bg-white/5 border border-white/10 rounded text-slate-400 tracking-[0.2em]">INV.MOD.2.0</span>
-                            <span class="flex items-center gap-1.5 px-2 py-0.5 text-[10px] bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-400 tracking-wider animate-pulse">
-                                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> STOCK REALTIME
+                            <span class="px-2 py-0.5 text-[10px] bg-slate-200 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded text-slate-500 dark:text-slate-400 tracking-[0.2em]">INV.MOD.2.0</span>
+                            <span class="flex items-center gap-1.5 px-2 py-0.5 text-[10px] bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-600 dark:text-cyan-400 tracking-wider animate-pulse">
+                                <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400"></span> STOCK REALTIME
                             </span>
                         </div>
-                        <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-white to-emerald-400 tracking-widest uppercase glow-text">
+                        <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-650 via-slate-700 to-emerald-700 dark:from-emerald-400 dark:via-white dark:to-emerald-400 tracking-widest uppercase dark:glow-text">
                             INVENTORY COMMAND
                         </h1>
                     </div>
                     
                     <div class="flex items-center gap-6">
+                        <!-- Theme Toggle Button -->
+                        <button 
+                            @click="toggleTheme"
+                            class="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-cyan-400 transition-all hover:scale-105 shadow-sm dark:shadow-none"
+                            :title="isLightMode ? 'Switch to Dark Mode' : 'Switch to Light Mode'"
+                        >
+                            <SunIcon v-if="!isLightMode" class="h-5 w-5 text-amber-500" />
+                            <MoonIcon v-else class="h-5 w-5 text-indigo-600" />
+                        </button>
+
                         <div class="text-right hidden md:block">
-                            <p class="text-[10px] text-emerald-500/70 tracking-[0.2em] mb-1">LOCAL TIME</p>
-                            <p class="text-2xl font-bold font-mono text-white glow-text">{{ time }}</p>
+                            <p class="text-[10px] text-emerald-600 dark:text-emerald-500/70 tracking-[0.2em] mb-1">LOCAL TIME</p>
+                            <p class="text-2xl font-bold font-mono text-slate-900 dark:text-white dark:glow-text leading-none">{{ time }}</p>
                         </div>
                     </div>
                 </div>
@@ -210,17 +253,17 @@ const warehouseData = computed(() => ({
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <!-- Valuation -->
                     <div class="hud-card group delay-100">
-                        <div class="hud-content p-6 h-full relative z-10 bg-[#0a0a16]/60 backdrop-blur-xl border border-white/5 rounded-xl overflow-hidden flex flex-col justify-between">
+                        <div class="hud-content p-6 h-full relative z-10 bg-white/70 dark:bg-[#0a0a16]/60 backdrop-blur-xl border border-slate-200 dark:border-white/5 rounded-xl overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-none">
                             <div class="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity">
-                                <BoltIcon class="h-12 w-12 text-cyan-400" />
+                                <BoltIcon class="h-12 w-12 text-cyan-500 dark:text-cyan-400" />
                             </div>
                             <div>
-                                <p class="text-xs text-slate-400 tracking-[0.2em] uppercase font-bold mb-1">TOTAL VALUATION</p>
-                                <h3 class="text-2xl font-black text-white glow-text tracking-tight">
+                                <p class="text-xs text-slate-500 dark:text-slate-400 tracking-[0.2em] uppercase font-bold mb-1">TOTAL VALUATION</p>
+                                <h3 class="text-2xl font-black text-slate-900 dark:text-white dark:glow-text tracking-tight">
                                     {{ formatCurrency(stats.total_valuation) }}
                                 </h3>
                             </div>
-                            <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="mt-4 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                                 <div class="h-full bg-cyan-500 shadow-[0_0_10px_#06b6d4] transition-all duration-1000" :style="{ width: stats.total_valuation > 0 ? Math.max(Math.min((stats.total_valuation / 1000000000) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
@@ -228,17 +271,17 @@ const warehouseData = computed(() => ({
 
                     <!-- Active Items -->
                     <div class="hud-card group delay-200">
-                         <div class="hud-content p-6 h-full relative z-10 bg-[#0a0a16]/60 backdrop-blur-xl border border-white/5 rounded-xl overflow-hidden flex flex-col justify-between">
+                         <div class="hud-content p-6 h-full relative z-10 bg-white/70 dark:bg-[#0a0a16]/60 backdrop-blur-xl border border-slate-200 dark:border-white/5 rounded-xl overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-none">
                             <div class="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity">
-                                <CubeIcon class="h-12 w-12 text-emerald-400" />
+                                <CubeIcon class="h-12 w-12 text-emerald-500 dark:text-emerald-400" />
                             </div>
                             <div>
-                                <p class="text-xs text-slate-400 tracking-[0.2em] uppercase font-bold mb-1">ACTIVE SKUs</p>
-                                <h3 class="text-3xl font-black text-white glow-text tracking-tight">
+                                <p class="text-xs text-slate-500 dark:text-slate-400 tracking-[0.2em] uppercase font-bold mb-1">ACTIVE SKUs</p>
+                                <h3 class="text-3xl font-black text-slate-900 dark:text-white dark:glow-text tracking-tight">
                                     {{ formatNumber(stats.active_items) }}
                                 </h3>
                             </div>
-                            <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="mt-4 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                                 <div class="h-full bg-emerald-500 shadow-[0_0_10px_#10b981] transition-all duration-1000" :style="{ width: stats.active_items > 0 ? Math.max(Math.min((stats.active_items / 1000) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
@@ -246,17 +289,17 @@ const warehouseData = computed(() => ({
 
                     <!-- Turnover -->
                     <div class="hud-card group delay-300">
-                         <div class="hud-content p-6 h-full relative z-10 bg-[#0a0a16]/60 backdrop-blur-xl border border-white/5 rounded-xl overflow-hidden flex flex-col justify-between">
+                         <div class="hud-content p-6 h-full relative z-10 bg-white/70 dark:bg-[#0a0a16]/60 backdrop-blur-xl border border-slate-200 dark:border-white/5 rounded-xl overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-none">
                             <div class="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity">
-                                <ArrowPathIcon class="h-12 w-12 text-violet-400" />
+                                <ArrowPathIcon class="h-12 w-12 text-violet-500 dark:text-violet-400" />
                             </div>
                             <div>
-                                <p class="text-xs text-slate-400 tracking-[0.2em] uppercase font-bold mb-1">TURNOVER (30D)</p>
-                                <h3 class="text-3xl font-black text-white glow-text tracking-tight">
-                                    {{ formatNumber(stats.turnover_rate) }} <span class="text-sm font-normal text-slate-500">items</span>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 tracking-[0.2em] uppercase font-bold mb-1">TURNOVER (30D)</p>
+                                <h3 class="text-3xl font-black text-slate-900 dark:text-white dark:glow-text tracking-tight">
+                                    {{ formatNumber(stats.turnover_rate) }} <span class="text-sm font-normal text-slate-400 dark:text-slate-500">items</span>
                                 </h3>
                             </div>
-                             <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
+                             <div class="mt-4 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                                 <div class="h-full bg-violet-500 shadow-[0_0_10px_#8b5cf6] transition-all duration-1000" :style="{ width: stats.turnover_rate > 0 ? Math.max(Math.min((stats.turnover_rate / 1000) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
@@ -264,17 +307,17 @@ const warehouseData = computed(() => ({
 
                     <!-- Warehouse Usage -->
                     <div class="hud-card group delay-400">
-                         <div class="hud-content p-6 h-full relative z-10 bg-[#0a0a16]/60 backdrop-blur-xl border border-white/5 rounded-xl overflow-hidden flex flex-col justify-between">
+                         <div class="hud-content p-6 h-full relative z-10 bg-white/70 dark:bg-[#0a0a16]/60 backdrop-blur-xl border border-slate-200 dark:border-white/5 rounded-xl overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-none">
                             <div class="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity">
-                                <ArchiveBoxIcon class="h-12 w-12 text-amber-400" />
+                                <ArchiveBoxIcon class="h-12 w-12 text-amber-500" />
                             </div>
                              <div>
-                                <p class="text-xs text-slate-400 tracking-[0.2em] uppercase font-bold mb-1">ITEMS STORED</p>
-                                <h3 class="text-3xl font-black text-white glow-text tracking-tight">
+                                <p class="text-xs text-slate-500 dark:text-slate-400 tracking-[0.2em] uppercase font-bold mb-1">ITEMS STORED</p>
+                                <h3 class="text-3xl font-black text-slate-900 dark:text-white dark:glow-text tracking-tight">
                                     {{ formatNumber(stats.warehouse_usage) }}
                                 </h3>
                             </div>
-                             <div class="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
+                             <div class="mt-4 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                                 <div class="h-full bg-amber-500 shadow-[0_0_10px_#f59e0b] transition-all duration-1000" :style="{ width: stats.warehouse_usage > 0 ? Math.max(Math.min((stats.warehouse_usage / 10000) * 100, 100), 5) + '%' : '0%' }"></div>
                             </div>
                         </div>
@@ -284,9 +327,9 @@ const warehouseData = computed(() => ({
                 <!-- Charts Row -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Stock Trends -->
-                    <div class="lg:col-span-2 hud-panel min-h-[350px]">
-                        <div class="panel-header flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
-                            <h3 class="flex items-center gap-2 text-sm font-bold text-emerald-300 tracking-widest uppercase">
+                    <div class="lg:col-span-2 hud-panel min-h-[350px] bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm dark:shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                        <div class="panel-header flex items-center justify-between p-4 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/5">
+                            <h3 class="flex items-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-300 tracking-widest uppercase">
                                 <ChartBarIcon class="h-4 w-4" /> Stock Movement Trends
                             </h3>
                         </div>
@@ -296,9 +339,9 @@ const warehouseData = computed(() => ({
                     </div>
 
                     <!-- Category Dist -->
-                    <div class="hud-panel min-h-[350px] flex flex-col">
-                        <div class="panel-header p-4 border-b border-white/5 bg-white/5">
-                            <h3 class="flex items-center gap-2 text-sm font-bold text-cyan-300 tracking-widest uppercase">
+                    <div class="hud-panel min-h-[350px] flex flex-col bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm dark:shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                        <div class="panel-header p-4 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/5">
+                            <h3 class="flex items-center gap-2 text-sm font-bold text-cyan-600 dark:text-cyan-300 tracking-widest uppercase">
                                 <Square3Stack3DIcon class="h-4 w-4" /> Top Categories
                             </h3>
                         </div>
@@ -310,21 +353,21 @@ const warehouseData = computed(() => ({
                                         ...commonOptions, 
                                         cutout: '70%', 
                                         scales: { x: { display: false }, y: { display: false } },
-                                        plugins: { legend: { display: false } } 
+                                        plugins: { ...commonOptions.plugins, legend: { display: false } } 
                                     }" 
                                 />
                                  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none w-full">
-                                    <p class="text-[10px] text-slate-500 tracking-[0.2em] uppercase font-bold">CATEGORIES</p>
-                                    <p class="text-3xl font-black text-white glow-text leading-tight">{{ props.stockByCategory.length }}</p>
+                                    <p class="text-[10px] text-slate-550 dark:text-slate-500 tracking-[0.2em] uppercase font-bold">CATEGORIES</p>
+                                    <p class="text-3xl font-black text-slate-900 dark:text-white dark:glow-text leading-tight">{{ props.stockByCategory.length }}</p>
                                 </div>
                             </div>
                             <div class="w-1/2 space-y-4">
                                 <div v-for="(item, index) in categoryData.labels" :key="item" class="flex items-center justify-between">
                                     <div class="flex items-center gap-3">
                                         <div class="w-2.5 h-2.5 rounded-sm" :style="{ backgroundColor: categoryData.datasets[0].backgroundColor[index] }"></div>
-                                        <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">{{ item }}</span>
+                                        <span class="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest truncate max-w-[80px]" :title="item">{{ item }}</span>
                                     </div>
-                                    <span class="text-xs font-bold text-white">{{ formatNumber(categoryData.datasets[0].data[index]) }}</span>
+                                    <span class="text-xs font-bold text-slate-900 dark:text-white">{{ formatNumber(categoryData.datasets[0].data[index]) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -332,19 +375,19 @@ const warehouseData = computed(() => ({
                 </div>
 
                 <!-- Low Stock Alerts Row -->
-                <div v-if="lowStockItems && lowStockItems.length > 0" class="hud-panel border-rose-500/30">
-                    <div class="panel-header p-4 border-b border-rose-500/20 bg-rose-500/10 flex items-center justify-between">
-                        <h3 class="flex items-center gap-2 text-sm font-bold text-rose-400 tracking-widest uppercase glow-text">
-                            <BoltIcon class="h-4 w-4" /> Critical Low Stock Alerts
+                <div v-if="lowStockItems && lowStockItems.length > 0" class="hud-panel border-rose-300 dark:border-rose-500/30 bg-white/75 dark:bg-[#0a0a16]/80 rounded-xl overflow-hidden shadow-sm dark:shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                    <div class="panel-header p-4 border-b border-rose-200 dark:border-rose-500/20 bg-rose-500/10 flex items-center justify-between">
+                        <h3 class="flex items-center gap-2 text-sm font-bold text-rose-600 dark:text-rose-400 tracking-widest uppercase dark:glow-text">
+                            <BoltIcon class="h-4 w-4 animate-pulse" /> Critical Low Stock Alerts
                         </h3>
-                        <span class="px-3 py-1 bg-rose-500/20 text-rose-300 text-xs font-bold rounded border border-rose-500/30 animate-pulse">
+                        <span class="px-3 py-1 bg-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-bold rounded border border-rose-300 dark:border-rose-500/30 animate-pulse">
                             {{ lowStockItems.length }} ITEMS REQUIRE ATTENTION
                         </span>
                     </div>
                     <div class="panel-body p-0 overflow-x-auto overflow-y-auto max-h-[350px] relative">
                         <table class="w-full text-left border-collapse min-w-max">
-                            <thead class="sticky top-0 z-20 bg-[#0a0a16]/95 backdrop-blur-md shadow-sm shadow-rose-900/20">
-                                <tr class="text-[10px] text-rose-300 font-bold uppercase tracking-wider border-b border-rose-500/20">
+                            <thead class="sticky top-0 z-20 bg-slate-100 dark:bg-[#0a0a16]/95 backdrop-blur-md shadow-sm border-b border-rose-200 dark:border-rose-500/20">
+                                <tr class="text-[10px] text-rose-700 dark:text-rose-300 font-bold uppercase tracking-wider">
                                     <th class="p-4 pl-6">SKU</th>
                                     <th class="p-4">Product Name</th>
                                     <th class="p-4 text-center">Available Stock</th>
@@ -352,17 +395,17 @@ const warehouseData = computed(() => ({
                                     <th class="p-4 text-right pr-6">Status</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-rose-500/10">
-                                <tr v-for="item in lowStockItems" :key="item.id" class="hover:bg-rose-500/5 transition-colors group">
-                                    <td class="p-3 pl-6 text-[10px] font-mono text-rose-200 border-l-2 border-transparent group-hover:border-rose-500">{{ item.sku }}</td>
-                                    <td class="p-3 text-xs font-bold text-white">{{ item.name }}</td>
+                            <tbody class="divide-y divide-rose-100 dark:divide-rose-500/10">
+                                <tr v-for="item in lowStockItems" :key="item.id" class="hover:bg-rose-500/[0.03] dark:hover:bg-rose-500/5 transition-colors group">
+                                    <td class="p-3 pl-6 text-[10px] font-mono text-rose-700 dark:text-rose-200 border-l-2 border-transparent group-hover:border-rose-500">{{ item.sku }}</td>
+                                    <td class="p-3 text-xs font-bold text-slate-800 dark:text-white">{{ item.name }}</td>
                                     <td class="p-3 text-center">
-                                        <span class="font-mono text-rose-400 font-bold text-lg glow-text">{{ formatNumber(item.available_stock) }}</span>
+                                        <span class="font-mono text-rose-600 dark:text-rose-400 font-bold text-lg dark:glow-text">{{ formatNumber(item.available_stock) }}</span>
                                         <span class="text-[10px] text-slate-500 ml-1">{{ item.unit }}</span>
                                     </td>
-                                    <td class="p-3 text-center font-mono text-slate-400 text-xs">{{ formatNumber(item.reorder_point) }}</td>
+                                    <td class="p-3 text-center font-mono text-slate-500 dark:text-slate-400 text-xs">{{ formatNumber(item.reorder_point) }}</td>
                                     <td class="p-3 text-right pr-6">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 animate-pulse">
                                             MUST REORDER
                                         </span>
                                     </td>
@@ -375,16 +418,16 @@ const warehouseData = computed(() => ({
                 <!-- Bottom Row -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                      <!-- Recent Movements -->
-                     <div class="hud-panel overflow-hidden">
-                         <div class="panel-header p-4 border-b border-white/5 bg-white/5">
-                            <h3 class="flex items-center gap-2 text-sm font-bold text-violet-300 tracking-widest uppercase">
+                     <div class="hud-panel overflow-hidden bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/10 rounded-xl shadow-sm dark:shadow-none">
+                         <div class="panel-header p-4 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/5">
+                            <h3 class="flex items-center gap-2 text-sm font-bold text-violet-650 dark:text-violet-300 tracking-widest uppercase">
                                 <TruckIcon class="h-4 w-4" /> Recent Activities
                             </h3>
                         </div>
                         <div class="panel-body p-0 overflow-x-auto overflow-y-auto max-h-[350px] relative">
                             <table class="w-full text-left border-collapse min-w-max">
-                                <thead class="sticky top-0 z-20 bg-[#0a0a16]/95 backdrop-blur-md shadow-sm shadow-white/5">
-                                    <tr class="text-[10px] text-slate-500 font-bold uppercase tracking-wider border-b border-white/10">
+                                <thead class="sticky top-0 z-20 bg-slate-100 dark:bg-[#0a0a16]/95 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-white/10">
+                                    <tr class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                                         <th class="p-4 pl-6">SKU</th>
                                         <th class="p-4">Item</th>
                                         <th class="p-4 text-center">Type</th>
@@ -392,29 +435,29 @@ const warehouseData = computed(() => ({
                                         <th class="p-4 text-right pr-6">Date</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-white/5">
+                                <tbody class="divide-y divide-slate-100 dark:divide-white/5">
                                     <tr 
                                         v-for="move in recentMovements" 
                                         :key="move.id" 
-                                        class="hover:bg-white/5 transition-colors group"
+                                        class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
                                     >
-                                        <td class="p-4 pl-6 text-[10px] font-mono text-cyan-500/70 border-l-2 border-transparent group-hover:border-cyan-500 transition-colors">
+                                        <td class="p-4 pl-6 text-[10px] font-mono text-cyan-600 dark:text-cyan-500/70 border-l-2 border-transparent group-hover:border-cyan-500 transition-colors">
                                             {{ move.sku }}
                                         </td>
-                                        <td class="p-4 text-xs font-bold text-white uppercase">{{ move.product }}</td>
+                                        <td class="p-4 text-xs font-bold text-slate-800 dark:text-white uppercase">{{ move.product }}</td>
                                         <td class="p-4 text-center">
                                             <span 
                                                 class="px-2 py-0.5 text-[10px] font-bold border rounded uppercase"
                                                 :class="{
-                                                    'bg-emerald-500/10 text-emerald-400 border-emerald-500/30': move.type === 'in',
-                                                    'bg-violet-500/10 text-violet-400 border-violet-500/30': move.type === 'out',
-                                                    'bg-amber-500/10 text-amber-400 border-amber-500/30': move.type === 'transfer'
+                                                    'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30': move.type === 'in',
+                                                    'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-500/30': move.type === 'out',
+                                                    'bg-amber-50 dark:bg-amber-500/10 text-amber-705 dark:text-amber-400 border-amber-200 dark:border-amber-500/30': move.type === 'transfer'
                                                 }"
                                             >
                                                 {{ move.type }}
                                             </span>
                                         </td>
-                                        <td class="p-4 text-xs font-mono text-right text-white">{{ formatNumber(move.qty) }}</td>
+                                        <td class="p-4 text-xs font-mono text-right text-slate-800 dark:text-white">{{ formatNumber(move.qty) }}</td>
                                         <td class="p-4 pr-6 text-[10px] text-slate-500 text-right">{{ move.date }}</td>
                                     </tr>
                                 </tbody>
@@ -423,9 +466,9 @@ const warehouseData = computed(() => ({
                      </div>
 
                      <!-- Warehouse Capacity -->
-                     <div class="hud-panel">
-                        <div class="panel-header p-4 border-b border-white/5 bg-white/5">
-                            <h3 class="flex items-center gap-2 text-sm font-bold text-cyan-300 tracking-widest uppercase">
+                     <div class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm dark:shadow-none">
+                        <div class="panel-header p-4 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/5">
+                            <h3 class="flex items-center gap-2 text-sm font-bold text-cyan-650 dark:text-cyan-300 tracking-widest uppercase">
                                 <ArchiveBoxIcon class="h-4 w-4" /> Warehouse Utilization
                             </h3>
                         </div>
@@ -433,7 +476,7 @@ const warehouseData = computed(() => ({
                             <Bar :data="warehouseData" :options="commonOptions" />
                         </div>
                      </div>
-                </div>
+                 </div>
 
             </div>
         </div>
@@ -474,20 +517,20 @@ const warehouseData = computed(() => ({
 }
 .hud-card:hover {
     transform: translateY(-5px);
+}
+.dark .hud-card:hover {
     filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.2));
 }
 
 .hud-panel {
-    background: rgba(10, 10, 22, 0.6);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    overflow: hidden;
 }
 
 /* Text Effects */
 .glow-text {
+    text-shadow: 0 0 10px rgba(6, 182, 212, 0.15);
+}
+.dark .glow-text {
     text-shadow: 0 0 10px currentColor;
 }
 </style>

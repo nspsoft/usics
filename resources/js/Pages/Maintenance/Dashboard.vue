@@ -1,7 +1,7 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import QrcodeVue from 'qrcode.vue';
 import { 
     WrenchScrewdriverIcon,
@@ -17,7 +17,9 @@ import {
     ClockIcon,
     ArrowPathIcon,
     SparklesIcon,
-    CheckCircleIcon
+    CheckCircleIcon,
+    SunIcon,
+    MoonIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -120,9 +122,9 @@ const printQrCode = () => {
 
 // Health color categories
 const healthColorClass = (score) => {
-    if (score >= 80) return 'text-emerald-500';
-    if (score >= 50) return 'text-amber-500';
-    return 'text-rose-500';
+    if (score >= 80) return 'text-emerald-600 dark:text-emerald-400';
+    if (score >= 50) return 'text-amber-600 dark:text-amber-400';
+    return 'text-rose-600 dark:text-rose-400';
 };
 
 const healthColorProgressClass = (score) => {
@@ -138,10 +140,10 @@ const strokeDashoffset = (score) => strokeDasharray * (1 - score / 100);
 // Status Badge styles
 const getStatusBadgeClass = (status) => {
     return {
-        'active': 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400',
-        'breakdown': 'bg-rose-500/10 border border-rose-500/30 text-rose-400 animate-pulse font-black shadow-[0_0_10px_rgba(244,63,94,0.2)]',
-        'maintenance': 'bg-sky-500/10 border border-sky-500/30 text-sky-400',
-        'inactive': 'bg-slate-500/10 border border-slate-500/30 text-slate-400'
+        'active': 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400',
+        'breakdown': 'bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 animate-pulse font-black shadow-[0_0_10px_rgba(244,63,94,0.1)] dark:shadow-[0_0_10px_rgba(244,63,94,0.2)]',
+        'maintenance': 'bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 text-sky-700 dark:text-sky-400',
+        'inactive': 'bg-slate-100 dark:bg-slate-500/10 border border-slate-200 dark:border-slate-500/30 text-slate-650 dark:text-slate-400'
     }[status];
 };
 
@@ -164,26 +166,26 @@ const numberFormat = (value, decimals = 2) => {
 };
 
 const getPredictionColor = (machine) => {
-    if (machine.predicted_failure === '-') return 'text-slate-600';
-    if (!machine.predicted_failure_raw) return 'text-slate-300';
+    if (machine.predicted_failure === '-') return 'text-slate-400 dark:text-slate-600';
+    if (!machine.predicted_failure_raw) return 'text-slate-600 dark:text-slate-300';
     
     const predictedDate = new Date(machine.predicted_failure_raw);
     const today = new Date();
     const diffTime = predictedDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return 'text-rose-500 animate-pulse font-bold';
-    if (diffDays <= 7) return 'text-amber-500 font-bold';
-    return 'text-cyan-400';
+    if (diffDays < 0) return 'text-rose-600 dark:text-rose-500 animate-pulse font-bold';
+    if (diffDays <= 7) return 'text-amber-600 dark:text-amber-500 font-bold';
+    return 'text-cyan-600 dark:text-cyan-400';
 };
 
 const getRecentLogStatusClass = (status) => {
     return {
-        'open': 'bg-rose-500/10 border-rose-500/20 text-rose-400',
-        'in_progress': 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-        'resolved': 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-        'cancelled': 'bg-slate-500/10 border-slate-500/20 text-slate-400'
-    }[status.toLowerCase()] || 'text-slate-400 border-white/10';
+        'open': 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400',
+        'in_progress': 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-400',
+        'resolved': 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400',
+        'cancelled': 'bg-slate-100 dark:bg-slate-500/10 border-slate-200 dark:border-slate-500/20 text-slate-600 dark:text-slate-400'
+    }[status.toLowerCase()] || 'text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10';
 };
 
 const getTcoRatioPercentage = (tco) => {
@@ -272,60 +274,98 @@ const createPrFromAi = async () => {
         prLoading.value = false;
     }
 };
+
+// --- Theme Reactive Sync ---
+const isLightMode = ref(false);
+const toggleTheme = () => {
+    isLightMode.value = !isLightMode.value;
+    if (isLightMode.value) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+    }
+};
+
+let observer;
+onMounted(() => {
+    isLightMode.value = !document.documentElement.classList.contains('dark');
+    observer = new MutationObserver(() => {
+        isLightMode.value = !document.documentElement.classList.contains('dark');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+});
+
+onUnmounted(() => {
+    if (observer) observer.disconnect();
+});
 </script>
 
 <template>
     <Head title="Maintenance Dashboard" />
 
     <AppLayout title="Maintenance Analytics" :render-header="false">
-        <div class="min-h-screen bg-[#050510] relative overflow-hidden font-mono text-cyan-50 selection:bg-rose-500/30">
+        <div class="min-h-screen bg-slate-50 dark:bg-[#050510] relative overflow-hidden font-mono text-slate-800 dark:text-cyan-50 selection:bg-rose-500/30 transition-colors duration-300">
             
             <!-- Matrix Style Cyber Grid -->
             <div class="fixed inset-0 z-0 pointer-events-none">
-                <div class="absolute inset-0 bg-gradient-to-br from-indigo-950/20 to-[#050510]"></div>
-                <div class="perspective-grid absolute inset-0 opacity-10"></div>
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-slate-100 dark:from-indigo-955/20 dark:to-[#050510]"></div>
+                <div class="perspective-grid absolute inset-0 opacity-[0.05] dark:opacity-10"></div>
             </div>
 
             <div class="relative z-10 p-6 space-y-6 max-w-7xl mx-auto">
                 
                 <!-- Page Title Header -->
-                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-4">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
                     <div>
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="px-2 py-0.5 text-[10px] bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-400 tracking-[0.2em] uppercase animate-pulse">
+                            <span class="px-2 py-0.5 text-[10px] bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-705 dark:text-cyan-400 tracking-[0.2em] uppercase animate-pulse">
                                 SYSTEM HEALTH ACTIVE
                             </span>
-                            <span class="px-2 py-0.5 text-[10px] bg-white/5 border border-white/10 rounded text-slate-400 tracking-[0.2em] uppercase">MNT.PREDICT.V3</span>
+                            <span class="px-2 py-0.5 text-[10px] bg-slate-200 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded text-slate-500 dark:text-slate-400 tracking-[0.2em] uppercase">MNT.PREDICT.V3</span>
                         </div>
-                        <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-indigo-400 tracking-widest uppercase glow-text">
+                        <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-605 via-slate-800 to-indigo-650 dark:from-cyan-400 dark:via-white dark:to-indigo-400 tracking-widest uppercase dark:glow-text">
                             MAINTENANCE ANALYTICS
                         </h1>
+                    </div>
+                    
+                    <div class="flex items-center gap-6">
+                        <!-- Theme Toggle Button -->
+                        <button 
+                            @click="toggleTheme"
+                            class="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-cyan-400 transition-all hover:scale-105 shadow-sm dark:shadow-none"
+                            :title="isLightMode ? 'Switch to Dark Mode' : 'Switch to Light Mode'"
+                        >
+                            <SunIcon v-if="!isLightMode" class="h-5 w-5 text-amber-500" />
+                            <MoonIcon v-else class="h-5 w-5 text-indigo-600" />
+                        </button>
                     </div>
                 </div>
 
                 <!-- Navigation Tabs -->
-                <div class="flex gap-2 border-b border-white/10 pb-1 flex-wrap">
+                <div class="flex gap-2 border-b border-slate-200 dark:border-white/10 pb-1 flex-wrap">
                     <button 
                         @click="activeTab = 'telemetry'"
                         class="px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer"
-                        :class="activeTab === 'telemetry' ? 'border-cyan-400 text-cyan-400 glow-text' : 'border-transparent text-slate-500 hover:text-slate-300'"
+                        :class="activeTab === 'telemetry' ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 dark:glow-text' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                     >
                         [01] Live Telemetry
                     </button>
                     <button 
                         @click="activeTab = 'tco'"
                         class="px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer"
-                        :class="activeTab === 'tco' ? 'border-cyan-400 text-cyan-400 glow-text' : 'border-transparent text-slate-500 hover:text-slate-300'"
+                        :class="activeTab === 'tco' ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 dark:glow-text' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                     >
                         [02] Analisis Biaya (TCO)
                     </button>
                     <button 
                         @click="activeTab = 'predictive'"
                         class="px-4 py-2 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer flex items-center gap-1.5"
-                        :class="activeTab === 'predictive' ? 'border-cyan-400 text-cyan-400 glow-text' : 'border-transparent text-slate-500 hover:text-slate-300'"
+                        :class="activeTab === 'predictive' ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 dark:glow-text' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                     >
                         <span>[03] AI Predictive Advisor</span>
-                        <span class="px-1 text-[8px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded font-black tracking-normal uppercase animate-pulse">Smart</span>
+                        <span class="px-1 text-[8px] bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 rounded font-black tracking-normal uppercase animate-pulse">Smart</span>
                     </button>
                 </div>
 
@@ -334,86 +374,86 @@ const createPrFromAi = async () => {
                     <!-- KPI stats panel -->
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- KPI 1: Rerata Kesehatan -->
-                        <div class="hud-panel p-4 flex items-center justify-between border-l-4 border-l-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.05)]">
+                        <div class="hud-panel bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 flex items-center justify-between border-l-4 border-l-emerald-500 shadow-sm dark:shadow-[0_0_20px_rgba(16,185,129,0.05)]">
                             <div>
                                 <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Rata-rata Kesehatan</p>
-                                <h3 class="text-2xl font-black text-emerald-400 glow-text">{{ stats.average_health }}%</h3>
-                                <p class="text-[9px] text-slate-400 mt-1">Skor agregat semua mesin</p>
+                                <h3 class="text-2xl font-black text-emerald-600 dark:text-emerald-400 dark:glow-text">{{ stats.average_health }}%</h3>
+                                <p class="text-[9px] text-slate-500 dark:text-slate-400 mt-1">Skor agregat semua mesin</p>
                             </div>
-                            <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                                <CpuChipIcon class="h-6 w-6 text-emerald-400" />
+                            <div class="p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg">
+                                <CpuChipIcon class="h-6 w-6 text-emerald-605 dark:text-emerald-400" />
                             </div>
                         </div>
 
                         <!-- KPI 2: Active Breakdown -->
-                        <div class="hud-panel p-4 flex items-center justify-between border-l-4 border-l-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.05)]">
+                        <div class="hud-panel bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 flex items-center justify-between border-l-4 border-l-rose-500 shadow-sm dark:shadow-[0_0_20px_rgba(244,63,94,0.05)]">
                             <div>
                                 <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Breakdown Aktif</p>
-                                <h3 class="text-2xl font-black text-rose-400 glow-text animate-pulse">{{ stats.active_breakdowns }} UNIT</h3>
-                                <p class="text-[9px] text-slate-400 mt-1">Butuh respon segera</p>
+                                <h3 class="text-2xl font-black text-rose-600 dark:text-rose-400 dark:glow-text animate-pulse">{{ stats.active_breakdowns }} UNIT</h3>
+                                <p class="text-[9px] text-slate-500 dark:text-slate-400 mt-1">Butuh respon segera</p>
                             </div>
-                            <div class="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
-                                <ExclamationTriangleIcon class="h-6 w-6 text-rose-400 animate-bounce" />
+                            <div class="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg">
+                                <ExclamationTriangleIcon class="h-6 w-6 text-rose-600 dark:text-rose-400 animate-bounce" />
                             </div>
                         </div>
 
                         <!-- KPI 3: PM Overdue -->
-                        <div class="hud-panel p-4 flex items-center justify-between border-l-4 border-l-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.05)]">
+                        <div class="hud-panel bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 flex items-center justify-between border-l-4 border-l-amber-500 shadow-sm dark:shadow-[0_0_20px_rgba(245,158,11,0.05)]">
                             <div>
                                 <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">PM Overdue</p>
-                                <h3 class="text-2xl font-black text-amber-400 glow-text">{{ stats.overdue_pms }} TUGAS</h3>
-                                <p class="text-[9px] text-slate-400 mt-1">Jadwal perawatan tertunda</p>
+                                <h3 class="text-2xl font-black text-amber-600 dark:text-amber-400 dark:glow-text">{{ stats.overdue_pms }} TUGAS</h3>
+                                <p class="text-[9px] text-slate-500 dark:text-slate-400 mt-1">Jadwal perawatan tertunda</p>
                             </div>
-                            <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                                <CalendarDaysIcon class="h-6 w-6 text-amber-400" />
+                            <div class="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg">
+                                <CalendarDaysIcon class="h-6 w-6 text-amber-600 dark:text-amber-400" />
                             </div>
                         </div>
 
                         <!-- KPI 4: Critical Parts -->
-                        <div class="hud-panel p-4 flex items-center justify-between border-l-4 border-l-sky-500 shadow-[0_0_20px_rgba(14,165,233,0.05)]">
+                        <div class="hud-panel bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 flex items-center justify-between border-l-4 border-l-sky-500 shadow-sm dark:shadow-[0_0_20px_rgba(14,165,233,0.05)]">
                             <div>
                                 <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Spareparts Kritis</p>
-                                <h3 class="text-2xl font-black text-sky-400 glow-text">{{ stats.critical_spareparts }} ITEM</h3>
-                                <p class="text-[9px] text-slate-400 mt-1">Stok di bawah batas minimal</p>
+                                <h3 class="text-2xl font-black text-sky-600 dark:text-sky-400 dark:glow-text">{{ stats.critical_spareparts }} ITEM</h3>
+                                <p class="text-[9px] text-slate-505 dark:text-slate-400 mt-1">Stok di bawah batas minimal</p>
                             </div>
-                            <div class="p-3 bg-sky-500/10 border border-sky-500/20 rounded-lg">
-                                <CogIcon class="h-6 w-6 text-sky-400" />
+                            <div class="p-3 bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 rounded-lg">
+                                <CogIcon class="h-6 w-6 text-sky-600 dark:text-sky-400" />
                             </div>
                         </div>
                     </div>
 
                     <!-- Search and Filters -->
-                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-900/40 p-4 rounded-xl border border-white/5">
+                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/75 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none">
                         <div class="w-full md:max-w-md relative">
                             <input 
                                 v-model="search"
                                 type="text" 
                                 placeholder="Cari mesin berdasarkan nama atau kode..." 
-                                class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm text-cyan-200 placeholder-slate-500 outline-none focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(6,182,212,0.2)] transition-all font-mono"
+                                class="w-full bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2 text-sm text-slate-800 dark:text-cyan-200 placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:border-cyan-500 focus:shadow-sm dark:focus:shadow-[0_0_15px_rgba(6,182,212,0.2)] transition-all font-mono"
                             />
                         </div>
                         <div class="flex gap-2 w-full md:w-auto">
-                            <span class="text-xs text-slate-400 self-center hidden md:inline">Filter:</span>
+                            <span class="text-xs text-slate-500 dark:text-slate-400 self-center hidden md:inline">Filter:</span>
                             <select 
                                 v-model="statusFilter"
-                                class="bg-[#0f172a] border border-white/10 rounded-lg px-3 py-2 text-xs text-cyan-200 outline-none focus:border-cyan-500 flex-1 md:flex-none"
+                                class="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-cyan-200 outline-none focus:border-cyan-500 flex-1 md:flex-none"
                             >
-                                <option value="all" class="bg-[#0f172a] text-cyan-200">Semua Status</option>
-                                <option value="active" class="bg-[#0f172a] text-cyan-200">Normal / Running</option>
-                                <option value="breakdown" class="bg-[#0f172a] text-cyan-200">Breakdown</option>
-                                <option value="maintenance" class="bg-[#0f172a] text-cyan-200">Under Repair</option>
-                                <option value="inactive" class="bg-[#0f172a] text-cyan-200">Inactive</option>
+                                <option value="all" class="bg-white dark:bg-[#0f172a] text-slate-800 dark:text-cyan-200">Semua Status</option>
+                                <option value="active" class="bg-white dark:bg-[#0f172a] text-slate-800 dark:text-cyan-200">Normal / Running</option>
+                                <option value="breakdown" class="bg-white dark:bg-[#0f172a] text-slate-800 dark:text-cyan-200">Breakdown</option>
+                                <option value="maintenance" class="bg-white dark:bg-[#0f172a] text-slate-800 dark:text-cyan-200">Under Repair</option>
+                                <option value="inactive" class="bg-white dark:bg-[#0f172a] text-slate-800 dark:text-cyan-200">Inactive</option>
                             </select>
                         </div>
                     </div>
 
                     <!-- Machines Grid -->
                     <div class="space-y-4">
-                        <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                        <h3 class="text-xs font-bold text-slate-700 dark:text-cyan-400 uppercase tracking-widest flex items-center gap-2">
                             <CpuChipIcon class="h-4 w-4" /> Telemetry Status Mesin ({{ filteredMachines.length }} Unit)
                         </h3>
                         
-                        <div v-if="filteredMachines.length === 0" class="hud-panel p-8 text-center text-slate-500 text-sm">
+                        <div v-if="filteredMachines.length === 0" class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/10 p-8 text-center text-slate-500 text-sm">
                             Tidak ada mesin yang cocok dengan kriteria filter.
                         </div>
 
@@ -421,16 +461,16 @@ const createPrFromAi = async () => {
                             <div 
                                 v-for="machine in filteredMachines" 
                                 :key="machine.id"
-                                class="hud-panel p-5 relative overflow-hidden group hover:border-cyan-500/30 transition-all duration-300"
+                                class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/10 rounded-xl p-5 relative overflow-hidden group hover:border-cyan-500/30 transition-all duration-300 shadow-sm dark:shadow-[0_0_20px_rgba(0,0,0,0.5)]"
                             >
                                 <!-- Scan Glow Border on Hover -->
-                                <div class="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                                <div class="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-455 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
 
                                 <!-- Header -->
                                 <div class="flex justify-between items-start mb-4">
                                     <div>
-                                        <h4 class="text-lg font-black text-white group-hover:text-cyan-400 transition-colors uppercase tracking-wider">{{ machine.name }}</h4>
-                                        <span class="text-[10px] text-slate-500 tracking-wider">ID: {{ machine.code }}</span>
+                                        <h4 class="text-lg font-black text-slate-800 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors uppercase tracking-wider">{{ machine.name }}</h4>
+                                        <span class="text-[10px] text-slate-450 dark:text-slate-500 tracking-wider font-mono">ID: {{ machine.code }}</span>
                                     </div>
                                     <span class="px-2 py-0.5 rounded text-[8px] font-bold tracking-widest border" :class="getStatusBadgeClass(machine.status)">
                                         {{ getStatusText(machine.status) }}
@@ -438,12 +478,12 @@ const createPrFromAi = async () => {
                                 </div>
 
                                 <!-- Telemetry Data -->
-                                <div class="grid grid-cols-12 gap-4 items-center py-2 border-y border-white/5 my-4">
+                                <div class="grid grid-cols-12 gap-4 items-center py-2 border-y border-slate-200 dark:border-white/5 my-4">
                                     <!-- Health score radial gauge -->
                                     <div class="col-span-4 flex flex-col items-center justify-center relative">
                                         <div class="relative w-16 h-16 flex items-center justify-center">
                                             <svg class="w-16 h-16 transform -rotate-90">
-                                                <circle cx="32" cy="32" r="26" stroke="#0f172a" stroke-width="4.5" fill="transparent" />
+                                                <circle cx="32" cy="32" r="26" stroke="currentColor" class="text-slate-100 dark:text-[#0f172a]" stroke-width="4.5" fill="transparent" />
                                                 <circle 
                                                     cx="32" 
                                                     cy="32" 
@@ -457,7 +497,7 @@ const createPrFromAi = async () => {
                                                     stroke-linecap="round" 
                                                 />
                                             </svg>
-                                            <span class="absolute text-xs font-bold text-white tracking-tighter" :class="healthColorClass(machine.health_score)">
+                                            <span class="absolute text-xs font-bold text-slate-800 dark:text-white tracking-tighter" :class="healthColorClass(machine.health_score)">
                                                 {{ machine.health_score }}%
                                             </span>
                                         </div>
@@ -468,15 +508,15 @@ const createPrFromAi = async () => {
                                     <div class="col-span-8 space-y-2 text-xs">
                                         <div class="flex justify-between">
                                             <span class="text-slate-500">Jam Kerja:</span>
-                                            <span class="text-slate-300 font-bold font-mono">{{ numberFormat(machine.runtime_hours, 1) }} jam</span>
+                                            <span class="text-slate-700 dark:text-slate-300 font-bold font-mono">{{ numberFormat(machine.runtime_hours, 1) }} jam</span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-slate-500">MTBF:</span>
-                                            <span class="text-slate-300 font-bold" :class="machine.mtbf.includes('tidak') ? 'text-slate-600' : 'text-cyan-400'">{{ machine.mtbf }}</span>
+                                            <span class="text-slate-700 dark:text-slate-300 font-bold" :class="machine.mtbf.includes('tidak') ? 'text-slate-400 dark:text-slate-600' : 'text-cyan-600 dark:text-cyan-400'">{{ machine.mtbf }}</span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-slate-500">Kegagalan Prediktif:</span>
-                                            <span class="text-slate-300 font-bold" :class="getPredictionColor(machine)">{{ machine.predicted_failure }}</span>
+                                            <span class="font-bold" :class="getPredictionColor(machine)">{{ machine.predicted_failure }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -485,13 +525,13 @@ const createPrFromAi = async () => {
                                 <div class="flex items-center justify-between pt-2">
                                     <Link 
                                         href="/maintenance/breakdown"
-                                        class="text-[10px] text-slate-400 hover:text-cyan-400 flex items-center gap-1 transition-colors"
+                                        class="text-[10px] text-slate-500 hover:text-cyan-600 dark:text-slate-400 dark:hover:text-cyan-400 flex items-center gap-1 transition-colors font-bold"
                                     >
                                         <WrenchScrewdriverIcon class="h-3 w-3" /> Log Perawatan
                                     </Link>
                                     <button 
                                         @click="openQrModal(machine)"
-                                        class="px-2 py-1 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded flex items-center gap-1.5 text-[10px] uppercase tracking-wider transition-colors"
+                                        class="px-2 py-1 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-white border border-slate-200 dark:border-white/10 rounded flex items-center gap-1.5 text-[10px] uppercase tracking-wider transition-colors font-bold shadow-sm dark:shadow-none"
                                     >
                                         <QrCodeIcon class="h-3.5 w-3.5" /> CETAK QR
                                     </button>
@@ -503,56 +543,56 @@ const createPrFromAi = async () => {
                     <!-- Urgent activity checklist and breakdowns log -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6">
                         <!-- Urgent Breakdown Incidents -->
-                        <div class="hud-panel p-5 space-y-4">
-                            <h3 class="text-sm font-bold text-rose-400 uppercase tracking-widest flex items-center gap-2">
-                                <ExclamationTriangleIcon class="h-4 w-4" /> Insiden Kerusakan Terbaru (Breakdown)
+                        <div class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/10 rounded-xl p-5 space-y-4 shadow-sm dark:shadow-none">
+                            <h3 class="text-sm font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest flex items-center gap-2">
+                                <ExclamationTriangleIcon class="h-4 w-4 animate-pulse" /> Insiden Kerusakan Terbaru (Breakdown)
                             </h3>
-                            <div v-if="recent_breakdowns.length === 0" class="text-slate-500 text-xs py-4 text-center">
+                            <div v-if="recent_breakdowns.length === 0" class="text-slate-550 text-xs py-4 text-center">
                                 Tidak ada insiden kerusakan terekam baru-baru ini.
                             </div>
                             <div v-else class="space-y-3">
                                 <div 
                                     v-for="log in recent_breakdowns" 
                                     :key="log.id"
-                                    class="bg-black/30 border border-white/5 rounded p-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 hover:bg-white/5 transition-colors"
+                                    class="bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/5 rounded p-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors shadow-sm dark:shadow-none"
                                 >
                                     <div class="space-y-1">
                                         <div class="flex items-center gap-2">
-                                            <span class="font-bold text-white text-xs uppercase">{{ log.machine_name }} ({{ log.machine_code }})</span>
-                                            <span class="px-1.5 py-0.5 rounded text-[8px] border" :class="getRecentLogStatusClass(log.status)">
+                                            <span class="font-bold text-slate-800 dark:text-white text-xs uppercase">{{ log.machine_name }} ({{ log.machine_code }})</span>
+                                            <span class="px-1.5 py-0.5 rounded text-[8px] border font-bold" :class="getRecentLogStatusClass(log.status)">
                                                 {{ log.status.toUpperCase() }}
                                             </span>
                                         </div>
-                                        <p class="text-xs text-slate-400 line-clamp-1 italic">"{{ log.description }}"</p>
+                                        <p class="text-xs text-slate-550 dark:text-slate-400 line-clamp-1 italic">"{{ log.description }}"</p>
                                     </div>
                                     <div class="text-left md:text-right text-[10px] text-slate-500 font-mono">
                                         <span>{{ log.started_at }}</span>
-                                        <span class="hidden md:block text-slate-600">Teknisi: {{ log.technician }}</span>
+                                        <span class="hidden md:block text-slate-550 dark:text-slate-600">Teknisi: {{ log.technician }}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Upcoming Schedules Checklist -->
-                        <div class="hud-panel p-5 space-y-4">
-                            <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                        <div class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/10 rounded-xl p-5 space-y-4 shadow-sm dark:shadow-none">
+                            <h3 class="text-sm font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest flex items-center gap-2">
                                 <CalendarDaysIcon class="h-4 w-4" /> Checklist Preventive Maintenance (PM)
                             </h3>
-                            <div v-if="upcoming_schedules.length === 0" class="text-slate-500 text-xs py-4 text-center">
+                            <div v-if="upcoming_schedules.length === 0" class="text-slate-550 text-xs py-4 text-center">
                                 Tidak ada jadwal PM aktif berikutnya.
                             </div>
                             <div v-else class="space-y-3">
                                 <div 
                                     v-for="sched in upcoming_schedules" 
                                     :key="sched.id"
-                                    class="bg-black/30 border border-white/5 rounded p-3 flex justify-between items-center hover:bg-white/5 transition-colors"
+                                    class="bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/5 rounded p-3 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-white/5 transition-colors shadow-sm dark:shadow-none"
                                 >
                                     <div>
-                                        <h4 class="font-bold text-white text-xs uppercase">{{ sched.machine_name }}</h4>
-                                        <p class="text-[10px] text-slate-400">{{ sched.task_name }}</p>
+                                        <h4 class="font-bold text-slate-800 dark:text-white text-xs uppercase">{{ sched.machine_name }}</h4>
+                                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{{ sched.task_name }}</p>
                                     </div>
                                     <div class="text-right">
-                                        <span class="px-2 py-0.5 rounded text-[9px] font-bold border" :class="sched.is_overdue ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'">
+                                        <span class="px-2 py-0.5 rounded text-[9px] font-bold border" :class="sched.is_overdue ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400' : 'bg-cyan-50 dark:bg-cyan-500/10 border-cyan-200 dark:border-cyan-500/20 text-cyan-705 dark:text-cyan-400'">
                                             {{ sched.next_due_date }}
                                         </span>
                                     </div>
@@ -567,63 +607,63 @@ const createPrFromAi = async () => {
                     <!-- TCO KPI Cards -->
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- KPI 1: Total Investasi -->
-                        <div class="hud-panel p-4 flex items-center justify-between border-l-4 border-l-cyan-500">
+                        <div class="hud-panel bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 flex items-center justify-between border-l-4 border-l-cyan-500 shadow-sm">
                             <div>
                                 <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Investasi Pembelian Mesin</p>
-                                <h3 class="text-lg font-black text-cyan-400 glow-text">{{ formatRupiah(stats.total_purchase_price) }}</h3>
-                                <p class="text-[9px] text-slate-400 mt-1">Nilai perolehan awal mesin</p>
+                                <h3 class="text-lg font-black text-cyan-600 dark:text-cyan-400 dark:glow-text">{{ formatRupiah(stats.total_purchase_price) }}</h3>
+                                <p class="text-[9px] text-slate-500 dark:text-slate-400 mt-1">Nilai perolehan awal mesin</p>
                             </div>
-                            <div class="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
-                                <BanknotesIcon class="h-6 w-6 text-cyan-400" />
+                            <div class="p-3 bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 rounded-lg">
+                                <BanknotesIcon class="h-6 w-6 text-cyan-605 dark:text-cyan-400" />
                             </div>
                         </div>
 
                         <!-- KPI 2: Total Biaya Spareparts -->
-                        <div class="hud-panel p-4 flex items-center justify-between border-l-4 border-l-amber-500">
+                        <div class="hud-panel bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 flex items-center justify-between border-l-4 border-l-amber-500 shadow-sm">
                             <div>
                                 <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Total Biaya Suku Cadang</p>
-                                <h3 class="text-lg font-black text-amber-400 glow-text">{{ formatRupiah(stats.total_spareparts_cost) }}</h3>
-                                <p class="text-[9px] text-slate-400 mt-1">Konsumsi spareparts dari gudang</p>
+                                <h3 class="text-lg font-black text-amber-600 dark:text-amber-400 dark:glow-text">{{ formatRupiah(stats.total_spareparts_cost) }}</h3>
+                                <p class="text-[9px] text-slate-500 dark:text-slate-400 mt-1">Konsumsi spareparts dari gudang</p>
                             </div>
-                            <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                                <CogIcon class="h-6 w-6 text-amber-400" />
+                            <div class="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg">
+                                <CogIcon class="h-6 w-6 text-amber-605 dark:text-amber-400" />
                             </div>
                         </div>
 
                         <!-- KPI 3: Total Biaya Tenaga Kerja -->
-                        <div class="hud-panel p-4 flex items-center justify-between border-l-4 border-l-sky-500">
+                        <div class="hud-panel bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 flex items-center justify-between border-l-4 border-l-sky-500 shadow-sm">
                             <div>
                                 <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Biaya Tenaga Kerja (Labor)</p>
-                                <h3 class="text-lg font-black text-sky-400 glow-text">{{ formatRupiah(stats.total_labor_cost) }}</h3>
-                                <p class="text-[9px] text-slate-400 mt-1">Durasi perbaikan × Rp 50.000/jam</p>
+                                <h3 class="text-lg font-black text-sky-600 dark:text-sky-400 dark:glow-text">{{ formatRupiah(stats.total_labor_cost) }}</h3>
+                                <p class="text-[9px] text-slate-500 dark:text-slate-400 mt-1">Durasi perbaikan × Rp 50.000/jam</p>
                             </div>
-                            <div class="p-3 bg-sky-500/10 border border-sky-500/20 rounded-lg">
-                                <ClockIcon class="h-6 w-6 text-sky-400" />
+                            <div class="p-3 bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 rounded-lg">
+                                <ClockIcon class="h-6 w-6 text-sky-605 dark:text-sky-400" />
                             </div>
                         </div>
 
                         <!-- KPI 4: Total TCO Seluruhnya -->
-                        <div class="hud-panel p-4 flex items-center justify-between border-l-4 border-l-emerald-500">
+                        <div class="hud-panel bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 flex items-center justify-between border-l-4 border-l-emerald-500 shadow-sm">
                             <div>
                                 <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Akumulasi TCO Aset</p>
-                                <h3 class="text-lg font-black text-emerald-400 glow-text">{{ formatRupiah(stats.total_tco_all) }}</h3>
-                                <p class="text-[9px] text-slate-400 mt-1">Investasi + Total Perawatan</p>
+                                <h3 class="text-lg font-black text-emerald-600 dark:text-emerald-400 dark:glow-text">{{ formatRupiah(stats.total_tco_all) }}</h3>
+                                <p class="text-[9px] text-slate-505 dark:text-slate-400 mt-1">Investasi + Total Perawatan</p>
                             </div>
-                            <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                                <PresentationChartBarIcon class="h-6 w-6 text-emerald-400" />
+                            <div class="p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg">
+                                <PresentationChartBarIcon class="h-6 w-6 text-emerald-605 dark:text-emerald-400" />
                             </div>
                         </div>
                     </div>
 
                     <!-- TCO Detailed Table -->
-                    <div class="hud-panel p-5 space-y-4">
-                        <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                    <div class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/10 rounded-xl p-5 space-y-4 shadow-sm dark:shadow-none">
+                        <h3 class="text-xs font-bold text-slate-700 dark:text-cyan-400 uppercase tracking-widest flex items-center gap-2">
                             <PresentationChartBarIcon class="h-4 w-4" /> Tabel Rincian Total Cost of Ownership (TCO) Mesin
                         </h3>
 
-                        <div class="overflow-x-auto rounded-xl border border-white/10">
+                        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
                             <table class="w-full text-left text-sm">
-                                <thead class="bg-white/5 text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                                <thead class="bg-slate-100 dark:bg-white/5 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">
                                     <tr>
                                         <th class="p-4">Mesin</th>
                                         <th class="p-4">Kode</th>
@@ -634,24 +674,24 @@ const createPrFromAi = async () => {
                                         <th class="p-4 text-center">Rasio Biaya Perawatan</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-white/5 bg-slate-900/50">
-                                    <tr v-for="machine in machines" :key="machine.id" class="hover:bg-white/5 transition-colors">
-                                        <td class="p-4 font-bold text-white uppercase">{{ machine.name }}</td>
-                                        <td class="p-4 font-mono text-xs text-slate-400">{{ machine.code }}</td>
-                                        <td class="p-4 text-right text-slate-300 font-mono">{{ formatRupiah(machine.tco.purchase_price) }}</td>
-                                        <td class="p-4 text-right text-amber-400 font-mono">{{ formatRupiah(machine.tco.spareparts_cost) }}</td>
-                                        <td class="p-4 text-right text-sky-400 font-mono">{{ formatRupiah(machine.tco.labor_cost) }}</td>
-                                        <td class="p-4 text-right text-emerald-400 font-mono font-bold">{{ formatRupiah(machine.tco.total_tco) }}</td>
+                                <tbody class="divide-y divide-slate-100 dark:divide-white/5 bg-white/30 dark:bg-slate-900/50 text-slate-700 dark:text-slate-300">
+                                    <tr v-for="machine in machines" :key="machine.id" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                                        <td class="p-4 font-bold text-slate-800 dark:text-white uppercase">{{ machine.name }}</td>
+                                        <td class="p-4 font-mono text-xs text-slate-500 dark:text-slate-400">{{ machine.code }}</td>
+                                        <td class="p-4 text-right text-slate-700 dark:text-slate-300 font-mono">{{ formatRupiah(machine.tco.purchase_price) }}</td>
+                                        <td class="p-4 text-right text-amber-600 dark:text-amber-400 font-mono">{{ formatRupiah(machine.tco.spareparts_cost) }}</td>
+                                        <td class="p-4 text-right text-sky-600 dark:text-sky-400 font-mono">{{ formatRupiah(machine.tco.labor_cost) }}</td>
+                                        <td class="p-4 text-right text-emerald-600 dark:text-emerald-400 font-mono font-bold">{{ formatRupiah(machine.tco.total_tco) }}</td>
                                         <td class="p-4">
                                             <div class="flex items-center gap-2 justify-center">
-                                                <div class="w-24 bg-white/5 rounded-full h-2 overflow-hidden border border-white/10">
+                                                <div class="w-24 bg-slate-200 dark:bg-white/5 rounded-full h-2 overflow-hidden border border-slate-300 dark:border-white/10">
                                                     <div 
                                                         class="h-full rounded-full transition-all"
                                                         :class="getTcoRatioColor(machine.tco)"
                                                         :style="{ width: Math.min(100, getTcoRatioPercentage(machine.tco)) + '%' }"
                                                     ></div>
                                                 </div>
-                                                <span class="text-[10px] font-mono font-bold text-slate-400">
+                                                <span class="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400">
                                                     {{ numberFormat(getTcoRatioPercentage(machine.tco), 1) }}%
                                                 </span>
                                             </div>
@@ -667,20 +707,20 @@ const createPrFromAi = async () => {
                 <div v-if="activeTab === 'predictive'" class="space-y-6 animate-fade-in">
                     
                     <!-- Run Advisor Panel -->
-                    <div v-if="!aiResult && !aiLoading" class="hud-panel p-8 text-center space-y-6 max-w-xl mx-auto my-12 border-2 border-dashed border-cyan-500/20">
+                    <div v-if="!aiResult && !aiLoading" class="hud-panel bg-white/70 dark:bg-[#0a0a16]/80 p-8 text-center space-y-6 max-w-xl mx-auto my-12 border-2 border-dashed border-slate-300 dark:border-cyan-500/20 rounded-xl shadow-sm dark:shadow-none">
                         <div class="flex justify-center">
-                            <div class="p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-full animate-pulse text-indigo-400">
+                            <div class="p-4 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-full animate-pulse text-indigo-650 dark:text-indigo-400">
                                 <CpuChipIcon class="h-12 w-12" />
                             </div>
                         </div>
                         <div class="space-y-2">
-                            <h3 class="text-lg font-black text-white uppercase tracking-widest">AI Predictive Maintenance Advisor</h3>
-                            <p class="text-xs text-slate-400 leading-relaxed">
+                            <h3 class="text-lg font-black text-slate-800 dark:text-white uppercase tracking-widest font-mono">AI Predictive Maintenance Advisor</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-sans">
                                 Jalankan analisis prediktif berbasis kecerdasan buatan untuk mengidentifikasi risiko kerusakan mesin pipa baja, mendiagnosis anomali performa, dan merumuskan daftar pengadaan suku cadang kritis secara otomatis.
                             </p>
                         </div>
                         
-                        <div v-if="aiError" class="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-400 font-bold">
+                        <div v-if="aiError" class="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl text-xs text-rose-700 dark:text-rose-400 font-bold">
                             {{ aiError }}
                         </div>
                         
@@ -697,19 +737,19 @@ const createPrFromAi = async () => {
                     </div>
 
                     <!-- Loading State Custom HUD -->
-                    <div v-if="aiLoading" class="hud-panel p-8 max-w-md mx-auto my-12 text-center space-y-4">
+                    <div v-if="aiLoading" class="hud-panel bg-white/70 dark:bg-[#0a0a16]/80 rounded-xl p-8 max-w-md mx-auto my-12 text-center space-y-4 border border-slate-200 dark:border-white/10">
                         <div class="flex justify-center">
                             <div class="relative w-16 h-16">
-                                <div class="absolute inset-0 rounded-full border-4 border-cyan-500/20 border-t-cyan-400 animate-spin"></div>
-                                <div class="absolute inset-2 rounded-full border-4 border-indigo-500/20 border-b-indigo-400 animate-spin-reverse"></div>
+                                <div class="absolute inset-0 rounded-full border-4 border-cyan-500/20 border-t-cyan-500 dark:border-t-cyan-400 animate-spin"></div>
+                                <div class="absolute inset-2 rounded-full border-4 border-indigo-500/20 border-b-indigo-500 dark:border-b-indigo-400 animate-spin-reverse"></div>
                             </div>
                         </div>
                         <div class="space-y-1 font-mono text-xs">
-                            <div class="text-cyan-400 font-black animate-pulse uppercase">[SYSTEM_SCANNING_TELEMETRY]</div>
-                            <div class="text-[9px] text-slate-500">Membaca data jam jalan operasional mesin...</div>
-                            <div class="text-[9px] text-slate-500">Mengkorelasi parameter kerusakan log terakhir...</div>
-                            <div class="text-[9px] text-slate-500">Memeriksa level minimum stok suku cadang...</div>
-                            <div class="text-indigo-400 font-bold">Menghubungi Gemini AI Engine...</div>
+                            <div class="text-cyan-600 dark:text-cyan-400 font-black animate-pulse uppercase">[SYSTEM_SCANNING_TELEMETRY]</div>
+                            <div class="text-[9px] text-slate-500 dark:text-slate-400">Membaca data jam jalan operasional mesin...</div>
+                            <div class="text-[9px] text-slate-500 dark:text-slate-400">Mengkorelasi parameter kerusakan log terakhir...</div>
+                            <div class="text-[9px] text-slate-500 dark:text-slate-400">Memeriksa level minimum stok suku cadang...</div>
+                            <div class="text-indigo-600 dark:text-indigo-400 font-bold">Menghubungi Gemini AI Engine...</div>
                         </div>
                     </div>
 
@@ -719,44 +759,44 @@ const createPrFromAi = async () => {
                         <div class="xl:col-span-2 space-y-6">
                             
                             <!-- General Insights -->
-                            <div class="hud-panel p-5 border-l-4 border-l-cyan-500 space-y-2">
-                                <h4 class="text-xs font-black uppercase tracking-widest text-cyan-400 flex items-center gap-1.5">
+                            <div class="hud-panel bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-5 border-l-4 border-l-cyan-500 space-y-2 shadow-sm">
+                                <h4 class="text-xs font-black uppercase tracking-widest text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
                                     <SparklesIcon class="h-4 w-4 animate-pulse" /> Rangkuman Rekomendasi & Insights
                                 </h4>
-                                <p class="text-xs text-slate-300 leading-relaxed font-mono">
+                                <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
                                     {{ aiResult.general_insights }}
                                 </p>
                             </div>
 
                             <!-- Diagnosed Machine Health Cards -->
                             <div class="space-y-4">
-                                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                                <h3 class="text-xs font-bold text-slate-700 dark:text-cyan-400 uppercase tracking-widest flex items-center gap-2">
                                     <ExclamationTriangleIcon class="h-4 w-4 text-rose-500" /> Hasil Diagnosis Mesin Kritis & Berisiko
                                 </h3>
                                 
-                                <div v-if="!aiResult.critical_machines || aiResult.critical_machines.length === 0" class="hud-panel p-6 text-center text-xs text-slate-500">
+                                <div v-if="!aiResult.critical_machines || aiResult.critical_machines.length === 0" class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/10 rounded-xl p-6 text-center text-xs text-slate-500">
                                     Tidak ada mesin dengan kondisi kritis yang memerlukan tindakan segera.
                                 </div>
                                 
                                 <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div v-for="m in aiResult.critical_machines" :key="m.machine_code" 
-                                        class="hud-panel p-5 border border-white/5 space-y-3 relative overflow-hidden">
-                                        <div class="absolute top-0 right-0 px-3 py-1 text-[9px] font-black uppercase rounded-bl border-l border-b border-white/5 bg-rose-500/10 text-rose-400">
+                                        class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 rounded-xl p-5 border border-slate-200 dark:border-white/5 space-y-3 relative overflow-hidden shadow-sm dark:shadow-none">
+                                        <div class="absolute top-0 right-0 px-3 py-1 text-[9px] font-black uppercase rounded-bl border-l border-b border-slate-200 dark:border-white/5 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400">
                                             Skor: {{ m.health_score }}%
                                         </div>
                                         
                                         <div>
-                                            <h4 class="text-sm font-black text-white uppercase tracking-wider">{{ m.machine_name }}</h4>
-                                            <span class="text-[9px] text-slate-500 font-mono">CODE: {{ m.machine_code }}</span>
+                                            <h4 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">{{ m.machine_name }}</h4>
+                                            <span class="text-[9px] text-slate-500 dark:text-slate-550 font-mono">CODE: {{ m.machine_code }}</span>
                                         </div>
                                         
-                                        <div class="text-xs space-y-2 pt-2 border-t border-white/5 text-slate-300 font-mono leading-relaxed">
+                                        <div class="text-xs space-y-2 pt-2 border-t border-slate-100 dark:border-white/5 text-slate-700 dark:text-slate-300 font-mono leading-relaxed">
                                             <div>
-                                                <span class="text-rose-400 font-bold block uppercase text-[9px] tracking-wider mb-0.5">Diagnosis Kerusakan:</span>
+                                                <span class="text-rose-600 dark:text-rose-400 font-bold block uppercase text-[9px] tracking-wider mb-0.5">Diagnosis Kerusakan:</span>
                                                 {{ m.diagnosis }}
                                             </div>
                                             <div>
-                                                <span class="text-cyan-400 font-bold block uppercase text-[9px] tracking-wider mb-0.5">Rekomendasi Tindakan:</span>
+                                                <span class="text-cyan-600 dark:text-cyan-400 font-bold block uppercase text-[9px] tracking-wider mb-0.5">Rekomendasi Tindakan:</span>
                                                 {{ m.recommended_actions }}
                                             </div>
                                         </div>
@@ -766,22 +806,22 @@ const createPrFromAi = async () => {
                         </div>
 
                         <!-- Right: Spareparts Purchase Recommendation (PR) -->
-                        <div class="hud-panel p-5 space-y-4">
-                            <div class="border-b border-white/10 pb-3 flex items-center justify-between">
-                                <h4 class="text-xs font-black uppercase tracking-widest text-cyan-400 flex items-center gap-1.5">
+                        <div class="hud-panel bg-white/75 dark:bg-[#0a0a16]/80 border border-slate-200 dark:border-white/10 rounded-xl p-5 space-y-4 shadow-sm dark:shadow-none">
+                            <div class="border-b border-slate-200 dark:border-white/10 pb-3 flex items-center justify-between">
+                                <h4 class="text-xs font-black uppercase tracking-widest text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
                                     <CogIcon class="h-4 w-4" /> Pengadaan Suku Cadang AI
                                 </h4>
-                                <span class="text-[10px] text-slate-500 uppercase font-black">
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black font-mono">
                                     {{ selectedPartsForPr.length }} Terpilih
                                 </span>
                             </div>
                             
-                            <p class="text-[10px] text-slate-400 leading-normal">
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-normal font-sans">
                                 Centang suku cadang di bawah untuk diajukan otomatis sebagai draf *Purchase Request* (PR) konsolidasian di modul Purchasing.
                             </p>
 
                             <!-- Parts Recommendations List -->
-                            <div class="space-y-3 max-h-[360px] overflow-y-auto pr-1 divide-y divide-white/5">
+                            <div class="space-y-3 max-h-[360px] overflow-y-auto pr-1 divide-y divide-slate-100 dark:divide-white/5">
                                 <div v-if="!aiResult.sparepart_recommendations || aiResult.sparepart_recommendations.length === 0" class="p-4 text-center text-xs text-slate-500 italic">
                                     Tidak ada rekomendasi suku cadang baru.
                                 </div>
@@ -792,30 +832,30 @@ const createPrFromAi = async () => {
                                             :value="sp.part_number"
                                             :checked="selectedPartsForPr.includes(sp.part_number)"
                                             @change="toggleSelectPart(sp.part_number)"
-                                            class="mt-0.5 rounded border-white/10 bg-black/40 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                            class="mt-0.5 rounded border-slate-300 dark:border-white/10 bg-white dark:bg-black/40 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-0 focus:outline-none cursor-pointer"
                                         />
                                         <div class="text-xs flex-1">
-                                            <div class="font-black text-white uppercase">{{ sp.name }}</div>
-                                            <div class="text-[9px] text-slate-500 font-mono">PN: {{ sp.part_number }}</div>
+                                            <div class="font-black text-slate-800 dark:text-white uppercase">{{ sp.name }}</div>
+                                            <div class="text-[9px] text-slate-500 dark:text-slate-550 font-mono">PN: {{ sp.part_number }}</div>
                                         </div>
                                         <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border"
-                                            :class="sp.priority === 'High' ? 'text-rose-400 border-rose-500/20 bg-rose-500/10' : 'text-amber-400 border-amber-500/20 bg-amber-500/10'">
+                                            :class="sp.priority === 'High' ? 'text-rose-700 border-rose-200 bg-rose-50 dark:text-rose-400 dark:border-rose-500/20 dark:bg-rose-500/10' : 'text-amber-700 border-amber-250 bg-amber-50 dark:text-amber-400 dark:border-amber-500/20 dark:bg-amber-500/10'">
                                             {{ sp.recommended_qty }} PCS
                                         </span>
                                     </div>
-                                    <div class="text-[10px] text-slate-400 pl-6 leading-relaxed font-mono">
+                                    <div class="text-[10px] text-slate-500 dark:text-slate-400 pl-6 leading-relaxed font-mono">
                                         {{ sp.justification }}
                                     </div>
                                 </div>
                             </div>
 
                             <!-- PR Generate Button -->
-                            <div class="pt-3 border-t border-white/10">
+                            <div class="pt-3 border-t border-slate-200 dark:border-white/10">
                                 <button
                                     type="button"
                                     @click="createPrFromAi"
                                     :disabled="prLoading || selectedPartsForPr.length === 0"
-                                    class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-3.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                                    class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-650 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 px-4 py-3.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/10 dark:shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer border-0"
                                 >
                                     <CheckCircleIcon v-if="!prLoading" class="h-4 w-4" />
                                     <ArrowPathIcon v-else class="h-4 w-4 animate-spin" />
@@ -830,19 +870,19 @@ const createPrFromAi = async () => {
 
             <!-- Print QR Modal -->
             <div v-if="showQrModal && selectedMachineForQr" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                <div class="bg-[#0f172a] border border-cyan-500/30 p-6 rounded-xl w-full max-w-sm shadow-[0_0_50px_rgba(6,182,212,0.2)]">
-                    <div class="flex justify-between items-center mb-4 pb-2 border-b border-white/10">
-                        <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                <div class="bg-white dark:bg-[#0f172a] border border-slate-250 dark:border-cyan-500/30 p-6 rounded-xl w-full max-w-sm shadow-2xl dark:shadow-[0_0_50px_rgba(6,182,212,0.2)]">
+                    <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-105 dark:border-white/10">
+                        <h3 class="text-sm font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-wider flex items-center gap-2">
                             <QrCodeIcon class="h-5 w-5" /> Cetak QR Code Kerusakan
                         </h3>
-                        <button @click="closeQrModal" class="text-slate-400 hover:text-white transition-colors">
+                        <button @click="closeQrModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
                             <XMarkIcon class="h-5 w-5" />
                         </button>
                     </div>
 
-                    <div class="bg-white p-4 rounded-xl max-w-[240px] mx-auto mb-6 text-black border border-slate-200">
+                    <div class="bg-white p-4 rounded-xl max-w-[240px] mx-auto mb-6 text-black border border-slate-200 shadow-sm">
                         <div id="qr-print-area" class="text-center font-mono">
-                            <div class="text-sm font-black uppercase tracking-wider truncate mb-1">{{ selectedMachineForQr.name }}</div>
+                            <div class="text-sm font-black uppercase tracking-wider truncate mb-1 text-slate-800">{{ selectedMachineForQr.name }}</div>
                             <div class="text-[10px] text-slate-500 tracking-widest mb-3">CODE: {{ selectedMachineForQr.code }}</div>
                             
                             <div class="flex justify-center">
@@ -854,7 +894,7 @@ const createPrFromAi = async () => {
                                 />
                             </div>
                             
-                            <div class="text-[8px] text-slate-600 font-sans tracking-wide mt-3 leading-tight">
+                            <div class="text-[8px] text-slate-500 font-sans tracking-wide mt-3 leading-tight uppercase font-bold">
                                 SCAN CODE UNTUK MELAPORKAN KERUSAKAN MESIN SECARA MANDIRI VIA SMARTPHONE
                             </div>
                         </div>
@@ -863,13 +903,13 @@ const createPrFromAi = async () => {
                     <div class="flex gap-2">
                         <button 
                             @click="closeQrModal" 
-                            class="flex-1 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 text-xs font-bold uppercase transition-colors"
+                            class="flex-1 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white text-xs font-bold uppercase transition-colors"
                         >
                             Batal
                         </button>
                         <button 
                             @click="printQrCode"
-                            class="flex-1 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white flex items-center justify-center gap-2 text-xs font-bold uppercase shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all"
+                            class="flex-1 py-2 rounded-lg bg-gradient-to-r from-cyan-650 to-cyan-555 hover:from-cyan-600 hover:to-cyan-500 dark:from-cyan-600 dark:to-cyan-550 dark:hover:from-cyan-500 dark:hover:to-cyan-400 text-white flex items-center justify-center gap-2 text-xs font-bold uppercase shadow-md dark:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all"
                         >
                             <PrinterIcon class="h-4 w-4" /> Cetak (PDF)
                         </button>
@@ -883,10 +923,7 @@ const createPrFromAi = async () => {
 
 <style scoped>
 .hud-panel {
-    background: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
 }
 .perspective-grid {
     background-image: 
@@ -901,7 +938,7 @@ const createPrFromAi = async () => {
     0% { background-position: 0 0; }
     100% { background-position: 0 40px; }
 }
-.glow-text {
+.dark .glow-text {
     text-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
 }
 .animate-fade-in {
@@ -912,5 +949,3 @@ const createPrFromAi = async () => {
     to { opacity: 1; transform: translateY(0); }
 }
 </style>
-
-
