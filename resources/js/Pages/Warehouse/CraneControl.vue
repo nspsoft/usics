@@ -293,17 +293,7 @@ const getLotInLocation = (locationId) => {
             <span>{{ isMuted ? 'SOUND OFF' : 'SOUND ON' }}</span>
           </button>
 
-          <button 
-            @click="toggleTheme"
-            class="flex items-center gap-2 text-xs font-mono font-medium transition-all px-3 py-1.5 rounded-lg border"
-            :class="isLightMode 
-              ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-sm' 
-              : 'border-purple-500/20 bg-[#0c0517] text-purple-400 hover:bg-[#160c29]'"
-          >
-            <Sun v-if="!isLightMode" class="w-4 h-4 text-amber-500" />
-            <Moon v-else class="w-4 h-4 text-indigo-500" />
-            <span>{{ isLightMode ? 'MODE GELAP' : 'MODE TERANG' }}</span>
-          </button>
+          
           
           <a
             :href="route('warehouse.loading.index')"

@@ -314,15 +314,7 @@ const getStatusColor = (status) => {
                     </div>
                     
                     <div class="flex items-center gap-6">
-                        <!-- Theme Toggle Button -->
-                        <button 
-                            @click="toggleTheme"
-                            class="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-cyan-400 transition-all hover:scale-105 shadow-sm dark:shadow-none"
-                            :title="isLightMode ? 'Switch to Dark Mode' : 'Switch to Light Mode'"
-                        >
-                            <SunIcon v-if="!isLightMode" class="h-5 w-5 text-amber-500" />
-                            <MoonIcon v-else class="h-5 w-5 text-indigo-600" />
-                        </button>
+                        
 
                         <div class="text-right hidden md:block border-r border-slate-200 dark:border-white/10 pr-6">
                             <p class="text-[10px] text-cyan-650 dark:text-cyan-500/70 tracking-[0.2em] mb-1">SYSTEM TIME</p>

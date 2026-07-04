@@ -181,15 +181,7 @@ onUnmounted(() => {
                             <input v-model="search" type="text" placeholder="Cari nama atau part number..." class="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-800 dark:text-white focus:border-amber-500 outline-none w-64 transition-all">
                         </div>
 
-                        <!-- Theme Toggle Button -->
-                        <button 
-                            @click="toggleTheme"
-                            class="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-cyan-400 transition-all hover:scale-105 shadow-sm dark:shadow-none cursor-pointer"
-                            :title="isLightMode ? 'Switch to Dark Mode' : 'Switch to Light Mode'"
-                        >
-                            <SunIcon v-if="!isLightMode" class="h-5 w-5 text-amber-500" />
-                            <MoonIcon v-else class="h-5 w-5 text-indigo-600" />
-                        </button>
+                        
 
                         <button 
                             @click="openCreate"
