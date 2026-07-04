@@ -19,7 +19,9 @@ import {
   Sparkles,
   RefreshCw,
   History,
-  FileText
+  FileText,
+  Sun,
+  Moon
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -311,10 +313,31 @@ const statusColor = (status) => {
   }
 };
 
-// --- Theme Reactive Sync ---
+// --- Theme Toggle & Reactive Sync ---
 const isLightMode = ref(false);
 let observer;
+
+const toggleTheme = () => {
+  if (document.documentElement.classList.contains('dark')) {
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+    isLightMode.value = true;
+  } else {
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+    isLightMode.value = false;
+  }
+};
+
 onMounted(() => {
+  // Restore theme from localStorage if available
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else if (savedTheme === 'light') {
+    document.documentElement.classList.remove('dark');
+  }
+
   isLightMode.value = !document.documentElement.classList.contains('dark');
   observer = new MutationObserver(() => {
     isLightMode.value = !document.documentElement.classList.contains('dark');
@@ -353,11 +376,18 @@ onUnmounted(() => {
       </div>
 
       <div class="flex items-center gap-4">
+        <!-- Theme Toggle -->
+        <button @click="toggleTheme"
+          class="p-2 rounded-xl border transition-all duration-300 flex items-center gap-1.5 text-xs font-semibold cursor-pointer bg-white dark:bg-transparent border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/30">
+          <component :is="isLightMode ? Moon : Sun" class="w-4 h-4" />
+          <span class="font-mono text-[10px]">{{ isLightMode ? 'DARK' : 'LIGHT' }}</span>
+        </button>
+
         <!-- Audio Mute button -->
         <button @click="isMuted = !isMuted"
           class="p-2 rounded-xl border transition-all duration-300 flex items-center gap-1.5 text-xs font-semibold cursor-pointer bg-white dark:bg-transparent"
           :class="isMuted
-            ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-700 dark:bg-red-950/40 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/30'
+            ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-700 dark:bg-red-955/40 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/30'
             : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-705 dark:bg-emerald-955/40 dark:border-emerald-900/50 dark:text-emerald-400 dark:hover:bg-emerald-900/30'">
           <component :is="isMuted ? VolumeX : Volume2" class="w-4 h-4" />
           <span class="font-mono text-[10px]">{{ isMuted ? 'MUTE' : 'SOUND' }}</span>

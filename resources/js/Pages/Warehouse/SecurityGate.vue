@@ -26,7 +26,9 @@ import {
   Wifi,
   LogIn,
   LogOut,
-  Sparkles
+  Sparkles,
+  Sun,
+  Moon
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -293,10 +295,31 @@ watch(() => page.props.flash, (flash) => {
   }
 }, { deep: true, immediate: true });
 
-// --- Theme Reactive Sync ---
+// --- Theme Toggle & Reactive Sync ---
 const isLightMode = ref(false);
 let observer;
+
+const toggleTheme = () => {
+  if (document.documentElement.classList.contains('dark')) {
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+    isLightMode.value = true;
+  } else {
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+    isLightMode.value = false;
+  }
+};
+
 onMounted(() => {
+  // Restore theme from localStorage if available
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else if (savedTheme === 'light') {
+    document.documentElement.classList.remove('dark');
+  }
+
   isLightMode.value = !document.documentElement.classList.contains('dark');
   observer = new MutationObserver(() => {
     isLightMode.value = !document.documentElement.classList.contains('dark');
@@ -346,6 +369,12 @@ onUnmounted(() => {
         </div>
 
         <div class="flex items-center gap-3">
+          <!-- Theme Toggle -->
+          <button @click="toggleTheme"
+            class="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg border transition-all cursor-pointer bg-white dark:bg-transparent border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/30">
+            <component :is="isLightMode ? Moon : Sun" class="w-3.5 h-3.5" />
+            {{ isLightMode ? 'DARK' : 'LIGHT' }}
+          </button>
           <!-- Sound toggle -->
           <button @click="isMuted = !isMuted"
             class="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg border transition-all cursor-pointer bg-white dark:bg-transparent"
