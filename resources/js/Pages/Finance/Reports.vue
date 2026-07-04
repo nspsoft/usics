@@ -96,13 +96,13 @@ const formatCurrency = (value) => new Intl.NumberFormat('id-ID', {
                             <select 
                                 v-model="selectedPeriod" 
                                 @change="applyPeriod(selectedPeriod)"
-                                class="block w-full pl-3 pr-8 py-2 border border-slate-200 dark:border-indigo-500/30 rounded-lg bg-slate-100 dark:bg-[#070718] text-slate-900 dark:text-indigo-300 focus:outline-none focus:bg-white dark:focus:bg-[#070718] focus:border-indigo-500/50 dark:focus:border-cyan-500/50 focus:ring-1 focus:ring-indigo-500/50 dark:focus:ring-cyan-500/50 sm:text-sm transition-all shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20 appearance-none font-mono cursor-pointer"
+                                class="block w-full pl-3 pr-8 py-2 border border-slate-250 dark:border-indigo-500/30 rounded-lg bg-slate-100 dark:bg-[#070718] text-slate-900 dark:text-indigo-300 focus:outline-none focus:bg-white dark:focus:bg-[#070718] focus:border-indigo-500/50 dark:focus:border-cyan-500/50 focus:ring-1 focus:ring-indigo-500/50 dark:focus:ring-cyan-500/50 sm:text-sm transition-all shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20 appearance-none font-mono cursor-pointer"
                             >
-                                <option value="custom" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">Custom Period</option>
-                                <option value="this_month" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">This Month</option>
-                                <option value="last_month" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">Last Month</option>
-                                <option value="this_year" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">This Year</option>
-                                <option value="all" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-indigo-100">All Time</option>
+                                <option value="custom">Custom Period</option>
+                                <option value="this_month">This Month</option>
+                                <option value="last_month">Last Month</option>
+                                <option value="this_year">This Year</option>
+                                <option value="all">All Time</option>
                             </select>
                             <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-slate-400">
                                 <ChevronDownIcon class="h-4 w-4" />
