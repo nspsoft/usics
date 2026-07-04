@@ -277,7 +277,7 @@ const statusColor = (status) => {
   const isLight = isLightMode.value;
   switch (status) {
     case 'draft': return isLight ? 'bg-slate-100 border border-slate-200 text-slate-700' : 'bg-slate-700 text-slate-300';
-    case 'picking': return isLight ? 'bg-amber-50 border border-amber-250 text-amber-705 animate-pulse' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse';
+    case 'picking': return isLight ? 'bg-amber-50 border border-amber-300 text-amber-700 animate-pulse' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse';
     case 'packed': return isLight ? 'bg-emerald-50 border border-emerald-250 text-emerald-700' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
     default: return isLight ? 'bg-slate-100 border border-slate-200 text-slate-700' : 'bg-slate-700 text-slate-300';
   }
@@ -368,11 +368,11 @@ onUnmounted(() => {
           </a>
           <div class="h-6 w-px bg-slate-300 dark:bg-slate-700"></div>
           <div class="flex items-center gap-2">
-            <div class="w-9 h-9 rounded-lg border border-blue-405 dark:border-blue-400 bg-blue-50 dark:bg-blue-955/50 flex items-center justify-center shadow-sm">
+            <div class="w-9 h-9 rounded-lg border border-blue-400 dark:border-blue-400 bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center shadow-sm">
               <Package class="w-5 h-5 text-blue-600 dark:text-blue-400 animate-pulse" />
             </div>
             <div>
-              <h1 class="text-lg font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-650 via-cyan-605 to-blue-700 dark:from-blue-400 dark:via-cyan-300 dark:to-blue-200 uppercase font-mono">
+              <h1 class="text-lg font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-650 via-cyan-600 to-blue-700 dark:from-blue-400 dark:via-cyan-300 dark:to-blue-200 uppercase font-mono">
                 LOADING DOCK RFID TERMINAL
               </h1>
               <p class="text-[10px] text-blue-600 dark:text-blue-500/60 uppercase tracking-widest font-mono">Terminal Pemuatan Barang Aktif</p>
@@ -382,7 +382,7 @@ onUnmounted(() => {
 
         <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap">
           <!-- Dock selector -->
-          <div class="flex items-center gap-2 bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl px-3 py-1.5 shadow-sm">
+          <div class="flex items-center gap-2 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-1.5 shadow-sm">
             <span class="text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wider">Lokasi Bay:</span>
             <select v-model="selectedBay" @change="() => { selectedDoId = ''; scannedData = null; }"
               class="bg-transparent border-0 text-xs text-slate-800 dark:text-white font-bold p-0 pr-8 focus:ring-0 cursor-pointer outline-none">
@@ -392,14 +392,14 @@ onUnmounted(() => {
 
           <!-- Theme Toggle -->
           <button @click="toggleTheme"
-            class="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg border transition-all cursor-pointer bg-white dark:bg-transparent border-slate-300 dark:border-slate-700 text-slate-750 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/30">
+            class="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg border transition-all cursor-pointer bg-white dark:bg-transparent border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/30">
             <component :is="isLightMode ? Moon : Sun" class="w-3.5 h-3.5" />
             {{ isLightMode ? 'DARK' : 'LIGHT' }}
           </button>
           <!-- Sound toggle -->
           <button @click="isMuted = !isMuted"
             class="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg border transition-all cursor-pointer bg-white dark:bg-transparent"
-            :class="isMuted ? 'border-red-300 dark:border-red-500/40 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400' : 'border-blue-300 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-955/20 text-blue-700 dark:text-blue-400'">
+            :class="isMuted ? 'border-red-300 dark:border-red-500/40 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400' : 'border-blue-300 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400'">
             <component :is="isMuted ? VolumeX : Volume2" class="w-3.5 h-3.5" />
             {{ isMuted ? 'MUTE' : 'SOUND' }}
           </button>
@@ -437,15 +437,15 @@ onUnmounted(() => {
                 <img v-if="selectedDo.vehicle?.vehicle_photo_url" :src="selectedDo.vehicle.vehicle_photo_url" class="w-full h-full object-cover" alt="Vehicle" />
                 <Truck v-else class="w-12 h-12 text-slate-300 dark:text-slate-700" />
                 <div class="absolute bottom-3 left-3 px-3 py-1.5 bg-white/95 dark:bg-slate-900/90 border border-slate-200 dark:border-blue-500/40 rounded-lg shadow-sm">
-                  <span class="text-sm font-mono font-black text-slate-805 dark:text-blue-300 tracking-wider">
+                  <span class="text-sm font-mono font-black text-slate-800 dark:text-blue-300 tracking-wider">
                     {{ selectedDo.vehicle_number || selectedDo.vehicle?.license_plate || 'N/A' }}
                   </span>
                 </div>
               </div>
 
               <!-- Driver details -->
-              <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-955/60 border border-slate-150 dark:border-slate-800 rounded-xl p-2.5 mb-3">
-                <div class="w-9 h-9 rounded-full border border-slate-250 dark:border-blue-500/40 overflow-hidden bg-slate-205 dark:bg-slate-800 shrink-0">
+              <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 mb-3">
+                <div class="w-9 h-9 rounded-full border border-slate-300 dark:border-blue-500/40 overflow-hidden bg-slate-200 dark:bg-slate-800 shrink-0">
                   <img v-if="selectedDo.vehicle?.driver_photo_url" :src="selectedDo.vehicle.driver_photo_url" class="w-full h-full object-cover" alt="Driver" />
                   <User v-else class="w-4 h-4 text-slate-400 dark:text-slate-600 m-auto mt-2" />
                 </div>
@@ -461,7 +461,7 @@ onUnmounted(() => {
                   <span class="text-slate-500 dark:text-slate-400">PROGRESS LOADING:</span>
                   <span class="font-bold text-blue-700 dark:text-blue-400">{{ progressPercent }}%</span>
                 </div>
-                <div class="w-full bg-slate-105 dark:bg-slate-950 rounded-full h-3 border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <div class="w-full bg-slate-100 dark:bg-slate-950 rounded-full h-3 border border-slate-200 dark:border-slate-800 overflow-hidden">
                   <div class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full transition-all duration-300 shadow-sm"
                     :style="`width: ${progressPercent}%`"></div>
                 </div>
@@ -469,7 +469,7 @@ onUnmounted(() => {
             </template>
             <div v-else class="flex-1 flex flex-col items-center justify-center text-center py-8">
               <Truck class="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
-              <p class="text-sm text-slate-550 dark:text-slate-500">Bay Kosong</p>
+              <p class="text-sm text-slate-500 dark:text-slate-500">Bay Kosong</p>
               <p class="text-[10px] text-slate-400 dark:text-slate-600 mt-1">Tap kartu RFID truk untuk memanggil antrean ke bay ini</p>
             </div>
           </div>
@@ -490,30 +490,30 @@ onUnmounted(() => {
             <template v-if="selectedDo">
               <!-- Customer destination -->
               <div class="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/80 rounded-xl p-2.5 mb-3 text-xs space-y-0.5 shrink-0">
-                <p class="font-bold text-slate-850 dark:text-white"><span class="text-[9px] font-mono text-slate-450 dark:text-slate-500 uppercase tracking-wider">Cust:</span> {{ selectedDo.customer?.name || 'N/A' }}</p>
-                <p class="text-slate-600 dark:text-slate-300 truncate"><span class="text-[9px] font-mono text-slate-450 dark:text-slate-500 uppercase tracking-wider">Kirim:</span> {{ selectedDo.shipping_address || '-' }}</p>
+                <p class="font-bold text-slate-800 dark:text-white"><span class="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wider">Cust:</span> {{ selectedDo.customer?.name || 'N/A' }}</p>
+                <p class="text-slate-600 dark:text-slate-300 truncate"><span class="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wider">Kirim:</span> {{ selectedDo.shipping_address || '-' }}</p>
               </div>
 
               <!-- Item table -->
               <div class="space-y-1.5 flex-1 overflow-y-auto pr-1">
                 <div v-for="item in selectedDo.items" :key="item.id"
                   @click="toggleItemLoaded(item)"
-                  class="flex items-center justify-between bg-slate-50/50 dark:bg-slate-955/40 border rounded-xl p-2.5 hover:border-cyan-500/30 transition-all cursor-pointer select-none border-slate-200 dark:border-slate-800"
+                  class="flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/40 border rounded-xl p-2.5 hover:border-cyan-500/30 transition-all cursor-pointer select-none border-slate-200 dark:border-slate-800"
                   :class="item.is_loaded ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-950/5' : ''">
                   <div class="flex items-center gap-2 min-w-0">
                     <component :is="item.is_loaded ? CheckSquare : Square" 
                       class="w-3.5 h-3.5 shrink-0" 
                       :class="item.is_loaded ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'" />
                     <div class="min-w-0">
-                      <p class="text-xs font-semibold truncate font-sans" :class="item.is_loaded ? 'text-slate-400 line-through dark:text-slate-450' : 'text-slate-800 dark:text-slate-200'">
+                      <p class="text-xs font-semibold truncate font-sans" :class="item.is_loaded ? 'text-slate-400 line-through dark:text-slate-400' : 'text-slate-800 dark:text-slate-200'">
                         {{ item.product?.name || 'Produk' }}
                       </p>
-                      <p class="text-[8px] text-slate-400 dark:text-slate-550 font-mono">{{ item.product?.sku || '' }}</p>
+                      <p class="text-[8px] text-slate-400 dark:text-slate-500 font-mono">{{ item.product?.sku || '' }}</p>
                     </div>
                   </div>
                   <div class="text-right ml-2 shrink-0">
                     <span class="text-xs font-mono font-bold"
-                      :class="item.is_loaded ? 'text-emerald-700 dark:text-emerald-400' : 'text-cyan-705 dark:text-cyan-400'">
+                      :class="item.is_loaded ? 'text-emerald-700 dark:text-emerald-400' : 'text-cyan-700 dark:text-cyan-400'">
                       {{ item.qty_ordered }} {{ item.unit?.code || 'pcs' }}
                     </span>
                   </div>
@@ -522,7 +522,7 @@ onUnmounted(() => {
 
               <!-- Finish loading action -->
               <div class="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-                <div class="text-[10px] font-mono text-slate-455 dark:text-slate-500">
+                <div class="text-[10px] font-mono text-slate-400 dark:text-slate-500">
                   {{ selectedDo.items?.filter(i => i.is_loaded).length || 0 }} / {{ selectedDo.items?.length || 0 }} Item
                 </div>
                 <button 
@@ -532,7 +532,7 @@ onUnmounted(() => {
                   class="px-4 py-2 rounded-xl text-xs font-black font-mono tracking-wider shadow-sm flex items-center gap-1 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed border-0 cursor-pointer text-white"
                   :class="allItemsLoaded
                     ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-sm border border-emerald-400/20'
-                    : 'bg-slate-105 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'">
+                    : 'bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'">
                   <CheckCircle class="w-3.5 h-3.5" />
                   SELESAI
                 </button>
@@ -540,7 +540,7 @@ onUnmounted(() => {
             </template>
             <div v-else class="flex-1 flex flex-col items-center justify-center text-center py-8">
               <Package class="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
-              <p class="text-sm text-slate-550 dark:text-slate-500">Checklist kargo kosong</p>
+              <p class="text-sm text-slate-500 dark:text-slate-500">Checklist kargo kosong</p>
               <p class="text-[10px] text-slate-400 dark:text-slate-600 mt-1">Daftar item loading akan tampil setelah truk di-tap</p>
             </div>
           </div>
@@ -548,8 +548,8 @@ onUnmounted(() => {
 
         <!-- ======= RIGHT: SENSOR RFID & BAY CONTROLLER (col 3) ======= -->
         <div class="lg:col-span-3 bg-white/90 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl flex flex-col h-[480px]">
-          <div class="px-4 py-3 bg-slate-55 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-            <h3 class="text-xs font-bold tracking-wider font-mono text-slate-805 dark:text-blue-400 uppercase flex items-center gap-1.5">
+          <div class="px-4 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+            <h3 class="text-xs font-bold tracking-wider font-mono text-slate-800 dark:text-blue-400 uppercase flex items-center gap-1.5">
               <Wifi class="w-3.5 h-3.5" /> Sensor RFID Dock
             </h3>
           </div>
@@ -559,23 +559,23 @@ onUnmounted(() => {
               <div class="w-24 h-24 rounded-full border-2 flex items-center justify-center transition-all duration-500"
                 :class="scannedData
                   ? (scannedData.scan_status === 'success' ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 shadow-sm dark:shadow-[0_0_30px_rgba(52,211,153,0.3)]'
-                    : 'border-amber-400 bg-amber-50 dark:bg-amber-955/30 shadow-sm dark:shadow-[0_0_30px_rgba(245,158,11,0.3)]')
-                  : 'border-blue-300 dark:border-blue-400/50 bg-blue-50 dark:bg-blue-955/20 shadow-sm dark:shadow-[0_0_20px_rgba(59,130,246,0.15)]'">
-                <Scan class="w-10 h-10 transition-all text-blue-550 dark:text-blue-400" :class="!scannedData ? 'animate-pulse' : ''" />
+                    : 'border-amber-400 bg-amber-50 dark:bg-amber-950/30 shadow-sm dark:shadow-[0_0_30px_rgba(245,158,11,0.3)]')
+                  : 'border-blue-300 dark:border-blue-400/50 bg-blue-50 dark:bg-blue-950/20 shadow-sm dark:shadow-[0_0_20px_rgba(59,130,246,0.15)]'">
+                <Scan class="w-10 h-10 transition-all text-blue-500 dark:text-blue-400" :class="!scannedData ? 'animate-pulse' : ''" />
               </div>
               <div v-if="!scannedData" class="absolute inset-0 w-24 h-24 rounded-full border-2 border-blue-400/30 animate-ping"></div>
             </div>
 
             <!-- Status message -->
             <div v-if="scannedData" class="text-center mb-4 text-xs">
-              <p class="font-bold text-sm" :class="scannedData.scan_status === 'success' ? 'text-emerald-705 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'">
+              <p class="font-bold text-sm" :class="scannedData.scan_status === 'success' ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'">
                 {{ scannedData.scan_status === 'success' ? '✅ Scan Berhasil' : '⚠️ Scan Gagal' }}
               </p>
               <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 max-w-[220px] leading-relaxed">{{ scannedData.scan_message }}</p>
             </div>
             <div v-else class="text-center mb-4">
-              <p class="text-sm font-bold text-slate-805 dark:text-white">Tap Kartu RFID Pemuatan</p>
-              <p class="text-[10px] text-slate-450 dark:text-slate-500 mt-1 font-mono">Terminal aktif untuk {{ selectedBay }}</p>
+              <p class="text-sm font-bold text-slate-800 dark:text-white">Tap Kartu RFID Pemuatan</p>
+              <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-mono">Terminal aktif untuk {{ selectedBay }}</p>
             </div>
 
             <!-- Manual trigger -->
@@ -588,7 +588,7 @@ onUnmounted(() => {
                     v-model="rfidInputText"
                     type="text"
                     placeholder="Contoh: B 3604 XJ atau RFID-TRUCK-..."
-                    class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg pl-8 pr-3 py-2 text-xs text-slate-850 dark:text-white focus:ring-blue-500/50 focus:border-blue-500/50 font-mono placeholder:text-slate-400 dark:placeholder:text-slate-600 outline-none"
+                    class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg pl-8 pr-3 py-2 text-xs text-slate-800 dark:text-white focus:ring-blue-500/50 focus:border-blue-500/50 font-mono placeholder:text-slate-400 dark:placeholder:text-slate-600 outline-none"
                   />
                   <Scan class="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400 dark:text-slate-505" />
                 </div>
@@ -598,9 +598,9 @@ onUnmounted(() => {
                 <label class="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 block">Pilih DO Manual</label>
                 <select v-model="selectedDoId"
                   @change="() => { scannedData = null; }"
-                  class="w-full bg-white dark:bg-slate-955 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:ring-blue-500/50 focus:border-blue-500/50 font-mono outline-none">
+                  class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:ring-blue-500/50 focus:border-blue-500/50 font-mono outline-none">
                   <option value="" class="bg-white dark:bg-slate-950 text-slate-800 dark:text-white">-- Pilih Delivery Order --</option>
-                  <option v-for="d in filteredOrders" :key="d.id" :value="d.id" class="bg-white dark:bg-slate-955 text-slate-800 dark:text-white">
+                  <option v-for="d in filteredOrders" :key="d.id" :value="d.id" class="bg-white dark:bg-slate-950 text-slate-800 dark:text-white">
                     [{{ d.status?.toUpperCase() }}] {{ d.vehicle_number || d.vehicle?.license_plate || 'N/A' }} — {{ d.do_number }}
                   </option>
                 </select>
@@ -619,8 +619,8 @@ onUnmounted(() => {
 
       <!-- ======= DOCK VECHILE QUEUE ======= -->
       <div class="bg-white/90 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl">
-        <div class="px-4 py-3 bg-slate-55 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <h3 class="text-xs font-bold tracking-wider font-mono text-slate-805 dark:text-indigo-400 uppercase flex items-center gap-1.5">
+        <div class="px-4 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <h3 class="text-xs font-bold tracking-wider font-mono text-slate-800 dark:text-indigo-400 uppercase flex items-center gap-1.5">
             <Clock class="w-3.5 h-3.5" /> Antrean Kendaraan di {{ selectedBay }}
           </h3>
           <span class="text-[9px] font-mono text-slate-500">{{ filteredOrders.length }} Truk Terjadwal</span>
@@ -629,7 +629,7 @@ onUnmounted(() => {
         <div class="overflow-x-auto">
           <table class="w-full text-xs">
             <thead>
-              <tr class="border-b border-slate-205 dark:border-slate-800/60 bg-slate-100/40 dark:bg-slate-955/40 font-mono text-[9px] text-slate-500 uppercase tracking-wider">
+              <tr class="border-b border-slate-200 dark:border-slate-800/60 bg-slate-100/40 dark:bg-slate-950/40 font-mono text-[9px] text-slate-500 uppercase tracking-wider">
                 <th class="py-3 px-4 text-left">Waktu Jadwal</th>
                 <th class="py-3 px-4 text-left">Kendaraan</th>
                 <th class="py-3 px-4 text-left">Nama Driver</th>
@@ -638,21 +638,21 @@ onUnmounted(() => {
                 <th class="py-3 px-4 text-center">Status Antrean</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-805/30 text-slate-700 dark:text-slate-300">
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/30 text-slate-700 dark:text-slate-300">
               <tr v-for="order in filteredOrders" :key="order.id"
                 @click="selectDO(order)"
                 class="hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer transition-colors"
-                :class="selectedDoId == order.id ? 'bg-blue-50/50 dark:bg-blue-955/20 border-l-2 border-l-blue-500' : ''">
+                :class="selectedDoId == order.id ? 'bg-blue-50/50 dark:bg-blue-950/20 border-l-2 border-l-blue-500' : ''">
                 <td class="py-3 px-4 font-mono text-slate-650 dark:text-slate-300">
                   {{ order.delivery_date ? new Date(order.delivery_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-' }}
                 </td>
                 <td class="py-3 px-4">
-                  <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 rounded text-[10px] font-mono font-bold text-slate-800 dark:text-white">
+                  <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-[10px] font-mono font-bold text-slate-800 dark:text-white">
                     {{ order.vehicle_number || order.vehicle?.license_plate || 'N/A' }}
                   </span>
                 </td>
                 <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">{{ order.driver_name || '-' }}</td>
-                <td class="py-3 px-4 text-slate-550 dark:text-slate-400 truncate max-w-[200px]">{{ order.customer?.name || '-' }}</td>
+                <td class="py-3 px-4 text-slate-500 dark:text-slate-400 truncate max-w-[200px]">{{ order.customer?.name || '-' }}</td>
                 <td class="py-3 px-4 font-mono text-slate-650 dark:text-slate-300">{{ order.do_number }}</td>
                 <td class="py-3 px-4 text-center">
                   <span class="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase" :class="statusColor(order.status)">
@@ -661,7 +661,7 @@ onUnmounted(() => {
                 </td>
               </tr>
               <tr v-if="filteredOrders.length === 0">
-                <td colspan="6" class="py-8 text-center text-slate-450 dark:text-slate-600 text-xs font-mono">
+                <td colspan="6" class="py-8 text-center text-slate-400 dark:text-slate-600 text-xs font-mono">
                   TIDAK ADA KENDARAAN DI BAY INI
                 </td>
               </tr>
@@ -672,7 +672,7 @@ onUnmounted(() => {
 
     </main>
 
-    <footer class="border-t border-slate-200 dark:border-slate-800 py-4 px-6 text-center text-[9px] font-mono text-slate-450 dark:text-slate-600 mt-4 bg-white/40 dark:bg-transparent">
+    <footer class="border-t border-slate-200 dark:border-slate-800 py-4 px-6 text-center text-[9px] font-mono text-slate-400 dark:text-slate-600 mt-4 bg-white/40 dark:bg-transparent">
       <span>&copy; {{ new Date().getFullYear() }} USICS LOADING DOCK TERMINAL MODULE. ALL BAY ACTIVE.</span>
     </footer>
   </div>

@@ -241,9 +241,9 @@ const complianceStatusClass = (status) => {
   const isLight = isLightMode.value;
   switch (status) {
     case 'active': return isLight ? 'text-emerald-700 bg-emerald-50/80 border-emerald-200' : 'text-emerald-400 bg-emerald-950/40 border-emerald-500/30';
-    case 'near_expiry': return isLight ? 'text-amber-705 bg-amber-50 border-amber-250' : 'text-amber-400 bg-amber-955/40 border-amber-500/30';
+    case 'near_expiry': return isLight ? 'text-amber-700 bg-amber-50 border-amber-300' : 'text-amber-400 bg-amber-950/40 border-amber-500/30';
     case 'expired': return isLight ? 'text-red-700 bg-red-50 border-red-200' : 'text-red-400 bg-red-950/40 border-red-500/30';
-    default: return isLight ? 'text-slate-655 bg-slate-50 border-slate-200' : 'text-slate-400 bg-slate-800/40 border-slate-700';
+    default: return isLight ? 'text-slate-600 bg-slate-50 border-slate-200' : 'text-slate-400 bg-slate-800/40 border-slate-700';
   }
 };
 
@@ -260,7 +260,7 @@ const statusColor = (status) => {
   const isLight = isLightMode.value;
   switch (status) {
     case 'draft': return isLight ? 'bg-slate-100 border-slate-200 text-slate-700' : 'bg-slate-700 text-slate-300';
-    case 'picking': return isLight ? 'bg-amber-50 border-amber-250 text-amber-700' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+    case 'picking': return isLight ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
     case 'packed': return isLight ? 'bg-emerald-50 border-emerald-250 text-emerald-700' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
     case 'shipped': return isLight ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
     default: return isLight ? 'bg-slate-100 border-slate-200 text-slate-700' : 'bg-slate-700 text-slate-300';
@@ -345,7 +345,7 @@ onUnmounted(() => {
     <!-- Background grid -->
     <div class="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#0a1628_1px,transparent_1px),linear-gradient(to_bottom,#0a1628_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none opacity-30"></div>
     <div class="absolute top-[-15%] left-[-5%] w-[45%] h-[45%] bg-emerald-500/5 dark:bg-emerald-900/10 rounded-full blur-[120px] pointer-events-none"></div>
-    <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-blue-955/15 rounded-full blur-[100px] pointer-events-none"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-blue-950/15 rounded-full blur-[100px] pointer-events-none"></div>
 
     <!-- Header -->
     <header class="border-b border-slate-200 dark:border-emerald-500/20 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md sticky top-0 z-30 px-4 py-3 shadow-sm dark:shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
@@ -356,7 +356,7 @@ onUnmounted(() => {
           </a>
           <div class="h-6 w-px bg-slate-300 dark:bg-slate-700"></div>
           <div class="flex items-center gap-2">
-            <div class="w-9 h-9 rounded-lg border border-emerald-500 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-955/50 flex items-center justify-center shadow-sm dark:shadow-[0_0_15px_rgba(52,211,153,0.3)]">
+            <div class="w-9 h-9 rounded-lg border border-emerald-500 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center shadow-sm dark:shadow-[0_0_15px_rgba(52,211,153,0.3)]">
               <Shield class="w-5 h-5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
             </div>
             <div>
@@ -378,7 +378,7 @@ onUnmounted(() => {
           <!-- Sound toggle -->
           <button @click="isMuted = !isMuted"
             class="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg border transition-all cursor-pointer bg-white dark:bg-transparent"
-            :class="isMuted ? 'border-red-300 dark:border-red-500/40 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400' : 'border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-955/20 text-emerald-700 dark:text-emerald-400'">
+            :class="isMuted ? 'border-red-300 dark:border-red-500/40 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400' : 'border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400'">
             <component :is="isMuted ? VolumeX : Volume2" class="w-3.5 h-3.5" />
             {{ isMuted ? 'MUTE' : 'SOUND' }}
           </button>
@@ -415,7 +415,7 @@ onUnmounted(() => {
             <div class="relative rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 mb-4" style="height: 220px;">
               <img v-if="vehiclePhoto" :src="vehiclePhoto" class="w-full h-full object-cover" alt="Vehicle" />
               <div v-else class="w-full h-full flex items-center justify-center">
-                <Truck class="w-16 h-16 text-slate-350 dark:text-slate-700" />
+                <Truck class="w-16 h-16 text-slate-300 dark:text-slate-700" />
               </div>
               <!-- Plate overlay -->
               <div v-if="selectedDo" class="absolute bottom-3 left-3 px-3 py-1.5 bg-white/95 dark:bg-slate-900/90 backdrop-blur-sm border border-slate-200 dark:border-emerald-500/40 rounded-lg shadow-sm">
@@ -430,7 +430,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Driver Info -->
-            <div v-if="selectedDo" class="flex items-center gap-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-150 dark:border-slate-800 rounded-xl p-3">
+            <div v-if="selectedDo" class="flex items-center gap-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3">
               <div class="w-12 h-12 rounded-full border-2 border-slate-200 dark:border-emerald-500/40 overflow-hidden bg-slate-200 dark:bg-slate-800 shrink-0 shadow-sm">
                 <img v-if="driverPhoto" :src="driverPhoto" class="w-full h-full object-cover" alt="Driver" />
                 <div v-else class="w-full h-full flex items-center justify-center">
@@ -453,7 +453,7 @@ onUnmounted(() => {
             <!-- Empty state -->
             <div v-else class="flex-1 flex flex-col items-center justify-center text-center py-8">
               <Truck class="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
-              <p class="text-sm text-slate-550 dark:text-slate-500">Pilih armada atau tap kartu RFID</p>
+              <p class="text-sm text-slate-500 dark:text-slate-500">Pilih armada atau tap kartu RFID</p>
               <p class="text-[10px] text-slate-400 dark:text-slate-600 mt-1">Data kendaraan akan tampil di sini</p>
             </div>
 
@@ -490,7 +490,7 @@ onUnmounted(() => {
               </div>
               <!-- Alert if any expired -->
               <div v-if="compliance.stnk?.status === 'expired' || compliance.kir?.status === 'expired'"
-                class="bg-red-50 dark:bg-red-955/40 border border-red-200 dark:border-red-500/30 rounded-lg p-3 text-center text-red-700 dark:text-red-400">
+                class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-500/30 rounded-lg p-3 text-center text-red-700 dark:text-red-400">
                 <XCircle class="w-5 h-5 text-red-500 mx-auto mb-1" />
                 <p class="text-xs font-bold">⚠️ DOKUMEN EXPIRED</p>
                 <p class="text-[10px] opacity-80 leading-relaxed">Kendaraan ini memiliki dokumen yang sudah kadaluarsa. Mohon segera diperbarui.</p>
@@ -513,7 +513,7 @@ onUnmounted(() => {
           <div class="p-4 flex-1 flex flex-col font-mono text-xs">
             <template v-if="selectedDo">
               <!-- Customer -->
-              <div class="bg-slate-50 dark:bg-slate-955/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-3 space-y-1">
+              <div class="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 mb-3 space-y-1">
                 <span class="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wider">Customer / Vendor</span>
                 <p class="text-sm font-bold text-slate-800 dark:text-white font-sans">{{ selectedDo.customer?.name || 'N/A' }}</p>
                 <span class="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-2 block">Tujuan Pengiriman</span>
@@ -524,7 +524,7 @@ onUnmounted(() => {
               <div class="space-y-2 flex-1">
                 <span class="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wider">Item Muatan</span>
                 <div v-for="item in selectedDo.items" :key="item.id"
-                  class="flex items-center justify-between bg-slate-50/50 dark:bg-slate-955/40 border border-slate-200 dark:border-slate-800/60 rounded-lg px-3 py-2.5 hover:border-cyan-500/20 transition-colors">
+                  class="flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/60 rounded-lg px-3 py-2.5 hover:border-cyan-500/20 transition-colors">
                   <div class="flex-1 min-w-0 font-sans">
                     <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{{ item.product?.name || 'Produk' }}</p>
                     <p class="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{{ item.product?.sku || '' }}</p>
@@ -533,7 +533,7 @@ onUnmounted(() => {
                     <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md border"
                       :class="(item.qty_loaded || 0) >= item.qty_ordered
                         ? 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/40 dark:border-emerald-500/20'
-                        : 'text-cyan-700 bg-cyan-50 border-cyan-200 dark:text-cyan-400 dark:bg-cyan-955/40 dark:border-cyan-500/20'">
+                        : 'text-cyan-700 bg-cyan-50 border-cyan-200 dark:text-cyan-400 dark:bg-cyan-950/40 dark:border-cyan-500/20'">
                       {{ item.qty_loaded || 0 }} / {{ item.qty_ordered }} {{ item.unit?.code || 'pcs' }}
                     </span>
                   </div>
@@ -546,7 +546,7 @@ onUnmounted(() => {
               </div>
 
               <!-- DO number footer -->
-              <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[10px] font-mono text-slate-450 dark:text-slate-500">
+              <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[10px] font-mono text-slate-400 dark:text-slate-500">
                 <span>DO: <span class="text-slate-700 dark:text-slate-305 font-bold">{{ selectedDo.do_number }}</span></span>
                 <span>{{ selectedDo.delivery_date ? new Date(selectedDo.delivery_date).toLocaleDateString('id-ID') : '-' }}</span>
               </div>
@@ -555,7 +555,7 @@ onUnmounted(() => {
             <!-- Empty -->
             <div v-else class="flex-1 flex flex-col items-center justify-center text-center py-8">
               <Package class="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
-              <p class="text-sm text-slate-550 dark:text-slate-500">Belum ada muatan terpilih</p>
+              <p class="text-sm text-slate-500 dark:text-slate-500">Belum ada muatan terpilih</p>
               <p class="text-[10px] text-slate-400 dark:text-slate-600 mt-1">Daftar item akan tampil setelah armada terdeteksi</p>
             </div>
           </div>
@@ -568,7 +568,7 @@ onUnmounted(() => {
               <Wifi class="w-3.5 h-3.5" /> TAP Sensor RFID
             </h3>
             <!-- Mode toggle -->
-            <div class="flex border border-slate-250 dark:border-slate-700 rounded-lg overflow-hidden">
+            <div class="flex border border-slate-300 dark:border-slate-700 rounded-lg overflow-hidden">
               <button @click="scanAction = 'smart'"
                 class="text-[9px] font-mono font-bold px-2.5 py-1 transition-all flex items-center gap-1 border-0 cursor-pointer"
                 :class="scanAction === 'smart' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'">
@@ -592,17 +592,17 @@ onUnmounted(() => {
             <div class="relative mb-6">
               <div class="w-28 h-28 rounded-full border-2 flex items-center justify-center transition-all duration-500"
                 :class="scannedData
-                  ? (scannedData.scan_status === 'success' ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-955/30 shadow-sm dark:shadow-[0_0_30px_rgba(52,211,153,0.3)]'
-                    : scannedData.scan_status === 'error' ? 'border-red-400 bg-red-50 dark:bg-red-955/30 shadow-sm dark:shadow-[0_0_30px_rgba(239,68,68,0.3)]'
-                    : 'border-amber-400 bg-amber-50 dark:bg-amber-955/30 shadow-sm dark:shadow-[0_0_30px_rgba(245,158,11,0.3)]')
-                  : 'border-blue-300 dark:border-blue-400/50 bg-blue-50 dark:bg-blue-955/20 shadow-sm dark:shadow-[0_0_20px_rgba(59,130,246,0.15)]'">
+                  ? (scannedData.scan_status === 'success' ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 shadow-sm dark:shadow-[0_0_30px_rgba(52,211,153,0.3)]'
+                    : scannedData.scan_status === 'error' ? 'border-red-400 bg-red-50 dark:bg-red-950/30 shadow-sm dark:shadow-[0_0_30px_rgba(239,68,68,0.3)]'
+                    : 'border-amber-400 bg-amber-50 dark:bg-amber-950/30 shadow-sm dark:shadow-[0_0_30px_rgba(245,158,11,0.3)]')
+                  : 'border-blue-300 dark:border-blue-400/50 bg-blue-50 dark:bg-blue-950/20 shadow-sm dark:shadow-[0_0_20px_rgba(59,130,246,0.15)]'">
                 <component :is="scannedData
                   ? (scannedData.scan_status === 'success' ? CheckCircle : scannedData.scan_status === 'error' ? XCircle : AlertTriangle)
                   : Scan"
                   class="w-12 h-12 transition-all"
                   :class="scannedData
-                    ? (scannedData.scan_status === 'success' ? 'text-emerald-600 dark:text-emerald-400' : scannedData.scan_status === 'error' ? 'text-red-550 dark:text-red-405' : 'text-amber-600 dark:text-amber-400')
-                    : 'text-blue-550 dark:text-blue-400 animate-pulse'" />
+                    ? (scannedData.scan_status === 'success' ? 'text-emerald-600 dark:text-emerald-400' : scannedData.scan_status === 'error' ? 'text-red-550 dark:text-red-400' : 'text-amber-600 dark:text-amber-400')
+                    : 'text-blue-500 dark:text-blue-400 animate-pulse'" />
               </div>
               <!-- Ping ring -->
               <div v-if="!scannedData" class="absolute inset-0 w-28 h-28 rounded-full border-2 border-blue-400/30 animate-ping"></div>
@@ -644,9 +644,9 @@ onUnmounted(() => {
                 <label class="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 block">Pilih DO Manual (Alternatif)</label>
                 <select v-model="selectedDoId"
                   @change="() => { scannedData = null; showCompliancePanel = false; }"
-                  class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:ring-blue-500/50 focus:border-blue-500/50 font-mono outline-none">
-                  <option value="" class="bg-white dark:bg-slate-950 text-slate-800 dark:text-white">-- Pilih Delivery Order --</option>
-                  <option v-for="d in deliveryOrders" :key="d.id" :value="d.id" class="bg-white dark:bg-slate-950 text-slate-800 dark:text-white">
+                  class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:ring-blue-500/50 focus:border-blue-500/50 font-mono outline-none">
+                  <option value="">-- Pilih Delivery Order --</option>
+                  <option v-for="d in deliveryOrders" :key="d.id" :value="d.id">
                     [{{ d.status?.toUpperCase() }}] {{ d.vehicle_number || d.vehicle?.license_plate || 'N/A' }} — {{ d.do_number }} ({{ d.driver_name || 'No Driver' }})
                   </option>
                 </select>
@@ -658,7 +658,7 @@ onUnmounted(() => {
                   ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400'
                   : (scanAction === 'exit'
                     ? 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400'
-                    : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-550')">
+                    : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500')">
                 <component :is="processing ? RefreshCw : (scanAction === 'entry' ? LogIn : (scanAction === 'exit' ? LogOut : Sparkles))"
                   class="w-4 h-4" :class="processing ? 'animate-spin' : ''" />
                 {{ processing ? 'MEMPROSES...' : (scanAction === 'entry' ? '⚡ SIMULASI TAP MASUK' : (scanAction === 'exit' ? '⚡ SIMULASI TAP KELUAR' : '⚡ SIMULASI TAP OTOMATIS')) }}
@@ -667,8 +667,8 @@ onUnmounted(() => {
 
             <!-- Footer note -->
             <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800/60 text-center w-full">
-              <p class="text-[9px] text-slate-450 dark:text-slate-600 font-mono flex items-center justify-center gap-1.5">
-                <Radio class="w-3 h-3 text-blue-550 dark:text-blue-500 animate-pulse" />
+              <p class="text-[9px] text-slate-400 dark:text-slate-600 font-mono flex items-center justify-center gap-1.5">
+                <Radio class="w-3 h-3 text-blue-500 dark:text-blue-500 animate-pulse" />
                 LAYAR INI DILOCK PADA MOUSE FOCUS — Cukup dekatkan kartu RFID Anda ke USB Reader Anda.
               </p>
             </div>
@@ -678,18 +678,18 @@ onUnmounted(() => {
 
       <!-- ==================== BOTTOM: ANTREAN KENDARAAN ==================== -->
       <div class="bg-white/90 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl">
-        <div class="px-4 py-3 bg-slate-55 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div class="px-4 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <h3 class="text-xs font-bold tracking-wider font-mono text-slate-800 dark:text-indigo-400 uppercase flex items-center gap-1.5">
               <Clock class="w-3.5 h-3.5" /> Antrean Kendaraan
             </h3>
-            <span class="text-[9px] font-mono text-slate-450 dark:text-slate-500 hidden sm:inline">— Jadwal kendaraan berikutnya yang dikonfirmasi untuk muat/bongkar barang</span>
+            <span class="text-[9px] font-mono text-slate-400 dark:text-slate-500 hidden sm:inline">— Jadwal kendaraan berikutnya yang dikonfirmasi untuk muat/bongkar barang</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-705 dark:text-indigo-400 text-[9px] font-mono rounded-full">
+            <span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 text-[9px] font-mono rounded-full">
               {{ queueOrders.length }} Kendaraan
             </span>
-            <span class="px-2 py-0.5 bg-amber-50 dark:bg-amber-955/60 border border-amber-200 dark:border-amber-800 text-amber-705 dark:text-amber-400 text-[9px] font-mono rounded-full">
+            <span class="px-2 py-0.5 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-[9px] font-mono rounded-full">
               {{ activeLoadCount }} Loading Aktif
             </span>
           </div>
@@ -717,13 +717,13 @@ onUnmounted(() => {
                   {{ order.delivery_date ? new Date(order.delivery_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-' }}
                 </td>
                 <td class="py-3 px-4">
-                  <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[10px] font-mono font-bold text-slate-805 dark:text-white">
+                  <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[10px] font-mono font-bold text-slate-800 dark:text-white">
                     {{ order.vehicle_number || order.vehicle?.license_plate || 'N/A' }}
                   </span>
                 </td>
                 <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">{{ order.driver_name || '-' }}</td>
-                <td class="py-3 px-4 text-slate-550 dark:text-slate-400 truncate max-w-[200px]">{{ order.customer?.name || '-' }}</td>
-                <td class="py-3 px-4 text-slate-450 dark:text-slate-500 font-mono text-[10px]">{{ order.warehouse?.name || '-' }}</td>
+                <td class="py-3 px-4 text-slate-500 dark:text-slate-400 truncate max-w-[200px]">{{ order.customer?.name || '-' }}</td>
+                <td class="py-3 px-4 text-slate-400 dark:text-slate-500 font-mono text-[10px]">{{ order.warehouse?.name || '-' }}</td>
                 <td class="py-3 px-4 font-mono text-slate-600 dark:text-slate-300">{{ order.do_number }}</td>
                 <td class="py-3 px-4 text-center">
                   <span class="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase" :class="statusColor(order.status)">
@@ -732,7 +732,7 @@ onUnmounted(() => {
                 </td>
               </tr>
               <tr v-if="queueOrders.length === 0">
-                <td colspan="7" class="py-8 text-center text-slate-450 dark:text-slate-600 text-xs font-mono">
+                <td colspan="7" class="py-8 text-center text-slate-400 dark:text-slate-600 text-xs font-mono">
                   TIDAK ADA KENDARAAN DALAM ANTREAN SAAT INI
                 </td>
               </tr>
@@ -743,11 +743,11 @@ onUnmounted(() => {
 
       <!-- ==================== RFID SCAN LOG ==================== -->
       <div class="bg-white/90 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl">
-        <div class="px-4 py-3 bg-slate-55 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div class="px-4 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <h3 class="text-xs font-bold tracking-wider font-mono text-slate-800 dark:text-slate-400 uppercase flex items-center gap-1.5">
             <FileText class="w-3.5 h-3.5" /> Riwayat Scan RFID Terakhir
           </h3>
-          <span class="text-[9px] font-mono text-slate-450 dark:text-slate-600">{{ scans.length }} entri</span>
+          <span class="text-[9px] font-mono text-slate-400 dark:text-slate-600">{{ scans.length }} entri</span>
         </div>
 
         <div class="max-h-[250px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/30 text-slate-700 dark:text-slate-300">
@@ -755,14 +755,14 @@ onUnmounted(() => {
             class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors text-xs">
             <div class="w-1.5 h-1.5 rounded-full shrink-0"
               :class="scan.status === 'success' ? 'bg-emerald-500' : scan.status === 'error' ? 'bg-red-500' : 'bg-amber-500'"></div>
-            <span class="font-mono text-[9px] text-slate-450 dark:text-slate-500 w-16 shrink-0">
+            <span class="font-mono text-[9px] text-slate-400 dark:text-slate-500 w-16 shrink-0">
               {{ new Date(scan.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) }}
             </span>
-            <span class="font-mono text-[9px] text-slate-450 dark:text-slate-505 w-20 shrink-0 uppercase">{{ scan.reader_id }}</span>
+            <span class="font-mono text-[9px] text-slate-400 dark:text-slate-505 w-20 shrink-0 uppercase">{{ scan.reader_id }}</span>
             <span class="font-mono text-[10px] text-slate-500 dark:text-slate-400 w-32 shrink-0 truncate">{{ scan.tag_id }}</span>
             <span class="text-slate-800 dark:text-slate-300 flex-1 truncate font-medium">{{ scan.message }}</span>
           </div>
-          <div v-if="scans.length === 0" class="py-6 text-center text-slate-450 dark:text-slate-600 text-xs font-mono">
+          <div v-if="scans.length === 0" class="py-6 text-center text-slate-400 dark:text-slate-600 text-xs font-mono">
             BELUM ADA RIWAYAT SCAN
           </div>
         </div>
