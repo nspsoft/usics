@@ -287,15 +287,24 @@ const mfgChartOptions = computed(() => ({
             callbacks: {
                 footer: (tooltipItems) => {
                     if (tooltipItems.length >= 2) {
-                        const target = tooltipItems[0].raw;
-                        const yieldVal = tooltipItems[1].raw;
-                        const diff = yieldVal - target;
-                        const pct = target > 0 ? (diff / target) * 100 : 0;
+                        const val0 = tooltipItems[0].raw;
+                        const val1 = tooltipItems[1].raw;
                         
-                        const formattedDiff = (diff >= 0 ? '+' : '') + diff + ' MT';
-                        const formattedPct = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
-                        
-                        return `\nDeviasi: ${formattedDiff} (${formattedPct})`;
+                        if (opsYoY.value) {
+                            // YoY Mode: val0 is Current Year, val1 is Previous Year
+                            const diff = val0 - val1;
+                            const pct = val1 > 0 ? (diff / val1) * 100 : 0;
+                            const formattedDiff = (diff >= 0 ? '+' : '') + diff.toLocaleString() + ' MT';
+                            const formattedPct = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+                            return `\nPertumbuhan YoY: ${formattedDiff} (${formattedPct})`;
+                        } else {
+                            // Target vs Yield Mode: val0 is Target, val1 is Yield
+                            const diff = val1 - val0;
+                            const pct = val0 > 0 ? (diff / val0) * 100 : 0;
+                            const formattedDiff = (diff >= 0 ? '+' : '') + diff.toLocaleString() + ' MT';
+                            const formattedPct = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+                            return `\nDeviasi: ${formattedDiff} (${formattedPct})`;
+                        }
                     }
                     return '';
                 }
@@ -391,12 +400,12 @@ const stackedBarOptions = computed(() => ({
     },
     scales: {
         x: { 
-            stacked: true,
+            stacked: !opsYoY.value,
             grid: { color: 'rgba(217, 70, 239, 0.05)', drawBorder: false },
             ticks: { color: '#64748b', font: { family: 'Space Mono', size: 9 } }
         },
         y: { 
-            stacked: true,
+            stacked: !opsYoY.value,
             grid: { color: 'rgba(217, 70, 239, 0.05)', drawBorder: false },
             ticks: { color: '#64748b', font: { family: 'Space Mono', size: 9 } }
         }
