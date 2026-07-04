@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, shallowRef } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, shallowRef, onUnmounted } from 'vue';
 import { Head, router, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatNumber } from '@/helpers';
@@ -237,7 +237,7 @@ const drawOptimizedRoutes = () => {
                 <div class="font-bold text-slate-900">${stop.do_number} (Stop #${stop.sequence})</div>
                 <div class="text-xs font-bold text-slate-700">${stop.customer_name}</div>
                 <div class="text-[10px] text-slate-500 mt-1">${stop.address}</div>
-                <div class="text-[10px] font-black text-indigo-600 mt-1">Vehicle: ${shipment.vehicle_plate}</div>
+                <div class="text-[10px] font-black text-indigo-605 mt-1">Vehicle: ${shipment.vehicle_plate}</div>
                 <div class="text-[10px] font-black text-emerald-600">Weight: ${formatNumber(stop.weight)} kg</div>
             `);
             markers.value.set(stop.delivery_order_id, stopMarker);
@@ -292,7 +292,15 @@ const toggleSelectVehicle = (id) => {
     }
 };
 
+// --- Theme Reactive Sync ---
+const isLightMode = ref(false);
+let observer;
 onMounted(() => {
+    isLightMode.value = !document.documentElement.classList.contains('dark');
+    observer = new MutationObserver(() => {
+        isLightMode.value = !document.documentElement.classList.contains('dark');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     initMap();
 });
 
@@ -303,299 +311,308 @@ onBeforeUnmount(() => {
         map.value.remove();
         map.value = null;
     }
+    if (observer) observer.disconnect();
 });
 </script>
 
 <template>
     <Head title="AI VRP Route Optimization" />
 
-    <AppLayout title="AI VRP Route Optimization">
-        <div class="p-6 space-y-6">
-            <!-- Header -->
-            <div class="flex items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <Link
-                        href="/logistics/planning"
-                        class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
-                    >
-                        <ArrowLeftIcon class="h-5 w-5" />
-                    </Link>
-                    <div>
-                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <span>AI VRP Route Optimizer</span>
-                            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-black animate-pulse flex items-center gap-1">
-                                <SparklesIcon class="h-3 w-3" />
-                                Smart AI
-                            </span>
-                        </h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Rencanakan rute multi-stop paling hemat bahan bakar dan kapasitas berat truk secara otomatis</p>
-                    </div>
-                </div>
-                <button 
-                    @click="showHelpModal = true"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-sm font-semibold border border-indigo-500/20 transition-all hover:scale-105"
-                >
-                    <QuestionMarkCircleIcon class="h-5 w-5" />
-                    <span>Panduan AI VRP</span>
-                </button>
+    <AppLayout title="AI VRP Route Optimization" :render-header="false">
+        <div class="min-h-screen bg-slate-50 dark:bg-[#050510] relative overflow-hidden font-mono text-slate-800 dark:text-cyan-50 selection:bg-indigo-500/30 transition-colors duration-300">
+            
+            <!-- Dynamic Background -->
+            <div class="fixed inset-0 z-0 pointer-events-none">
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-slate-100 dark:from-indigo-955/20 dark:to-[#050510]"></div>
+                 <div class="perspective-grid absolute inset-0 opacity-[0.05] dark:opacity-10"></div>
             </div>
 
-            <!-- Error Banner -->
-            <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 dark:border-red-700/30 dark:bg-red-500/10 p-4 flex gap-3 text-sm font-bold text-red-800 dark:text-red-200 animate-shake">
-                <ExclamationTriangleIcon class="h-5 w-5 shrink-0 text-red-500" />
-                <span>{{ error }}</span>
-            </div>
-
-            <!-- Main Layout Grid -->
-            <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-                <!-- Left Panel: Configurations & AI Results (xl:col-span-5) -->
-                <div class="xl:col-span-5 space-y-6">
-                    <!-- Setup Selection Panel (Visible when no result is generated) -->
-                    <div v-if="!result" class="glass-card rounded-2xl p-6 border border-white/5 shadow-2xl space-y-6">
-                        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                            <h4 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">1. Konfigurasi Optimasi</h4>
-                        </div>
-
-                        <!-- Vehicles List -->
-                        <div class="space-y-3">
-                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
-                                <TruckIcon class="h-3 w-3 text-indigo-400" />
-                                Pilih Kendaraan Tersedia ({{ selectedVehicles.length }}/{{ vehicles.length }})
-                            </label>
-                            <div class="max-h-[160px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl">
-                                <div v-if="vehicles.length === 0" class="p-3 text-xs text-slate-500 italic">
-                                    Tidak ada armada kendaraan yang tersedia (Available).
-                                </div>
-                                <div v-for="v in vehicles" :key="v.id" class="p-3 flex items-center justify-between gap-3 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                    <label class="flex items-center gap-2.5 font-bold text-slate-800 dark:text-slate-200 cursor-pointer w-full">
-                                        <input
-                                            type="checkbox"
-                                            :value="v.id"
-                                            :checked="selectedVehicles.includes(v.id)"
-                                            @change="toggleSelectVehicle(v.id)"
-                                            class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                        <span>{{ v.license_plate }} ({{ v.vehicle_type }} - {{ v.driver_name || 'No Driver' }})</span>
-                                    </label>
-                                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                                        {{ formatNumber(v.capacity_weight) }} kg
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Orders List -->
-                        <div class="space-y-3">
-                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
-                                <MapPinIcon class="h-3 w-3 text-emerald-400" />
-                                Pilih DO untuk Dikirim ({{ selectedOrders.length }}/{{ deliveryOrders.length }})
-                            </label>
-                            <div class="max-h-[220px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl">
-                                <div v-if="deliveryOrders.length === 0" class="p-3 text-xs text-slate-500 italic">
-                                    Tidak ada Delivery Order tertunda.
-                                </div>
-                                <div v-for="o in deliveryOrders" :key="o.id" class="p-3 flex items-center justify-between gap-3 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                    <label class="flex items-center gap-2.5 font-bold text-slate-800 dark:text-slate-200 cursor-pointer w-full">
-                                        <input
-                                            type="checkbox"
-                                            :value="o.id"
-                                            :checked="selectedOrders.includes(o.id)"
-                                            @change="toggleSelectOrder(o.id)"
-                                            class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                        <div class="text-left">
-                                            <div class="font-black text-slate-900 dark:text-white">{{ o.do_number }}</div>
-                                            <div class="text-[10px] text-slate-500">{{ o.customer_name }}</div>
-                                        </div>
-                                    </label>
-                                    <span class="text-[10px] font-black text-indigo-500 uppercase tracking-wider shrink-0 bg-indigo-500/5 px-2 py-0.5 rounded">
-                                        {{ formatNumber(o.weight) }} kg
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Capacity Comparison Panel -->
-                        <div class="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-3 bg-slate-50/50 dark:bg-slate-800/10">
-                            <div class="flex items-center justify-between text-xs">
-                                <span class="font-bold text-slate-500">Total Kebutuhan Muatan:</span>
-                                <span class="font-black text-slate-900 dark:text-white">{{ formatNumber(totalSelectedWeight) }} kg</span>
-                            </div>
-                            <div class="flex items-center justify-between text-xs">
-                                <span class="font-bold text-slate-500">Total Kapasitas Truk:</span>
-                                <span class="font-black text-slate-900 dark:text-white">{{ formatNumber(totalSelectedCapacity) }} kg</span>
-                            </div>
-                            <!-- Bar Chart -->
-                            <div class="relative w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                                <div class="absolute h-full rounded-full transition-all duration-500" 
-                                    :class="totalSelectedWeight > totalSelectedCapacity ? 'bg-red-500' : 'bg-indigo-500'"
-                                    :style="{ width: Math.min((totalSelectedWeight / (totalSelectedCapacity || 1)) * 100, 100) + '%' }">
-                                </div>
-                            </div>
-                            <div v-if="totalSelectedWeight > totalSelectedCapacity" class="text-[10px] font-bold text-red-500 flex items-center gap-1.5 mt-1">
-                                <ExclamationTriangleIcon class="h-4 w-4 text-red-500 shrink-0" />
-                                <span>Peringatan: Total muatan melebihi batas kapasitas maksimum truk yang dipilih!</span>
-                            </div>
-                        </div>
-
-                        <!-- Action Button -->
-                        <button
-                            type="button"
-                            @click="runOptimization"
-                            :disabled="loading || selectedOrders.length === 0 || selectedVehicles.length === 0"
-                            class="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 px-6 py-4 text-sm font-black uppercase tracking-widest text-white shadow-2xl shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50"
+            <div class="relative z-10 p-6 space-y-6 max-w-7xl mx-auto">
+                
+                <!-- Header -->
+                <div class="flex items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
+                    <div class="flex items-center gap-3">
+                        <Link
+                            href="/logistics/planning"
+                            class="p-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer shadow-sm dark:shadow-none"
                         >
-                            <ArrowPathIcon v-if="loading" class="h-5 w-5 animate-spin" />
-                            <SparklesIcon v-else class="h-5 w-5" />
-                            <span>{{ loading ? 'Sedang Mengoptimasi Rute...' : 'AI Selesaikan Rute VRP' }}</span>
-                        </button>
+                            <ArrowLeftIcon class="h-5 w-5" />
+                        </Link>
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 leading-none mb-1.5">
+                                <span>AI VRP Route Optimizer</span>
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-black animate-pulse flex items-center gap-1">
+                                    <SparklesIcon class="h-3 w-3" /> Smart AI
+                                </span>
+                            </h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 leading-none">Rencanakan rute multi-stop paling hemat bahan bakar secara otomatis</p>
+                        </div>
                     </div>
+                    
+                    <button 
+                        @click="showHelpModal = true"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-sm font-semibold border border-indigo-200 dark:border-indigo-500/20 transition-all hover:scale-105 cursor-pointer"
+                    >
+                        <QuestionMarkCircleIcon class="h-5 w-5" />
+                        <span>Panduan AI VRP</span>
+                    </button>
+                </div>
 
-                    <!-- AI Optimization Results Panel (Visible when result exists) -->
-                    <div v-else class="glass-card rounded-2xl p-6 border border-white/5 shadow-2xl space-y-6 animate-fade-in-up">
-                        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                            <h4 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">2. Hasil Rekomendasi Rute VRP</h4>
-                            <button 
-                                type="button" 
-                                @click="result = null; renderBaseMarkers();" 
-                                class="text-xs font-black text-indigo-500 hover:underline uppercase tracking-wider"
-                            >
-                                Reset Optimasi
-                            </button>
-                        </div>
+                <!-- Error Banner -->
+                <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 dark:border-red-700/30 dark:bg-red-500/10 p-4 flex gap-3 text-sm font-bold text-red-800 dark:text-red-200 animate-shake">
+                    <ExclamationTriangleIcon class="h-5 w-5 shrink-0 text-red-500" />
+                    <span>{{ error }}</span>
+                </div>
 
-                        <!-- Proposed Shipments -->
-                        <div class="space-y-4 max-h-[460px] overflow-y-auto pr-1">
-                            <div v-for="(shp, index) in result.shipments" :key="index" 
-                                class="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3 relative overflow-hidden">
-                                <!-- Top Stripe Indicator -->
-                                <div class="absolute top-0 left-0 right-0 h-1" :style="{ backgroundColor: colors[index % colors.length] }"></div>
+                <!-- Main Layout Grid -->
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                    <!-- Left Panel: Configurations & AI Results (xl:col-span-5) -->
+                    <div class="xl:col-span-5 space-y-6">
+                        <!-- Setup Selection Panel (Visible when no result is generated) -->
+                        <div v-if="!result" class="bg-white/70 dark:bg-[#0a0a16]/60 border border-slate-205 dark:border-white/5 rounded-xl p-6 shadow-sm dark:shadow-2xl space-y-6">
+                            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                                <h4 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">1. Konfigurasi Optimasi</h4>
+                            </div>
 
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <div class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                                            <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: colors[index % colors.length] }"></span>
-                                            {{ shp.vehicle_plate }} ({{ shp.driver_name }})
-                                        </div>
-                                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
-                                            {{ shp.route_name }}
-                                        </div>
+                            <!-- Vehicles List -->
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <TruckIcon class="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
+                                    Pilih Kendaraan Tersedia ({{ selectedVehicles.length }}/{{ vehicles.length }})
+                                </label>
+                                <div class="max-h-[160px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-transparent">
+                                    <div v-if="vehicles.length === 0" class="p-3 text-xs text-slate-500 italic">
+                                        Tidak ada armada kendaraan yang tersedia (Available).
+                                    </div>
+                                    <div v-for="v in vehicles" :key="v.id" class="p-3 flex items-center justify-between gap-3 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <label class="flex items-center gap-2.5 font-bold text-slate-800 dark:text-slate-200 cursor-pointer w-full">
+                                            <input
+                                                type="checkbox"
+                                                :value="v.id"
+                                                :checked="selectedVehicles.includes(v.id)"
+                                                @change="toggleSelectVehicle(v.id)"
+                                                class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            <span class="truncate max-w-[200px]">{{ v.license_plate }} ({{ v.vehicle_type }})</span>
+                                        </label>
+                                        <span class="text-[10px] font-black text-slate-550 dark:text-slate-450 uppercase tracking-wider shrink-0 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono">
+                                            {{ formatNumber(v.capacity_weight) }} kg
+                                        </span>
                                     </div>
                                 </div>
+                            </div>
 
-                                <!-- Grid Statistics -->
-                                <div class="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/30 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-400">
-                                    <div class="space-y-0.5">
-                                        <div class="text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                            <ScaleIcon class="h-3 w-3" />
-                                            Muatan
-                                        </div>
-                                        <div class="text-slate-900 dark:text-white font-black">{{ formatNumber(shp.total_weight) }} kg</div>
+                            <!-- Orders List -->
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <MapPinIcon class="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                                    Pilih DO untuk Dikirim ({{ selectedOrders.length }}/{{ deliveryOrders.length }})
+                                </label>
+                                <div class="max-h-[220px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-transparent">
+                                    <div v-if="deliveryOrders.length === 0" class="p-3 text-xs text-slate-500 italic">
+                                        Tidak ada Delivery Order tertunda.
                                     </div>
-                                    <div class="space-y-0.5">
-                                        <div class="text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                            <MapPinIcon class="h-3 w-3" />
-                                            Jarak
-                                        </div>
-                                        <div class="text-slate-900 dark:text-white font-black">{{ shp.estimated_distance_km }} km</div>
-                                    </div>
-                                    <div class="space-y-0.5">
-                                        <div class="text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                            <CurrencyDollarIcon class="h-3 w-3" />
-                                            Uang Jalan
-                                        </div>
-                                        <div class="text-emerald-500 font-black">Rp {{ formatNumber(shp.suggested_allowance) }}</div>
-                                    </div>
-                                </div>
-
-                                <!-- Stops Timeline -->
-                                <div class="space-y-2 relative pl-4 border-l-2 border-slate-200 dark:border-slate-800 ml-2">
-                                    <div v-for="stop in shp.stops" :key="stop.sequence" class="relative text-xs">
-                                        <!-- Dot Indicator -->
-                                        <div class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white shadow bg-slate-400"
-                                            :style="{ backgroundColor: colors[index % colors.length] }">
-                                        </div>
-                                        <div class="flex justify-between items-start gap-2">
-                                            <div>
-                                                <div class="font-black text-slate-800 dark:text-slate-200">
-                                                    {{ stop.sequence }}. {{ stop.customer_name }}
-                                                </div>
-                                                <div class="text-[10px] text-slate-400">{{ stop.do_number }}</div>
+                                    <div v-for="o in deliveryOrders" :key="o.id" class="p-3 flex items-center justify-between gap-3 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <label class="flex items-center gap-2.5 font-bold text-slate-800 dark:text-slate-200 cursor-pointer w-full">
+                                            <input
+                                                type="checkbox"
+                                                :value="o.id"
+                                                :checked="selectedOrders.includes(o.id)"
+                                                @change="toggleSelectOrder(o.id)"
+                                                class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            <div class="text-left">
+                                                <div class="font-black text-slate-900 dark:text-white font-mono">{{ o.do_number }}</div>
+                                                <div class="text-[10px] text-slate-500">{{ o.customer_name }}</div>
                                             </div>
-                                            <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0">
-                                                {{ formatNumber(stop.weight) }} kg
-                                            </span>
-                                        </div>
+                                        </label>
+                                        <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider shrink-0 bg-indigo-500/5 px-2 py-0.5 rounded font-mono">
+                                            {{ formatNumber(o.weight) }} kg
+                                        </span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Unassigned Orders Warn Banner -->
-                        <div v-if="result.unassigned_orders && result.unassigned_orders.length > 0" 
-                            class="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-xs font-bold text-amber-700 dark:text-amber-300 space-y-2">
-                            <div class="flex items-center gap-1.5">
-                                <ExclamationTriangleIcon class="h-4 w-4 text-amber-500 shrink-0" />
-                                <span>Beberapa pesanan tidak terangkut (Kapasitas armada penuh):</span>
+                            <!-- Capacity Comparison Panel -->
+                            <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 bg-slate-50 dark:bg-slate-800/10">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-bold text-slate-550 dark:text-slate-405">Total Muatan:</span>
+                                    <span class="font-black text-slate-900 dark:text-white font-mono">{{ formatNumber(totalSelectedWeight) }} kg</span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-bold text-slate-550 dark:text-slate-405">Total Kapasitas:</span>
+                                    <span class="font-black text-slate-900 dark:text-white font-mono">{{ formatNumber(totalSelectedCapacity) }} kg</span>
+                                </div>
+                                <!-- Bar Chart -->
+                                <div class="relative w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-300 dark:border-transparent">
+                                    <div class="absolute h-full rounded-full transition-all duration-500" 
+                                        :class="totalSelectedWeight > totalSelectedCapacity ? 'bg-red-500' : 'bg-indigo-500'"
+                                        :style="{ width: Math.min((totalSelectedWeight / (totalSelectedCapacity || 1)) * 100, 100) + '%' }">
+                                    </div>
+                                </div>
+                                <div v-if="totalSelectedWeight > totalSelectedCapacity" class="text-[10px] font-bold text-red-650 dark:text-red-500 flex items-center gap-1.5 mt-1">
+                                    <ExclamationTriangleIcon class="h-4 w-4 text-red-500 shrink-0 animate-pulse" />
+                                    <span>Muatan melebihi batas kapasitas maksimum truk terpilih!</span>
+                                </div>
                             </div>
-                            <ul class="list-disc pl-4 space-y-1 text-[10px]">
-                                <li v-for="uo in result.unassigned_orders" :key="uo.delivery_order_id">
-                                    {{ uo.do_number }}: {{ uo.reason }}
-                                </li>
-                            </ul>
-                        </div>
 
-                        <!-- Action Buttons -->
-                        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+                            <!-- Action Button -->
                             <button
                                 type="button"
-                                @click="applyRoutes"
-                                :disabled="applying"
-                                class="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
+                                @click="runOptimization"
+                                :disabled="loading || selectedOrders.length === 0 || selectedVehicles.length === 0"
+                                class="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-650 hover:from-blue-500 hover:to-indigo-500 px-6 py-4 text-sm font-black uppercase tracking-widest text-white shadow-sm transition-all active:scale-95 disabled:opacity-50 border-0 cursor-pointer"
                             >
-                                <CheckCircleIcon v-if="!applying" class="h-5 w-5" />
-                                <ArrowPathIcon v-else class="h-5 w-5 animate-spin" />
-                                <span>{{ applying ? 'Menerapkan Rute...' : 'Terapkan Rute & Cetak Uang Jalan' }}</span>
+                                <ArrowPathIcon v-if="loading" class="h-5 w-5 animate-spin" />
+                                <SparklesIcon v-else class="h-5 w-5" />
+                                <span>{{ loading ? 'Mengoptimasi Rute...' : 'AI Selesaikan Rute VRP' }}</span>
                             </button>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Right Panel: Leaflet Map (xl:col-span-7) -->
-                <div class="xl:col-span-7 glass-card rounded-2xl overflow-hidden relative shadow-2xl border border-white/5">
-                    <div class="p-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                        <div class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Visualisasi Rute Pengiriman</div>
-                        <div class="text-xs font-bold text-slate-500" v-if="depot">
-                            Depot: {{ depot.latitude }}, {{ depot.longitude }}
+                        <!-- AI Optimization Results Panel (Visible when result exists) -->
+                        <div v-else class="bg-white/70 dark:bg-[#0a0a16]/60 border border-slate-205 dark:border-white/5 rounded-xl p-6 shadow-sm dark:shadow-2xl space-y-6 animate-fade-in-up">
+                            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                                <h4 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">2. Hasil Rekomendasi Rute VRP</h4>
+                                <button 
+                                    type="button" 
+                                    @click="result = null; renderBaseMarkers();" 
+                                    class="text-xs font-black text-indigo-600 dark:text-indigo-500 hover:underline uppercase tracking-wider cursor-pointer bg-transparent border-0"
+                                >
+                                    Reset Optimasi
+                                </button>
+                            </div>
+
+                            <!-- Proposed Shipments -->
+                            <div class="space-y-4 max-h-[460px] overflow-y-auto pr-1">
+                                <div v-for="(shp, index) in result.shipments" :key="index" 
+                                    class="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3 bg-white dark:bg-[#0c0c1b]/60 relative overflow-hidden shadow-sm">
+                                    <!-- Top Stripe Indicator -->
+                                    <div class="absolute top-0 left-0 right-0 h-1" :style="{ backgroundColor: colors[index % colors.length] }"></div>
+
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <div class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                                <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: colors[index % colors.length] }"></span>
+                                                {{ shp.vehicle_plate }} ({{ shp.driver_name }})
+                                            </div>
+                                            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
+                                                {{ shp.route_name }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Grid Statistics -->
+                                    <div class="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/30 p-2.5 rounded-xl border border-slate-150 dark:border-slate-850 text-[10px] font-bold text-slate-550 dark:text-slate-450 font-mono">
+                                        <div class="space-y-0.5">
+                                            <div class="text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                                <ScaleIcon class="h-3 w-3" /> Muatan
+                                            </div>
+                                            <div class="text-slate-900 dark:text-white font-black">{{ formatNumber(shp.total_weight) }} kg</div>
+                                        </div>
+                                        <div class="space-y-0.5">
+                                            <div class="text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                                <MapPinIcon class="h-3 w-3" /> Jarak
+                                            </div>
+                                            <div class="text-slate-900 dark:text-white font-black">{{ shp.estimated_distance_km }} km</div>
+                                        </div>
+                                        <div class="space-y-0.5">
+                                            <div class="text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                                <CurrencyDollarIcon class="h-3 w-3" /> Uang Jalan
+                                            </div>
+                                            <div class="text-emerald-600 dark:text-emerald-450 font-black">Rp {{ formatNumber(shp.suggested_allowance) }}</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Stops Timeline -->
+                                    <div class="space-y-2 relative pl-4 border-l-2 border-slate-200 dark:border-slate-800 ml-2">
+                                        <div v-for="stop in shp.stops" :key="stop.sequence" class="relative text-xs">
+                                            <!-- Dot Indicator -->
+                                            <div class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-slate-900 shadow bg-slate-400"
+                                                :style="{ backgroundColor: colors[index % colors.length] }">
+                                            </div>
+                                            <div class="flex justify-between items-start gap-2">
+                                                <div>
+                                                    <div class="font-black text-slate-800 dark:text-slate-200">
+                                                        {{ stop.sequence }}. {{ stop.customer_name }}
+                                                    </div>
+                                                    <div class="text-[10px] text-slate-450 dark:text-slate-400 font-mono">{{ stop.do_number }}</div>
+                                                </div>
+                                                <span class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0 font-mono">
+                                                    {{ formatNumber(stop.weight) }} kg
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Unassigned Orders Warn Banner -->
+                            <div v-if="result.unassigned_orders && result.unassigned_orders.length > 0" 
+                                class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/10 text-xs font-bold text-amber-705 dark:text-amber-300 space-y-2">
+                                <div class="flex items-center gap-1.5">
+                                    <ExclamationTriangleIcon class="h-4 w-4 text-amber-500 shrink-0" />
+                                    <span>Beberapa pesanan tidak terangkut (Kapasitas armada penuh):</span>
+                                </div>
+                                <ul class="list-disc pl-4 space-y-1 text-[10px]">
+                                    <li v-for="uo in result.unassigned_orders" :key="uo.delivery_order_id">
+                                        {{ uo.do_number }}: {{ uo.reason }}
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+                                <button
+                                    type="button"
+                                    @click="applyRoutes"
+                                    :disabled="applying"
+                                    class="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-sm transition-all active:scale-95 disabled:opacity-50 border-0 cursor-pointer"
+                                >
+                                    <CheckCircleIcon v-if="!applying" class="h-5 w-5" />
+                                    <ArrowPathIcon v-else class="h-5 w-5 animate-spin" />
+                                    <span>{{ applying ? 'Menerapkan Rute...' : 'Terapkan Rute & Cetak Uang Jalan' }}</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div ref="mapEl" class="h-[600px] w-full z-10"></div>
+
+                    <!-- Right Panel: Leaflet Map (xl:col-span-7) -->
+                    <div class="xl:col-span-7 bg-white/70 dark:bg-[#0a0a16]/60 rounded-xl overflow-hidden relative shadow-sm dark:shadow-2xl border border-slate-200 dark:border-white/5">
+                        <div class="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/20 flex items-center justify-between">
+                            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Visualisasi Rute Pengiriman</div>
+                            <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 font-mono" v-if="depot">
+                                Depot: {{ depot.latitude }}, {{ depot.longitude }}
+                            </div>
+                        </div>
+                        <div ref="mapEl" class="h-[600px] w-full z-10" :class="isLightMode ? '' : 'dark:invert dark:hue-rotate-180 dark:brightness-95 dark:contrast-90'"></div>
+                    </div>
                 </div>
             </div>
+
             <!-- AI VRP Guide Modal -->
             <TransitionRoot as="template" :show="showHelpModal">
                 <Dialog as="div" class="relative z-[99]" @close="showHelpModal = false">
                     <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0" enter-to="opacity-100" leave="ease-in duration-200" leave-from="opacity-100" leave-to="opacity-0">
                         <div class="fixed inset-0 bg-slate-950/50 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" />
                     </TransitionChild>
-
-                    <div class="fixed inset-0 z-10 overflow-y-auto">
+ 
+                    <div class="fixed inset-0 z-10 overflow-y-auto font-mono">
                         <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
                             <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" enter-to="opacity-100 translate-y-0 sm:scale-100" leave="ease-in duration-200" leave-from="opacity-100 translate-y-0 sm:scale-100" leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
-                                <DialogPanel class="relative transform overflow-hidden rounded-2xl glass-card text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl">
+                                <DialogPanel class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl text-slate-800 dark:text-slate-300">
                                     <!-- Title/Header -->
                                     <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
                                         <DialogTitle as="h3" class="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-white flex items-center gap-2">
-                                            <QuestionMarkCircleIcon class="h-5 w-5 text-indigo-500" />
+                                            <QuestionMarkCircleIcon class="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                                             <span>Cara Kerja & Panduan AI VRP</span>
                                         </DialogTitle>
-                                        <button @click="showHelpModal = false" type="button" class="text-slate-500 hover:text-slate-900 dark:text-white transition-colors">
+                                        <button @click="showHelpModal = false" type="button" class="text-slate-500 hover:text-slate-900 dark:text-white transition-colors bg-transparent border-0 cursor-pointer">
                                             <XMarkIcon class="h-6 w-6" />
                                         </button>
                                     </div>
 
                                     <!-- Content -->
-                                    <div class="p-6 space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                                    <div class="p-6 space-y-4 text-xs leading-relaxed text-slate-650 dark:text-slate-300">
                                         <div class="space-y-2">
                                             <h4 class="font-bold text-slate-950 dark:text-white text-xs">1. Apa itu AI VRP?</h4>
                                             <p>AI VRP (Vehicle Routing Problem) Optimizer adalah asisten logistik pintar yang otomatis menghitung rute pengiriman multi-tujuan (multi-stop) yang paling optimal. Sistem mencari rute terpendek untuk menghemat bahan bakar truk.</p>
@@ -623,7 +640,7 @@ onBeforeUnmount(() => {
 
                                     <!-- Footer -->
                                     <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-                                        <button @click="showHelpModal = false" type="button" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all text-xs">Mengerti</button>
+                                        <button @click="showHelpModal = false" type="button" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all text-xs border-0 cursor-pointer">Mengerti</button>
                                     </div>
                                 </DialogPanel>
                             </TransitionChild>
@@ -646,5 +663,24 @@ onBeforeUnmount(() => {
 }
 .leaflet-container {
     font-family: inherit !important;
+}
+
+.perspective-grid {
+    background-image: 
+        linear-gradient(to right, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    transform: perspective(500px) rotateX(60deg) translateY(-100px) scale(2);
+    animation: grid-move 20s linear infinite;
+    transform-origin: top;
+}
+
+@keyframes grid-move {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 40px; }
+}
+
+.dark .glow-text {
+    text-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
 }
 </style>

@@ -693,6 +693,10 @@ Route::middleware(['auth'])->prefix('warehouse')->name('warehouse.')->group(func
     // Loading Dock RFID Terminal
     Route::get('/dock-gate', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'dockGateIndex'])->name('dock-gate.index');
     Route::post('/dock-gate/scan', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'dockGateScan'])->name('dock-gate.scan');
+
+    // Weighbridge RFID Terminal
+    Route::get('/weighbridge', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'weighbridgeIndex'])->name('weighbridge.index');
+    Route::post('/weighbridge/scan', [App\Http\Controllers\Warehouse\WarehouseLoadingController::class, 'weighbridgeScan'])->name('weighbridge.scan');
 });
 
 // Logistics

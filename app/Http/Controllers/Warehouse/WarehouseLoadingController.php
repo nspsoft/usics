@@ -692,4 +692,126 @@ class WarehouseLoadingController extends Controller
 
         return back()->with('warning', "Coil #{$lot->coil_number} sudah berada di lokasi {$location->name}.");
     }
+
+    public function weighbridgeIndex()
+    {
+        $deliveryOrders = DeliveryOrder::with(['customer', 'vehicle', 'warehouse', 'items.product', 'items.unit'])
+            ->whereIn('status', ['draft', 'picking', 'packed'])
+            ->orderBy('delivery_date')
+            ->get();
+
+        $scans = \App\Models\RfidScanLog::with('deliveryOrder.customer')
+            ->whereIn('reader_id', ['weighbridge_in', 'weighbridge_out'])
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        return Inertia::render('Warehouse/Weighbridge', [
+            'deliveryOrders' => $deliveryOrders,
+            'scans' => $scans,
+        ]);
+    }
+
+    public function weighbridgeScan(Request $request)
+    {
+        $request->validate([
+            'delivery_order_id' => 'required|exists:delivery_orders,id',
+            'action' => 'required|in:smart,in,out',
+            'weight' => 'required|numeric|min:0',
+        ]);
+
+        $deliveryOrder = DeliveryOrder::with(['customer', 'vehicle', 'warehouse', 'items.product', 'items.unit'])
+            ->findOrFail($request->delivery_order_id);
+
+        $plate = $deliveryOrder->vehicle_number ?? ($deliveryOrder->vehicle->license_plate ?? 'TANPA-PLAT');
+        $tagId = "RFID-TRUCK-" . str_replace(' ', '', strtoupper($plate));
+
+        // Auto-detect action based on status
+        $action = $request->action;
+        if ($action === 'smart') {
+            if ($deliveryOrder->status === 'draft') {
+                $action = 'in';
+            } else {
+                $action = 'out';
+            }
+        }
+
+        $status = 'success';
+        $message = '';
+
+        // Retrieve existing notes to parse tare/gross if already weighed
+        $notes = $deliveryOrder->notes ?? '';
+        
+        if ($action === 'in') {
+            // TARE WEIGHING
+            if ($deliveryOrder->status !== 'draft') {
+                $status = 'warning';
+                $message = "Truk {$plate} sudah melewati penimbangan masuk atau sedang memuat barang. Status DO: " . strtoupper($deliveryOrder->status);
+            } else {
+                $tareText = "Timbang Masuk (Tare): " . number_format($request->weight) . " Kg";
+                $newNotes = $notes ? $notes . " | " . $tareText : $tareText;
+                
+                $deliveryOrder->update([
+                    'notes' => $newNotes
+                ]);
+                $message = "✅ TIMBANG MASUK: Truk {$plate} ditimbang kosong. TARE: " . number_format($request->weight) . " Kg. Silakan merapat ke Loading Dock.";
+            }
+        } else {
+            // GROSS WEIGHING
+            if (!in_array($deliveryOrder->status, ['picking', 'packed'])) {
+                $status = 'error';
+                $message = "❌ TIMBANG KELUAR DITOLAK: Truk {$plate} belum memulai pemuatan barang. Status DO: " . strtoupper($deliveryOrder->status);
+            } else {
+                // Parse existing tare weight from notes to calculate net weight
+                $tareWeight = 0;
+                if (preg_match('/Timbang Masuk \(Tare\):\s*([\d,]+)\s*Kg/i', $notes, $matches)) {
+                    $tareWeight = (int)str_replace(',', '', $matches[1]);
+                }
+
+                $grossWeight = (int)$request->weight;
+                $netWeight = max(0, $grossWeight - $tareWeight);
+
+                $grossText = "Timbang Keluar (Gross): " . number_format($grossWeight) . " Kg";
+                $netText = "Berat Bersih (Netto): " . number_format($netWeight) . " Kg";
+                $newNotes = $notes ? $notes . " | " . $grossText . " | " . $netText : $grossText . " | " . $netText;
+
+                $deliveryOrder->update([
+                    'status' => 'packed', // Mark ready / packed
+                    'notes' => $newNotes
+                ]);
+
+                $message = "✅ TIMBANG KELUAR: Truk {$plate} ditimbang muatan. GROSS: " . number_format($grossWeight) . " Kg. NETTO: " . number_format($netWeight) . " Kg. Silakan menuju gerbang keluar.";
+            }
+        }
+
+        // Save scan log
+        \App\Models\RfidScanLog::create([
+            'delivery_order_id' => $deliveryOrder->id,
+            'tag_id' => $tagId,
+            'reader_id' => $action === 'in' ? 'weighbridge_in' : 'weighbridge_out',
+            'simulated_weight' => $request->weight,
+            'status' => $status,
+            'message' => $message,
+        ]);
+
+        // Activity log
+        activity()
+            ->performedOn($deliveryOrder)
+            ->withProperties([
+                'tag_id' => $tagId,
+                'weight' => $request->weight,
+                'action' => $action,
+            ])
+            ->log("Weighbridge Scale: " . $message);
+
+        return back()->with($status === 'error' ? 'error' : ($status === 'warning' ? 'warning' : 'success'), $message)
+            ->with('dockScannedData', [ // use shared key name to make it simple
+                'delivery_order' => $deliveryOrder->fresh(['customer', 'vehicle', 'warehouse', 'items.product', 'items.unit']),
+                'scan_status' => $status,
+                'scan_message' => $message,
+                'scan_action' => $action,
+                'scan_time' => now()->toDateTimeString(),
+                'weight_value' => $request->weight,
+            ]);
+    }
 }

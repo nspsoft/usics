@@ -505,6 +505,7 @@ const navigation = [
             { name: 'Loading Queue', href: '/warehouse/loading', icon: CubeIcon, permission: 'logistics.view' },
             { name: 'Security Gate', href: '/warehouse/security-gate', icon: ShieldCheckIcon, permission: 'logistics.view' },
             { name: 'Loading Dock Terminal', href: '/warehouse/dock-gate', icon: CpuChipIcon, permission: 'logistics.view' },
+            { name: 'Weighbridge Terminal', href: '/warehouse/weighbridge', icon: ScaleIcon, permission: 'logistics.view' },
             { name: 'Delivery Planning', href: '/logistics/planning', icon: MapIcon, permission: 'logistics.delivery_planning.view' },
             { name: 'Dispatch', href: '/logistics/dispatch', icon: TruckIcon, permission: 'logistics.view' },
             { name: 'Vehicle Fleet', href: '/logistics/fleet', icon: TruckIcon, permission: 'logistics.vehicle_fleet.view' },
