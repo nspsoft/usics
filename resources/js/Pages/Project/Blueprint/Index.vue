@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import mermaid from 'mermaid';
@@ -1237,13 +1237,30 @@ const content = {
 
 const currentContent = computed(() => content[activeTab.value]);
 
+let themeObserver;
 onMounted(() => {
+    const isDark = !document.documentElement.classList.contains('light');
     mermaid.initialize({ 
         startOnLoad: false, 
-        theme: 'dark',
+        theme: isDark ? 'dark' : 'neutral',
         securityLevel: 'loose',
     });
     renderMermaid();
+
+    themeObserver = new MutationObserver(() => {
+        const currentDark = !document.documentElement.classList.contains('light');
+        mermaid.initialize({ 
+            startOnLoad: false, 
+            theme: currentDark ? 'dark' : 'neutral',
+            securityLevel: 'loose',
+        });
+        renderMermaid();
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+});
+
+onUnmounted(() => {
+    if (themeObserver) themeObserver.disconnect();
 });
 
 const renderMermaid = async () => {
@@ -1284,11 +1301,11 @@ const renderMermaid = async () => {
     <Head title="Project Blueprint" />
 
     <AppLayout title="Project Blueprint">
-        <div class="flex h-[calc(100vh-4rem)] bg-[#050510] overflow-hidden">
+        <div class="flex h-[calc(100vh-4rem)] bg-slate-50 dark:bg-[#050510] overflow-hidden transition-colors duration-300">
             <!-- Sidebar -->
-            <aside class="w-72 bg-[#0a0a1a] border-r border-slate-800 flex flex-col z-20">
-                <div class="p-6 border-b border-slate-800">
-                    <h2 class="text-xl font-black text-white tracking-tight">BLUEPRINT<span class="text-cyan-500">.HUB</span></h2>
+            <aside class="w-72 bg-white dark:bg-[#0a0a1a] border-r border-slate-200 dark:border-slate-800 flex flex-col z-20 transition-colors duration-300">
+                <div class="p-6 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
+                    <h2 class="text-xl font-black text-slate-800 dark:text-white tracking-tight transition-colors">BLUEPRINT<span class="text-cyan-500">.HUB</span></h2>
                     <p class="text-xs text-slate-500 mt-1">Strategic Documentation USICS</p>
                 </div>
                 <nav class="flex-1 overflow-y-auto p-4 space-y-1">
@@ -1297,18 +1314,18 @@ const renderMermaid = async () => {
                         :key="item.id"
                         @click="activeTab = item.id"
                         :class="[
-                            'w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200',
+                            'w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 cursor-pointer',
                             activeTab === item.id 
-                                ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.15)]' 
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                ? 'bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/20 shadow-sm dark:shadow-[0_0_15px_rgba(6,182,212,0.15)] font-semibold' 
+                                : 'text-slate-550 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
                         ]"
                     >
                         <component :is="item.icon" class="w-5 h-5" />
                         {{ item.label }}
                     </button>
 
-                    <div class="mt-8 pt-6 border-t border-slate-800/80">
-                        <a href="/Blueprint_ERP.html" target="_blank" class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-bold rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-all duration-300">
+                    <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800/80 transition-colors">
+                        <a href="/Blueprint_ERP.html" target="_blank" class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-bold rounded-xl shadow-md dark:shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-lg dark:hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-all duration-300">
                             <DocumentCheckIcon class="w-5 h-5" />
                             Versi Cetak (Web/PDF)
                         </a>
@@ -1318,7 +1335,7 @@ const renderMermaid = async () => {
             </aside>
 
             <!-- Main Content -->
-            <main class="flex-1 overflow-y-auto relative perspective-1000">
+            <main class="flex-1 overflow-y-auto relative perspective-1000 bg-slate-50 dark:bg-[#050510] transition-colors duration-300">
                 <div class="max-w-6xl mx-auto p-12">
                     <Transition 
                         enter-active-class="transition-all duration-500 ease-out"
@@ -1330,24 +1347,24 @@ const renderMermaid = async () => {
                         mode="out-in"
                         @after-enter="renderMermaid"
                     >
-                        <div :key="activeTab" class="bg-[#0f0f25] border border-slate-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden group min-h-[600px]">
+                        <div :key="activeTab" class="bg-white dark:bg-[#0f0f25] border border-slate-200 dark:border-slate-800 rounded-2xl p-8 shadow-xl dark:shadow-2xl relative overflow-hidden group min-h-[600px] transition-colors duration-300">
                             <!-- Background Decor -->
                             <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-cyan-500/20 transition-all duration-1000"></div>
 
                             <div class="relative z-10 h-full flex flex-col">
-                                <h1 class="text-4xl font-black text-white mb-2 tracking-tight">{{ currentContent.title }}</h1>
-                                <p class="text-lg text-cyan-400 mb-8 font-light border-b border-white/5 pb-4">{{ currentContent.subtitle }}</p>
+                                <h1 class="text-4xl font-black text-slate-800 dark:text-white mb-2 tracking-tight transition-colors">{{ currentContent.title }}</h1>
+                                <p class="text-lg text-cyan-600 dark:text-cyan-400 mb-8 font-light border-b border-slate-100 dark:border-white/5 pb-4 transition-colors">{{ currentContent.subtitle }}</p>
                                 
                                 <div class="flex-1 overflow-auto">
                                     <div v-if="currentContent.isMermaid" class="mermaid-container pb-12">
-                                        <div class="mermaid-graph flex justify-center p-4 bg-slate-900 rounded-lg min-h-[300px]">
+                                        <div class="mermaid-graph flex justify-center p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg min-h-[300px] transition-colors">
                                             <!-- Mermaid Diagram Rendered Here -->
                                             Loading Visualizer...
                                         </div>
                                         <!-- Render additional details if available (for Flowchart side notes) -->
                                         <div v-if="currentContent.details" v-html="currentContent.details" class="animate-fade-in-up"></div>
                                     </div>
-                                    <div v-else class="prose prose-invert max-w-none prose-headings:font-bold prose-p:text-slate-300 prose-li:text-slate-300" v-html="currentContent.body"></div>
+                                    <div v-else class="prose dark:prose-invert max-w-none prose-headings:font-bold prose-p:text-slate-650 dark:prose-p:text-slate-300 prose-li:text-slate-650 dark:prose-li:text-slate-300" v-html="currentContent.body"></div>
                                 </div>
                             </div>
                         </div>
@@ -1375,13 +1392,23 @@ const renderMermaid = async () => {
     width: 6px;
 }
 ::-webkit-scrollbar-track {
-    background: #0a0a1a; 
+    background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-    background: #1e293b; 
+    background: #cbd5e1;
     border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+:root.dark ::-webkit-scrollbar-track {
+    background: #0a0a1a; 
+}
+:root.dark ::-webkit-scrollbar-thumb {
+    background: #1e293b; 
+}
+:root.dark ::-webkit-scrollbar-thumb:hover {
     background: #334155; 
 }
 </style>
